@@ -101,7 +101,7 @@ function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColor
 %% default input and output
 if ~exist('PlotParam','var'),PlotParam=[];end;
 PlotType='text'; %default
-if ~isfield(PlotParam,'Coordinates')
+if ~isfield(PlotParam,'Axes')
     PlotParam.Axes=[];
     if isfield(Data,'CoordUnit')
         PlotParam.Axes.CheckFixAspectRatio=1;
@@ -1209,7 +1209,7 @@ if ~isempty(Data)
     PlotParamOut.Axes.x_units=x_units;
     PlotParamOut.Axes.y_units=y_units;
 end
-if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
+if isfield(PlotParam,'Axes') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
     set(haxes,'DataAspectRatioMode','manual')
     if isfield(PlotParam.Axes,'AspectRatio')
         set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
