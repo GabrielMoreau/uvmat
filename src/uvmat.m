@@ -2677,7 +2677,8 @@ else
             AClass=class(ObjectData.A);
             ObjectData.A=flag_mask.*double(ObjectData.A);
             ObjectData.A=feval(AClass,ObjectData.A);
-        end
+        end       
+        set(handles.uvmat,'UserData',UvData)
         if ~isempty(ObjectData)
             %PlotType='none'; %default
             if imap==2 && isempty(view_field_handle)
@@ -2701,8 +2702,6 @@ else
             end
         end
     end
-    
-    set(handles.uvmat,'UserData',UvData)
     
     %% update the mask
     if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
@@ -2909,12 +2908,7 @@ end
 % --- Executes on button press in CheckFixAspectRatio.
 function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
-% if get(handles.CheckFixAspectRatio,'Value')
-    update_plot(handles);
-% else
-%     update_plot(handles);
-% end
+ update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_AspectRatio_Callback(hObject, eventdata, handles)
@@ -5676,11 +5670,3 @@ else
 end
 
 
-% --- Executes on selection change in SwitchCoordIndex.
-function SwitchCoordIndex_Callback(hObject, eventdata, handles)
-% hObject    handle to SwitchCoordIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns SwitchCoordIndex contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from SwitchCoordIndex

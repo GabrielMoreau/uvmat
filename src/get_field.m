@@ -602,15 +602,15 @@ var_coord=find(test_coord);% % list of variable indices elligible as structured 
 ListCoord=Field.Display.ListVarName([var_component var_coord]);
 
 %% set default coord selection
-if numel(find(test_coord))>3
-    SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
-    if numel(SwitchVarIndexTime)<3
-        SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
-        set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
-    end
-    set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
-    SwitchVarIndexTime_Callback([], [], handles)
-end
+% if numel(find(test_coord))>3
+%     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+%     if numel(SwitchVarIndexTime)<3
+%         SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
+%         set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
+%     end
+%     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
+%     SwitchVarIndexTime_Callback([], [], handles)
+% end
 
 coord_val=[0 0];
 % look for labelled unstructured coordinates
