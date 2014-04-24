@@ -67,7 +67,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     elseif isequal(size(Param.InputTable,1),1) && ~isfield(Param,'ProjObject')
-        msgbox_uvmat('WARNING','a projection object  needs to be introduced for time_series')
+        msgbox_uvmat('WARNING','a projection object may be needed to select points for the time_series')
     end
     return
 end
@@ -93,7 +93,9 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
+hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+if ~isempty(hdisp),delete(hdisp),end;
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
@@ -267,13 +269,12 @@ for index=1:nbfield
             end
         end
         
-        % calculate tps coefficients if needed
-        if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-            Field=tps_coeff_field(Field,check_proj_tps);
-        end
-        
-        %field projection on an object
+        %field projection on an object 
         if Param.CheckObject
+            % calculate tps coefficients if needed
+            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
+                Field=tps_coeff_field(Field,check_proj_tps);
+            end
             [Field,errormsg]=proj_field(Field,Param.ProjObject);
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',['time_series / proj_field / ' errormsg])
@@ -290,7 +291,7 @@ for index=1:nbfield
                 return
             end
             DataOut=Field;%default
-            DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
+%             DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
             nbvar=length(Field.ListVarName);
             if nbvar==0
                 disp_uvmat('ERROR','no input variable selected',checkrun)
@@ -309,8 +310,7 @@ for index=1:nbfield
                             testsum(ivar)=0;  % not recorded variable
                             eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
                         end
-                        if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|...
-                                isequal(var_role,'coord_z')|isequal(var_role,'coord')
+                        if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
                             testsum(ivar)=1; %constant coordinates, record without time evolution
                         end
                     end
@@ -338,7 +338,7 @@ for index=1:nbfield
             VarVal=Field.(VarName);
             if testsum(ivar)==2% test for recorded variable
                 if isempty(errormsg)
-                    if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+                    if Param.CheckObject && strcmp(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' projection mode
                         if isempty(VarVal)
                             disp_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(index))],checkrun)
                             return
@@ -393,10 +393,11 @@ end
 
 % add time dimension
 for ivar=1:length(Field.ListVarName)
-    DimCell=Field.VarDimName(ivar);
-    if testsum(ivar)==2%variable used as time series
+    DimCell=Field.VarDimName{ivar};
+    if ischar(DimCell),DimCell={DimCell};end
+    if testsum(ivar)==2% variable for which time series is calculated
         DataOut.VarDimName{ivar}=[{'Time'} DimCell];
-    elseif testsum(ivar)==1
+    elseif testsum(ivar)==1 % variable represneting a fixed coordinate
         DataOut.VarDimName{ivar}=DimCell;
     end
 end

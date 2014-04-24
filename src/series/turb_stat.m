@@ -1,6 +1,6 @@
-%'aver_stat': calculate field average over a time series
+%'aver_stat': calculate Reynolds steress components over time series
 %------------------------------------------------------------------------
-% function ParamOut=aver_stat(Param)
+% function ParamOut=turb_stat(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -38,40 +38,24 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function ParamOut=aver_stat(Param)
+function ParamOut=turb_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
+if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
-    ParamOut.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
-    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
+    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.stat';%set the output dir extension
+    ParamOut.OutputDirExt='.staturb';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-    % check the existence of the first file in the series
-    first_j=[];
-    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
-    PairString='';
-    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
-    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-    if ~exist(FirstFileName,'file')
-        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    else
-        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
-        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-        if ~exist(FirstFileName,'file')
-             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
-        end
-    end
+%     filecell=get_file_series(Param);%check existence of the first input file
+%     if ~exist(filecell{1,1},'file')
+%         msgbox_uvmat('WARNING','the first input file does not exist')
+%     end
     return
 end
 
@@ -96,9 +80,7 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-if ~isempty(hdisp),delete(hdisp),end;
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
@@ -106,7 +88,7 @@ if ~isempty(hdisp),delete(hdisp),end;
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-%%%%%%%%%%%%
+%%%%%%%%%%%% NbView=1 : a single input series
 NbView=numel(i1_series);%number of input file series (lines in InputTable)
 NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 NbField_i=size(i1_series{1},2); %nb of fields for the i index
@@ -131,6 +113,7 @@ for iview=1:NbView
 end
 
 %% calibration data and timing: read the ImaDoc files
+XmlData=[];
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
 if size(time,1)>1
     diff_time=max(max(diff(time)));
@@ -159,10 +142,7 @@ else
     msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
     return
 end
-if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
-    msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
-    return
-end
+
 
 %% settings for the output file
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
@@ -180,24 +160,30 @@ InputFields{1}=[];%default (case of images)
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
 end
-if NbView==2
-    InputFields{2}=[];%default (case of images)
-    if isfield(Param,'InputFields')
-        InputFields{2}=Param.InputFields{1};%default
-        if isfield(Param.InputFields,'FieldName_1')
-            InputFields{2}.FieldName=Param.InputFields.FieldName_1;
-            if isfield(Param.InputFields,'VelType_1')
-                InputFields{2}.VelType=Param.InputFields.VelType_1;
-            end
-        end
-    end
-end
 
-% for i_slice=1:NbSlice
-% index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
 nbfiles=0;
 nbmissing=0;
 
+%initialisation
+DataOut.ListGlobalAttribute= {'Conventions'};
+DataOut.Conventions= 'uvmat';
+DataOut.ListVarName={'coord_y', 'coord_x' ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','Counter'};
+DataOut.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
+    {'coord_y','coord_x'},{'coord_y','coord_x'}};
+DataOut.UMean=0;
+DataOut.VMean=0;
+DataOut.u2Mean=0;
+DataOut.v2Mean=0;
+DataOut.u2Mean_1=0;
+DataOut.v2Mean_1=0;
+DataOut.uvMean=0;
+DataOut.Counter=0;
+U2Mean=0;
+V2Mean=0;
+UVMean=0;
+U2Mean_1=0;
+V2Mean_1=0;
+checkgrid=0;% test for a structured grid for input field
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
     update_waitbar(WaitbarHandle,index/NbField)
@@ -205,133 +191,67 @@ for index=1:NbField
         disp('program stopped by user')
         break
     end
-    
-    %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-    for iview=1:NbView
-        % reading input file(s)
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
-        if ~isempty(errormsg)
-            errormsg=['error of input reading: ' errormsg];
-            break
-        end
-        if ~isempty(NbSlice_calib)
-            Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-        end
+    [Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+
+    %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+    if index==1 %first field
+        
+        DataOut.coord_y=Field.coord_y;
+        DataOut.coord_x=Field.coord_x;
+        Uprev=Field.U;
+        Vprev=Field.V;
     end
-    %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
-    %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
-    % EDIT FROM HERE
-    
-    if isempty(errormsg)
-        Field=Data{1}; % default input field structure
-        %% coordinate transform (or other user defined transform)
-        if ~isempty(transform_fct)
-            switch nargin(transform_fct)
-                case 4
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 3
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 2
-                    Field=transform_fct(Data{1},XmlData{1});
-                case 1
-                    Field=transform_fct(Data{1});
-            end
-        end
-        
-        %% calculate tps coefficients if needed
-        if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-            Field=tps_coeff_field(Field,check_proj_tps);
-        end
-        
-        %field projection on an object
-        if Param.CheckObject
-            [Field,errormsg]=proj_field(Field,Param.ProjObject);
-            if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
-                return
-            end
-        end
-        nbfiles=nbfiles+1;
-        
-        %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-        if nbfiles==1 %first field
-            time_1=[];
-            if isfield(Field,'Time')
-                time_1=Field.Time(1);
-            end
-            DataOut=Field;%default
-            DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files
-            for ivar=1:length(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                DataOut.(VarName)=double(DataOut.(VarName));
-            end
-        else   %current field
-            for ivar=1:length(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                sizmean=size(DataOut.(VarName));
-                siz=size(Field.(VarName));
-                if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                    disp_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
-                    return
-                else
-                    DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
-                end
-            end
-        end
-        %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-    else
-        disp(errormsg)
-    end
+    FF=isnan(Field.U)|Field.U<-60|Field.U>30;% threshold on U
+    DataOut.Counter=DataOut.Counter+ (~FF);% add 1 to the couter for non NaN point
+    Field.U(FF)=0;% set to 0 the nan values
+    Field.V(FF)=0;
+    DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
+    DataOut.VMean=DataOut.VMean+Field.V; %increment the sum
+    U2Mean=U2Mean+(Field.U).*(Field.U); %increment the U squared sum
+    V2Mean=V2Mean+(Field.V).*(Field.V); %increment the V squared sum
+    UVMean=UVMean+(Field.U).*(Field.V); %increment the sum
+    U2Mean_1=U2Mean_1+(Field.U).*Uprev; %increment the U squared sum
+    V2Mean_1=V2Mean_1+(Field.V).*Vprev; %increment the V squared sum
+    Uprev=Field.U; %store for next iteration
+    Vprev=Field.V;
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
 
-for ivar=1:length(Field.ListVarName)
-    VarName=Field.ListVarName{ivar};
-    DataOut.(VarName)=DataOut.(VarName)/nbfiles; % normalize the mean
-end
-if nbmissing~=0
-    msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
-end
-if isempty(time) % time is read from files
-    if isfield(Field,'Time')
-        time_end=Field.Time(1);%last time read
-        if ~isempty(time_1)
-            DataOut.Time=time_1;
-            DataOut.Time_end=time_end;
-        end
-    end
-else  % time from ImaDoc prevails if it exists
-    DataOut.Time=time(1);
-    DataOut.Time_end=time(end);
-end
+DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
+DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
+DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
+U2Mean=U2Mean./DataOut.Counter; % normalize the mean
+V2Mean=V2Mean./DataOut.Counter; % normalize the mean
+UVMean=UVMean./DataOut.Counter; % normalize the mean
+U2Mean_1=U2Mean_1./DataOut.Counter; % normalize the mean
+V2Mean_1=V2Mean_1./DataOut.Counter; % normalize the mean
+DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the mean
+DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
+DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \
+DataOut.u2Mean_1=U2Mean_1-DataOut.UMean.*DataOut.UMean; % normalize the mean
+DataOut.v2Mean_1=V2Mean_1-DataOut.VMean.*DataOut.VMean; % normalize the mean
 
-%% writing the result file
+
+%% calculate the profiles
+% npx=numel(DataOut.coord_x);
+% band=ceil(npx/5) :floor(4*npx/5);% keep only the central band
+% for ivar=3:numel(DataOut.ListVarName)-1
+%     VarName=DataOut.ListVarName{ivar};% name of the variable
+%     DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Profile']}];%append the name of the profile variable
+%     DataOut.VarDimName=[DataOut.VarDimName {'coord_y'}];
+%    DataOut.([VarName 'Profile'])=mean(DataOut.(VarName)(:,band),2); %take the mean profile of U, excluding the edges
+% end
+
+%% writing the result file as netcdf file
 OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
-if CheckImage{1} %case of images
-    if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
-        DataOut.A=uint16(DataOut.A);
-        imwrite(DataOut.A,OutputFile,'BitDepth',16); % case of 16 bit images
-    else
-        DataOut.A=uint8(DataOut.A);
-        imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
-    end
-    disp([OutputFile ' written']);
-else %case of netcdf input file , determine global attributes
-    errormsg=struct2nc(OutputFile,DataOut); %save result file
-    if isempty(errormsg)
-        disp([OutputFile ' written']);
-    else
-        disp(['error in writting result file: ' errormsg])
-    end
-end  % end averaging  loop
+ %case of netcdf input file , determine global attributes
+ errormsg=struct2nc(OutputFile,DataOut); %save result file
+ if isempty(errormsg)
+     disp([OutputFile ' written']);
+ else
+     disp(['error in writting result file: ' errormsg])
+ end
+
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun
