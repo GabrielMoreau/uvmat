@@ -316,7 +316,9 @@ end
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 hfig=figure;
-copyobj(handles.PlotAxes,hfig);
+hc=copyobj(handles.PlotAxes,hfig);
+set(hc,'Position',[0.1 0.1 0.8 0.8])
+h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
 if ~isempty(h)
     h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
     map=colormap(handles.PlotAxes);

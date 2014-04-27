@@ -33,7 +33,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 21-Apr-2014 15:03:19
+% Last Modified by GUIDE v2.5 24-Apr-2014 22:45:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -639,14 +639,14 @@ else
     set(handles.Coord_x,'Value',coord_val(1))
     set(handles.Coord_x,'String',ListCoord)
 end
-if  get(handles.CheckDimensionY,'Value')
+if  get(handles.CheckDimensionX,'Value')
     set(handles.Coord_y,'Value',1)
     set(handles.Coord_y,'String',dim_var')
 else
     set(handles.Coord_y,'Value',coord_val(2))
     set(handles.Coord_y,'String',ListCoord)
 end
-if  get(handles.CheckDimensionZ,'Value')
+if  get(handles.CheckDimensionX,'Value')
     set(handles.Coord_z,'Value',1)
     set(handles.Coord_z,'String',dim_var')
 else
@@ -908,6 +908,7 @@ switch option
         set(handles.TimeName, 'Value',1);
         set(handles.TimeName, 'String',Field.Display.ListDimName)
 end
+TimeName_Callback(hObject, [], handles)
 
 %-----------------------------------------------------------------------
 function update_field(handles,VarName)
@@ -984,13 +985,44 @@ end
 
 % --- Executes on selection change in TimeName.
 function TimeName_Callback(hObject, eventdata, handles)
+Field=get(handles.get_field,'UserData');
 index=get(handles.SwitchVarIndexTime,'Value');
-if index==3 ; % TimeName is used to chose a variable
-    index=get(handles.TimeName,'Value');
-    string=get(handles.TimeName,'String');
-    VarName=string{index};
+switch index
+    case 1
+        set(handles.num_TimeDimension,'String','')
+        set(handles.TimeUnit,'String','index')
+    case 2
+        set(handles.num_TimeDimension,'String','')
+        attr_index=strcmpi(TimeUnit,Field.ListGlobalAttribute);
+        if ~isempty(attr_index)
+            AttrName=Field.ListGlobalAttribute{attr_index};
+            set(handles.TimeUnit,'String',Field.(AttrName))
+        end
+    case {3 ,4}
+        MenuIndex=get(handles.TimeName,'Value');
+        string=get(handles.TimeName,'String');
+        if index==3  % TimeName is used to chose a variable
+            VarName=string{MenuIndex};
+            VarIndex=name2index(VarName,Field.ListVarName);
+            DimName=Field.VarDimName{VarIndex};
+            DimIndex=name2index(DimName,Field.ListDimName);
+            DimValue=Field.DimValue(DimIndex);
+            set(handles.num_TimeDimension,'String',num2str(DimValue))
+            unit='';
+            if isfield(Field,'VarAttribute')&& isfield(Field.VarAttribute{VarIndex},'Unit')
+                unit=Field.VarAttribute{VarIndex}.Unit;
+            end
+            set(handles.TimeUnit,'String',unit)
+            update_field(handles,VarName)
+        elseif index==4% TimeName is used to chose a dimension
+            DimName=string{MenuIndex};
+            DimIndex=name2index(DimName,Field.ListDimName);
+            DimValue=Field.DimValue(DimIndex);
+            set(handles.num_TimeDimension,'String',num2str(DimValue))
+            set(handles.TimeUnit,'String','index')
+            
+        end
 end
-update_field(handles,VarName)
 
 
 % --- Executes on button press in Check3D.
@@ -1001,9 +1033,7 @@ else
     status='off';
 end
 set(handles.Coord_z,'Visible',status)
-set(handles.CheckDimensionZ,'Visible',status)
+% set(handles.CheckDimensionZ,'Visible',status)
 set(handles.Z_title,'Visible',status)
 set(handles.vector_z,'Visible',status)
 set(handles.W_title,'Visible',status)   
-
-

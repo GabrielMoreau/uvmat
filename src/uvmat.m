@@ -3197,13 +3197,25 @@ switch field
                     set(handles.NomType,'String','*')
                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
                     set(handles.i1,'String','1')% set counter to 1 (now the time index in the input matrix)
+                    MaxIndex_i=get(handles.MaxIndex_i,'String');
+                    MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
+                    set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
+                    UvData=get(handles.uvmat,'UserData');
+                    UvData.TimeUnit=GetFieldData.Time.TimeUnit;
+                    set(handles.uvmat,'UserData',UvData);
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix index'
                     set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
                     set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])             
                     set(handles.i1,'String','1')% set counter to 1 (now the time index in the input matrix)
+                    MaxIndex_i=get(handles.MaxIndex_i,'String');
+                    MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
+                    set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
+                    UvData=get(handles.uvmat,'UserData');
+                    UvData.TimeUnit=GetFieldData.Time.TimeUnit;
+                    set(handles.uvmat,'UserData',UvData);
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
@@ -3809,9 +3821,14 @@ CoordUnitPrev='';
 if isfield(UvData,'Field')&&isfield(UvData.Field,'CoordUnit')
     CoordUnitPrev=UvData.Field.CoordUnit;
 end
-if ~isempty(list_path{ichoice}) 
-    if nargin(transform_handle)>1 && isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
-        DataOut=feval(transform_handle,'*',UvData.XmlData{1});% execute the transform fct to get the required conditions
+if ~isempty(list_path{ichoice})
+    if nargin(transform_handle)>1 %&& isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
+        XmlData=[];
+        if isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
+            XmlData=UvData.XmlData{1};
+        end
+        UvData.Field.Action.RUN=0;% indicate that the transform fct is called only to get input param
+        DataOut=feval(transform_handle,UvData.Field,XmlData);% execute the transform fct to get the required conditions
         if isfield(DataOut,'CoordUnit')% set the requested coord unit (info used to possibly delete the current projection objects)
             CoordUnit=DataOut.CoordUnit;
         end
@@ -4591,11 +4608,12 @@ commandwindow; %brings the Matlab command window to the front
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 hfig=figure;
-copyobj(handles.PlotAxes,hfig);
+hc=copyobj(handles.PlotAxes,hfig);
+set(hc,'Position',[0.1 0.1 0.8 0.8])
 h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
 if ~isempty(h)
     map=colormap(handles.PlotAxes);
-    colormap(map);%transmit the current colormap to the zoom fig
+    colormap(map);%transmit the current colormap to the new fig
     colorbar
 end
 
@@ -5668,5 +5686,3 @@ if get(handles.CheckTable,'Value')
 else
     set(handles.TableDisplay,'Visible','off')
 end
-
-

@@ -2000,13 +2000,13 @@ try
 end
 
 %% Detect the types of input files
-SeriesData=get(handles.series,'UserData');
+SeriesData=get(handles.series,'UserData');% info on the input file series
 iview_civ=[];nb_netcdf=0;
 if ~isempty(SeriesData)&&isfield(SeriesData,'FileType')
     iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
     nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
 end
-if numel(iview_civ)>=1
+if numel(iview_civ)>=1 && ~isempty(iview_civ(1))
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
     set(handles.VelType,'String',[{'*'};menu])
     if numel(iview_civ)>=2
