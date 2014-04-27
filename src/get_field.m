@@ -987,23 +987,23 @@ end
 function TimeName_Callback(hObject, eventdata, handles)
 Field=get(handles.get_field,'UserData');
 index=get(handles.SwitchVarIndexTime,'Value');
+MenuIndex=get(handles.TimeName,'Value');
+string=get(handles.TimeName,'String');
+TimeName=string{MenuIndex};
 switch index
     case 1
         set(handles.num_TimeDimension,'String','')
         set(handles.TimeUnit,'String','index')
     case 2
         set(handles.num_TimeDimension,'String','')
-        attr_index=strcmpi(TimeUnit,Field.ListGlobalAttribute);
+        attr_index=find(strcmpi([TimeName 'Unit'],Field.ListGlobalAttribute));% look for time unit
         if ~isempty(attr_index)
             AttrName=Field.ListGlobalAttribute{attr_index};
             set(handles.TimeUnit,'String',Field.(AttrName))
         end
     case {3 ,4}
-        MenuIndex=get(handles.TimeName,'Value');
-        string=get(handles.TimeName,'String');
         if index==3  % TimeName is used to chose a variable
-            VarName=string{MenuIndex};
-            VarIndex=name2index(VarName,Field.ListVarName);
+            VarIndex=name2index(TimeName,Field.ListVarName);
             DimName=Field.VarDimName{VarIndex};
             DimIndex=name2index(DimName,Field.ListDimName);
             DimValue=Field.DimValue(DimIndex);
@@ -1013,14 +1013,13 @@ switch index
                 unit=Field.VarAttribute{VarIndex}.Unit;
             end
             set(handles.TimeUnit,'String',unit)
-            update_field(handles,VarName)
+            update_field(handles,TimeName)
         elseif index==4% TimeName is used to chose a dimension
             DimName=string{MenuIndex};
             DimIndex=name2index(DimName,Field.ListDimName);
             DimValue=Field.DimValue(DimIndex);
             set(handles.num_TimeDimension,'String',num2str(DimValue))
             set(handles.TimeUnit,'String','index')
-            
         end
 end
 

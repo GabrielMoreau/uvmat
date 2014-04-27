@@ -22,10 +22,12 @@ last_i=Param.IndexRange.last_i;
 % ref_i=first_i:incr_i:last_i;
 %ref_j=[];
 first_j=[];last_j=[];incr_j=1;%default
-if isfield(Param.IndexRange,'first_j')
+if isfield(Param.IndexRange,'first_j')&& isfield(Param.IndexRange,'last_j')
     first_j=Param.IndexRange.first_j;
-    incr_j=Param.IndexRange.incr_j;
     last_j=Param.IndexRange.last_j;
+end
+if isfield(Param.IndexRange,'incr_j')
+    incr_j=Param.IndexRange.incr_j;
 end
 
 %% determine the list of input file names
