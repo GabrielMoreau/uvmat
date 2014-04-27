@@ -27,7 +27,7 @@ function DataOut=phys(DataIn,XmlData,DataIn_1,XmlData_1)
 
 DataOut=[];
 DataOut_1=[]; %default second  output field
-if strcmp(DataIn,'*')
+if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
     if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
         DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
     end

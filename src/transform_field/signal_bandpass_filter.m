@@ -1,14 +1,14 @@
-% 'FFT': calculate and display 2D spectrum of the input scalar
-%  GUI_input=FFT(hget_field)
+% 'signal_band_filter': example of pass-band filter (using the signal toolbox fct fdesign)
+% frequency and bandwidth need to be modified in the function
 %
 % OUTPUT: 
-% GUI_input: option for display in the GUI get_field
+% DataOut: Matlab structure representing the output (filtered) field
 %
 %INPUT:
-% hget_field: handles of the GUI get_field
+% DataIn: Matlab structure representing the output field
 %
 
-function DataOut=signal_filter(DataIn)
+function DataOut=signal_bandpass_filter(DataIn)
 %% set GUI config
 DataOut=[];
 if strcmp(DataIn,'*')   
@@ -16,8 +16,7 @@ if strcmp(DataIn,'*')
     return
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%
-frequency=2*5/54.5;
-frequency=frequency;
+frequency=2*5/54.5;% frequency at which the signal needs to be filetered
  %d=fdesign.bandpass(0.8*frequency, 0.95*frequency, 1.05*frequency, 1.2*frequency, 60, 1, 60);
  d=fdesign.bandpass(0.7*frequency, 0.9*frequency, 1.1*frequency, 1.3*frequency, 60, 1, 60);
  Hd=design(d);% command  fvtool(Hd) to visualize the filter frequency response

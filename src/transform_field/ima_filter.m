@@ -11,8 +11,10 @@
 %-----------------------------------
 
 %-------------------------------------
-function DataOut=ima_test(DataIn,Param)
-if isequal(DataIn,'*')
+function DataOut=ima_filter(DataIn,Param)
+
+%% request input parameters
+if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
     prompt = {'npx';'npy'};
     dlg_title = 'get the filter size in x and y';
     num_lines= 2;
