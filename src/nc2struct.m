@@ -2,7 +2,7 @@
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted
 %----------------------------------------------------------------------
-% function [Data,var_detect,ichoice]=nc2struct(nc,varargin)
+% function [Data,var_detect,ichoice,errormsg]=nc2struct(nc,varargin)
 %
 % OUTPUT:
 %  Data: structure containing all the information of the netcdf file (or netcdf object)

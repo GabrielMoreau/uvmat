@@ -507,6 +507,10 @@ if isempty(coord_files{1}) || isequal(coord_files,{''})
 end
 %retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
 x_1=Coord(:,4:5)';%px coordinates of the ref points
+if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
+    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
+  return
+end
 nx=str2num(get(hhuvmat.num_Npx,'String'));
 ny=str2num(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
@@ -568,6 +572,10 @@ path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
+if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
+    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
+  return
+end
 % check_cond=0;
 coord_files=get(handles.ListCoordFiles,'String');
 if ischar(coord_files)
@@ -641,6 +649,10 @@ x_1=double(Coord(:,4:5)');%image coordinates
 X_1=double(Coord(:,1:3)');% phys coordinates
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
+if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
+    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
+  return
+end
 ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 n_ima=1;
