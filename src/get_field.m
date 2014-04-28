@@ -586,7 +586,7 @@ ScalarName=scalar_menu{scalar_index};
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-if ~get(handles.CheckDimensionX,'Value')  || ~get(handles.CheckDimensionY,'Value')
+if ~get(handles.CheckDimensionX,'Value')  
     %look for coordinate variables among the other variables
     for ilist=1:numel(Field.Display.VarDimName)
         dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
@@ -989,7 +989,10 @@ Field=get(handles.get_field,'UserData');
 index=get(handles.SwitchVarIndexTime,'Value');
 MenuIndex=get(handles.TimeName,'Value');
 string=get(handles.TimeName,'String');
+TimeName='';%default
+if ~isempty(string)&&iscell(string)
 TimeName=string{MenuIndex};
+end
 switch index
     case 1
         set(handles.num_TimeDimension,'String','')
@@ -1000,6 +1003,8 @@ switch index
         if ~isempty(attr_index)
             AttrName=Field.ListGlobalAttribute{attr_index};
             set(handles.TimeUnit,'String',Field.(AttrName))
+        else
+            set(handles.TimeUnit,'String','')
         end
     case {3 ,4}
         if index==3  % TimeName is used to chose a variable

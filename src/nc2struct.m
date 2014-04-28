@@ -260,9 +260,13 @@ if ~isequal(hhh,'')
 %             CheckSub=0;
             if input_index==4% if a dimension is selected as time
                 ind_vec=zeros(1,numel(var_dim{ivar}));% vector with zeros corresponding to al the dimensions of the variable VarName
-                ind_size=dim_value(var_dim{ivar});% vector giving the size of the variable VarName
+                ind_size=dim_value(var_dim{ivar});% vector giving the size (for each dimension) of the variable VarName
                 index_time=find(var_dim{ivar}==TimeDimIndex);
                 if ~isempty(index_time)
+                    if ind_size(index_time)<max(TimeIndex)
+                        errormsg=['requested index ' num2str(TimeIndex) ' exceeds matrix dimension'];
+                        return
+                    end
                     ind_vec(index_time)=TimeIndex-1;% selected index(or indices) to read
                     ind_size(index_time)=numel(TimeIndex);%length of the selected set of time indices
                     if numel(TimeIndex)==1 && ~strcmp(VarName,TimeVarName)
