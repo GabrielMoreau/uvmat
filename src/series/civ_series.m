@@ -62,24 +62,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputDirExt='.civ';%set the output dir extension
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
-        % check the existence of the first file in the series
-    first_j=[];
-    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
-    PairString='';
-    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
-    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-    if ~exist(FirstFileName,'file')
-        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    else
-        FileType=get_file_type(FirstFileName);
-        if isempty(find(strcmp(FileType,{'civdata','image','multimage','mmreader','video'})));% =1 for images
-            msgbox_uvmat('ERROR',['bad input file type for ' mfilename ': an image or civdata file is needed'])
-        end
-    end
+        % check the existence of the first file in the series: suppressed
+%     first_j=[];
+%     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+%     last_j=[];
+%     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+%     PairString='';
+%     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     return
 end
 
@@ -98,7 +87,7 @@ RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% input files and indexing
-NbField=1;
+% NbField=1;
 MaxIndex_i=Param.IndexRange.MaxIndex_i;
 MinIndex_i=Param.IndexRange.MinIndex_i;
 MaxIndex_j=1;MinIndex_j=1;
@@ -107,117 +96,78 @@ if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j
     MinIndex_j=Param.IndexRange.MinIndex_j;
 end
 if isfield(Param,'InputTable')
-    [filecell,i_series,tild,j_series]=get_file_series(Param);
-    if ~exist(filecell{1,1},'file')
-        disp_uvmat('ERROR',' the first input file does not exist',checkrun)
-        return
-    else
-        FileType=get_file_type(filecell{1,1});
-        iview_nc=0;% series index (iview) for an input nc file (for civ2 or patch2)
-        iview_A=0;% series index (iview) for the first image series
-        iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' )
-        switch FileType
-            case 'civdata';% =1 for images
-                iview_nc=1;
-                if size(filecell,1)>=2
-                    iview_A=2;iview_B=2;
-                    if size(filecell,1)>=3
-                        iview_B=3;
-                    end
-                end
-            case {'image','multimage','mmreader','video'}
-                iview_A=1;
-                if size(filecell,1)>=2
-                    iview_B=2;
-                end
-        end
+    [tild,i_series,tild,j_series]=get_file_series(Param);
+    % iview_nc=0;% series index (iview) for an input nc file (for civ2 or patch2)
+    iview_A=0;% series index (iview) for the first image series
+    iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
+    if Param.ActionInput.CheckCiv1
+        iview_A=1;% usual PIV, the image series is on the first line of the table
+    elseif Param.ActionInput.CheckCiv2 % civ2 is performed without Civ1, a netcdf file series is needed in the first table line
+        iview_A=2;% the second line is used for the input images of Civ2
+    end
+    if strcmp(Param.ActionInput.ListCompareMode,'shift')
+        iview_B=iview_A+1; % the second image series is on the next line of the tinput table
     end
     if iview_A~=0
-        [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(filecell{1,1});
-        if isempty(strcmp(FileType_A,{'multimage','mmreader','video'}))
-            displ(['ERROR: the file line ' num2str(iview_A) ' must be an image'])
+        RootPath_A=Param.InputTable{iview_A,1};
+        RootFile_A=Param.InputTable{iview_A,3};
+        SubDir_A=Param.InputTable{iview_A,2};
+        NomType_A=Param.InputTable{iview_A,4};
+        FileExt_A=Param.InputTable{iview_A,5};
+        if iview_B==0
+            iview_B=iview_A;% the second image series is the same as the first
         end
-        RootPath_A=Param.InputTable{1,1};
-        RootFile_A=Param.InputTable{1,3};
-        SubDir_A=Param.InputTable{1,2};
-        NomType_A=Param.InputTable{1,4};
-        FileExt_A=Param.InputTable{1,5};
+        RootPath_B=Param.InputTable{iview_B,1};
+        RootFile_B=Param.InputTable{iview_B,3};
+        SubDir_B=Param.InputTable{iview_B,2};
+        NomType_B=Param.InputTable{iview_B,4};
+        FileExt_B=Param.InputTable{iview_B,5};
     end
-    if iview_B==0
-        FileType_B=FileType_A;
-        VideoObject_B=VideoObject_A;
-        RootPath_B=RootPath_A;
-        RootFile_B=RootFile_A;
-        SubDir_B=SubDir_A;
-        NomType_B=NomType_A;
-        FileExt_B=FileExt_A;
-        PairCiv2='';
-        switch Param.ActionInput.ListCompareMode
-            case 'PIV'
-                PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
-                if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
-                    PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
-                end
-                [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-                    find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-                if ~isempty(PairCiv2)
-                    [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                        find_pair_indices(PairCiv2,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-                    check_bounds=check_bounds | check_bounds_Civ2;
-                end
-                i1_series_Civ1=i1_series_Civ1(~check_bounds);
-                i2_series_Civ1=i2_series_Civ1(~check_bounds);
-                j1_series_Civ1=j1_series_Civ1(~check_bounds);
-                j2_series_Civ1=j2_series_Civ1(~check_bounds);
-            case 'displacement'
-                i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i_series{1}));
-                i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
-                j1_series_Civ1=ones(size(i_series{1}));% first j index is 1
-                if isempty(j_series{1})
-                    j2_series_Civ1=ones(size(i_series{1}));
-                else
-                    j2_series_Civ1=j_series{1};
-                end
-                i1_series_Civ2=i1_series_Civ1;
-                j1_series_Civ2=j1_series_Civ1;
-                j2_series_Civ2=j2_series_Civ1;
-                NomTypeNc=NomType;
-        end
-        if ~isempty(PairCiv2)
-            i1_series_Civ2=i1_series_Civ2(~check_bounds);
-            i2_series_Civ2=i2_series_Civ2(~check_bounds);
-            j1_series_Civ2=j1_series_Civ2(~check_bounds);
-            j2_series_Civ2=j2_series_Civ2(~check_bounds);
-            if isempty(j_series{1})
-                FrameIndex_A_Civ2=i1_series_Civ2;
-                FrameIndex_B_Civ2=i2_series_Civ2;
-            else
-                FrameIndex_A_Civ2=j1_series_Civ2;
-                FrameIndex_B_Civ2=j2_series_Civ2;
+    
+    PairCiv2='';
+    switch Param.ActionInput.ListCompareMode
+        case 'PIV'
+            PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
+            if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
+                PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
             end
-        end
-    else
-        [FileType_B,FileInfo,VideoObject_B]=get_file_type(filecell{2,1});
-        if ~ismember(FileType_B,{'image','multimage','mmreader','video'})
-            disp_uvmat('ERROR',['the file line ' num2str(iview_B) ' must be an image'],checkrun)
-        end
-        i1_series_Civ1=i_series{1};i1_series_Civ2=i_series{1};
-        i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
-        if isempty(j_series{1})
-            j1_series_Civ1=ones(size(i_series{1}));
-            j2_series_Civ1=ones(size(i_series{1}));
-        else
-            j1_series_Civ1=j_series{1};
-            j2_series_Civ1=j_series{1};
-        end
-        j1_series_Civ2=j1_series_Civ1;
-        j2_series_Civ2=j2_series_Civ1;
-        NomTypeNc=NomType_A;
-        RootPath_B=Param.InputTable{2,1};
-        RootFile_B=Param.InputTable{2,3};
-        SubDir_B=Param.InputTable{2,2};
-        NomType_B=Param.InputTable{2,4};
-        FileExt_B=Param.InputTable{2,5};
+            [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
+                find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+            if ~isempty(PairCiv2)
+                [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
+                    find_pair_indices(PairCiv2,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                check_bounds=check_bounds | check_bounds_Civ2;
+            end
+            i1_series_Civ1=i1_series_Civ1(~check_bounds);
+            i2_series_Civ1=i2_series_Civ1(~check_bounds);
+            j1_series_Civ1=j1_series_Civ1(~check_bounds);
+            j2_series_Civ1=j2_series_Civ1(~check_bounds);
+        case 'displacement'
+            i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i_series{1}));
+            i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
+            j1_series_Civ1=ones(size(i_series{1}));% first j index is 1
+            if isempty(j_series{1})
+                j2_series_Civ1=ones(size(i_series{1}));
+            else
+                j2_series_Civ1=j_series{1};
+            end
+            i1_series_Civ2=i1_series_Civ1;
+            j1_series_Civ2=j1_series_Civ1;
+            j2_series_Civ2=j2_series_Civ1;
+            NomTypeNc=NomType;
+        case 'shift'
+            i1_series_Civ1=i_series{1};i1_series_Civ2=i_series{1};
+            i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
+            if isempty(j_series{1})
+                j1_series_Civ1=ones(size(i_series{1}));
+                j2_series_Civ1=ones(size(i_series{1}));
+            else
+                j1_series_Civ1=j_series{1};
+                j2_series_Civ1=j_series{1};
+            end
+            j1_series_Civ2=j1_series_Civ1;
+            j2_series_Civ2=j2_series_Civ1;
+            NomTypeNc=NomType_A;
     end
     if isempty(j_series{1})
         FrameIndex_A_Civ1=i1_series_Civ1;
@@ -226,8 +176,67 @@ if isfield(Param,'InputTable')
         FrameIndex_A_Civ1=j1_series_Civ1;
         FrameIndex_B_Civ1=j2_series_Civ1;
     end
+    if ~isempty(PairCiv2)
+        i1_series_Civ2=i1_series_Civ2(~check_bounds);
+        i2_series_Civ2=i2_series_Civ2(~check_bounds);
+        j1_series_Civ2=j1_series_Civ2(~check_bounds);
+        j2_series_Civ2=j2_series_Civ2(~check_bounds);
+        if isempty(j_series{1})
+            FrameIndex_A_Civ2=i1_series_Civ2;
+            FrameIndex_B_Civ2=i2_series_Civ2;
+        else
+            FrameIndex_A_Civ2=j1_series_Civ2;
+            FrameIndex_B_Civ2=j2_series_Civ2;
+        end
+    end
+    if isempty(i1_series_Civ1)||(~isempty(PairCiv2) && isempty(i1_series_Civ2))
+        disp_uvmat('ERROR','no image pair fo civ in the input file index range',checkrun)
+        return
+    end
 end
-NbField=numel(i1_series_Civ1);
+
+%% check the first image pair
+try
+    if Param.ActionInput.CheckCiv1% Civ1 is performed
+        ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1),[],j1_series_Civ1(1));
+        if ~exist(ImageName_A,'file')
+            disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
+            return
+        end
+        [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
+        ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
+        if ~exist(ImageName_B,'file')
+            disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
+            return
+        end
+        [FileType_B,FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
+        NbField=numel(i1_series_Civ1);
+    elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
+        ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(1),[],j1_series_Civ2(1));
+        if ~exist(ImageName_A,'file')
+            disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
+            return
+        end
+        [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2(1));
+        ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
+        if ~exist(ImageName_B,'file')
+            disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
+            return
+        end
+        [FileType_B,FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
+        NbField=numel(i1_series_Civ2);
+    end
+catch ME
+    if ~isempty(ME.message)
+        disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
+        return
+    end
+end
+
 
 %% Output directory
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
@@ -236,13 +245,13 @@ Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 Data.CivStage=0;%default
-ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
-ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
-mask='';
+% ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
+% ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
+% mask='';
 maskname='';%default
 check_civx=0;%default
-check_civ1=0;%default
-check_patch1=0;%default
+% check_civ1=0;%default
+% check_patch1=0;%default
 
 %% get timing from the ImaDoc file or input video
 XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
@@ -302,21 +311,16 @@ for ifield=1:NbField
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
         par_civ1=Param.ActionInput.Civ1;
-        if isfield(par_civ1,'reverse_pair')% A REVOIR
-            if par_civ1.reverse_pair
-                if ischar(par_civ1.ImageB)
-                    temp=par_civ1.ImageA;
-                    par_civ1.ImageA=imread(par_civ1.ImageB);
-                end
-                if ischar(temp)
-                    par_civ1.ImageB=imread(temp);
-                end
-            end
-        else
+        try
             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
             [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+        catch ME
+            if ~isempty(ME.message)
+                disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
+                return
+            end
         end
         par_civ1.ImageWidth=FileInfo_A.Width;
         par_civ1.ImageHeight=FileInfo_A.Height;

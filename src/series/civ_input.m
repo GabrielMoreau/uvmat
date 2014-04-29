@@ -81,12 +81,12 @@ if strcmp(Param.Action.ActionName,'civ_series')
 end
 
 %% input file info
-RootPath=Param.InputTable{1,1};
-%set(handles.RootPath,'String',RootPath)
-RootFile=Param.InputTable{1,3};
-SubDir=Param.InputTable{1,2};
+% RootPath=Param.InputTable{1,1};
+% %set(handles.RootPath,'String',RootPath)
+% RootFile=Param.InputTable{1,3};
+% SubDir=Param.InputTable{1,2};
 NomTypeInput=Param.InputTable{1,4};
-FileExt=Param.InputTable{1,5};
+% FileExt=Param.InputTable{1,5};
 FileType='image';%fdefault
 FileInfo=[];
 if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')
@@ -292,7 +292,7 @@ if isfield(Param,'ActionInput')
         if get(hcheckgrid(ilist),'Value')
             hparent=get(hcheckgrid(ilist),'parent');%handles of the parent panel
             hchildren=get(hparent,'children');
-            handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
+            %handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
             handle_dx=findobj(hchildren,'tag','num_Dx');
             handle_dy=findobj(hchildren,'tag','num_Dy');
             handle_title_dx=findobj(hchildren,'tag','title_Dx');
@@ -900,39 +900,39 @@ set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selecti
 % --- Executes on selection change in ListPairCiv2.
 function ListPairCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-index_pair=get(handles.ListPairCiv2,'Value');%get the selected position index in the menu
-
-%update MinIndex_i and last_i according to the chosen image pairs
-mode_list=get(handles.ListPairMode,'String');
-mode_value=get(handles.ListPairMode,'Value');
-mode=mode_list{mode_value};
-if isequal(mode,'series(Di)')
-    first_i=str2double(get(handles.MinIndex_i,'String'));
-    last_i=str2double(get(handles.last_i,'String'));
-    incr_i=str2double(get(handles.incr_i,'String'));
-    num_i=first_i:incr_i:last_i;
-    lastfield=str2double(get(handles.MaxIndex_i,'String'));
-    if ~isnan(lastfield)
-        test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
-            (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
-        num_i=num_i(test_find);
-    end
-    set(handles.MinIndex_i,'String',num2str(num_i(1)));
-    set(handles.last_i,'String',num2str(num_i(end)));
-elseif isequal(mode,'series(Dj)')
-    first_j=str2double(get(handles.MinIndex_j,'String'));
-    last_j=str2double(get(handles.last_j,'String'));
-    incr_j=str2double(get(handles.incr_j,'String'));
-    num_j=first_j:incr_j:last_j;
-    lastfield2=str2double(get(handles.MaxIndex_j,'String'));
-    if ~isnan(lastfield2)
-        test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
-            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
-        num_j=num_j(test_find);
-    end
-    set(handles.MinIndex_j,'String',num2str(num_j(1)));
-    set(handles.last_j,'String',num2str(num_j(end)));
-end
+% index_pair=get(handles.ListPairCiv2,'Value');%get the selected position index in the menu
+% 
+% %update MinIndex_i and last_i according to the chosen image pairs
+% mode_list=get(handles.ListPairMode,'String');
+% mode_value=get(handles.ListPairMode,'Value');
+% mode=mode_list{mode_value};
+% if isequal(mode,'series(Di)')
+%     first_i=str2double(get(handles.MinIndex_i,'String'));
+%     last_i=str2double(get(handles.MaxIndex_i,'String'));
+%     incr_i=str2double(get(handles.incr_i,'String'));
+%     num_i=first_i:incr_i:last_i;
+%    % lastfield=str2double(get(handles.MaxIndex_i,'String'));
+%     if ~isnan(last_i)
+%         test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
+%             (num_i+ceil(index_pair/2)*ones(size(num_i))<=last_i);
+%         num_i=num_i(test_find);
+%     end
+%     set(handles.MinIndex_i,'String',num2str(num_i(1)));
+%     set(handles.MaxIndex_i,'String',num2str(num_i(end)));
+% elseif isequal(mode,'series(Dj)')
+%     first_j=str2double(get(handles.MinIndex_j,'String'));
+%     last_j=str2double(get(handles.last_j,'String'));
+%     incr_j=str2double(get(handles.incr_j,'String'));
+%     num_j=first_j:incr_j:last_j;
+%     lastfield2=str2double(get(handles.MaxIndex_j,'String'));
+%     if ~isnan(lastfield2)
+%         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
+%             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
+%         num_j=num_j(test_find);
+%     end
+%     set(handles.MinIndex_j,'String',num2str(num_j(1)));
+%     set(handles.last_j,'String',num2str(num_j(end)));
+% end
 
 %------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)
@@ -1094,23 +1094,29 @@ if index==1
 set(handles.ListPairCiv1,'String',displ_pair');
 end
 
-%% determine the default selection in the pair menu
+%% determine the default selection in the pair menu for Civ1
 ichoice=find(select,1);% index of selected pair
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
 initial=get(handles.ListPairCiv1,'Value');%initial choice of pair
 if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
 end
-initial=get(handles.ListPairCiv2,'Value');
-if initial>length(displ_pair')%|~isequal(select(initial),1)
-    if ichoice <= length(displ_pair')
-        set(handles.ListPairCiv2,'Value',ichoice);% same pair proposed by default for civ2
-    else
-        set(handles.ListPairCiv2,'Value',1);% same pair proposed by default for civ2
+
+%% determine the default selection in the pair menu for Civ2
+if strcmp(get(handles.ListPairCiv2,'Visible'),'on')
+    initial=get(handles.ListPairCiv2,'Value');
+    if initial>length(displ_pair')%|~isequal(select(initial),1)
+        if ichoice <= length(displ_pair')
+            set(handles.ListPairCiv2,'Value',ichoice);% same pair proposed by default for civ2
+        else
+            set(handles.ListPairCiv2,'Value',1);% same pair proposed by default for civ2
+        end
     end
+else
+    set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))% initiate the choice of Civ2 as a reproduction of if civ1
 end
 set(handles.ListPairCiv2,'String',displ_pair');
-set(gcf,'Pointer','arrow')
+set(gcf,'Pointer','arrow')% Indicate that the process is finished
 
 
     
