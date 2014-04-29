@@ -815,27 +815,32 @@ if choice
     end
 end
 
-
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
-path_to_uvmat=which('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-else
-   addpath (fullfile(pathelp,'uvmat_doc'))
-   web([helpfile '#geometry_calib'])
-end
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#a8-Geometriccalibration')
+% path_to_uvmat=which('uvmat');% check the path of uvmat
+% pathelp=fileparts(path_to_uvmat);
+% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+% if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+% else
+%    addpath (fullfile(pathelp,'uvmat_doc'))
+%    web([helpfile '#geometry_calib'])
+% end
 
 % --------------------------------------------------------------------
 function MenuSetScale_Callback(hObject, eventdata, handles)
 
- answer=msgbox_uvmat('INPUT_TXT','scale pixel/cm?','');
- %create test points
- huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
-UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-npy=size(UvData.Field.A,1);
-npx=size(UvData.Field.A,2);
+answer=msgbox_uvmat('INPUT_TXT','scale pixel/cm?','');
+%create test points
+huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
+hhuvmat=guidata(huvmat);
+if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
+    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
+    return
+end
+set(handles.calib_type,'Value',1)% set calib option to 'rescale'
+npx=str2num(get(hhuvmat.num_Npx,'String'))/2;
+npy=str2num(get(hhuvmat.num_Npy,'String'))/2;
 Xima=[0.25*npx 0.75*npx 0.75*npx 0.25*npx]';
 Yima=[0.25*npy 0.25*npy 0.75*npy 0.75*npy]';
 x=Xima/str2num(answer);

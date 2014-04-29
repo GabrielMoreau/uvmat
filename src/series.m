@@ -756,7 +756,7 @@ else
     if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
         set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to dispaly by default
     end
-    if isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
+    if ~isempty(diff_j_max) && isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
         set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
     end
 end
@@ -770,10 +770,14 @@ MinIndex_i_table=get(handles.MinIndex_i,'Data');%retrieve the min indices in the
 MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
+if ~isempty(MinIndex_i)&&~isempty(MaxIndex_i)
 MinIndex_i_table(iview,1)=MinIndex_i;
-MinIndex_j_table(iview,1)=MinIndex_j;
 MaxIndex_i_table(iview,1)=MaxIndex_i;
+end
+if ~isempty(MinIndex_j)&&~isempty(MaxIndex_j)
+MinIndex_j_table(iview,1)=MinIndex_j;
 MaxIndex_j_table(iview,1)=MaxIndex_j;
+end
 set(handles.MinIndex_i,'Data',MinIndex_i_table)%display the min indices in the table MinIndex
 set(handles.MinIndex_j,'Data',MinIndex_j_table)%display the max indices in the table MaxIndex
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table)%display the min indices in the table MinIndex
@@ -968,8 +972,10 @@ MinIndex_i=ones(1,nbview);%default
 for iview=1:nbview
     pair_max=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
     j_max{iview}=max(pair_max,[],1);%max on j index
+    if ~isempty(j_max{iview})
     MaxIndex_i(iview)=max(find(j_max{iview}))-1;% max ref index i
     MinIndex_i(iview)=min(find(j_max{iview}))-1;% min ref index i
+    end
 end
 MinIndex_i=min(MinIndex_i);
 MaxIndex_i=max(MaxIndex_i);
@@ -1134,10 +1140,12 @@ MinIndex_i=min(get(handles.MinIndex_i,'Data'));
 MaxIndex_i=max(get(handles.MaxIndex_i,'Data'));
 pos_first=(ref_i_1-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
 pos_last=(ref_i_2-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
+if isempty(pos_first), pos_first=0; end
+if isempty(pos_last), pos_last=1; end
 Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
 Position_status=get(handles.FileStatus,'Position');
 Position(1)=Position_status(1)+Position_status(3)*pos_first;
-Position(3)=Position_status(3)*(pos_last-pos_first);
+Position(3)=max(Position_status(3)*(pos_last-pos_first),0.001);% width must remain positive
 set(handles.Waitbar,'Position',Position)
 update_waitbar(handles.Waitbar,0)
 

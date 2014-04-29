@@ -1,4 +1,4 @@
-%'get_file_series': determine the list of file names and file indices for functions called by 'series'. 
+%'get_file_series': determine the list of input file names and file indices for functions called by 'series'. 
 %------------------------------------------------------------------------
 % [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
 %
@@ -14,13 +14,11 @@
 
 function [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
 
-filecell={};i1_series={};i2_series={};j1_series={};j2_series={};
+filecell={};
 InputTable=Param.InputTable;
 first_i=Param.IndexRange.first_i;
 incr_i=Param.IndexRange.incr_i;
 last_i=Param.IndexRange.last_i;
-% ref_i=first_i:incr_i:last_i;
-%ref_j=[];
 first_j=[];last_j=[];incr_j=1;%default
 if isfield(Param.IndexRange,'first_j')&& isfield(Param.IndexRange,'last_j')
     first_j=Param.IndexRange.first_j;
@@ -31,7 +29,7 @@ if isfield(Param.IndexRange,'incr_j')
 end
 
 %% determine the list of input file names
-nbmissing=0;
+% nbmissing=0;
 NbView=size(InputTable,1);
 i1_series=cell(NbView,1);% initiate index series with empty cells
 i2_series=cell(NbView,1);
