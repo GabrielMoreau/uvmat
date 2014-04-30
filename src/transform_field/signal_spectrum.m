@@ -72,11 +72,22 @@ Shift=round(WindowLength/2);% shift between two windowsof analysis (half window 
 
 %% get the variable to process
 Var= DataIn.(Param.TransformInput.VariableName);%variable to analyse
+if isfield(Param.TransformInput,'IndexRange')
+    IndexRange=Param.TransformInput.IndexRange;
+    switch size(IndexRange,1)
+        case 3
+            Var=Var(IndexRange(1,1):IndexRange(1,2),IndexRange(2,1):IndexRange(2,2),IndexRange(3,1):IndexRange(3,2));
+        case 2
+            Var=Var(IndexRange(1,1):IndexRange(1,2),IndexRange(2,1):IndexRange(2,2));
+        case 1
+            Var=Var(IndexRange(1,1):IndexRange(1,2));
+    end
+end
 np=size(Var);%dimensions of Var
 if ~isvector(Var)
     Var=reshape(Var,np(1),prod(np(2:end)));% reshape in a 2D matrix with time as first index
 end
-Var=Var-ones(np(1),1)*nanmean(Var,1); %substract mean value (excluding NaN)
+Var=Var-ones(np(1),1)*nanmean(Var,1); %substract mean value (excluding NaN) 
 
 %% look for 'time' coordinate
 VarIndex=find(strcmp(Param.TransformInput.VariableName,DataIn.ListVarName));
@@ -116,6 +127,7 @@ for pos=1:size(Var,2)
         %interpolate if needed
         if ~isempty(ind_bad)||check_interp
             sample=interp1(Time(ind_good),sample,(Time(1):dx:Time(end))); %interpolated func
+            sample(isnan(sample))=[];
         end
         spec=pwelch(sample,WindowLength);% calculate spectrum with Welch method
         cospec=cpsd(sample,circshift(sample,[1 0]),WindowLength);% calculate the cospectrum with the sample shifted by 1 time unit
@@ -143,6 +155,8 @@ xlabel(['frequency (cycles per ' TimeUnit ')'])
 ylabel('spectral intensity')
 legend({'spectrum','cospectrum t t-1'})
 get(gca,'Unit')
+sum(specmean)
+sum(cospecmean)
 if NbPos~=size(Var,2)
     disp([ 'warning: ' num2str(size(Var,2)-NbPos) ' NaN sampled removed'])
 end
