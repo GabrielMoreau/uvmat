@@ -166,6 +166,14 @@ else
     set(haxes,'XLimMode', 'auto')
     set(haxes,'YLimMode', 'auto')
 end
+
+if isfield(PlotParamOut.Axes,'CheckFixAspectRatio') && isequal(PlotParamOut.Axes.CheckFixAspectRatio,1)&&isfield(PlotParamOut.Axes,'AspectRatio')
+    set(haxes,'DataAspectRatioMode','manual')
+    set(haxes,'DataAspectRatio',[PlotParamOut.Axes.AspectRatio 1 1])
+else
+    set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+end
+
 errormsg='';
 AxeData=get(haxes,'UserData');
 
@@ -200,8 +208,11 @@ else %plot 1D field (usual graph y vs x)
     PlotType='line';
 end
 
-%% text display
+%% aspect ratio
+AspectRatio=get(haxes,'DataAspectRatio');
+PlotParamOut.Axes.AspectRatio=AspectRatio(1)/AspectRatio(2);
 
+%% text display
 htext=findobj(hfig,'Tag','TableDisplay');
 hchecktable=findobj(hfig,'Tag','CheckTable');
 % if isempty(index_2D) && isempty(index_1D)%text display alone
@@ -551,14 +562,14 @@ else
 end
 
 %% determine plot aspect ratio
-if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
-    set(haxes,'DataAspectRatioMode','manual')
-    set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
-else
-    set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-    AspectRatio=get(haxes,'DataAspectRatio');
-    CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
-end
+% if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
+%     set(haxes,'DataAspectRatioMode','manual')
+%     set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
+% else
+%     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+%     AspectRatio=get(haxes,'DataAspectRatio');
+%     CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
+% end
 
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam,PosColorbar)
@@ -1209,14 +1220,15 @@ if ~isempty(Data)
     PlotParamOut.Axes.x_units=x_units;
     PlotParamOut.Axes.y_units=y_units;
 end
-if isfield(PlotParam,'Axes') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
-    set(haxes,'DataAspectRatioMode','manual')
-    if isfield(PlotParam.Axes,'AspectRatio')
-        set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
-    end
-else
-    set(haxes,'DataAspectRatioMode','auto')
-end
+% if isfield(PlotParam,'Axes') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
+%     set(haxes,'DataAspectRatioMode','manual')
+%     if isfield(PlotParam.Axes,'AspectRatio')
+%         set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
+%     end
+% else
+%     set(haxes,'DataAspectRatioMode','auto')
+% end
+
 %-------------------------------------------------------------------
 % --- function for plotting vectors
 %INPUT:

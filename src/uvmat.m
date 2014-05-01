@@ -4015,7 +4015,7 @@ update_plot(handles);
 function num_VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.CheckFixVectors,'Value',1);
-set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
+%set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-------------------------------------------------------------------
@@ -4599,8 +4599,8 @@ function MenuExportField_Callback(hObject, eventdata, handles)
 global Data_uvmat
 Data_uvmat=get(handles.uvmat,'UserData');
 evalin('base','global Data_uvmat')%make CurData global in the workspace
-display('current field :')
-evalin('base','Data_uvmat') %display CurData in the workspace
+disp('Data_uvmat.Field=')
+evalin('base','Data_uvmat.Field') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
 %------------------------------------------------------------------------

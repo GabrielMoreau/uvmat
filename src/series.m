@@ -1049,11 +1049,7 @@ switch FileType
                 j2=j2_series(1,ref_j+1,ref_i+1);
             end
         end
-                FieldName_Callback([], [], handles)
-       % FileName=fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1_series(1,ref_j+1,ref_i+1),i2,j1,j2);
-%         hget_field=get_field(FileName);
-%         hhget_field=guidata(hget_field);
-%         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
+       % FieldName_Callback([], [], handles)
     otherwise
         set(handles.FieldName,'Value',1) % set menu to 'image'
         set(handles.FieldName,'String',{'image'})
