@@ -39,10 +39,11 @@
 
 function [Data,errormsg,result_conv]= civ_series(Param)
 errormsg='';
-path_series=fileparts(which('series'));
-addpath(fullfile(path_series,'series'))
+
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN 
+    path_series=fileparts(which('series'));
+    addpath(fullfile(path_series,'series'))
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     if isempty(Data)
         Data=Param;% if  civ_input has been cancelled, keep previous parameters
@@ -90,7 +91,7 @@ WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 % NbField=1;
 MaxIndex_i=Param.IndexRange.MaxIndex_i;
 MinIndex_i=Param.IndexRange.MinIndex_i;
-MaxIndex_j=1;MinIndex_j=1;
+MaxIndex_j=ones(size(MaxIndex_i));MinIndex_j=ones(size(MinIndex_i));
 if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j')
     MaxIndex_j=Param.IndexRange.MaxIndex_j;
     MinIndex_j=Param.IndexRange.MinIndex_j;
@@ -136,7 +137,7 @@ if isfield(Param,'InputTable')
                     find_pair_indices(PairCiv1,i1_series{1},j1_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
                 if ~isempty(PairCiv2)
                     [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                        find_pair_indices(PairCiv2,i1_series{1},j1_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                        find_pair_indices(PairCiv2,i1_series{1},j1_series{1},MinIndex_i(1),MaxIndex_i(1),MinIndex_j(1),MaxIndex_j(1));
                     check_bounds=check_bounds | check_bounds_Civ2;
                 end
             else% we start from an existing Civ1 file
@@ -147,7 +148,7 @@ if isfield(Param,'InputTable')
                 NomTypeNc=Param.InputTable{1,4};
                 if ~isempty(PairCiv2)
                     [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds,NomTypeNc]=...
-                        find_pair_indices(PairCiv2,i1_series{2},j1_series{2},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                        find_pair_indices(PairCiv2,i1_series{2},j1_series{2},MinIndex_i(2),MaxIndex_i(2),MinIndex_j(2),MaxIndex_j(2));
 %                     check_bounds=check_bounds | check_bounds_Civ2;
                 end
             end
