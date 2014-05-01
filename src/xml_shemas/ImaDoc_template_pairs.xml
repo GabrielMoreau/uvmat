@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <ImaDoc>
-<Camera >
+<Camera>
     <TimeUnit>s</TimeUnit>
     <BurstTiming>
       <FrameFrequency unit="1/TimeUnit">10000</FrameFrequency>
