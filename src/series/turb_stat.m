@@ -183,7 +183,8 @@ V2Mean=0;
 UVMean=0;
 U2Mean_1=0;
 V2Mean_1=0;
-checkgrid=0;% test for a structured grid for input field
+Counter_1=0;
+
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
     update_waitbar(WaitbarHandle,index/NbField)
@@ -200,9 +201,11 @@ for index=1:NbField
         DataOut.coord_x=Field.coord_x;
         Uprev=Field.U;
         Vprev=Field.V;
+        FFprev=Field.FF;
     end
-    FF=isnan(Field.U)|Field.U<-60|Field.U>30;% threshold on U
+    FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
     DataOut.Counter=DataOut.Counter+ (~FF);% add 1 to the couter for non NaN point
+    Counter_1=Counter_1+(~FF & ~FFprev);
     Field.U(FF)=0;% set to 0 the nan values
     Field.V(FF)=0;
     DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
@@ -214,6 +217,7 @@ for index=1:NbField
     V2Mean_1=V2Mean_1+(Field.V).*Vprev; %increment the V squared sum
     Uprev=Field.U; %store for next iteration
     Vprev=Field.V;
+    FFprev=FF;
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
 
@@ -223,8 +227,8 @@ DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
 U2Mean=U2Mean./DataOut.Counter; % normalize the mean
 V2Mean=V2Mean./DataOut.Counter; % normalize the mean
 UVMean=UVMean./DataOut.Counter; % normalize the mean
-U2Mean_1=U2Mean_1./DataOut.Counter; % normalize the mean
-V2Mean_1=V2Mean_1./DataOut.Counter; % normalize the mean
+U2Mean_1=U2Mean_1./Counter_1; % normalize the mean
+V2Mean_1=V2Mean_1./Counter_1; % normalize the mean
 DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the mean
 DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
 DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \

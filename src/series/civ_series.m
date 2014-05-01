@@ -96,7 +96,7 @@ if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j
     MinIndex_j=Param.IndexRange.MinIndex_j;
 end
 if isfield(Param,'InputTable')
-    [tild,i_series,tild,j_series]=get_file_series(Param);
+   [tild,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);    
     % iview_nc=0;% series index (iview) for an input nc file (for civ2 or patch2)
     iview_A=0;% series index (iview) for the first image series
     iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
@@ -106,7 +106,7 @@ if isfield(Param,'InputTable')
         iview_A=2;% the second line is used for the input images of Civ2
     end
     if strcmp(Param.ActionInput.ListCompareMode,'shift')
-        iview_B=iview_A+1; % the second image series is on the next line of the tinput table
+        iview_B=iview_A+1; % the second image series is on the next line of the input table
     end
     if iview_A~=0
         RootPath_A=Param.InputTable{iview_A,1};
@@ -131,25 +131,38 @@ if isfield(Param,'InputTable')
             if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
                 PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
             end
-            [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-                find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-            if ~isempty(PairCiv2)
-                [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                    find_pair_indices(PairCiv2,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-                check_bounds=check_bounds | check_bounds_Civ2;
+            if iview_A==1% if Civ1 is performed
+                [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
+                    find_pair_indices(PairCiv1,i1_series{1},j1_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                if ~isempty(PairCiv2)
+                    [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
+                        find_pair_indices(PairCiv2,i1_series{1},j1_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                    check_bounds=check_bounds | check_bounds_Civ2;
+                end
+            else% we start from an existing Civ1 file
+                i1_series_Civ1=i1_series{1};
+                i2_series_Civ1=i2_series{1};
+                j1_series_Civ1=j1_series{1};
+                j2_series_Civ1=j2_series{1};
+                NomTypeNc=Param.InputTable{1,4};
+                if ~isempty(PairCiv2)
+                    [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds,NomTypeNc]=...
+                        find_pair_indices(PairCiv2,i1_series{2},j1_series{2},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+%                     check_bounds=check_bounds | check_bounds_Civ2;
+                end
             end
-            i1_series_Civ1=i1_series_Civ1(~check_bounds);
-            i2_series_Civ1=i2_series_Civ1(~check_bounds);
-            j1_series_Civ1=j1_series_Civ1(~check_bounds);
-            j2_series_Civ1=j2_series_Civ1(~check_bounds);
+%             i1_series_Civ1=i1_series_Civ1(~check_bounds);
+%             i2_series_Civ1=i2_series_Civ1(~check_bounds);
+%             j1_series_Civ1=j1_series_Civ1(~check_bounds);
+%             j2_series_Civ1=j2_series_Civ1(~check_bounds);
         case 'displacement'
             i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i_series{1}));
             i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
             j1_series_Civ1=ones(size(i_series{1}));% first j index is 1
-            if isempty(j_series{1})
+            if isempty(j1_series_Civ1)
                 j2_series_Civ1=ones(size(i_series{1}));
             else
-                j2_series_Civ1=j_series{1};
+                j2_series_Civ1=j1_series_Civ1;
             end
             i1_series_Civ2=i1_series_Civ1;
             j1_series_Civ2=j1_series_Civ1;
@@ -169,19 +182,21 @@ if isfield(Param,'InputTable')
             j2_series_Civ2=j2_series_Civ1;
             NomTypeNc=NomType_A;
     end
-    if isempty(j_series{1})
+    if isempty(j1_series_Civ1)
         FrameIndex_A_Civ1=i1_series_Civ1;
         FrameIndex_B_Civ1=i2_series_Civ1;
+        j1_series_Civ1=ones(size(i1_series_Civ1));
+        j2_series_Civ1=ones(size(i1_series_Civ1));
     else
         FrameIndex_A_Civ1=j1_series_Civ1;
         FrameIndex_B_Civ1=j2_series_Civ1;
     end
     if ~isempty(PairCiv2)
-        i1_series_Civ2=i1_series_Civ2(~check_bounds);
-        i2_series_Civ2=i2_series_Civ2(~check_bounds);
-        j1_series_Civ2=j1_series_Civ2(~check_bounds);
-        j2_series_Civ2=j2_series_Civ2(~check_bounds);
-        if isempty(j_series{1})
+%         i1_series_Civ2=i1_series_Civ2(~check_bounds);
+%         i2_series_Civ2=i2_series_Civ2(~check_bounds);
+%         j1_series_Civ2=j1_series_Civ2(~check_bounds);
+%         j2_series_Civ2=j2_series_Civ2(~check_bounds);
+        if isempty(j1_series_Civ2)
             FrameIndex_A_Civ2=i1_series_Civ2;
             FrameIndex_B_Civ2=i2_series_Civ2;
         else
@@ -299,11 +314,16 @@ for ifield=1:NbField
         disp('program stopped by user')
         break
     end
+    if iview_A==1% if Civ1 is performed
+        Civ1Dir=OutputDir;
+    else
+        Civ1Dir=Param.InputTable{1,2};
+    end
     if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+        ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     else
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+        ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     end
 
@@ -399,9 +419,8 @@ for ifield=1:NbField
         elseif isfield(Param.Patch1,'CivFile')
             CivFile=Param.Patch1.CivFile;
         end
-        Data=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
-        if isfield(Data,'Txt')
-            errormsg=Data.Txt;
+        [Data,tild,tild,errormsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
+        if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
@@ -409,7 +428,7 @@ for ifield=1:NbField
             check_civx=1;% test for old civx data format
             [Data,vardetect,ichoice]=nc2struct(CivFile);%read the variables in the netcdf file
         else
-            Data=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
+            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
         end
     end
     
@@ -525,10 +544,11 @@ for ifield=1:NbField
         end
         NbSubDomain=size(Data.Civ1_SubRange,3);
         % get the guess from patch1
-        for isub=1:NbSubDomain
-            nbvec_sub=Data.Civ1_NbCentres(isub);
-            ind_sel=find(GridX>=Data.Civ1_SubRange(1,1,isub) & GridX<=Data.Civ1_SubRange(1,2,isub) & GridY>=Data.Civ1_SubRange(2,1,isub) & GridY<=Data.Civ1_SubRange(2,2,isub));
-            epoints = [GridX(ind_sel) GridY(ind_sel)];% coordinates of interpolation sites
+        for isub=1:NbSubDomain% for each sub-domain of Patch1
+            nbvec_sub=Data.Civ1_NbCentres(isub);% nbre of Civ1 vectors in the subdomain
+            ind_sel=find(par_civ2.Grid(:,1)>=Data.Civ1_SubRange(1,1,isub) & par_civ2.Grid(:,1)<=Data.Civ1_SubRange(1,2,isub) &...
+                par_civ2.Grid(:,2)>=Data.Civ1_SubRange(2,1,isub) & par_civ2.Grid(:,2)<=Data.Civ1_SubRange(2,2,isub));
+            epoints = par_civ2.Grid(ind_sel,:);% coordinates of interpolation sites
             ctrs=Data.Civ1_Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
             nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
             EM = tps_eval(epoints,ctrs);
@@ -551,7 +571,7 @@ for ifield=1:NbField
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
         par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
-        par_civ2.Grid=[GridX(nbval>=1)-par_civ2.SearchBoxShift(:,1)/2 GridY(nbval>=1)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
+        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
             par_civ2.DUDX=DUDX./nbval;
             par_civ2.DUDY=DUDY./nbval;

@@ -142,10 +142,10 @@ switch FileType
         [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
         iview_image=2;%line # for the input images
     case 'civxdata'% case of  civx data,
-        NomTypeNc=NomTypeInput;
-        ind_opening=FileInfo.CivStage;
-        set(handles.Program,'Value',3) %select Cix by default
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
+        return
+    otherwise 
+        msgbox_uvmat('ERROR','civ_series needs images or civ data as input')
         return
 end
 if isfield(SeriesData,'FileType') && numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
