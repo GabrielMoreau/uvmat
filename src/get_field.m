@@ -165,9 +165,13 @@ set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu for scalar
 set(handles.ordinate,'Value',1)% fill the menu of y vector components
 set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y coordinate for 1D plots
 checkseries=0;
-if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput
+if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput% case of call by series
     set(handles.FieldOption,'value',1)
-    set(handles.FieldOption,'String',{'scalar'})% case of call by series, only scalar
+    if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
+    set(handles.FieldOption,'String',{'pick variables';'civdata...'})
+    else
+       set(handles.FieldOption,'String',{'pick variables'}) 
+    end
     checkseries=1;
     set(handles.scalar,'Max',2)
 elseif isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
@@ -402,7 +406,7 @@ switch FieldOption
         set(handles.Z_title,'Visible','off')
         ordinate_Callback(hObject, eventdata, handles)
         
-    case 'scalar'
+    case {'scalar','pick variables'}
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','on')
@@ -953,35 +957,35 @@ FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
         
-    case 'scalar'
+    case {'scalar','pick variables'}
        scalar_Callback(hObject, eventdata, handles)
     case 'vectors'
 end
 
-% --- Executes on button press in CheckDimensionY.
-function CheckDimensionY_Callback(hObject, eventdata, handles)
-FieldList=get(handles.FieldOption,'String');
-FieldOption=FieldList{get(handles.FieldOption,'Value')};
-switch FieldOption
-    case '1D plot'
-        
-    case 'scalar'
-       scalar_Callback(hObject, eventdata, handles)
-    case 'vectors'
-end
-
-
-% --- Executes on button press in CheckDimensionZ.
-function CheckDimensionZ_Callback(hObject, eventdata, handles)
-FieldList=get(handles.FieldOption,'String');
-FieldOption=FieldList{get(handles.FieldOption,'Value')};
-switch FieldOption
-    case '1D plot'
-        
-    case 'scalar'
-       scalar_Callback(hObject, eventdata, handles)
-    case 'vectors'
-end
+% % --- Executes on button press in CheckDimensionY.
+% function CheckDimensionY_Callback(hObject, eventdata, handles)
+% FieldList=get(handles.FieldOption,'String');
+% FieldOption=FieldList{get(handles.FieldOption,'Value')};
+% switch FieldOption
+%     case '1D plot'
+%         
+%     case {'scalar','pick variables'}
+%        scalar_Callback(hObject, eventdata, handles)
+%     case 'vectors'
+% end
+% 
+% 
+% % --- Executes on button press in CheckDimensionZ.
+% function CheckDimensionZ_Callback(hObject, eventdata, handles)
+% FieldList=get(handles.FieldOption,'String');
+% FieldOption=FieldList{get(handles.FieldOption,'Value')};
+% switch FieldOption
+%     case '1D plot'
+%         
+%     case 'scalar'
+%        scalar_Callback(hObject, eventdata, handles)
+%     case 'vectors'
+% end
 
 % --- Executes on selection change in TimeName.
 function TimeName_Callback(hObject, eventdata, handles)

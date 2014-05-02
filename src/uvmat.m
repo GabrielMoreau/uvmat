@@ -609,7 +609,7 @@ set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 function FileIndex_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
-set(handles.i1,'String',num2str(i1));
+set(handles.i1,'String',num2str(i1));%update the counters
 set(handles.i2,'String',num2str(i2));
 set(handles.j1,'String',num2str(j1));
 set(handles.j2,'String',num2str(j2));
@@ -625,7 +625,7 @@ j1=str2num(get(handles.j1,'String'));
 j2=str2num(get(handles.j2,'String'));
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType,'String'),i1,i2,j1,j2);
 set(handles.FileIndex,'String',FileIndex)
-% inputfilerefresh the current settings and inputfilerefresh the field view
+% refresh the current settings and refresh the field view
 RootPath_Callback(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------
@@ -1259,19 +1259,19 @@ indices=get(handles.FileIndex,'String');
 switch index_rank
     case 1
         indices=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
-        set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+%        set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
     case 2
         indices=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
-        set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+%        set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
     case 3
         indices=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
-        set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+%        set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
     case 4
         indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
-        set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+%        set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
 end
 set(handles.FileIndex,'String',indices)
-set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+%set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
 % update the second index if relevant
 if strcmp(get(handles.FileIndex_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
@@ -1517,7 +1517,6 @@ errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
 end
-set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to red
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
@@ -1536,7 +1535,6 @@ errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
 end
-set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back to red
 
 %------------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
@@ -1618,7 +1616,7 @@ function errormsg=runpm(hObject,eventdata,handles,increment)
 errormsg='';%default
 %% check for movie pair status
 movie_status=get(handles.movie_pair,'Value');
-if isequal(movie_status,1)
+if movie_status
     STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
 end
 
@@ -1633,6 +1631,12 @@ if isempty(i1)
     i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
 elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
     j1=str2num(get(handles.j1,'String'));%case of indexed movie
+end
+if movie_status% we read the second index from the edit box
+    i2=str2num(get(handles.i2,'String'));%read the field indices (for movie, it is not given by the file name)
+    if strcmp(get(handles.j2,'Visible'),'on')
+    j2=str2num(get(handles.j2,'String'));%
+    end
 end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
@@ -1671,7 +1675,7 @@ if CheckFixPair && isnumeric(increment)
         end
     end
     
-    % the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
+% the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
 else
     UvData=get(handles.uvmat,'UserData');
     ref_i=i1;
@@ -1817,8 +1821,11 @@ else
     errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
 end
 set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
+set(handles.runplus,'BackgroundColor',[1 0 0])
+set(handles.runmin,'BackgroundColor',[1 0 0])
 
 %% update the index counters if the index move is successfull
+
 if isempty(errormsg) 
     set(handles.i1,'String',num2stra(i1,NomType,1));
     if isequal(i2,i1)
@@ -1845,12 +1852,6 @@ if isempty(errormsg)
         if isempty(i2), set(handles.i2,'String',''); end % suppress the second index display if not used
         if isempty(j2), set(handles.j2,'String',''); end 
     end
-    set(handles.i1,'BackgroundColor',[1 1 1])
-    set(handles.i2,'BackgroundColor',[1 1 1])
-    set(handles.j1,'BackgroundColor',[1 1 1])
-    set(handles.j2,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex_1,'BackgroundColor',[1 1 1]) 
 end
 
 %------------------------------------------------------------------------
@@ -1861,55 +1862,65 @@ function movie_pair_Callback(hObject, eventdata, handles)
 %% stop movie action if the movie_pair button is off
 if ~get(handles.movie_pair,'value')
     set(handles.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
-    set(handles.i2,'String','')
-    set(handles.j2,'String','')
-    set(handles.Dt_txt,'String','')
+    set(handles.i2,'String','')% the second i index display is suppressed
+    set(handles.j2,'String','')% the second j index display is suppressed
+    set(handles.Dt_txt,'String','')% the time interval indication is suppressed
     return
-else
-    set(handles.movie_pair,'BusyAction','queue')
-    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 end
+   
+%% check the input file indexing:
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+NomType=get(handles.NomType,'String');
+if ~isempty(find(regexp(NomType,'-')))
+    msgbox_uvmat('ERROR','The movie pair requires file series with a single index on the first input line')
+    return
+end
+filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
 
-%% initialisation
-set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow
+set(handles.movie_pair,'BusyAction','queue')% 
+set(handles.CheckFixPair,'Value',1)% impose fixed pair (needed for function runpm)
+set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
+set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
 drawnow
-list_fields=get(handles.FieldName,'String');% list menu fields
-index_fields=get(handles.FieldName,'Value');% selected string index
-FieldName=list_fields{index_fields}; % selected field
-UvData=get(handles.uvmat,'UserData');
-if isequal(FieldName,'image')
-    index=1;
-    [RootPath,SubDir,RootFile,FileIndices,Ext]=read_file_boxes(handles);
-    NomType=get(handles.NomType,'String');
-else
-    list_fields=get(handles.FieldName_1,'String');% list menu fields
-    index_fields=get(handles.FieldName_1,'Value');% selected string index
-    FieldName=list_fields{index_fields}; % selected field
-    if isequal(FieldName,'image')
-        index=2;
-        [RootPath,SubDir,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);% get info from the second input line
-    else
-        msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
-        set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-        set(handles.movie_pair,'Value',0)
-        return
-    end
-end
+% list_fields=get(handles.FieldName,'String');% list menu fields
+% index_fields=get(handles.FieldName,'Value');% selected string index
+% FieldName=list_fields{index_fields}; % selected field
+
+
+% if isequal(FieldName,'image')
+%     index=1;
+
+% else
+%     list_fields=get(handles.FieldName_1,'String');% list menu fields
+%     index_fields=get(handles.FieldName_1,'Value');% selected string index
+%     FieldName=list_fields{index_fields}; % selected field
+%     if isequal(FieldName,'image')
+%         index=2;
+%         [RootPath,SubDir,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);% get info from the second input line
+%     else
+%         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
+%         set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
+%         set(handles.movie_pair,'Value',0)
+%         return
+%     end
+% end
 num_i1=str2num(get(handles.i1,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_i2=str2num(get(handles.i2,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
+
+%% determine the name 'imaname_1' of the second file in the pair
 imaname_1='';
-if isempty(num_j2)
+if isempty(num_j2)% no second j index indicated
     if isempty(num_i2)
         if strcmp(get(handles.j2,'Visible'),'on') %if the j box is visible
-            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1,[],num_j1+1);
+            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1,[],num_j1+1);
         end
         if exist(imaname_1,'file')
             num_j2=num_j1+1;% look by default for the next j index as the second file
             set(handles.j2,'String',num2stra(num_j2,NomType));
         else
-            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1+1,[],num_j1);
+            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1+1,[],num_j1);
             if exist(imaname_1,'file')
                 num_i2=num_i1+1;
                 set(handles.i2,'String',num2str(num_i2));
@@ -1933,7 +1944,7 @@ end
 if isempty(num_j2)
     num_j2=num_j1;%repeat the index i1 by default
 end
-imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i2,[],num_j2);
+imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i2,[],num_j2);
 if strcmp(NomType,'*')
     num_frame=num_i2;
 else
@@ -1945,6 +1956,33 @@ if ~exist(imaname_1,'file')
        set(handles.movie_pair,'Value',0)
       return
 end
+
+%% display the first field in the pair (including possibly a background field from second line input filename_1)
+filename_1='';%default
+FileIndex_1='';
+if get(handles.SubField,'Value')
+    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
+end
+% num_i1=stra2num(get(handles.i1,'String'));
+% num_i2=stra2num(get(handles.i2,'String'));
+% num_j1=stra2num(get(handles.j1,'String'));
+% num_j2=stra2num(get(handles.j2,'String'));
+[tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);% get the indices of the second series from the string FileIndex_1
+if isempty(j1_1)% case of movies, the index is not given by file index
+    j1_1=num_j1;
+end
+
+errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
+
+if isempty(errormsg)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
+else
+     msgbox_uvmat('ERROR',errormsg);
+     set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+end
+UvData=get(handles.uvmat,'UserData');
+Field_a=UvData.Field;% movie on the field defined by the second input line
 
 %% display time interval for the image pair
 if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'Time')...
@@ -1959,47 +1997,37 @@ else
     set(handles.Dt_txt,'String','')
 end
 
-%% get the first image
-%Field.AName='image';
-if index==1
-    Field_a=UvData.Field;% movie on the second field
+%% read the second field
+if isempty(UvData.MovieObject)
+    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},[],num_frame);
 else
-    Field_a=UvData.Field_1;% movie on the first field
+    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{1},UvData.MovieObject{1},num_frame);
+end
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['Error in reading second image: ' errormsg])
+    return
 end
 
-%% read the second image
-MovieObject=[];
-if numel(UvData.MovieObject)>=index
-    MovieObject=UvData.MovieObject{index};
-end
-[Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},MovieObject,num_frame);
-
-%px to phys or other transform on field
+%% apply phys or other transform on the two input fields
 transform=get(handles.TransformPath,'UserData');
 if  ~isempty(transform)
-    if isfield(UvData,'XmlData') && numel(UvData.XmlData)>=index %use geometry calib recorded from the ImaDoc xml file as first priority
-        if index==2
-        Field_a=transform(Field_a,UvData.XmlData{index});%the first field has been stored without transform
-        end
+    if isfield(UvData,'XmlData') && ~isempty(UvData.XmlData) %use geometry calib recorded from the ImaDoc xml file as first priority
         if nargin(transform)>=2
-        Field_b=transform(Field_b,UvData.XmlData{index});
+            Field_b=transform(Field_b,UvData.XmlData{1});
         else
-          Field_b=transform(Field_b);
+            Field_b=transform(Field_b);
         end
     end
 end
 
-% make movie until movie speed is set to 0 or STOP is activated
+%% make movie until movie speed is set to 0 or STOP is activated
 hima=findobj(handles.PlotAxes,'Tag','ima');% %handles.PlotAxes =main plotting window (A GENERALISER)
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
-set(handles.i2,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
-set(handles.j2,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
-set(handles.FileIndex,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
 while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue') % enable STOP command
     % read and plot the series of images in non erase mode
-    set(hima,'CData',Field_b.A); 
+    set(hima,'CData',Field_b.A); %TODO: generalise to other kinds of fields
     pause(1.02-get(handles.speed,'Value'));% wait for next image
     set(hima,'CData',Field_a.A);
     pause(1.02-get(handles.speed,'Value'));% wait for next image
@@ -2012,18 +2040,18 @@ set(handles.Dt_txt,'String','')
 % --- Executes on button press in InputFileREFRESH.
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the command button in yellow
+set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the REFRESH button in yellow to indicate its activity
 drawnow
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);%read the features of the input file name (first line)
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(FileIndex);% check back the indices used
-if isempty(i2), set(handles.i2,'String',''); end % suppress the second index display if not used
-if isempty(j2), set(handles.j2,'String',''); end 
-filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-filename_1='';%default
+if isempty(i2), set(handles.i2,'String',''); end % suppress the second i index display if not used
+if isempty(j2), set(handles.j2,'String',''); end % suppress the second j index display if not used
+filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
+filename_1='';%default second file name
 FileIndex_1='';
-if get(handles.SubField,'Value')
-    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
-    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
+if get(handles.SubField,'Value')% if a second file is introduced
+    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);%read the features of the input file name (second line)
+    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1]; %build the input file name (second line)
 end
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
@@ -2033,21 +2061,15 @@ num_j2=stra2num(get(handles.j2,'String'));
 if isempty(j1_1)% case of movies, the index is not given by file index
     j1_1=num_j1;
 end
-
+% in case of movies the index is set by edit boxes i1 or j1 (case of movies indexed by index i)
 errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
 
-if ~isempty(errormsg)
-      msgbox_uvmat('ERROR',errormsg);
-      set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
-else
-    set(handles.i1,'BackgroundColor',[1 1 1])
-    set(handles.i2,'BackgroundColor',[1 1 1])
-    set(handles.j1,'BackgroundColor',[1 1 1])
-    set(handles.j2,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])  
+if isempty(errormsg)
     set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
-end    
+else
+     msgbox_uvmat('ERROR',errormsg);
+     set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+end
 
 %------------------------------------------------------------------------
 % --- read the input files and inputfilerefresh all the plots, including projection.
@@ -3553,12 +3575,12 @@ if check_refresh
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg);
     else
-        set(handles.i1,'BackgroundColor',[1 1 1])
-        set(handles.i2,'BackgroundColor',[1 1 1])
-        set(handles.j1,'BackgroundColor',[1 1 1])
-        set(handles.j2,'BackgroundColor',[1 1 1])
-        set(handles.FileIndex,'BackgroundColor',[1 1 1])
-        set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
+%         set(handles.i1,'BackgroundColor',[1 1 1])
+%         set(handles.i2,'BackgroundColor',[1 1 1])
+%         set(handles.j1,'BackgroundColor',[1 1 1])
+%         set(handles.j2,'BackgroundColor',[1 1 1])
+%         set(handles.FileIndex,'BackgroundColor',[1 1 1])
+%         set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
     end
     set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 end
@@ -4234,11 +4256,13 @@ AxeData=UvData.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.uvmat);
-if ~isempty(errormsg)
+if isempty(errormsg)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0]);% operation finished, back to red color
+else
     msgbox_uvmat('ERROR',errormsg)
-    return
+    set(handles.REFRESH,'BackgroundColor',[1 0 1]);% magenta color: graph still needs to be updated
 end
-set(handles.REFRESH,'BackgroundColor',[1 0 0]);
+
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------

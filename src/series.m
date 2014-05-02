@@ -581,7 +581,7 @@ errormsg='';%default
 if ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (refresh still needed)
     return
 end
 
@@ -593,20 +593,20 @@ end
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     msgbox_uvmat('ERROR',errormsg)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (end of activation)
     return
 end
 if strcmp(FileType,'txt')
     edit(fileinput)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to  magenta color (end of activation)
     return
 elseif strcmp(FileType,'xml')
     editxml(fileinput)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta  color (end of activation)
      return
 elseif strcmp(FileType,'figure')
     open(fileinput)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta  color (end of activation)
      return
 end
 
@@ -623,18 +623,15 @@ set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to ye
 drawnow
 
 
-
 %% fill the list of file series
 InputTable=get(handles.InputTable,'Data');
 SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
     iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
-    %InputTable(iview+1,:)={'','','','',''};
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
     InputTable={'','','','',''};
-    %InputTable=[{'','','','',''};{'','','','',''}];
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{[]},{[]},{[]},{[]}])
     set(handles.MinIndex_i,'Data',[])
@@ -652,10 +649,11 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
-%nbview=size(InputTable,1)-1;% rmq: the last line is set blank to allow manual addition of a line
 nbview=size(InputTable,1);
 set(handles.ListView,'String',mat2cell((1:nbview)',ones(nbview,1)))
 set(handles.ListView,'Value',iview)
+SeriesData.ListViewValue=iview;
+SeriesData.ListViewMenu=mat2cell((1:nbview)',ones(nbview,1));
 set(handles.InputTable,'Data',InputTable)
 
 %% determine the selected reference field indices for pair display
@@ -667,7 +665,6 @@ if isempty(i2)
 end
 ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
 set(handles.num_ref_i,'String',num2str(ref_i));
-% set(handles.num_ref_i,'UserData',[i1 i2])%store the indices for future opening
 if isempty(j1)
     j1=1;
 end
@@ -980,10 +977,6 @@ end
 MinIndex_i=min(MinIndex_i);
 MaxIndex_i=max(MaxIndex_i);
 range_index=MaxIndex_i-MinIndex_i+1;
-% scale_y=Position(4)/nbview;
-% scale_x=Position(3)/range_index;
-%x=(0.5:range_index-0.5)*Position(3)/range_index;% set of abscissa representing the whole i index range
-% y=(0.5:nbview-0.5)*Position(4)/nbview;
 range_y=max(1,floor(Position(4)/nbview));
 npx=floor(Position(3));
 file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
@@ -1009,9 +1002,11 @@ end
 if check_pairs
     set(handles.Pairs,'Visible','on')
     set(handles.PairString,'Visible','on')
+    set(handles.SetPairs,'Visible','on')
 else
     set(handles.Pairs,'Visible','off')
     set(handles.PairString,'Visible','off')
+    set(handles.SetPairs,'Visible','off')
 end
 
 
@@ -1024,9 +1019,9 @@ displ_time(handles)
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
-        [FieldList,ColorList]=set_field_list('U','V','C');
-        set(handles.FieldName,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
-        set(handles.FieldName,'Value',2) % set menu to 'velocity
+        FieldList=set_field_list('U','V','C');
+        set(handles.FieldName,'String',[FieldList;{'get_field...'}]);%standard menu for civx data
+        set(handles.FieldName,'Value',1) % set menu to 'velocity
         set(handles.Coord_x,'Value',1);
         set(handles.Coord_x,'String',{'X'});
         set(handles.Coord_y,'Value',1);
@@ -1232,12 +1227,12 @@ function update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 %------------------------------------------------------------------------    
 % check_burst=0;
 if isempty(j2_series)% no j pair
+    ModeValue=1;
     if isempty(i2_series)
-        set(handles.mode,'Value',1)
         set(handles.mode,'String',{''})% no pair menu to display
     else   
         set(handles.mode,'Value',1)
-        set(handles.mode,'String',{'series(Di)'}) % pair menu with only option Di
+        ModeMenu={'series(Di)'}; % pair menu with only option Di
     end
 else %existence of j pairs
     pair_max=squeeze(max(i1_series,[],1)); %max on pair index
@@ -1248,22 +1243,27 @@ else %existence of j pairs
     MaxIndex_j=max(find(i_max))-1;% max ref index i
     MinIndex_j=min(find(i_max))-1;% min ref index i
     if MaxIndex_j==MinIndex_j
-        set(handles.mode,'Value',1);
-        set(handles.mode,'String',{'bursts'})
-%         check_burst=1;
+        ModeValue=1;
+        ModeMenu={'bursts'};
     elseif MaxIndex_i==MinIndex_i
-        set(handles.mode,'Value',1);
-        set(handles.mode,'String',{'series(Dj)'})
+    ModeValue=1;
+    ModeMenu={'series(Dj)'};
     else
-        set(handles.mode,'String',{'bursts';'series(Dj)'})
+        ModeMenu={'bursts';'series(Dj)'};
         if (MaxIndex_j-MinIndex_j)>10
-            set(handles.mode,'Value',2);%set mode to series(Dj) if more than 10 j values
+            ModeValue=2;%set mode to series(Dj) if more than 10 j values
         else
-            set(handles.mode,'Value',1);
-%             check_burst=1;
+            ModeValue=1;
         end
     end
 end
+
+set(handles.mode,'String',ModeMenu)
+set(handles.mode,'Value',ModeValue)
+SeriesData=get(handles.series,'UserData');
+SeriesData.ModeMenu=ModeMenu;
+SeriesData.ModeValue=ModeValue;
+set(handles.series,'UserData',SeriesData)
 fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
 ListPairs_Callback([],[],handles)
 
@@ -1368,6 +1368,7 @@ set(handles.num_ref_i,'String',num2str(ref_i)) % update ref_i and ref_j
 set(handles.num_ref_j,'String',num2str(ref_j))
 
 %% display list of pairstring
+SeriesData=get(handles.series,'UserData');
 displ_pair_list=get(handles.ListPairs,'String');
 NewVal=[];
 if ~isempty(displ_pair_list)
@@ -1376,10 +1377,14 @@ NewVal=find(strcmp(displ_pair_list{Val},displ_pair),1);% look at the previous di
 end
 if ~isempty(NewVal)
     set(handles.ListPairs,'Value',NewVal)
+    SeriesData.ListPairsValue=NewVal;
 else
     set(handles.ListPairs,'Value',1)
+    SeriesData.ListPairsValue=1;
 end
 set(handles.ListPairs,'String',displ_pair)
+SeriesData.ListPairsMenu=displ_pair;
+set(handles.series,'UserData',SeriesData);
 
 %-------------------------------------
 function enable_i(handles,state)
@@ -1422,62 +1427,7 @@ status_Callback(hObject, eventdata, handles)
 Param=read_GUI_series(handles);%displayed parameters
 SeriesData=get(handles.series,'UserData');%hidden parameters
 
-%% create the output data directory if needed
-if isfield(Param,'OutputSubDir')
-    SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
-    SubDirOutNew=SubDirOut;
-    detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
-    check_create=1; %need to create the result directory by default
-    while detect
-        answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
-        if strcmp(answer,'Cancel')
-            errormsg='Cancel';
-            return
-        elseif strcmp(answer,'Yes')
-            detect=0;
-            check_create=0;
-        else
-            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
-            if isempty(r)
-                r(1).root=[SubDirOutNew '_'];
-                r(1).num1='0';
-            end
-            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
-            detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exists
-            check_create=1;
-        end
-    end
-    Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
-    Param.OutputRootFile=Param.InputTable{1,3};% the first sorted RootFile taken for output
-    set(handles.OutputDirExt,'String',Param.OutputDirExt)
-    OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);% full name (with path) of output directory
-    if check_create    % create output directory if it does not exist
-        [tild,msg1]=mkdir(OutputDir);
-        if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' OutputDir ': ' msg1]);%error message for directory creation
-            return
-        end
-        [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
-        if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
-            return
-        end
-    end
-    OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
-    DirXml=fullfile(OutputDir,'0_XML');
-    if ~exist(DirXml,'dir')
-        [tild,msg1]=mkdir(DirXml);
-        if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
-            return
-        end
-                [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
-        if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg1});%error message for directory creation
-            return
-        end
-    end
-end
+
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local';%default (needed for first opening of the GUI series)
@@ -1543,6 +1493,59 @@ if strcmp(ActionExt,'.sh')
     end
 end
 
+%% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
+% ActionExtList=get(handles.ActionExt,'String');
+% ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
+% ActionList=get(handles.ActionName,'String');
+% ActionName=ActionList{get(handles.ActionName,'Value')};
+% TransformPath='';
+% if ~isempty(get(handles.ActionExt,'UserData'))
+%     TransformPath=get(handles.ActionExt,'UserData');
+% end
+if strcmp(ActionExt,'.sh')
+    TransformPath='';
+    if ~isempty(get(handles.ActionExt,'UserData'))
+        TransformPath=get(handles.ActionExt,'UserData');
+    end
+    set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
+    set(handles.ActionExt,'BackgroundColor',[1 1 0])
+    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
+    if ~exist(ActionFullName,'file')
+        answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
+        if strcmp(answer,'Yes')
+            set(handles.ActionExt,'BackgroundColor',[1 1 0])
+            path_uvmat=fileparts(which('series'));
+            currentdir=pwd;
+            cd(get(handles.ActionPath,'String'))% go to the directory of Action
+            %  addpath(get(handles.TransformPath,'String'))
+            addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+           % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+            compile(ActionName,TransformPath)
+            cd(currentdir)
+        end       
+    else
+        sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
+        m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
+        if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
+            set(handles.ActionExt,'BackgroundColor',[1 1 0])
+            drawnow
+            answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
+            if strcmp(answer,'Yes')
+                path_uvmat=fileparts(which('series'));
+                currentdir=pwd;
+                cd(get(handles.ActionPath,'String'))% go to the directory of Action
+                %  addpath(get(handles.TransformPath,'String'))
+                addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+                addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+                compile(ActionName,TransformPath)
+                cd(currentdir)
+            end
+        end
+    end
+    set(handles.ActionExt,'BackgroundColor',[1 1 1])
+     set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
+end
+
 %% set nbre of cluster cores and processes
 switch RunMode
     case {'local','background'}
@@ -1566,6 +1569,63 @@ if isempty(Param.IndexRange.NbSlice)
 else
     NbProcess=Param.IndexRange.NbSlice;% the nbre of run processes is equal to the number of slices
     NbCore=min(NbCore,NbProcess);% at least one process per core
+end
+
+%% create the output data directory if needed
+if isfield(Param,'OutputSubDir')
+    SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
+    SubDirOutNew=SubDirOut;
+    detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
+    check_create=1; %need to create the result directory by default
+    while detect
+        answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
+        if strcmp(answer,'Cancel')
+            errormsg='Cancel';
+            return
+        elseif strcmp(answer,'Yes')
+            detect=0;
+            check_create=0;
+        else
+            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+            if isempty(r)
+                r(1).root=[SubDirOutNew '_'];
+                r(1).num1='0';
+            end
+            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
+            detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exists
+            check_create=1;
+        end
+    end
+    Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
+    Param.OutputRootFile=Param.InputTable{1,3};% the first sorted RootFile taken for output
+    set(handles.OutputDirExt,'String',Param.OutputDirExt)
+    OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);% full name (with path) of output directory
+    if check_create    % create output directory if it does not exist
+        [tild,msg1]=mkdir(OutputDir);
+        if ~strcmp(msg1,'')
+            msgbox_uvmat('ERROR',['cannot create ' OutputDir ': ' msg1]);%error message for directory creation
+            return
+        end
+        [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
+            return
+        end
+    end
+    OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
+    DirXml=fullfile(OutputDir,'0_XML');
+    if ~exist(DirXml,'dir')
+        [tild,msg1]=mkdir(DirXml);
+        if ~strcmp(msg1,'')
+            msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
+            return
+        end
+                [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg1});%error message for directory creation
+            return
+        end
+    end
 end
         
 %% get the set of reference field indices
@@ -2244,7 +2304,7 @@ if isequal(field,'get_field...')
     end
     Param=read_GUI(handles.series);
     Param.InputTable=Param.InputTable(1,:);
-     % check the existence of the first file in the series
+    % check the existence of the first file in the series
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     last_j=[];
@@ -2254,8 +2314,6 @@ if isequal(field,'get_field...')
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-%     filecell=get_file_series(Param);
-%     
     if exist(FirstFileName,'file')
         ParamIn.SeriesInput=1;
         GetFieldData=get_field(FirstFileName,ParamIn);
@@ -2265,25 +2323,22 @@ if isequal(field,'get_field...')
                 UName=GetFieldData.PanelVectors.vector_x;
                 VName=GetFieldData.PanelVectors.vector_y;
                 YName={GetFieldData.Coordinates.Coord_y};
-                CName=GetFieldData.PanelVectors.vec_color;
                 FieldList={['vec(' UName ',' VName ')'];...
                     ['norm(' UName ',' VName ')'];...
                     UName;VName};
-                VecColorList={['norm(' UName ',' VName ')'];...
-                    UName;VName};
-                if ~isempty(CName)
-                    VecColorList=[{CName};VecColorList];
-                end
-            case 'scalar'
+            case {'scalar','pick variables'}
                 FieldList=GetFieldData.PanelScalar.scalar;
                 YName={GetFieldData.Coordinates.Coord_y};
                 if ischar(FieldList)
-                FieldList={FieldList};
+                    FieldList={FieldList};
                 end
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
-%             case 'civdata...'%reinitiate input, return to automatic civ data reading
-%                 display_file_name(handles,FileName,1)
+            case 'civdata...'
+                FieldList=set_field_list('U','V','C');
+                set(handles.FieldName,'Value',2) % set menu to 'velocity
+                XName='X';
+                YName='y';
         end
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
             XName=GetFieldData.Coordinates.Coord_x;
@@ -2306,11 +2361,11 @@ if isequal(field,'get_field...')
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
-            set(handles.Coord_x,'String',{XName})
-            set(handles.Coord_y,'String',YName)
-            set(handles.FieldName,'Value',1)
-            set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
         end
+        set(handles.Coord_x,'String',{XName})
+        set(handles.Coord_y,'String',YName)
+        set(handles.FieldName,'Value',1)
+        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
     end
 end
 
@@ -2320,26 +2375,69 @@ function FieldName_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 field_str=get(handles.FieldName_1,'String');
 field_index=get(handles.FieldName_1,'Value');
-field=field_str{field_index};
-if isequal(field,'get_field...')    
-     hget_field=findobj(allchild(0),'name','get_field_1');
-     if ~isempty(hget_field)
-         delete(hget_field)
-     end
-     SeriesData=get(handles.series,'UserData');
-     filename=SeriesData.CurrentInputFile_1;
-     if exist(filename,'file')
-        hget_field=get_field(filename);
-        set(hget_field,'name','get_field_1')
-     end
-% elseif isequal(field,'more...')
-%     str=calc_field;
-%     [ind_answer,v] = listdlg('PromptString','Select a file:',...
-%                 'SelectionMode','single',...
-%                 'ListString',str);
-%        % edit the choice in the fields and actionname menu
-%      scalar=cell2mat(str(ind_answer));
-%      update_menu(handles.FieldName_1,scalar)
+field=field_str{field_index(1)};
+if isequal(field,'get_field...')
+    hget_field=findobj(allchild(0),'name','get_field');
+    if ~isempty(hget_field)
+        delete(hget_field)%delete opened versions of get_field
+    end
+    Param=read_GUI(handles.series);
+    Param.InputTable=Param.InputTable(1,:);
+    % check the existence of the first file in the series
+    first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    if exist(FirstFileName,'file')
+        ParamIn.SeriesInput=1;
+        GetFieldData=get_field(FirstFileName,ParamIn);
+        FieldList={};
+        switch GetFieldData.FieldOption
+            case 'vectors'
+                UName=GetFieldData.PanelVectors.vector_x;
+                VName=GetFieldData.PanelVectors.vector_y;
+                FieldList={['vec(' UName ',' VName ')'];...
+                    ['norm(' UName ',' VName ')'];...
+                    UName;VName};
+            case {'scalar','pick variables'}
+                FieldList=GetFieldData.PanelScalar.scalar;
+                if ischar(FieldList)
+                    FieldList={FieldList};
+                end
+            case '1D plot'
+
+            case 'civdata...'
+                FieldList=set_field_list('U','V','C');
+                set(handles.FieldName,'Value',2) % set menu to 'velocity
+        end
+        if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+            switch TimeNameStr
+                case 'file index'
+                    set(handles.TimeName,'String','');
+                case 'attribute'
+                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+                case 'variable'
+                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                case 'matrix_index'
+                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+            end
+        end
+        set(handles.FieldName_1,'Value',1)
+        set(handles.FieldName_1,'String',[FieldList; {'get_field...'}]);
+    end
 end   
 
 
@@ -2926,51 +3024,49 @@ ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 ActionList=get(handles.ActionName,'String');
 ActionName=ActionList{get(handles.ActionName,'Value')};
-TransformPath='';
-if ~isempty(get(handles.ActionExt,'UserData'))
-    TransformPath=get(handles.ActionExt,'UserData');
-end
-if strcmp(ActionExt,'.sh')
-    set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
-    set(handles.ActionExt,'BackgroundColor',[1 1 0])
-    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
-    if ~exist(ActionFullName,'file')
-        answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
-        if strcmp(answer,'Yes')
-            set(handles.ActionExt,'BackgroundColor',[1 1 0])
-            path_uvmat=fileparts(which('series'));
-            currentdir=pwd;
-            cd(get(handles.ActionPath,'String'))% go to the directory of Action
-            %  addpath(get(handles.TransformPath,'String'))
-            addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-           % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
-            compile(ActionName,TransformPath)
-            cd(currentdir)
-        end       
-    else
-        sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
-        m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
-        if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
-            set(handles.ActionExt,'BackgroundColor',[1 1 0])
-            drawnow
-            answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
-            if strcmp(answer,'Yes')
-                path_uvmat=fileparts(which('series'));
-                currentdir=pwd;
-                cd(get(handles.ActionPath,'String'))% go to the directory of Action
-                %  addpath(get(handles.TransformPath,'String'))
-                addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-                addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
-                compile(ActionName,TransformPath)
-                cd(currentdir)
-            end
-        end
-    end
-    set(handles.ActionExt,'BackgroundColor',[1 1 1])
-     set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
-end
-
-
+% TransformPath='';
+% if ~isempty(get(handles.ActionExt,'UserData'))
+%     TransformPath=get(handles.ActionExt,'UserData');
+% end
+% if strcmp(ActionExt,'.sh')
+%     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
+%     set(handles.ActionExt,'BackgroundColor',[1 1 0])
+%     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
+%     if ~exist(ActionFullName,'file')
+%         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
+%         if strcmp(answer,'Yes')
+%             set(handles.ActionExt,'BackgroundColor',[1 1 0])
+%             path_uvmat=fileparts(which('series'));
+%             currentdir=pwd;
+%             cd(get(handles.ActionPath,'String'))% go to the directory of Action
+%             %  addpath(get(handles.TransformPath,'String'))
+%             addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+%            % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+%             compile(ActionName,TransformPath)
+%             cd(currentdir)
+%         end       
+%     else
+%         sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
+%         m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
+%         if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
+%             set(handles.ActionExt,'BackgroundColor',[1 1 0])
+%             drawnow
+%             answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
+%             if strcmp(answer,'Yes')
+%                 path_uvmat=fileparts(which('series'));
+%                 currentdir=pwd;
+%                 cd(get(handles.ActionPath,'String'))% go to the directory of Action
+%                 %  addpath(get(handles.TransformPath,'String'))
+%                 addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+%                 addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+%                 compile(ActionName,TransformPath)
+%                 cd(currentdir)
+%             end
+%         end
+%     end
+%     set(handles.ActionExt,'BackgroundColor',[1 1 1])
+%      set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
+% end
 
 
 function num_NbProcess_Callback(hObject, eventdata, handles)
@@ -3021,3 +3117,91 @@ menu=menu(1:imax);
 % --- Executes on mouse motion over figure - except title and menu.
 function series_WindowButtonMotionFcn(hObject, eventdata, handles)
 set(hObject,'Pointer','arrow');
+
+
+% --- Executes on button press in SetPairs.
+function SetPairs_Callback(hObject, eventdata, handles)
+
+%% create the GUI set_pairs
+set(0,'Unit','points')
+ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Width=300;% fig width in points (1/72 inch)
+Height=min(0.8*ScreenSize(4),300);
+Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
+Bottom=ScreenSize(4)-Height-40; %put fig at top right
+hfig=findobj(allchild(0),'Tag','set_slice');
+if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+hfig=figure('name','set_pairs','tag','set_pairs','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
+BackgroundColor=get(hfig,'Color');
+hh=0.14; % box height (relative)
+ii=0.01; % gap between uicontrols
+
+ww=0.9; % box width (relative)
+SeriesData=get(handles.series,'UserData');
+% first raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.9 0.5 0.1],'BackgroundColor',BackgroundColor,...
+    'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'tag','ListView','BackgroundColor',[1 1 1],...
+    'String',SeriesData.ListViewMenu,'Value',SeriesData.ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListView'':choice of the file series w for pair display');
+% second raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.8 0.7 0.1],'BackgroundColor',BackgroundColor,...
+    'String','mode of index pairing:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
+uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.02 0.58 ww 0.2],'tag','Mode','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ModeMenu_Callback(hObject,eventdata),...
+    'String',SeriesData.ModeMenu,'Value',SeriesData.ModeValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''Mode'': choice of the image pair mode');
+% third raw
+uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.6 0.7 0.1],'BackgroundColor',BackgroundColor,...
+    'String','pair choice:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
+uicontrol('Style','listbox','Units','normalized', 'Position', [0.02 0.16 ww 0.4],'tag','ListPairs','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ListPairsMenu_Callback(hObject,eventdata),...
+    'String',SeriesData.ListPairsMenu,'Value',SeriesData.ListPairsValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListPairs'': menu for selecting the image pair');
+%  last raw  of the GUI: pushbuttons
+wwp=(1-4*ii)/3; %width of the push buttons
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
+drawnow
+
+function ModeMenu_Callback(hObject,eventdata)
+hseries=findobj(allchild(0),'tag','series');
+hhseries=guidata(hseries);
+SeriesData=get(hseries,'UserData');
+hListView=findobj(get(hObject,'parent'),'Tag','ListView');
+iview=get(hListView,'Value');
+hMode=findobj(get(hObject,'parent'),'Tag','Mode');
+mode_list=get(hMode,'String');
+mode=mode_list{get(hMode,'Value')};
+if isequal(mode,'bursts')
+    enable_i(hhseries,'On')
+    enable_j(hhseries,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
+else
+    enable_i(hhseries,'On')
+    enable_j(hhseries,'Off')
+end
+fill_ListPair(hhseries,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
+    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview})
+ListPairs_Callback([],[],hhseries)
+
+%-------------------------------------------------------------
+% --- Executes on selection in ListPairs.
+function ListPairsMenu_Callback(hObject,eventdata)
+%------------------------------------------------------------
+list_pair=get(hObject,'String');%get the menu of image pairs
+if isempty(list_pair)
+    string='';
+else
+    string=list_pair{get(hObject,'Value')};
+    string=regexprep(string,',.*','');%removes time indication (after ',')
+end
+hseries=findobj(allchild(0),'tag','series');
+hPairString=findobj(hseries,'tag','PairString');
+PairString=get(hPairString,'Data');
+hListView=findobj(get(hObject,'parent'),'Tag','ListView');
+iview=get(hListView,'Value');
+PairString{iview,1}=string;
+% report the selected pair string to the table PairString
+set(hPairString,'Data',PairString)
+
+%-------------------------------------------------------------
+% --- Executes on selection in ListPairs.
+function OK_Callback(hObject,eventdata)
+%------------------------------------------------------------
+delete(get(hObject,'parent'))
+

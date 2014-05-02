@@ -50,17 +50,24 @@ if ~isempty(xx)
             uvmat('runmin_Callback',hObject,eventdata,handleshaxes)
         otherwise
             if ischar(get(gco,'Tag'))
-            switch get(gco,'tag')% tag of the current edit box
-                case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
-                    set(handleshaxes.InputFileREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (introduce the whole series)
-                case 'num_IndexIncrement'% no action
-                otherwise
-                    if isfield(handleshaxes,'REFRESH')
-                    set(handleshaxes.REFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
-                    elseif strcmp(get(gco,'Type'),'uicontrol')
-                       set(gco,'BackgroundColor',[1 0 1])%indicate that the edition  must be validated by carriage return
-                    end
-            end
+                switch get(gco,'tag')% tag of the current edit box
+                    case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
+                        set(handleshaxes.InputFileREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (introduce the whole series)
+                    case 'num_IndexIncrement'% no action
+                    otherwise
+                        if isfield(handleshaxes,'REFRESH')
+                            set(handleshaxes.REFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
+                            if isfield(handleshaxes,'movie_pair')% stop movie pair in uvmat
+                                set(handleshaxes.movie_pair,'value',0);
+                                set(handleshaxes.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
+                                set(handleshaxes.i2,'String','')% the second i index display is suppressed
+                                set(handleshaxes.j2,'String','')% the second j index display is suppressed
+                                set(handleshaxes.Dt_txt,'String','')% the time interval indication is suppressed
+                            end
+                        elseif strcmp(get(gco,'Type'),'uicontrol')
+                            set(gco,'BackgroundColor',[1 0 1])%indicate that the edition  must be validated by carriage return
+                        end
+                end
             end
     end
 end
