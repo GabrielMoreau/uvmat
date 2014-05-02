@@ -1856,26 +1856,23 @@ if get(handles.TestCiv1,'Value')
     end
     list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
     PairString=list_pair{get(handles.ListPairCiv1,'Value')};
-    %    [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-    %       find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-    [ind1,ind2,mode]=find_pair_indices(PairString,ref_i,ref_j)%,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
+    [ind1,ind2,mode]=find_pair_indices(PairString,ref_i,ref_j);%,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
     switch mode
         case 'Di'
-            i1=ref_i+ind1;
+            i1=ref_i-ind1;
             i2=ref_i+ind2;
-                        j1=ref_j;
+            j1=ref_j;
             j2=ref_j;
         case 'Dj'
-                           i1=ref_i;
+            i1=ref_i;
             i2=ref_i;
-                        j1=ref_j+ind1;
-            j2=ref_j+ind2; 
-        case 'burst'
-
-                           i1=ref_i;
+            j1=ref_j-ind1;
+            j2=ref_j+ind2;
+        case 'burst'           
+            i1=ref_i;
             i2=ref_i;
-                        j1=ind1;
-            j2=ind2; 
+            j1=ind1;
+            j2=ind2;
     end
     ImageName_A=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
         i1,[],j1);
