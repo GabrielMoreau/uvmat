@@ -664,7 +664,7 @@ if isempty(i2)
     i2=i1;
 end
 ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
-set(handles.num_ref_i,'String',num2str(ref_i));
+% set(handles.num_ref_i,'String',num2str(ref_i));
 if isempty(j1)
     j1=1;
 end
@@ -672,7 +672,9 @@ if isempty(j2)
     j2=j1;
 end
 ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
-set(handles.num_ref_j,'String',num2str(ref_j)); 
+% set(handles.num_ref_j,'String',num2str(ref_j)); 
+SeriesData.ref_i=ref_i;
+SeriesData.ref_j=ref_j;
 
 %% update first and last indices if they do not exist
 Param=read_GUI(handles.series);
@@ -1000,11 +1002,11 @@ for iview=1:numel(SeriesData.i2_series)
     end
 end
 if check_pairs
-    set(handles.Pairs,'Visible','on')
+%     set(handles.Pairs,'Visible','on')
     set(handles.PairString,'Visible','on')
     set(handles.SetPairs,'Visible','on')
 else
-    set(handles.Pairs,'Visible','off')
+%     set(handles.Pairs,'Visible','off')
     set(handles.PairString,'Visible','off')
     set(handles.SetPairs,'Visible','off')
 end
@@ -1206,26 +1208,12 @@ PairString{iview,1}=string;
 % report the selected pair string to the table PairString
 set(handles.PairString,'Data',PairString)
 
-%------------------------------------------------------------------------
-function num_ref_i_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-mode_list=get(handles.mode,'String');
-mode=mode_list{get(handles.mode,'Value')};
-SeriesData=get(handles.series,'UserData');
-iview=get(handles.ListView,'Value');
-fill_ListPair(handles,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
-    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview});% update the menu of pairs depending on the available netcdf files
-ListPairs_Callback([],[],handles)
-
-%------------------------------------------------------------------------
-function num_ref_j_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-num_ref_i_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 function update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 %------------------------------------------------------------------------    
 % check_burst=0;
+ModeMenu={''};
 if isempty(j2_series)% no j pair
     ModeValue=1;
     if isempty(i2_series)
@@ -2335,12 +2323,14 @@ if isequal(field,'get_field...')
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
             case 'civdata...'
-                FieldList=set_field_list('U','V','C');
+                FieldList=[set_field_list('U','V','C') ;{'C'}];
                 set(handles.FieldName,'Value',2) % set menu to 'velocity
                 XName='X';
                 YName='y';
+                set(handles.VelType,'visible','on')
         end
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            set(handles.VelType,'visible','off')
             XName=GetFieldData.Coordinates.Coord_x;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
             switch TimeNameStr
@@ -3125,7 +3115,7 @@ function SetPairs_Callback(hObject, eventdata, handles)
 %% create the GUI set_pairs
 set(0,'Unit','points')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=300;% fig width in points (1/72 inch)
+Width=220;% fig width in points (1/72 inch)
 Height=min(0.8*ScreenSize(4),300);
 Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
@@ -3139,23 +3129,28 @@ ii=0.01; % gap between uicontrols
 ww=0.9; % box width (relative)
 SeriesData=get(handles.series,'UserData');
 % first raw of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.9 0.5 0.1],'BackgroundColor',BackgroundColor,...
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'tag','ListView','BackgroundColor',[1 1 1],...
     'String',SeriesData.ListViewMenu,'Value',SeriesData.ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListView'':choice of the file series w for pair display');
 % second raw of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.8 0.7 0.1],'BackgroundColor',BackgroundColor,...
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.79 0.7 0.1],'BackgroundColor',BackgroundColor,...
     'String','mode of index pairing:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
-uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.02 0.58 ww 0.2],'tag','Mode','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ModeMenu_Callback(hObject,eventdata),...
+uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.05 0.62 ww 0.2],'tag','Mode','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ModeMenu_Callback(hObject,eventdata),...
     'String',SeriesData.ModeMenu,'Value',SeriesData.ModeValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''Mode'': choice of the image pair mode');
 % third raw
-uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.6 0.7 0.1],'BackgroundColor',BackgroundColor,...
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.6 0.7 0.1],'BackgroundColor',BackgroundColor,...
     'String','pair choice:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
-uicontrol('Style','listbox','Units','normalized', 'Position', [0.02 0.16 ww 0.4],'tag','ListPairs','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ListPairsMenu_Callback(hObject,eventdata),...
+uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.42 ww 0.2],'tag','ListPairs','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ListPairsMenu_Callback(hObject,eventdata),...
     'String',SeriesData.ListPairsMenu,'Value',SeriesData.ListPairsValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListPairs'': menu for selecting the image pair');
+uicontrol('Style','text','Units','normalized', 'Position', [0.1 0.22 0.8 0.1],'BackgroundColor',BackgroundColor,...
+    'String','ref_i           ref_j','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],'tag','num_ref_i','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),...
+    'String',num2str(SeriesData.ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_ref_i'': reference field index i used to display dt in ''list_pair_civ''');
+uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],'tag','num_ref_j','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),...
+    'String',num2str(SeriesData.ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_ref_j'': reference field index i used to display dt in ''list_pair_civ''');
 %  last raw  of the GUI: pushbuttons
-wwp=(1-4*ii)/3; %width of the push buttons
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
 drawnow
 
@@ -3199,9 +3194,30 @@ PairString{iview,1}=string;
 % report the selected pair string to the table PairString
 set(hPairString,'Data',PairString)
 
+%------------------------------------------------------------------------
+function num_ref_i_Callback(hObject, eventdata)
+%------------------------------------------------------------------------
+hMode=findobj(get(hObject,'parent'),'Tag','Mode');
+mode_list=get(hMode,'String');
+mode=mode_list{get(hMode,'Value')};
+hseries=findobj(allchild(0),'tag','series');
+hhseries=guidata(hseries);
+SeriesData=get(hseries,'UserData');
+hListView=findobj(get(hObject,'parent'),'Tag','ListView');
+iview=get(hListView,'Value');
+fill_ListPair(hhseries,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
+    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview});% update the menu of pairs depending on the available netcdf files
+
+hListPairs=findobj(get(hObject,'parent'),'Tag','ListPairs');
+ListPairsMenu_Callback(hListPairs,eventdata)
+
+%------------------------------------------------------------------------
+function num_ref_j_Callback(hObject, eventdata)
+%------------------------------------------------------------------------
+num_ref_i_Callback(hObject, eventdata)
+
 %-------------------------------------------------------------
 % --- Executes on selection in ListPairs.
 function OK_Callback(hObject,eventdata)
 %------------------------------------------------------------
 delete(get(hObject,'parent'))
-
