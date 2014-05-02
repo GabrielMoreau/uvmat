@@ -506,13 +506,13 @@ for ifield=1:NbField
         if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
             par_civ2.ImageA=par_civ1.ImageA;
         else
-            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
+            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
         end
         ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
             par_civ2.ImageB=par_civ1.ImageB;
         else
-            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
+            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
         end     
         
         ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ2(ifield),i2_series_Civ2(ifield),...
@@ -571,23 +571,6 @@ for ifield=1:NbField
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-        par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
-        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
-        if par_civ2.CheckDeformation
-            par_civ2.DUDX=DUDX./nbval;
-            par_civ2.DUDY=DUDY./nbval;
-            par_civ2.DVDX=DVDX./nbval;
-            par_civ2.DVDY=DVDY./nbval;
-        end
-        % caluclate velocity data (y and v in indices, reverse to y component)
-        [xtable ytable utable vtable ctable F] = civ (par_civ2);
-
-        list_param=(fieldnames(Param.ActionInput.Civ2))';
-        Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
-        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_Time','Civ2_Dt'} Civ2_param]; %insert the names of the two input images
-        %indicate the values of all the global attributes in the output data 
-        Data.Civ2_ImageA=ImageName_A;
-        Data.Civ2_ImageB=ImageName_B;
         i1=i1_series_Civ2(ifield);
         i2=i1;
         if ~isempty(i2_series_Civ2)
@@ -601,8 +584,25 @@ for ifield=1:NbField
         if ~isempty(j2_series_Civ1)
             j2=j2_series_Civ2(ifield);
         end
+        Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+        par_civ2.SearchBoxShift=(Civ2_Dt/Data.Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
+        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
+        if par_civ2.CheckDeformation
+            par_civ2.DUDX=DUDX./nbval;
+            par_civ2.DUDY=DUDY./nbval;
+            par_civ2.DVDX=DVDX./nbval;
+            par_civ2.DVDY=DVDY./nbval;
+        end
+        % caluclate velocity data (y and v in indices, reverse to y component)
+        [xtable ytable utable vtable ctable F] = civ (par_civ2);
+        list_param=(fieldnames(Param.ActionInput.Civ2))';
+        Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
+        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_Time','Civ2_Dt'} Civ2_param]; %insert the names of the two input images
+        %indicate the values of all the global attributes in the output data 
+        Data.Civ2_ImageA=ImageName_A;
+        Data.Civ2_ImageB=ImageName_B;
         Data.Civ2_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
-        Data.Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+        Data.Civ2_Dt=Civ2_Dt;
 %         Data.Civ2_Time=1;
 %         Data.Civ2_Dt=1;
         for ilist=1:length(list_param)

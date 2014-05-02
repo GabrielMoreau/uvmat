@@ -112,23 +112,38 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 %% determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
+FileType=cell(1,nbview);
+FileInfo=cell(1,nbview);
+MovieObject=cell(1,nbview);
+CheckImage=cell(1,nbview);
+CheckNc=cell(1,nbview);
+frame_index=cell(1,nbview);
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    if strcmp(FileType{iview},'civdata')||strcmp(FileType{iview},'civx')
+        if ~isfield(Param.InputFields,'VelType')
+            FileType{iview}='netcdf';% civ data read as usual netcdf files
+        end
+    end
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
-    if ~isempty(j1_series{iview})
-        frame_index{iview}=j1_series{iview};
-    else
+    if isempty(j1_series{iview})
         frame_index{iview}=i1_series{iview};
+    else
+        frame_index{iview}=j1_series{iview};
     end
 end
 
 %% calibration data and timing: read the ImaDoc files
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+if ~isempty(errormsg)
+    disp_uvmat('ERROR',['error in reading xmlfile: ' errormsg],checkrun)
+    return
+end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
