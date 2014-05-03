@@ -233,13 +233,13 @@ if isfield(Param,'list_fields')&& isfield(Param,'index_fields') &&~isempty(Param
     set(handles.FieldName,'String',Param.list_fields);% list menu fields
     set(handles.FieldName,'Value',Param.index_fields);% selected string index
 end
-if isfield(Param,'Coord_x_str')&& isfield(Param,'Coord_x_val')
+if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
         set(handles.Coord_x,'String',Param.Coord_x_str);% list menu fields
-    set(handles.Coord_x,'Value',Param.Coord_x_val);% selected string index
+%     set(handles.Coord_x,'Value',Param.Coord_x_val);% selected string index
 end
-if isfield(Param,'Coord_y_str')&& isfield(Param,'Coord_y_val')
+if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
         set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
-    set(handles.Coord_y,'Value',Param.Coord_y_val);% selected string index
+%     set(handles.Coord_y,'Value',Param.Coord_y_val);% selected string index
 end
 
 %% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
@@ -1030,41 +1030,53 @@ displ_time(handles)
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
-        FieldList=set_field_list('U','V');
-        set(handles.FieldName,'String',[FieldList;{'C'};{'get_field...'}]);%standard menu for civx data
-        set(handles.FieldName,'Value',1) % set menu to 'velocity
-        set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String',{'X'});
-        set(handles.Coord_y,'Value',1);
-        set(handles.Coord_y,'String',{'Y'});
+        FieldList=[set_field_list('U','V');{'C'}];%standard menu for civx data
+%         set(handles.Coord_x,'Value',1);
+        set(handles.Coord_x,'String','X');
+%         set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'String','Y');
     case 'netcdf'
-        set(handles.FieldName,'Value',1)
-        set(handles.FieldName,'String',{'get_field...'})
-        if isempty(i2_series)
-            i2=[];
+        ind_x=find(strcmp(get(handles.Coord_x,'String'),FileInfo.ListVarName));
+        if isempty(ind_x)
+            FieldList={};% new kind of file opened, we need to pick variables with get_field...
+            set(handles.Coord_x,'String','')
+            set(handles.Coord_y,'String','')
         else
-            i2=i2_series(1,ref_j+1,ref_i+1);
-        end
-        if isempty(j1_series)
-            j1=[];j2=[];
-        else
-            j1=j1_series(1,ref_j+1,ref_i+1);
-            if isempty(j2_series)
-                j2=[];
+            FileInfo.ListVarName(ind_x)=[];%remove coord-x from the list of variables to display
+            ind_y=find(strcmp(get(handles.Coord_y,'String'),FileInfo.ListVarName));
+            if isempty(ind_y)
+            FieldList={};% new kind of file opened, we need to pick variables with get_field...
+            set(handles.Coord_x,'String','')
+            set(handles.Coord_y,'String','')
             else
-                j2=j2_series(1,ref_j+1,ref_i+1);
+                FileInfo.ListVarName(ind_y)=[];%remove coord-y from the list of variables to display
+                FieldList=(FileInfo.ListVarName)';
             end
-        end
-       % FieldName_Callback([], [], handles)
+        end  
     otherwise
         set(handles.FieldName,'Value',1) % set menu to 'image'
         set(handles.FieldName,'String',{'image'})
-        set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String',{'AX'});
-        set(handles.Coord_y,'Value',1);
-        set(handles.Coord_y,'String',{'AY'});
+        set(handles.Coord_x,'String','AX');
+        set(handles.Coord_y,'String','AY');
 end
+if ismember(FileType,{'civx','civdata','netcdf'})
+    PrevMenu=get(handles.FieldName,'String');
+    PrevMenu=PrevMenu(get(handles.FieldName,'Value'));
+    FieldValue=[];
+    for ilist=1:numel(PrevMenu)
+        index_menu=find(strcmp(PrevMenu{ilist},FieldList));
+        if ~isempty(index_menu)
+            FieldValue=[FieldValue index_menu];
+        end
+    end
+    if isempty(FieldValue)
+        FieldValue=1;
+    end
+    set(handles.FieldName,'Value',FieldValue)
+    set(handles.FieldName,'String',[FieldList;{'get_field...'}])
+end 
 
+      
 %------------------------------------------------------------------------
 function num_first_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -2310,6 +2322,7 @@ if isequal(field,'get_field...')
     FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
+        ParamIn.Title='get_field: pick input variables and coordinates for series processing';
         ParamIn.SeriesInput=1;
         GetFieldData=get_field(FirstFileName,ParamIn);
         FieldList={};
@@ -2321,17 +2334,15 @@ if isequal(field,'get_field...')
                 FieldList={['vec(' UName ',' VName ')'];...
                     ['norm(' UName ',' VName ')'];...
                     UName;VName};
-            case {'scalar','pick variables'}
+            case {'scalar'}
                 FieldList=GetFieldData.PanelScalar.scalar;
                 YName={GetFieldData.Coordinates.Coord_y};
                 if ischar(FieldList)
                     FieldList={FieldList};
                 end
-            case '1D plot'
-                YName=GetFieldData.PanelOrdinate.ordinate;
             case 'civdata...'
-                FieldList=[set_field_list('U','V','C') ;{'C'}];
-                set(handles.FieldName,'Value',2) % set menu to 'velocity
+                FieldList=[set_field_list('U','V') ;{'C'}];
+                set(handles.FieldName,'Value',1) % set menu to 'velocity
                 XName='X';
                 YName='y';
                 set(handles.VelType,'visible','on')
@@ -2339,9 +2350,10 @@ if isequal(field,'get_field...')
         set(handles.FieldName,'Value',1)
         set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
-            set(handles.FieldName,'Value',[1:numel(FieldList)])%select all input fields by default
+            set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
             set(handles.VelType,'visible','off')
             XName=GetFieldData.Coordinates.Coord_x;
+            YName=GetFieldData.Coordinates.Coord_y;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
             switch TimeNameStr
                 case 'file index'
@@ -2362,7 +2374,7 @@ if isequal(field,'get_field...')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
         end
-                set(handles.Coord_x,'String',{XName})
+        set(handles.Coord_x,'String',XName)
         set(handles.Coord_y,'String',YName)
     end
 end

@@ -3137,7 +3137,7 @@ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 switch field  
     case 'get_field...'
         %% fill the axes and variables from selections in get_field
-        ParamIn=[];
+        ParamIn.Title='get_field: choose input field for display in uvmat' ;
         % in case of civ data, we use the civ choice as default input for the GUI get_field
         if strcmp(get(handles.VelType,'Visible'),'on')
             ParamIn.SwitchVarIndexTime='attribute';

@@ -15,7 +15,6 @@
 %                  .ListDimName=list of dimension (added information, not requested for field description)
 %                  .DimValue= vlalues of dimensions (added information, not requested for field description)
 %                  .VarType= integers giving the type of variable as coded by netcdf= 2 for char, =4 for single,=( for double
-%         .Txt: error message
 %  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
 %            var_detect=[] in the absence of input cell array 
 %  ichoice: index of the selected line in the case of multiple choice 
@@ -30,10 +29,10 @@
 %         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority in the list,
 %            while output names will be set by the first line
 %       - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
-%       - the string 'TimeVarName', a string (the variable considered as time), an integer or vector with integer values 
-%            representing time indices to select, the cell of other input variable names.
+%       - the string 'TimeVarName', a string (the name of the variable considered as time), an integer or vector with integer values 
+%            representing time indices to select for each variable, the cell of other input variable names.
 %       - the string 'TimeDimName', a string (the name of the dimension considered as time), an integer or vector with integer values 
-%            representing time indices to select, the cell of other input variable names.
+%            representing time indices to select for each variable, the cell of other input variable names.
 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.

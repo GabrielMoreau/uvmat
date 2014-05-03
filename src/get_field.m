@@ -168,9 +168,9 @@ checkseries=0;
 if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput% case of call by series
     set(handles.FieldOption,'value',1)
     if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
-    set(handles.FieldOption,'String',{'pick variables';'civdata...'})
+    set(handles.FieldOption,'String',{'scalar';'vectors';'civdata...'})
     else
-       set(handles.FieldOption,'String',{'pick variables'}) 
+       set(handles.FieldOption,'String',{'scalar';'vectors'}) 
     end
     checkseries=1;
     set(handles.scalar,'Max',2)
@@ -246,6 +246,9 @@ pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
 set(hObject,'Position',pos_view_field)
 set(handles.get_field,'WindowStyle','modal')% Make the GUI modal
+if isfield(ParamIn,'Title')
+    set(hObject,'Name',ParamIn.Title)
+end
 
 %% set z coordinate menu if relevant
 if Field.MaxDim>=3
@@ -406,7 +409,7 @@ switch FieldOption
         set(handles.Z_title,'Visible','off')
         ordinate_Callback(hObject, eventdata, handles)
         
-    case {'scalar','pick variables'}
+    case {'scalar'}
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','on')
@@ -957,7 +960,7 @@ FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
         
-    case {'scalar','pick variables'}
+    case {'scalar'}
        scalar_Callback(hObject, eventdata, handles)
     case 'vectors'
 end

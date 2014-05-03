@@ -304,6 +304,11 @@ if isfield(Param,'ActionInput')
         end
     end
 end
+% indicate max and min indices updated from input file series (not stored in Param.ActionInput)
+set(handles.MaxIndex_i,'String',num2str(MaxIndex_i));
+set(handles.MinIndex_i,'String',num2str(MinIndex_i));
+set(handles.MaxIndex_j,'String',num2str(MaxIndex_i));
+set(handles.MinIndex_j,'String',num2str(MinIndex_i));
 
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
@@ -545,16 +550,7 @@ checkbox(4)=get(handles.CheckCiv2,'Value');
 checkbox(5)=get(handles.CheckFix2,'Value');
 checkbox(6)=get(handles.CheckPatch2,'Value');
 ind_selected=find(checkbox,1);
-% if ~isempty(ind_selected)
-%     RootPath=get(handles.RootPath,'String');
-%     if isempty(RootPath)
-%         msgbox_uvmat('ERROR','Please open an image or PIV .nc file with the upper bar menu Open/Browse...')
-%         return
-%     end
-% end
 set(handles.PairIndices,'Visible','on')
-%set(handles.Civ1_ImageB,'Visible','on')
-%set(handles.TitleSubdirCiv1,'Visible','on')
 if opening==0
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
     if ~isempty(errormsg)
@@ -563,9 +559,6 @@ if opening==0
 end
 if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
-%    set(handles.TitleSubdirCiv2,'Visible','on')
-%    set(handles.Civ2_ImageA,'Visible','on')
-    %set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
     if ~opening
         errormsg=find_netcpair_civ(handles,2); % select the available netcdf files
@@ -574,8 +567,6 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
         end
     end
 else
-%    set(handles.TitleSubdirCiv2,'Visible','off')
-%    set(handles.Civ2_ImageA,'Visible','off')
     set(handles.ListPairCiv2,'Visible','off')
 end
 options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
@@ -955,6 +946,7 @@ function ref_j_Callback(hObject, eventdata, handles)
 mode_list=get(handles.ListPairMode,'String');
 mode_value=get(handles.ListPairMode,'Value');
 mode=mode_list{mode_value};
+errormsg='';
 if isequal(get(handles.CheckCiv1,'Value'),0)|| isequal(mode,'series(Dj)')
     errormsg=find_netcpair_civ(handles,1);% update the menu of pairs depending on the available netcdf files
 end
@@ -962,9 +954,9 @@ if isequal(mode,'series(Dj)') || ...
         (get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0)
     errormsg=find_netcpair_civ(handles,2);
 end
-    if ~isempty(errormsg)
+if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
-    end
+end
 
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
