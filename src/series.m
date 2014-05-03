@@ -242,15 +242,14 @@ if isfield(Param,'Coord_y_str')&& isfield(Param,'Coord_y_val')
     set(handles.Coord_y,'Value',Param.Coord_y_val);% selected string index
 end
 
-%% introduce the input file name(s) if defined from input Param
+%% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
 if isfield(Param,'FileName')&&~isempty(Param.FileName)
     InputTable={};
     set(handles.InputTable,'Data',InputTable)
+    display_file_name(handles,Param,'one')%refresh the input table
     if isfield(Param,'FileName_1')
-        display_file_name(handles,Param.FileName,'one')%refresh the input table
-        display_file_name(handles,Param.FileName_1,1)
-    else
-        display_file_name(handles,Param.FileName,'one')%refresh the input table
+        Param.FileName=Param.FileName_1;
+        display_file_name(handles,Param,2)
     end
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
@@ -566,7 +565,7 @@ set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
-function errormsg=display_file_name(handles,fileinput,iview)
+function errormsg=display_file_name(handles,Param,iview)
 %------------------------------------------------------------------------  
 %
 % INPUT:
@@ -578,6 +577,12 @@ function errormsg=display_file_name(handles,fileinput,iview)
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 errormsg='';%default
+if ischar(Param)
+    fileinput=Param; 
+else% input set when series is opened (called by the GUI uvmat)
+    fileinput=Param.FileName;
+end
+    
 %% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
@@ -588,6 +593,9 @@ end
 
 %% detect root name, nomenclature and indices in the input file name:
 [FilePath,FileName,FileExt]=fileparts(fileinput);
+%%%%%%%%%%%%%%%%%%
+%TODO: case of input by uvmat: do not check agai the input seies %%%%%%%
+%%%%%%%%%%%%%%%%%%%
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
@@ -1096,6 +1104,9 @@ displ_time(handles);
 function displ_time(handles)
 %------------------------------------------------------------------------
 SeriesData=get(handles.series,'UserData');%
+if ~isfield(SeriesData,'Time')
+    return
+end
 PairString=get(handles.PairString,'Data');
 ref_i_1=str2num(get(handles.num_first_i,'String'));%first reference index
 ref_i_2=str2num(get(handles.num_last_i,'String'));%last reference index
@@ -1407,6 +1418,10 @@ function RUN_Callback(hObject, eventdata, handles)
 %% read the data on the GUI series
 Param=read_GUI_series(handles);%displayed parameters
 SeriesData=get(handles.series,'UserData');%hidden parameters
+if ~isfield(SeriesData,'i1_series')
+    msgbox_uvmat('ERROR','The input field series needs to be refreshed: press REFRESH')
+    return
+end
 if isfield(Param,'InputFields')&& isequal(Param.InputFields.FieldName,'get_field...')
     msgbox_uvmat('ERROR','input field name(s) not defined, select get_field...')
     return
@@ -1534,7 +1549,7 @@ switch RunMode
     case {'local','background'}
         NbCore=1;% no need to split the calculation
     case 'cluster_oar'
-        if strcmp(Param.Action.ActionExt,'.m')% case of Matlab function (uncompiled)
+        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1;% one core used only (limitation of Matlab licences)
             msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
             extra_oar='';
@@ -1655,9 +1670,9 @@ if isempty(incr_i)
 else
     ref_i=first_i:incr_i:last_i;
     if isempty(incr_j)
-    [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
-    ref_j=ref_j-1;
-    ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
+        [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+        ref_j=ref_j-1;
+        ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
     else
         ref_j=first_j:incr_j:last_j;
     end
@@ -1816,14 +1831,9 @@ else
                         fclose(fid);% close the executable file
                         system(['chmod +x ' filebat]);% set the file to executable
                         
-                    case {'PCWIN','PCWIN64'}    %       TODO: adapt to Windows system
-                        %                                 cmd=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
-                        %                                     ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
-                        %                                     'addpath(''' regexprep(Param.Action.ActionPath,'\\','\\\\') ''');'...
-                        %                                     '' Param.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
+                    case {'PCWIN','PCWIN64'}    
                         fprintf(fid,cmd);
                         fclose(fid);
-                        %                               dos([filebat ' &']);
                 end
         end
     end
@@ -2055,9 +2065,11 @@ if ~isempty(SeriesData)&&isfield(SeriesData,'FileType')
 end
 if numel(iview_civ)>=1 && ~isempty(iview_civ(1))
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
+    set(handles.VelType,'Value',1)% set first choice by default
     set(handles.VelType,'String',[{'*'};menu])
     if numel(iview_civ)>=2
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
+        set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
     end
 end       
