@@ -252,6 +252,8 @@ if isfield(Param,'FileName')&&~isempty(Param.FileName)
     else
         display_file_name(handles,Param.FileName,'one')%refresh the input table
     end
+else
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 end  
 if isfield(Param,'incr_i')
     set(handles.num_incr_i,'String',num2str(Param.incr_i))
@@ -259,7 +261,6 @@ end
 if isfield(Param,'incr_j')
     set(handles.num_incr_j,'String',num2str(Param.incr_j))
 end
-set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -1021,8 +1022,8 @@ displ_time(handles)
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
-        FieldList=set_field_list('U','V','C');
-        set(handles.FieldName,'String',[FieldList;{'get_field...'}]);%standard menu for civx data
+        FieldList=set_field_list('U','V');
+        set(handles.FieldName,'String',[FieldList;{'C'};{'get_field...'}]);%standard menu for civx data
         set(handles.FieldName,'Value',1) % set menu to 'velocity
         set(handles.Coord_x,'Value',1);
         set(handles.Coord_x,'String',{'X'});
@@ -1403,6 +1404,14 @@ set(handles.MaxIndex_j,'Visible',state)
 %------------------------------------------------------------------------
 function RUN_Callback(hObject, eventdata, handles)
 
+%% read the data on the GUI series
+Param=read_GUI_series(handles);%displayed parameters
+SeriesData=get(handles.series,'UserData');%hidden parameters
+if isfield(Param,'InputFields')&& isequal(Param.InputFields.FieldName,'get_field...')
+    msgbox_uvmat('ERROR','input field name(s) not defined, select get_field...')
+    return
+end
+
 %% settings of the button RUN
 set(handles.RUN,'BusyAction','queue');% activation of STOP button will set BusyAction to 'cancel'
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
@@ -1411,23 +1420,20 @@ drawnow
 set(handles.status,'Value',0)% desable status display if relevant
 status_Callback(hObject, eventdata, handles)
 
-%% read the data on the GUI series
-Param=read_GUI_series(handles);%displayed parameters
-SeriesData=get(handles.series,'UserData');%hidden parameters
-
-
-
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local';%default (needed for first opening of the GUI series)
 if isfield(Param.Action,'RunMode')
     RunMode=Param.Action.RunMode;
+    Param.Action=rmfield(Param.Action,'RunMode');%remove from the recorded xml file to avoid interference during ImportConfig
 end
 ActionExt='.m';%default
 if isfield(Param.Action,'ActionExt')
     ActionExt=Param.Action.ActionExt;% '.m' or '.sh' (compiled)
+    Param.Action=rmfield(Param.Action,'ActionExt');%remove from the recorded xml file to avoid interference during ImportConfig
 end
 ActionName=Param.Action.ActionName;
 ActionPath=Param.Action.ActionPath;
+
 path_series=fileparts(which('series'));
 
 %% create the Action fct handle if RunMode option = 'local'
@@ -1482,14 +1488,6 @@ if strcmp(ActionExt,'.sh')
 end
 
 %% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
-% ActionExtList=get(handles.ActionExt,'String');
-% ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
-% ActionList=get(handles.ActionName,'String');
-% ActionName=ActionList{get(handles.ActionName,'Value')};
-% TransformPath='';
-% if ~isempty(get(handles.ActionExt,'UserData'))
-%     TransformPath=get(handles.ActionExt,'UserData');
-% end
 if strcmp(ActionExt,'.sh')
     TransformPath='';
     if ~isempty(get(handles.ActionExt,'UserData'))
@@ -1505,9 +1503,7 @@ if strcmp(ActionExt,'.sh')
             path_uvmat=fileparts(which('series'));
             currentdir=pwd;
             cd(get(handles.ActionPath,'String'))% go to the directory of Action
-            %  addpath(get(handles.TransformPath,'String'))
             addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-           % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
             compile(ActionName,TransformPath)
             cd(currentdir)
         end       
@@ -1522,7 +1518,6 @@ if strcmp(ActionExt,'.sh')
                 path_uvmat=fileparts(which('series'));
                 currentdir=pwd;
                 cd(get(handles.ActionPath,'String'))% go to the directory of Action
-                %  addpath(get(handles.TransformPath,'String'))
                 addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
                 addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
                 compile(ActionName,TransformPath)
@@ -2329,7 +2324,10 @@ if isequal(field,'get_field...')
                 YName='y';
                 set(handles.VelType,'visible','on')
         end
+        set(handles.FieldName,'Value',1)
+        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            set(handles.FieldName,'Value',[1:numel(FieldList)])%select all input fields by default
             set(handles.VelType,'visible','off')
             XName=GetFieldData.Coordinates.Coord_x;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
@@ -2352,10 +2350,8 @@ if isequal(field,'get_field...')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
         end
-        set(handles.Coord_x,'String',{XName})
+                set(handles.Coord_x,'String',{XName})
         set(handles.Coord_y,'String',YName)
-        set(handles.FieldName,'Value',1)
-        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
     end
 end
 
@@ -2801,6 +2797,11 @@ if ~isempty(filexml)
     Param.Action.RUN=0; %desactivate the input RUN=1
     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
     SeriesData=get(handles.series,'UserData');
+    if isfield(Param,'InputFields')
+        ListField=Param.InputFields.FieldName;
+        set(handles.FieldName,'String',[ListField;{'get-field...'}])
+         set(handles.FieldName,'Value',1:numel(ListField))
+    end       
     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
         set(handles.ActionInput,'Visible','on')
         set(handles.ActionInput,'Value',0)

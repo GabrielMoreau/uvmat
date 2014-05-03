@@ -62,6 +62,10 @@ switch FileType
     case 'civdata'% new format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
+        if ~isempty(strcmp('C',ParamIn.FieldName))% if C image correlation is requested as field (not color visu)
+            ScalarIndex=strcmp('C',Field.ListVarName);
+            Field.VarAttribute{ScalarIndex}.Role='scalar';%put role as 'scalar' instead of ancillary
+        end      
         ParamOut.CivStage=Field.CivStage;
     case 'civx'% old (obsolete) format for civ results
         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
@@ -174,19 +178,19 @@ switch FileType
         if ~isempty(NormName)% remove U and V if norm has been calculated and U and V are not needed as variables
             ind_var_U=find(strcmp(UName,ListVar));%check previous listing of variable r.UName
             ind_var_V=find(strcmp(VName,ListVar));%check previous listing of variable r.VName
-             if ~checkU && ~checkV
-                    Field.ListVarName([ind_var_U+2 ind_var_V+2])=[];
-                    Field.VarDimName([ind_var_U+2 ind_var_V+2])=[];
-                    Field.VarAttribute([ind_var_U+2 ind_var_V+2])=[];
-                elseif ~checkU
-                    Field.ListVarName(ind_var_U+2)=[];
-                    Field.VarDimName(ind_var_U+2)=[];
-                    Field.VarAttribute(ind_var_U+2 )=[];
-                elseif ~checkV
-                    Field.ListVarName(ind_var_V+2)=[];
-                    Field.VarDimName(ind_var_V+2)=[];
-                    Field.VarAttribute(ind_var_V+2 )=[];
-             end
+            if ~checkU && ~checkV
+                Field.ListVarName([ind_var_U+2 ind_var_V+2])=[];
+                Field.VarDimName([ind_var_U+2 ind_var_V+2])=[];
+                Field.VarAttribute([ind_var_U+2 ind_var_V+2])=[];
+            elseif ~checkU
+                Field.ListVarName(ind_var_U+2)=[];
+                Field.VarDimName(ind_var_U+2)=[];
+                Field.VarAttribute(ind_var_U+2 )=[];
+            elseif ~checkV
+                Field.ListVarName(ind_var_V+2)=[];
+                Field.VarDimName(ind_var_V+2)=[];
+                Field.VarAttribute(ind_var_V+2 )=[];
+            end
         end
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
