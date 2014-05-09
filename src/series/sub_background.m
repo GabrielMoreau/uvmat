@@ -101,9 +101,23 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
         NbSlice=Param.IndexRange.NbSlice;
     end
-    %nbview=numel(i1_series);%number of input file series (lines in InputTable)
-    nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)%A CORRIGER !!!!!!!
-    nbfield_i=size(i1_series{1},2); %nb of fields for the i index
+    incr_j=1;%default
+    if isfield(Param.IndexRange,'incr_j')&&~isempty(Param.IndexRange.incr_j)
+        incr_j=Param.IndexRange.incr_j;
+    end
+    if isempty(first_j)||isempty(last_j)
+        nbfield_j=1;
+    else
+        nbfield_j=numel(first_j:incr_j:last_j);%nb of fields for the j index (bursts or volume slices)
+    end
+    incr_i=1;%default
+    first_i=1;last_i=1;incr_i;%default
+    if isfield(Param.IndexRange,'first_i'); last_i=Param.IndexRange.first_i; end   
+    if isfield(Param.IndexRange,'last_i'); last_i=Param.IndexRange.last_j; end
+    if isfield(Param.IndexRange,'incr_i')&&~isempty(Param.IndexRange.incr_i)
+        incr_i=Param.IndexRange.incr_i;
+    end
+    nbfield_i=numel(first_i:incr_i:last_i);%nb of fields for the i index (bursts or volume slices)
     nbfield=nbfield_j*nbfield_i; %total number of fields
     nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices)
     
@@ -174,7 +188,9 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
+hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+if ~isempty(hdisp),delete(hdisp),end;
 %%%%%%%%%%%%
     % The cell array filecell is the list of input file names, while
     % filecell{iview,fileindex}:
