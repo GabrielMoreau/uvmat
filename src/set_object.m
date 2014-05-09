@@ -711,7 +711,7 @@ REFRESH_Callback(hObject, eventdata, handles)
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#a6-Projectionobjects:')
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#ProjObject')
 % path_to_uvmat=which ('uvmat');% check the path of uvmat
 % pathelp=fileparts(path_to_uvmat);
 % helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');

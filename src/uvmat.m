@@ -648,7 +648,7 @@ drawnow
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and inputfilerefresh the current field view: 
-errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
+errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,1);
 % inputfilerefresh the second series if selected
 if get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
@@ -657,9 +657,9 @@ if get(handles.SubField,'Value')
         return
     end
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
     % initiate the input file series and inputfilerefresh the current field view:
-    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
+    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,2);
 end
 
 if isempty(errormsg)
@@ -829,7 +829,7 @@ switch FileType
         set(handles.MenuTools,'Enable','on')
 
         % initiate input file series and inputfilerefresh the current field view:     
-        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,index);
+        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,index);
 
 end
 
@@ -859,7 +859,7 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then inputfilerefresh current plots
-function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
+function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,index)
 %------------------------------------------------------------------------
 errormsg=''; %default error msg
 %% define the relevant handles depending on the index (1=first file series, 2= second file series)
@@ -876,7 +876,8 @@ set(handles.FieldName,'UserData',[])% reinialize data from uvmat opening
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
-UvData.FileType{index}=FileType;
+UvData.FileType{index}=FileInfo.FileType;
+UvData.FileInfo{index}=FileInfo;
 UvData.i1_series{index}=i1_series;
 UvData.i2_series{index}=i2_series;
 UvData.j1_series{index}=j1_series;
@@ -990,6 +991,7 @@ end
 
 %% Define timing
 % time not set by the input file: images or civ data: indicate that time is read from the xml file
+FileType=FileInfo.FileType;
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time) && ...
         (strcmp(FileType,'image')|| strcmp(FileType,'multimage'))%||strcmp(FileType,'civdata')||strcmp(FileType,'civx'))
     TimeName='xml';
@@ -5507,13 +5509,13 @@ end
 % open the GUI 'series'
 function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-Param=read_param(handles);
+Param=read_GUI(handles.uvmat);
 Param.HiddenData=get(handles.uvmat,'UserData');
 series(Param); %run the series interface
 
 % --------------------------------------------------------------------
 function MenuPIV_Callback(hObject, eventdata, handles)
-    Param=read_param(handles);
+Param=read_GUI(handles.uvmat);
 Param.HiddenData=get(handles.uvmat,'UserData');
 hseries=series(Param);
 hhseries=guidata(hseries);
@@ -5531,51 +5533,51 @@ function MenuCIVx_Callback(hObject, eventdata, handles)
  FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 civ(FileName);% interface de civ(not in the uvmat file)
 
-function Param=read_param(handles)
-    
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
-if isequal(get(handles.SubField,'Value'),1)
-    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
-    FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
-    if ~isequal(FileName_1,Param.FileName)
-        Param.FileName_1=FileName_1;%second input file name if relevant
-    end
-end
-Param.NomType=get(handles.NomType,'String');
-Param.NomType_1=get(handles.NomType_1,'String');
-Param.CheckFixPair=get(handles.CheckFixPair,'Value');
-UvData=get(handles.uvmat,'UserData');
-if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'Time')
-    Param.Time=UvData.XmlData{1}.Time;
-end
-if isequal(get(handles.scan_i,'Value'),1)
-    Param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
-elseif isequal(get(handles.scan_j,'Value'),1)
-    Param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
-end
-
-%% transfer fields and coordinate names
-Param.list_fields=get(handles.FieldName,'String');% list menu fields
-FieldName=Param.list_fields{get(handles.FieldName,'Value')};
-ind_image=find(strcmp('image',Param.list_fields));
-if ~isempty(ind_image) && numel(Param.list_fields)>1
-    Param.list_fields(ind_image)=[]; %suppress  'image' option
-end
-Param.index_fields=find(strcmp(FieldName,Param.list_fields));% selected string index
-Param.list_fields_1=get(handles.FieldName_1,'String');% list menu fields
-if ischar(Param.list_fields_1),Param.list_fields_1={Param.list_fields_1};end
-FieldName_1=Param.list_fields_1{get(handles.FieldName_1,'Value')};
-ind_image=find(strcmp('image',Param.list_fields_1));
-if ~isempty(ind_image) && numel(Param.list_fields_1)>1
-    Param.list_fields_1(ind_image)=[]; %suppress  'image' option
-end
-Param.index_fields_1=find(strcmp(FieldName_1,Param.list_fields_1));% selected string index
-TransformList=get(handles.TransformName,'String');
-Param.TransformName=TransformList{get(handles.TransformName,'Value')};
-Param.Coord_x_str=get(handles.Coord_x,'String');
-%Param.Coord_x_val=get(handles.Coord_x,'Value');
-Param.Coord_y_str=get(handles.Coord_y,'String');
+% function Param=read_param(handles)
+%     
+% [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+% Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
+% if isequal(get(handles.SubField,'Value'),1)
+%     [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+%     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
+%     if ~isequal(FileName_1,Param.FileName)
+%         Param.FileName_1=FileName_1;%second input file name if relevant
+%     end
+% end
+% Param.NomType=get(handles.NomType,'String');
+% Param.NomType_1=get(handles.NomType_1,'String');
+% Param.CheckFixPair=get(handles.CheckFixPair,'Value');
+% UvData=get(handles.uvmat,'UserData');
+% if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'Time')
+%     Param.Time=UvData.XmlData{1}.Time;
+% end
+% if isequal(get(handles.scan_i,'Value'),1)
+%     Param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
+% elseif isequal(get(handles.scan_j,'Value'),1)
+%     Param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
+% end
+% 
+% %% transfer fields and coordinate names
+% Param.list_fields=get(handles.FieldName,'String');% list menu fields
+% FieldName=Param.list_fields{get(handles.FieldName,'Value')};
+% ind_image=find(strcmp('image',Param.list_fields));
+% if ~isempty(ind_image) && numel(Param.list_fields)>1
+%     Param.list_fields(ind_image)=[]; %suppress  'image' option
+% end
+% Param.index_fields=find(strcmp(FieldName,Param.list_fields));% selected string index
+% Param.list_fields_1=get(handles.FieldName_1,'String');% list menu fields
+% if ischar(Param.list_fields_1),Param.list_fields_1={Param.list_fields_1};end
+% FieldName_1=Param.list_fields_1{get(handles.FieldName_1,'Value')};
+% ind_image=find(strcmp('image',Param.list_fields_1));
+% if ~isempty(ind_image) && numel(Param.list_fields_1)>1
+%     Param.list_fields_1(ind_image)=[]; %suppress  'image' option
+% end
+% Param.index_fields_1=find(strcmp(FieldName_1,Param.list_fields_1));% selected string index
+% TransformList=get(handles.TransformName,'String');
+% Param.TransformName=TransformList{get(handles.TransformName,'Value')};
+% Param.Coord_x_str=get(handles.Coord_x,'String');
+% %Param.Coord_x_val=get(handles.Coord_x,'Value');
+% Param.Coord_y_str=get(handles.Coord_y,'String');
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)

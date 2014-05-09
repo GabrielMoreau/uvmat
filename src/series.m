@@ -240,17 +240,31 @@ if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
 end
 
 %% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
-if isfield(Param,'FileName')&&~isempty(Param.FileName)
+if isfield(Param,'InputFile')
+    
     InputTable={};
+    %% fill the list of file series
+    SeriesData=Param.HiddenData;
+    InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
+    TimeTable=[{[]},{[]},{[]},{[]}];
+    if isfield(Param.InputFile,'RootPath_1')
+        InputTable=[InputTable;[{Param.InputFile.RootPath_1},{Param.InputFile.SubDir_1},{Param.InputFile.RootFile_1},{Param.InputFile.NomType_1},{Param.InputFile.FileExt_1}]];
+        TimeTable=[TimeTable; [{[]},{[]},{[]},{[]}]];
+    end
     set(handles.InputTable,'Data',InputTable)
-    display_file_name(handles,Param,'one')%refresh the input table
+    
+    %     display_file_name(handles,Param,'one')%refresh the input table
+    update_rootinfo(handles,Param.HiddenData.i1_series{1},Param.HiddenData.i2_series{1},Param.HiddenData.j1_series{1},Param.HiddenData.j2_series{1},...
+        Param.HiddenData.FileInfo{1},Param.HiddenData.MovieObject{1},1)
     if isfield(Param,'FileName_1')
-        Param.FileName=Param.FileName_1;
-        display_file_name(handles,Param,2)
+
+        %         display_file_name(handles,Param,2)
+        update_rootinfo(handles,Param.HiddenData.i1_series{2},Param.HiddenData.i2_series{2},Param.HiddenData.j1_series{2},Param.HiddenData.j2_series{2},...
+            Param.HiddenData.FileInfo{2},Param.HiddenData.MovieObject{2},2)
     end
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
-end  
+end
 if isfield(Param,'incr_i')
     set(handles.num_incr_i,'String',num2str(Param.incr_i))
 end
@@ -1197,11 +1211,11 @@ function num_first_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function num_last_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-first_j=str2num(get(handles.num_first_j,'String'));
-last_j=str2num(get(handles.num_last_j,'String'));
-ref_j=ceil((first_j+last_j)/2);
-set(handles.num_ref_j,'String', num2str(ref_j))
-num_ref_j_Callback(hObject, eventdata, handles)
+% first_j=str2num(get(handles.num_first_j,'String'));
+% last_j=str2num(get(handles.num_last_j,'String'));
+% ref_j=ceil((first_j+last_j)/2);
+% set(handles.num_ref_j,'String', num2str(ref_j))
+% num_ref_j_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
@@ -2645,7 +2659,7 @@ end
 %-------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#series')
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#Series')
 % path_to_uvmat=which ('uvmat');% check the path of uvmat
 % pathelp=fileparts(path_to_uvmat);
 % helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
@@ -2780,6 +2794,78 @@ if ~isempty(filexml)
     end     
     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
 end
+
+
+
+% --------------------------------------------------------------------
+function MenuImportParam_Callback(hObject, eventdata, handles)
+%% use a starting file name for browserr
+InputTable=get(handles.InputTable,'Data');
+oldfile=InputTable{1,1};
+if isempty(oldfile)
+    % use a file name stored in prefdir
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
+    end
+end
+filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
+%proceed only if a file has been introduced by the browser
+if ~isempty(filexml)
+    Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+    % ask to stop current Action if button RUN is in action (another process is already running)
+    if isequal(get(handles.RUN,'Value'),1)
+        answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
+        if strcmp(answer,'Yes')
+            STOP_Callback(hObject, eventdata, handles)
+        else
+            return
+        end
+    end
+    Param.Action.RUN=0; %desactivate the input RUN=1
+    if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
+        msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
+        return
+    end
+    Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
+    Param=rmfield(Param,'IndexRange');  
+    fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
+    SeriesData=get(handles.series,'UserData');
+    if isfield(Param,'InputFields')
+        ListField=Param.InputFields.FieldName;
+        set(handles.FieldName,'String',[ListField;{'get-field...'}])
+         set(handles.FieldName,'Value',1:numel(ListField))
+    end       
+    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
+        set(handles.ActionInput,'Visible','on')
+        set(handles.ActionInput,'Value',0)
+        Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
+        SeriesData.ActionInput=Param.ActionInput;
+    end
+    if isfield(Param,'ProjObject') %introduce projection object if relevant
+        SeriesData.ProjObject=Param.ProjObject;
+    end
+    set(handles.series,'UserData',SeriesData)
+    if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
+        set(handles.ProjObject,'String',Param.ProjObject.Name)
+        set(handles.ViewObject,'Visible','on')
+        set(handles.EditObject,'Visible','on')
+        set(handles.DeleteObject,'Visible','on')
+    else     
+        set(handles.ProjObject,'String','')
+        set(handles.ProjObject,'Visible','off')
+        set(handles.ViewObject,'Visible','off')
+        set(handles.EditObject,'Visible','off')
+        set(handles.DeleteObject,'Visible','off')     
+    end     
+    set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
+end
+
+
 
 %------------------------------------------------------------------------
 % --- Executes when the GUI series is resized.
@@ -3252,3 +3338,5 @@ function Coord_z_Callback(hObject, eventdata, handles)
 % eventdata  structure with the following fields (see UITABLE)
 %	Indices: row and column indices of the cell(s) currently selecteds
 % handles    structure with handles and user data (see GUIDATA)
+
+
