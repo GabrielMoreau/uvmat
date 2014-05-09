@@ -16,7 +16,7 @@ s=[];
 RootTag='';
 errormsg='';
 try
-    t=xmltree(filename);
+    t=xmltree(filename);% read the file as an xmltree object t
 catch ME
     errormsg=ME.message;
     if ~isempty(regexp(ME.message,'Undefined function'))||~isempty(regexp(ME.message,'Missing'))
@@ -44,7 +44,7 @@ if nargin>1
         end
     end
 else
-    ss=convert(t);
+    ss=convert(t);%transform the xmltree object into a Matlab structure.
     s=convert_string(ss);
 end
 
@@ -60,18 +60,21 @@ switch info.class
         end
     case 'char' 
         % try to convert to number if the char does not correspond to a function (otherwise str2num calls this function as it uses 'eval')
-        if ~isempty(regexp(ss,'^(-*\d+\.*\d*\ *)+$')) || ~isempty(regexp(ss,'\d+e(-|+)\d+')) % if the string corresponds to a set of numbers (with possible sign and decimal, or scientific notation) separated by blanks
-            out=str2num(ss);
+        if exist(ss,'builtin')||exist(ss,'file')% ss corresponds to the name of a builtin Matlab function or a file
+            out=ss; %reproduce the input string
         else
-            sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
-            if ~isempty(sep_ind)
-                sep_ind=[-2 sep_ind length(ss)+1];
-                out={};
-                for icolumn=1:length(sep_ind)-1
-                    out{1,icolumn}=ss(sep_ind(icolumn)+3:sep_ind(icolumn+1)-1);% get info between separators as a cell array
+            out=str2num(ss);% convert to number or vector (str2num applied to a fct name executes this fct by 'eval', thus this possibility had to be ruled out above
+            if isempty(out)
+                sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
+                if ~isempty(sep_ind)
+                    sep_ind=[-2 sep_ind length(ss)+1];
+                    out={};
+                    for icolumn=1:length(sep_ind)-1
+                        out{1,icolumn}=ss(sep_ind(icolumn)+3:sep_ind(icolumn+1)-1);% get info between separators as a cell array
+                    end
+                else
+                    out=ss; %reproduce the input string
                 end
-            else
-                out=ss; %reproduce the input string
             end
         end
     case 'cell'

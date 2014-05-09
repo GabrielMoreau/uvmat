@@ -124,21 +124,8 @@ set(handles.geometry_calib,'Position',[Left Bottom 420 Height])
 %set menu of calibration options
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
 if exist('inputfile','var')&& ~isempty(inputfile)
-%     struct.XmlInputFile=inputfile;
     [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(inputfile);
     struct.XmlInputFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
-%     if ~strcmp(FileExt,'.xml')
-%         inputfile=fullfile(RootPath,[SubDir '.xml']);%xml file corresponding to the input file
-%         if ~exist(inputfile,'file')% case of civ files , removes the extension for subdir
-%             inputfile=fullfile(RootPath,[regexprep(SubDir,'\..+$','') '.xml']);
-%             if ~exist(inputfile,'file')
-%                 inputfile=[fullfile(RootPath,SubDir,RootFile) '.xml'];%old convention
-%                 if ~exist(inputfile,'file')
-%                     inputfile='';
-%                 end
-%             end
-%         end
-%     end
     set(handles.ListCoord,'Data',[])
     if exist(struct.XmlInputFile,'file')
         Heading=loadfile(handles,struct.XmlInputFile);% load data from the xml file and fill the GUI

@@ -35,7 +35,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 13-Apr-2014 19:31:58
+% Last Modified by GUIDE v2.5 08-May-2014 23:03:29
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -593,8 +593,8 @@ set(handles.REFRESH,'BackgroundColor',[1 0 0])
 %set(handles.Coord,'BackgroundColor',[1 1 1])
 set(handles.num_RangeY_2,'BackgroundColor',[1 1 1])
 
-% --- Executes on button press in ExportCoord.
-function ExportCoord_Callback(hObject, eventdata, handles)
+% --- Executes on button press in DisplayCoord.
+function DisplayCoord_Callback(hObject, eventdata, handles)
 global Coord
 Coord=get(handles.Coord,'Data');
 evalin('base','global Coord')%make Coord global in the workspace
@@ -792,7 +792,3 @@ if ismember(xx,[127 31])% delete, or downward
             end
     set(handles.Coord,'Data',Coord);
 end
-
-
-
-

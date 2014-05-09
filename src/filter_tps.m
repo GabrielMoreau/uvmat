@@ -81,7 +81,7 @@ for isub=1:NbSubDomain
             VDiff=V_smooth_sub-V(ind_sel);
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;
             ind_ind_sel=1:numel(ind_sel);%default
-            if exist('Threshold','var')
+            if exist('Threshold','var')&&~isempty(Threshold)
                 FF(ind_sel)=20*(NormDiff>Threshold);%put FF value to 20 to identify the criterium of elimmination
                 ind_ind_sel=find(FF(ind_sel)==0); % select the indices of ind_sel corresponding to the remaining vectors
             end

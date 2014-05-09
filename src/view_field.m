@@ -189,7 +189,6 @@ huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface hand
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
     set(hhuvmat.CheckViewField,'Value',0)
-    %set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
     % deselect the object in ListObject when view_field is closed
     if isempty(findobj(allchild(0),'Tag','set_object'))
         ObjIndex=get(hhuvmat.ListObject,'Value');
@@ -214,11 +213,11 @@ if ~isempty(huvmat)
         end
     end
 end
-hciv=findobj(allchild(0),'Tag','civ');%find the current civ GUI
+hciv=findobj(allchild(0),'Tag','civ_input');%find the current civ GUI
 if ~isempty(hciv)
     hhciv=guidata(hciv);
     set(hhciv.TestCiv1,'Value',0)% desactivate  TestCiv1 if on
-    set(hhciv.TestCiv1,'BackgroundColor',[1 0 0])% 
+    set(hhciv.TestCiv1,'BackgroundColor',[0 1 0])% 
 end
 corrfig=findobj(allchild(0),'tag','corrfig');% look for a civ correlation window used with TesCiv1
 if ~isempty(corrfig)

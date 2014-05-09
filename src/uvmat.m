@@ -192,14 +192,6 @@ set(hObject,'Position',[LeftX LowY Width Height])
 UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
-% position of table Coord_y
-%set(handles.Coord_y,'Unit','pixel')
-% Pos=get(handles.Coord_y,'Position');
-% set(handles.Coord_y,'Unit','normalized')
-% set(handles.Coord_y,'ColumnWidth',{Pos(3)})
-% set(handles.Coord_y,'ColumnFormat',{'char'})
-% set(handles.Coord_y,'ColumnEditable',false)
-% set(handles.Coord_y,'ColumnName',{''})
 
 %% set functions for the mouse and keyboard
 set(hObject,'WindowKeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
@@ -208,7 +200,6 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
-% set(handles.RootPath,'ButtonDownFcn',{'@mouse_down_control'})%set mouse click action function
 
 %% initialisation
 set(handles.FieldName,'Value',1)
@@ -5517,12 +5508,13 @@ end
 function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 Param=read_param(handles);
+Param.HiddenData=get(handles.uvmat,'UserData');
 series(Param); %run the series interface
 
 % --------------------------------------------------------------------
 function MenuPIV_Callback(hObject, eventdata, handles)
     Param=read_param(handles);
-%     Param.ActionName='civ_series';
+Param.HiddenData=get(handles.uvmat,'UserData');
 hseries=series(Param);
 hhseries=guidata(hseries);
 ActionMenu=get(hhseries.ActionName,'String');

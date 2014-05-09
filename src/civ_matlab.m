@@ -59,31 +59,18 @@ end
 %% Civ1
 if isfield (Param,'Civ1')
     par_civ1=Param.Civ1;
-    if isfield(par_civ1,'reverse_pair')% A REVOIR
-        if par_civ1.reverse_pair
-            if ischar(par_civ1.ImageB)
-                temp=par_civ1.ImageA;
-                par_civ1.ImageA=imread(par_civ1.ImageB);
-            end
-            if ischar(temp)
-                par_civ1.ImageB=imread(temp);
-            end
-        end
-    else
-        if isfield(Param.Civ1,'ImageA') && ischar(Param.Civ1.ImageA) 
-             Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
-            [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
-        end
-        if isfield(Param.Civ1,'ImageB')&& ischar(Param.Civ1.ImageB)
-             Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
-             if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
-                 [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,VideoObject,par_civ1.FrameIndexB);
-             else
+    if isfield(Param.Civ1,'ImageA') && ischar(Param.Civ1.ImageA)% the input is a char string, read the corresponding image name (else  Param.Civ1.ImageA is already an image)
+        Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
+        [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
+    end
+    if isfield(Param.Civ1,'ImageB')&& ischar(Param.Civ1.ImageB)% the input is a char string, read the corresponding image name (else  Param.Civ1.ImageB is already an image)
+        Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
+        if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
+            [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,VideoObject,par_civ1.FrameIndexB);
+        else
             [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
-             end
         end
     end
-    
     list_param=(fieldnames(Param.Civ1))';
     Civ1_param=list_param;%default
     
@@ -141,9 +128,8 @@ else
     elseif isfield(Param.Patch1,'CivFile')
         CivFile=Param.Patch1.CivFile;
     end
-    Data=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
-    if isfield(Data,'Txt')
-        errormsg=Data.Txt;
+    [Data,tild,tild,erromsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
+    if ~isempty(errormsg)
         return
     end
     if ~isempty(Data.absolut_time_T0')%read civx file

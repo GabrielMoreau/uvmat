@@ -24,7 +24,6 @@ for ichild=1:numel(children)
     handles.(get(children(ichild),'tag'))=children(ichild);
     end
 end
-UserData=get(GUI_handle,'UserData');% additional information stored in 'UserData' of the GUI
 fields=fieldnames(Param);%list of fields in Param
 
 %--------------------------------------------------------------------------------------

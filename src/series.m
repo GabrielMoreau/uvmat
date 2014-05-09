@@ -121,7 +121,6 @@ set(handles.PairString,'Data',{''})
 
 series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
-set(handles.InputTable,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(hObject,'DeleteFcn',{@closefcn})%
 
 % check default input data
@@ -235,11 +234,9 @@ if isfield(Param,'list_fields')&& isfield(Param,'index_fields') &&~isempty(Param
 end
 if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
         set(handles.Coord_x,'String',Param.Coord_x_str);% list menu fields
-%     set(handles.Coord_x,'Value',Param.Coord_x_val);% selected string index
 end
 if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
         set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
-%     set(handles.Coord_y,'Value',Param.Coord_y_val);% selected string index
 end
 
 %% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
@@ -482,45 +479,35 @@ end
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 
-
-%------------------------------------------------------------------------
-% --- Executes when entered data in editable cell(s) in InputTable.
-function InputTable_CellEditCallback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
-% set(handles.REFRESH_title,'Visible','on')
-iview=eventdata.Indices(1);
-view_set=get(handles.REFRESH,'UserData');
-if isempty(find(view_set==iview))
-    set(handles.REFRESH,'UserData',[view_set iview])
+% --- Executes when selected cell(s) is changed in InputTable.
+function InputTable_CellSelectionCallback(hObject, eventdata, handles)
+iline=[];
+if ~isempty(eventdata.Indices)
+    iline=eventdata.Indices(1);
 end
-%% enable other menus and uicontrols
-set(handles.MenuOpenCampaign,'Enable','on')
-set(handles.MenuCampaign_1,'Enable','on')
-set(handles.MenuCampaign_2,'Enable','on')
-set(handles.MenuCampaign_3,'Enable','on')
-set(handles.MenuCampaign_4,'Enable','on')
-set(handles.MenuCampaign_5,'Enable','on')
-set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
+set(handles.InputTable,'UserData',iline);
 
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
 %------------------------------------------------------------------------
-function key_press_fcn(hObject,eventdata,handles)
-
+function InputTable_KeyPressFcn(hObject, eventdata, handles)
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
-if ismember(xx,[8 127 31])%backspace or delete, or downward
-    InputTable=get(handles.InputTable,'Data');
-    iline=get(handles.InputTable,'UserData');
-            if isequal(xx, 31)
-                if isequal(iline,size(InputTable,1))% arrow downward
-                InputTable=[InputTable;cell(1,size(InputTable,2))];
-                end
-            else
-    InputTable(iline,:)=[];% suppress the current line 
-            end
-    set(handles.InputTable,'Data',InputTable);
+switch xx
+    case 31 %downward arrow
+        InputTable=get(handles.InputTable,'Data');
+        iline=get(handles.InputTable,'UserData');
+        if isequal(iline,size(InputTable,1))% arrow downward
+            InputTable=[InputTable;InputTable(iline,:)];% create a new line as a copy of the last one
+            set(handles.InputTable,'Data',InputTable);
+        end
+    case 127  %key 'Suppress'
+         InputTable=get(handles.InputTable,'Data');
+        iline=get(handles.InputTable,'UserData');
+        if iline>1
+            InputTable(iline,:)=[];% suppress the current line if not the first
+            set(handles.InputTable,'Data',InputTable);
+        end
 end
 
 
@@ -536,8 +523,17 @@ empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
     empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));
 end
-InputTable(empty_line,:)=[];%remove empty lines
-set(handles.InputTable,'Data',InputTable)
+if ~isempty(find(empty_line));
+    InputTable(empty_line,:)=[];%remove empty lines
+    set(handles.InputTable,'Data',InputTable)
+    ListTable={'MinIndex_i','MaxIndex_i','MinIndex_j','MaxIndex_j','PairString','TimeTable'};
+    for ilist=1:numel(ListTable)
+        Table=get(handles.(ListTable{ilist}),'Data');
+        Table(empty_line,:)=[];%remove empty lines
+        set(handles.(ListTable{ilist}),'Data',Table);
+    end
+    set(handles.series,'UserData',[])%refresh the stored info
+end
 for iview=1:size(InputTable,1)
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
@@ -557,7 +553,7 @@ for iview=1:size(InputTable,1)
             display_file_name(handles,fileinput,iview)
         end
     else
-       update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview)
+       update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview)
     end
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
@@ -570,7 +566,7 @@ function errormsg=display_file_name(handles,Param,iview)
 %
 % INPUT:
 % handles: handles of elements in the GUI
-% fileinput: input file name, including path
+% Param: structure of input parameters, including  input file name and path
 % iview: line index in the input table
 %       or 'one': refresh the list
 %         'append': add a new line to the input table
@@ -638,6 +634,7 @@ SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
     iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
+%     SeriesData.ListViewMenu(iview)=zeros(1,nbview)
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
     InputTable={'','','','',''};
@@ -647,9 +644,8 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     set(handles.MaxIndex_i,'Data',[])
     set(handles.MinIndex_j,'Data',[])
     set(handles.MaxIndex_j,'Data',[])
-    set(handles.ListView,'Value',1)
-    set(handles.ListView,'String',{'1'})
     set(handles.PairString,'Data',{''})
+    SeriesData.CheckPair=0;%reset the list of input lines with pairs
     SeriesData.i1_series={};
     SeriesData.i2_series={};
     SeriesData.j1_series={};
@@ -658,11 +654,6 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
-nbview=size(InputTable,1);
-set(handles.ListView,'String',mat2cell((1:nbview)',ones(nbview,1)))
-set(handles.ListView,'Value',iview)
-SeriesData.ListViewValue=iview;
-SeriesData.ListViewMenu=mat2cell((1:nbview)',ones(nbview,1));
 set(handles.InputTable,'Data',InputTable)
 
 %% determine the selected reference field indices for pair display
@@ -681,7 +672,6 @@ if isempty(j2)
     j2=j1;
 end
 ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
-% set(handles.num_ref_j,'String',num2str(ref_j)); 
 SeriesData.ref_i=ref_i;
 SeriesData.ref_j=ref_j;
 
@@ -736,13 +726,13 @@ set(handles.series,'UserData',SeriesData)
 set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:     
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview);
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview);
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file
-function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,VideoObject,iview)
+function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,iview)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 
@@ -779,22 +769,27 @@ MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
 if ~isempty(MinIndex_i)&&~isempty(MaxIndex_i)
-MinIndex_i_table(iview,1)=MinIndex_i;
-MaxIndex_i_table(iview,1)=MaxIndex_i;
+    MinIndex_i_table(iview,1)=MinIndex_i;
+    MaxIndex_i_table(iview,1)=MaxIndex_i;
 end
 if ~isempty(MinIndex_j)&&~isempty(MaxIndex_j)
-MinIndex_j_table(iview,1)=MinIndex_j;
-MaxIndex_j_table(iview,1)=MaxIndex_j;
+    MinIndex_j_table(iview,1)=MinIndex_j;
+    MaxIndex_j_table(iview,1)=MaxIndex_j;
 end
 set(handles.MinIndex_i,'Data',MinIndex_i_table)%display the min indices in the table MinIndex
 set(handles.MinIndex_j,'Data',MinIndex_j_table)%display the max indices in the table MaxIndex
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table)%display the min indices in the table MinIndex
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table)%display the max indices in the table MaxIndex
+SeriesData=get(handles.series,'UserData');
 
 %% adjust the first and last indices for the selected series, only if requested by the bounds
 % i index, compare input to min index i
 first_i=str2num(get(handles.num_first_i,'String'));%retrieve previous first i
-ref_i=str2num(get(handles.num_ref_i,'String'));%index i given by the input field
+% ref_i=str2num(get(handles.num_ref_i,'String'));%index i given by the input field
+ref_i=1;
+if isfield(SeriesData,'ref_i')
+ref_i=SeriesData.ref_i;
+end
 if isempty(first_i)
     first_i=ref_i;% first_i updated by the input value
 elseif first_i < MinIndex_i
@@ -804,7 +799,10 @@ elseif first_i >MaxIndex_i
 end
 % j index,  compare input to min index j
 first_j=str2num(get(handles.num_first_j,'String'));
-ref_j=str2num(get(handles.num_ref_j,'String'));%index j given by the input field
+ref_j=1;
+if isfield(SeriesData,'ref_j')
+ref_j=SeriesData.ref_j;
+end
 if isempty(first_j)
     first_j=ref_j;% first_j updated by the input value
 elseif first_j<MinIndex_j
@@ -837,14 +835,14 @@ set(handles.num_last_j,'String',num2str(last_j));
 
 %% number of slices set by default
 NbSlice=1;%default
-% read  value set by the first series for the checkappend mode (iwiew >1)
+% read  value set by the first series for the append mode (iwiew >1)
 if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2num(get(handles.num_NbSlice,'String'));
 end
 
 %% default time unit
 TimeUnit='';
-% read  value set by the first series for the checkappend mode (iwiew >1)
+% read  value set by the first series for the append mode (iwiew >1)
 if iview>1 
     TimeUnit=get(handles.TimeUnit,'String');
 end
@@ -929,44 +927,42 @@ if ~isempty(Time)
 end
 
 %% update the series info in 'UserData'
-SeriesData=get(handles.series,'UserData');
 SeriesData.i1_series{iview}=i1_series;
 SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
 SeriesData.j2_series{iview}=j2_series;
-SeriesData.FileType{iview}=FileType;
+SeriesData.FileType{iview}=FileInfo.FileType;
 SeriesData.FileInfo{iview}=FileInfo;
 SeriesData.Time{iview}=Time;
 if ~isempty(TimeSource)
     SeriesData.TimeSource=TimeSource;
 end
-% if ~isempty(TimeUnit)
-%     SeriesData.TimeUnit=TimeUnit;
-% end
 if check_calib
     SeriesData.GeometryCalib{iview}=XmlData.GeometryCalib;
 end
 set(handles.series,'UserData',SeriesData)
 
 %% update pair menus
-ListView=get(handles.ListView,'String');
-ListView{iview}=num2str(iview);
-set(handles.ListView,'String',ListView);
-set(handles.ListView,'Value',iview)
-update_mode(handles,i1_series,i2_series,j1_series,j2_series,Time)
-
-%% enable j index visibility
-status_j='on';%default
-if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
-    status_j='off'; % no j index needed
-elseif strcmp(get(handles.PairString,'Visible'),'on')
-    PairString=get(handles.PairString,'Data');
-    check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
-    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
-        status_j='off'; % no j index needed for bust case
-    end
+hset_pair=findobj(allchild(0),'Tag','set_pairs');
+if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
+CheckPair= ~isempty(i2_series)||~isempty(j2_series); % check whether index pairs need to be defined
+PairString=get(handles.PairString,'Data');
+if CheckPair% if pairs need to be display for line iview
+    [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series);
+    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j);
+    PairString{iview,1}=Menu{1};
+else
+    PairString{iview,1}='';%no pair for #iview
 end
-enable_j(handles,status_j) % no j index needed
+set(handles.PairString,'Data',PairString)
+if isempty(find(cellfun('isempty',get(handles.PairString,'Data'))==0, 1))% if all lines of pairs are empty
+    set(handles.PairString,'Visible','off')
+    set(handles.SetPairs,'Visible','off')
+else
+    set(handles.PairString,'Visible','on')
+    set(handles.SetPairs,'Visible','on')
+end
+
 
 %% display the set of existing files as an image
 set(handles.FileStatus,'Units','pixels')
@@ -977,12 +973,12 @@ nbview=numel(SeriesData.i1_series);
 j_max=cell(1,nbview);
 MaxIndex_i=ones(1,nbview);%default
 MinIndex_i=ones(1,nbview);%default
-for iview=1:nbview
-    pair_max=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
-    j_max{iview}=max(pair_max,[],1);%max on j index
-    if ~isempty(j_max{iview})
-    MaxIndex_i(iview)=max(find(j_max{iview}))-1;% max ref index i
-    MinIndex_i(iview)=min(find(j_max{iview}))-1;% min ref index i
+for iline=1:nbview
+    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); %max on pair index
+    j_max{iline}=max(pair_max,[],1);%max on j index
+    if ~isempty(j_max{iline})
+    MaxIndex_i(iline)=max(find(j_max{iline}))-1;% max ref index i
+    MinIndex_i(iline)=min(find(j_max{iline}))-1;% min ref index i
     end
 end
 MinIndex_i=min(MinIndex_i);
@@ -992,34 +988,16 @@ range_y=max(1,floor(Position(4)/nbview));
 npx=floor(Position(3));
 file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
 CData=zeros(nbview*range_y,npx);% initiate the image representing the existing files
-for iview=1:nbview
-    ind_y=1+(iview-1)*range_y:iview*range_y;
+for iline=1:nbview
+    ind_y=1+(iline-1)*range_y:iline*range_y;
     LineData=zeros(size(file_indices));
-    file_select=file_indices(file_indices<=numel(j_max{iview}));
-    ind_select=find(file_indices<=numel(j_max{iview}));
-    LineData(ind_select)=j_max{iview}(file_select)~=0;
+    file_select=file_indices(file_indices<=numel(j_max{iline}));
+    ind_select=find(file_indices<=numel(j_max{iline}));
+    LineData(ind_select)=j_max{iline}(file_select)~=0;
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));%make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
-
-%% check for pair display
-check_pairs=0;
-for iview=1:numel(SeriesData.i2_series)
-    if ~isempty(SeriesData.i2_series{iview})||~isempty(SeriesData.j2_series{iview})
-        check_pairs=1;
-    end
-end
-if check_pairs
-%     set(handles.Pairs,'Visible','on')
-    set(handles.PairString,'Visible','on')
-    set(handles.SetPairs,'Visible','on')
-else
-%     set(handles.Pairs,'Visible','off')
-    set(handles.PairString,'Visible','off')
-    set(handles.SetPairs,'Visible','off')
-end
-
 
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
@@ -1027,56 +1005,176 @@ ActionName_Callback([],[], handles)
 %% set length of waitbar
 displ_time(handles)
 
-%% set default options in menu 'Fields'
-switch FileType
-    case {'civx','civdata'}
-        FieldList=[set_field_list('U','V');{'C'}];%standard menu for civx data
-%         set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String','X');
-%         set(handles.Coord_y,'Value',1);
-        set(handles.Coord_y,'String','Y');
-    case 'netcdf'
-        ind_x=find(strcmp(get(handles.Coord_x,'String'),FileInfo.ListVarName));
-        if isempty(ind_x)
-            FieldList={};% new kind of file opened, we need to pick variables with get_field...
-            set(handles.Coord_x,'String','')
-            set(handles.Coord_y,'String','')
+
+% look for netcdf data as input
+% switch FileType
+%     case {'civx','civdata'}
+%         FieldList=[set_field_list('U','V');{'C'}];%standard menu for civx data
+%         set(handles.Coord_x,'String','X');
+%         set(handles.Coord_y,'String','Y');
+%     case 'netcdf'
+%         ind_x=find(strcmp(get(handles.Coord_x,'String'),FileInfo.ListVarName));
+%         if isempty(ind_x)
+%             FieldList={};% new kind of file opened, we need to pick variables with get_field...
+%             set(handles.Coord_x,'String','')
+%             set(handles.Coord_y,'String','')
+%         else
+%             FileInfo.ListVarName(ind_x)=[];%remove coord-x from the list of variables to display
+%             ind_y=find(strcmp(get(handles.Coord_y,'String'),FileInfo.ListVarName));
+%             if isempty(ind_y)
+%             FieldList={};% new kind of file opened, we need to pick variables with get_field...
+%             set(handles.Coord_x,'String','')
+%             set(handles.Coord_y,'String','')
+%             else
+%                 FileInfo.ListVarName(ind_y)=[];%remove coord-y from the list of variables to display
+%                 FieldList=(FileInfo.ListVarName)';
+%             end
+%         end  
+%     otherwise
+%         set(handles.FieldName,'Value',1) % set menu to 'image'
+%         set(handles.FieldName,'String',{'image'})
+%         set(handles.Coord_x,'String','AX');
+%         set(handles.Coord_y,'String','AY');
+% end
+% if ismember(FileType,{'civx','civdata','netcdf'})
+%     PrevMenu=get(handles.FieldName,'String');
+%     PrevValue=get(handles.FieldName,'Value');
+%     PrevMenu=PrevMenu(PrevValue(PrevValue<=numel(PrevMenu)));
+%     FieldValue=[];
+%     for ilist=1:numel(PrevMenu)
+%         index_menu=find(strcmp(PrevMenu{ilist},FieldList));
+%         if ~isempty(index_menu)
+%             FieldValue=[FieldValue index_menu];
+%         end
+%     end
+%     if isempty(FieldValue)
+%         FieldValue=1;
+%     end
+%     set(handles.FieldName,'Value',FieldValue)
+%     set(handles.FieldName,'String',[FieldList;{'get_field...'}])
+% end 
+
+
+%-----------------------------------------------------------guide -------------
+%------------------------------------------------------------------------
+%  III - FUNCTIONS ASSOCIATED TO THE FRAME IndexRange
+%------------------------------------------------------------------------
+
+
+% ---- determine the menu to put in mode and advice a default choice
+%------------------------------------------------------------------------
+function [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series)
+%------------------------------------------------------------------------    
+ModeMenu={''};
+if isempty(j2_series)% no j pair
+    ModeValue=1;
+    if ~isempty(i2_series)
+        ModeMenu={'series(Di)'}; % pair menu with only option Di
+    end
+else %existence of j pairs
+    pair_max=squeeze(max(i1_series,[],1)); %max on pair index
+    j_max=max(pair_max,[],1);
+    MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i
+    MinIndex_i=find(j_max, 1 )-1;% min ref index i
+    i_max=max(pair_max,[],2);
+    MaxIndex_j=find(i_max, 1, 'last' )-1;% max ref index i
+    MinIndex_j=find(i_max, 1 )-1;% min ref index i
+    if MaxIndex_j==MinIndex_j
+        ModeValue=1;
+        ModeMenu={'bursts'};
+    elseif MaxIndex_i==MinIndex_i
+        ModeValue=1;
+        ModeMenu={'series(Dj)'};
+    else
+        ModeMenu={'bursts';'series(Dj)'};
+        if (MaxIndex_j-MinIndex_j)>10
+            ModeValue=2;%set mode to series(Dj) if more than 10 j values
         else
-            FileInfo.ListVarName(ind_x)=[];%remove coord-x from the list of variables to display
-            ind_y=find(strcmp(get(handles.Coord_y,'String'),FileInfo.ListVarName));
-            if isempty(ind_y)
-            FieldList={};% new kind of file opened, we need to pick variables with get_field...
-            set(handles.Coord_x,'String','')
-            set(handles.Coord_y,'String','')
-            else
-                FileInfo.ListVarName(ind_y)=[];%remove coord-y from the list of variables to display
-                FieldList=(FileInfo.ListVarName)';
-            end
-        end  
-    otherwise
-        set(handles.FieldName,'Value',1) % set menu to 'image'
-        set(handles.FieldName,'String',{'image'})
-        set(handles.Coord_x,'String','AX');
-        set(handles.Coord_y,'String','AY');
-end
-if ismember(FileType,{'civx','civdata','netcdf'})
-    PrevMenu=get(handles.FieldName,'String');
-    PrevMenu=PrevMenu(get(handles.FieldName,'Value'));
-    FieldValue=[];
-    for ilist=1:numel(PrevMenu)
-        index_menu=find(strcmp(PrevMenu{ilist},FieldList));
-        if ~isempty(index_menu)
-            FieldValue=[FieldValue index_menu];
+            ModeValue=1;
         end
     end
-    if isempty(FieldValue)
-        FieldValue=1;
-    end
-    set(handles.FieldName,'Value',FieldValue)
-    set(handles.FieldName,'String',[FieldList;{'get_field...'}])
-end 
+end
 
-      
+
+%------------------------------------------------------------------------
+function displ_pair=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j)
+%------------------------------------------------------------------------
+displ_pair={};
+if isempty(TimeUnit)
+    dtunit='e-03';
+else
+    dtunit=['m' TimeUnit];
+end
+switch mode
+    case 'series(Di)'
+        diff_i=i2_series-i1_series;
+        min_diff=min(diff_i(diff_i>0));
+        max_diff=max(diff_i(diff_i>0));
+        for ipair=min_diff:max_diff
+            if numel(diff_i(diff_i==ipair))>0
+                pair_string=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
+                if ~isempty(time)
+                    if ref_i<=floor(ipair/2)
+                        ref_i=floor(ipair/2)+1;% shift ref_i to get the first pair
+                    end
+                    Dt=time(ref_i+ceil(ipair/2),ref_j)-time(ref_i-floor(ipair/2),ref_j);
+                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
+                end
+                displ_pair=[displ_pair;{pair_string}];
+            end
+        end
+        if ~isempty(displ_pair)
+            displ_pair=[displ_pair;{'Di=*|*'}];
+        end
+    case 'series(Dj)'
+        if isempty(j2_series)
+            msgbox_uvmat('ERROR','no j1-j2 pair available')
+            return
+        end
+        diff_j=j2_series-j1_series;
+        min_diff=min(diff_j(diff_j>0));
+        max_diff=max(diff_j(diff_j>0));
+        for ipair=min_diff:max_diff
+            if numel(diff_j(diff_j==ipair))>0
+                pair_string=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
+                if ~isempty(time)
+                    if ref_j<=floor(ipair/2)
+                        ref_j=floor(ipair/2)+1;% shift ref_i to get the first pair
+                    end
+                    Dt=time(ref_i,ref_j+ceil(ipair/2))-time(ref_i,ref_j-floor(ipair/2));
+                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
+                end
+                displ_pair=[displ_pair;{pair_string}];
+            end
+        end
+        if ~isempty(displ_pair)
+            displ_pair=[displ_pair;{'Dj=*|*'}];
+        end
+    case 'bursts'
+        if isempty(j2_series)
+            msgbox_uvmat('ERROR','no j1-j2 pair available')
+            return
+        end
+        %diff_j=j2_series-j1_series;
+        min_j1=min(j1_series(j1_series>0));
+        max_j1=max(j1_series(j1_series>0));
+        min_j2=min(j2_series(j2_series>0));
+        max_j2=max(j2_series(j2_series>0));
+        for pair1=min_j1:min(max_j1,min_j1+20)
+            for pair2=min_j2:min(max_j2,min_j2+20)
+                if numel(j1_series(j1_series==pair1))>0 && numel(j2_series(j2_series==pair2))>0
+                    pair_string=['j= ' num2str(pair1) '-' num2str(pair2)];
+                    Dt=time(ref_i,pair2+1)-time(ref_i,pair1+1);
+                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
+                    displ_pair=[displ_pair;{pair_string}];
+                end
+            end
+        end
+        if ~isempty(displ_pair)
+            displ_pair=[displ_pair;{'j=*-*'}];
+        end
+end
+
 %------------------------------------------------------------------------
 function num_first_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1109,7 +1207,6 @@ if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
 displ_time(handles);
-
 
 %------------------------------------------------------------------------
 % ---- find the times corresponding to the first and last indices of a series
@@ -1171,232 +1268,11 @@ update_waitbar(handles.Waitbar,0)
 function PairString_CellSelectionCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------    
 if numel(eventdata.Indices)>=1
-set(handles.ListView,'Value',eventdata.Indices(1))% detect the selected raw index
-ListView_Callback ([],[],handles) % update the list of available pairs
-end
-
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-%  III - FUNCTIONS ASSOCIATED TO THE FRAME SET PAIRS
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-% --- Executes on selection change in ListView.
-function ListView_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------    
-SeriesData=get(handles.series,'UserData');
-i2_series=[];
-j2_series=[];
-iview=get(handles.ListView,'Value');
-if ~isempty(SeriesData.i2_series{iview})
-    i2_series=SeriesData.i2_series{iview};
-end
-if ~isempty(SeriesData.j2_series{iview})
-    j2_series=SeriesData.j2_series{iview};
-end
-update_mode(handles,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
-    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview})
-
-%------------------------------------------------------------------------
-% --- Executes on button press in mode.
-function mode_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------       
-SeriesData=get(handles.series,'UserData');
-iview=get(handles.ListView,'Value');
-mode_list=get(handles.mode,'String');
-mode=mode_list{get(handles.mode,'Value')};
-if isequal(mode,'bursts')
-    enable_i(handles,'On')
-    enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
-else
-    enable_i(handles,'On')
-    enable_j(handles,'Off')
-end
-fill_ListPair(handles,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
-    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview})
-ListPairs_Callback([],[],handles)
-
-%-------------------------------------------------------------
-% --- Executes on selection in ListPairs.
-function ListPairs_Callback(hObject,eventdata,handles)
-%------------------------------------------------------------
-list_pair=get(handles.ListPairs,'String');%get the menu of image pairs
-if isempty(list_pair)
-    string='';
-else
-    string=list_pair{get(handles.ListPairs,'Value')};
-    string=regexprep(string,',.*','');%removes time indication (after ',')
-end
-PairString=get(handles.PairString,'Data');
-iview=get(handles.ListView,'Value');
-PairString{iview,1}=string;
-% report the selected pair string to the table PairString
-set(handles.PairString,'Data',PairString)
-
-
-%------------------------------------------------------------------------
-function update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
-%------------------------------------------------------------------------    
-% check_burst=0;
-ModeMenu={''};
-if isempty(j2_series)% no j pair
-    ModeValue=1;
-    if isempty(i2_series)
-        set(handles.mode,'String',{''})% no pair menu to display
-    else   
-        set(handles.mode,'Value',1)
-        ModeMenu={'series(Di)'}; % pair menu with only option Di
-    end
-else %existence of j pairs
-    pair_max=squeeze(max(i1_series,[],1)); %max on pair index
-    j_max=max(pair_max,[],1);
-    MaxIndex_i=max(find(j_max))-1;% max ref index i
-    MinIndex_i=min(find(j_max))-1;% min ref index i
-    i_max=max(pair_max,[],2);
-    MaxIndex_j=max(find(i_max))-1;% max ref index i
-    MinIndex_j=min(find(i_max))-1;% min ref index i
-    if MaxIndex_j==MinIndex_j
-        ModeValue=1;
-        ModeMenu={'bursts'};
-    elseif MaxIndex_i==MinIndex_i
-    ModeValue=1;
-    ModeMenu={'series(Dj)'};
-    else
-        ModeMenu={'bursts';'series(Dj)'};
-        if (MaxIndex_j-MinIndex_j)>10
-            ModeValue=2;%set mode to series(Dj) if more than 10 j values
-        else
-            ModeValue=1;
-        end
+    PairString=get(hObject,'Data');
+    if ~isempty(PairString{eventdata.Indices(1)})
+        SetPairs_Callback(hObject, eventdata.Indices(1), handles)
     end
 end
-
-set(handles.mode,'String',ModeMenu)
-set(handles.mode,'Value',ModeValue)
-SeriesData=get(handles.series,'UserData');
-SeriesData.ModeMenu=ModeMenu;
-SeriesData.ModeValue=ModeValue;
-set(handles.series,'UserData',SeriesData)
-fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
-ListPairs_Callback([],[],handles)
-
-%--------------------------------------------------------------
-% determine the menu for pairstring depending on existing netcdf files 
-% with the reference indices num_ref_i and num_ref_j
-%----------------------------------------------------------------
-function fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
-
-mode_list=get(handles.mode,'String');
-mode=mode_list{get(handles.mode,'Value')};
-ref_i=str2num(get(handles.num_ref_i,'String'));
-if isempty(ref_i)
-    ref_i=1;
-end
-if strcmp(get(handles.num_ref_j,'Visible'),'on')
-    ref_j=str2num(get(handles.num_ref_j,'String'));
-    if isempty(ref_j)
-        ref_j=1;
-    end
-else
-    ref_j=1;
-end
-TimeUnit=get(handles.TimeUnit,'String');
-if length(TimeUnit)>=1
-    dtunit=['m' TimeUnit];
-else
-    dtunit='e-03';
-end
-
-displ_pair={};
-if strcmp(mode,'series(Di)') 
-    if isempty(i2_series)
-        msgbox_uvmat('ERROR','no i1-i2 pair available')
-        return
-    end
-    diff_i=i2_series-i1_series;
-    min_diff=min(diff_i(diff_i>0));
-    max_diff=max(diff_i(diff_i>0));
-    for ipair=min_diff:max_diff
-        if numel(diff_i(diff_i==ipair))>0
-            pair_string=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if ~isempty(time) 
-                if ref_i<=floor(ipair/2)
-                    ref_i=floor(ipair/2)+1;% shift ref_i to get the first pair
-                end
-                Dt=time(ref_i+ceil(ipair/2),ref_j)-time(ref_i-floor(ipair/2),ref_j);
-                pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
-            end
-            displ_pair=[displ_pair;{pair_string}];
-        end
-    end
-    if ~isempty(displ_pair)
-        displ_pair=[displ_pair;{'Di=*|*'}];
-    end
-elseif strcmp(mode,'series(Dj)')
-    if isempty(j2_series)
-        msgbox_uvmat('ERROR','no j1-j2 pair available')
-        return
-    end
-    diff_j=j2_series-j1_series;
-    min_diff=min(diff_j(diff_j>0));
-    max_diff=max(diff_j(diff_j>0));
-    for ipair=min_diff:max_diff
-        if numel(diff_j(diff_j==ipair))>0
-            pair_string=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if ~isempty(time) 
-                if ref_j<=floor(ipair/2)
-                    ref_j=floor(ipair/2)+1;% shift ref_i to get the first pair
-                end
-                Dt=time(ref_i,ref_j+ceil(ipair/2))-time(ref_i,ref_j-floor(ipair/2));
-                pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
-            end
-            displ_pair=[displ_pair;{pair_string}];
-        end
-    end
-    if ~isempty(displ_pair)
-        displ_pair=[displ_pair;{'Dj=*|*'}];
-    end
-elseif strcmp(mode,'bursts')
-    if isempty(j2_series)
-        msgbox_uvmat('ERROR','no j1-j2 pair available')
-        return
-    end
-    diff_j=j2_series-j1_series;
-    min_j1=min(j1_series(j1_series>0));
-    max_j1=max(j1_series(j1_series>0));
-    min_j2=min(j2_series(j2_series>0));
-    max_j2=max(j2_series(j2_series>0));
-    for pair1=min_j1:min(max_j1,min_j1+20)
-        for pair2=min_j2:min(max_j2,min_j2+20)
-        if numel(j1_series(j1_series==pair1))>0 && numel(j2_series(j2_series==pair2))>0
-            displ_pair=[displ_pair;{['j= ' num2str(pair1) '-' num2str(pair2)]}];
-        end
-        end
-    end
-    if ~isempty(displ_pair)
-        displ_pair=[displ_pair;{'j=*-*'}];
-    end
-end
-set(handles.num_ref_i,'String',num2str(ref_i)) % update ref_i and ref_j 
-set(handles.num_ref_j,'String',num2str(ref_j))
-
-%% display list of pairstring
-SeriesData=get(handles.series,'UserData');
-displ_pair_list=get(handles.ListPairs,'String');
-NewVal=[];
-if ~isempty(displ_pair_list)
-Val=get(handles.ListPairs,'Value');
-NewVal=find(strcmp(displ_pair_list{Val},displ_pair),1);% look at the previous display in the new menu displ_p�ir
-end
-if ~isempty(NewVal)
-    set(handles.ListPairs,'Value',NewVal)
-    SeriesData.ListPairsValue=NewVal;
-else
-    set(handles.ListPairs,'Value',1)
-    SeriesData.ListPairsValue=1;
-end
-set(handles.ListPairs,'String',displ_pair)
-SeriesData.ListPairsMenu=displ_pair;
-set(handles.series,'UserData',SeriesData);
 
 %-------------------------------------
 function enable_i(handles,state)
@@ -1404,8 +1280,6 @@ set(handles.i_txt,'Visible',state)
 set(handles.num_first_i,'Visible',state)
 set(handles.num_last_i,'Visible',state)
 set(handles.num_incr_i,'Visible',state)
-set(handles.num_ref_i,'Visible',state)
-set(handles.ref_i_text,'Visible',state)
 
 %-----------------------------------
 function enable_j(handles,state)
@@ -1413,8 +1287,6 @@ set(handles.j_txt,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
-set(handles.num_ref_j,'Visible',state)
-set(handles.ref_j_text,'Visible',state)
 set(handles.MinIndex_j,'Visible',state)
 set(handles.MaxIndex_j,'Visible',state)
 
@@ -2068,23 +1940,126 @@ try
     set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
 end
 
-%% Detect the types of input files
-SeriesData=get(handles.series,'UserData');% info on the input file series
-iview_civ=[];nb_netcdf=0;
-if ~isempty(SeriesData)&&isfield(SeriesData,'FileType')
-    iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
-    nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
+
+%% Visibility of VelType and VelType_1 menus asked by ActionName
+VelTypeRequest=1;%VelType requested by default
+VelTypeRequest_1=1;%VelType requested by default
+if isfield(ParamOut,'VelType')
+    VelTypeRequest=ismember(ParamOut.VelType,{'on','one','two'});
+    VelTypeRequest_1=strcmp( ParamOut.VelType,'two');
 end
-if numel(iview_civ)>=1 && ~isempty(iview_civ(1))
+FieldNameRequest=0;  %hidden by default
+FieldNameRequest_1=0;  %hidden by default
+if isfield(ParamOut,'FieldName')
+    FieldNameRequest=ismember(ParamOut.FieldName,{'on','one','two'});
+    FieldNameRequest_1=strcmp( ParamOut.FieldName,'two');
+end
+
+%% Detect the types of input files and set menus and default options in 'VelType'
+SeriesData=get(handles.series,'UserData');% info on the input file series
+iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
+iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));% all nc files, icluding civ
+FieldList=get(handles.FieldName,'String');% previous list as default
+FieldList_1=get(handles.FieldName_1,'String');% previous list as default
+CheckList=0;% indicate whether FieldName has been updated
+CheckList_1=1;% indicate whether FieldName_1 has been updated
+handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
+if VelTypeRequest && numel(iview_civ)>=1 
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
     set(handles.VelType,'Value',1)% set first choice by default
     set(handles.VelType,'String',[{'*'};menu])
-    if numel(iview_civ)>=2
+    set(handles.VelType,'Visible','on')
+    set(handles.VelType_title,'Visible','on')
+    FieldList=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
+    CheckList=1;
+    set(handles.FieldName,'Value',1); %velocity vector choice by default
+    if  VelTypeRequest_1 && numel(iview_civ)>=2 
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
         set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
+        set(handles.VelType_1,'Visible','on')
+        set(handles.VelType_title_1,'Visible','on')
+        FieldList_1=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
+        CheckList_1=1;
+        set(handles.FieldName_1,'Value',1); %velocity vector choice by default
+    else
+        set(handles.VelType_1,'Visible','off')
+        set(handles.VelType_title_1,'Visible','off')
     end
-end       
+else
+    set(handles.VelType,'Visible','off')
+    set(handles.VelType_title,'Visible','off')
+end   
+
+%% Detect the types of input files and set menus and default options in 'FieldName'
+if FieldNameRequest && numel(iview_netcdf)>=1
+    set(handles.InputFields,'Visible','on')
+%     set(handles.FieldName,'Visible','on')
+    if CheckList==0        % not civ input made
+        ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
+        ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
+        for ilist=1:numel(ind_var)
+            if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
+                FieldList={};% previous choice not consistent with new input field
+                set(handles.FieldName,'Value',1)
+                break
+            end
+        end
+        if ~isempty(FieldList)
+            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
+                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
+                FieldList={};
+                set(handles.Coord_x,'String','')
+                set(handles.Coord_y,'String','')
+            end
+            Coord_z=get(handles.Coord_z,'String');
+            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
+                FieldList={};
+                set(handles.Coord_z,'String','')
+            end
+        end
+        set(handles_coord,'Visible','on')
+        FieldList=[FieldList;{'get_field...'}];
+        if FieldNameRequest_1 && numel(iview_netcdf)>=2
+            set(handles.FieldName_1,'Visible','on')
+            if CheckList_1==0        % not civ input made
+                ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
+                ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
+                for ilist=1:numel(ind_var)
+                    if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
+                        FieldList_1={};% previous choice not consistent with new input field
+                        set(handles.FieldName_1,'Value',1)
+                        break
+                    end
+                end
+                warn_coord=0;
+                if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
+                        isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
+                    warn_coord=1;
+                end
+                if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
+                    FieldList_1={};
+                    warn_coord=1;
+                end
+                if warn_coord
+                    msgbox_uvmat('WARNING','coordiante names do not exist in the second netcdf input file')
+                end
+                set(handles.FieldName,'String',[FieldList;{'get_field...'}])
+                set(handles.FieldName_1,'Visible','on')
+                set(handles.FieldName_1,'Value',1)
+                set(handles.FieldName_1,'String',FieldList_1)
+            end
+        else
+            set(handles.FieldName_1,'Visible','off')
+        end
+    else
+        set(handles_coord,'Visible','off')% no coord display for civ data
+    end
+    set(handles.FieldName,'String',FieldList)
+else
+    set(handles.InputFields,'Visible','off')
+end
+
 
 %% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
@@ -2120,29 +2095,31 @@ else  % check index ranges
     first_i=1;last_i=1;first_j=1;last_j=1;
     if isfield(Param.IndexRange,'first_i')
         first_i=Param.IndexRange.first_i;
-       % incr_i=Param.IndexRange.incr_i;
         last_i=Param.IndexRange.last_i;
     end
     if isfield(Param.IndexRange,'first_j')
         first_j=Param.IndexRange.first_j;
-       % incr_j=Param.IndexRange.incr_j;
         last_j=Param.IndexRange.last_j;
     end
     if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
             set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 end
 
-%% desable j index if if set by the civ_input GUI
+%% enable or desable j index visibility
+status_j='on';%default
 if isfield(ParamOut,'Desable_j_index')&&isequal(ParamOut.Desable_j_index,'on')
-    set(handles.num_first_j,'Enable','off')
-    set(handles.num_last_j,'Enable','off')
-    set(handles.num_incr_j,'Enable','off')
-    set(handles.num_incr_j,'String','')
-else
-   set(handles.num_first_j,'Enable','on')
-    set(handles.num_last_j,'Enable','on')
-    set(handles.num_incr_j,'Enable','on')
+    status_j='off';
 end
+if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
+    status_j='off'; % no j index needed
+elseif strcmp(get(handles.PairString,'Visible'),'on')
+    check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j'));%=0 for burst case, 1 otherwise
+    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
+        status_j='off'; % no j index needed for bust case
+    end
+end
+enable_j(handles,status_j) % no j index needed
+
 
 %% NbSlice visibility
 NbSliceVisible='off';%default
@@ -2155,47 +2132,7 @@ end
 set(handles.num_NbSlice,'Visible',NbSliceVisible)
 set(handles.NbSlice_title,'Visible',NbSliceVisible)
 
-%% Visibility of VelType and VelType_1 menus
-VelTypeVisible='off';  %hidden by default
-VelType_1Visible='off';
-InputFieldsVisible='off';%visibility of the frame Fields
-if isfield(ParamOut,'VelType')
-    if strcmp( ParamOut.VelType,'on')||strcmp(ParamOut.VelType,'one')||strcmp( ParamOut.VelType,'two')
-        if numel(iview_civ)>=1
-            VelTypeVisible='on';
-            InputFieldsVisible='on';
-        end
-    end
-    if strcmp( ParamOut.VelType,'two')
-        if numel(iview_civ)>=2
-            VelType_1Visible='on';
-        end
-    end
-end
-set(handles.VelType,'Visible',VelTypeVisible)
-set(handles.VelType_text,'Visible',VelTypeVisible);
-set(handles.VelType_1,'Visible',VelType_1Visible)
-set(handles.VelType_text_1,'Visible',VelType_1Visible);
 
-%% Visibility of FieldName and FieldName_1 menus
-FieldNameVisible='off';  %hidden by default
-FieldName_1Visible='off';  %hidden by default
-if isfield(ParamOut,'FieldName')
-    if strcmp( ParamOut.FieldName,'on') || strcmp(ParamOut.FieldName,'one')||strcmp( ParamOut.FieldName,'two')
-        if (numel(iview_civ)+nb_netcdf)>=1
-            InputFieldsVisible='on';
-            FieldNameVisible='on';
-        end
-    end
-    if strcmp( ParamOut.FieldName,'two')
-        if (numel(iview_civ)+nb_netcdf)>=1
-            FieldName_1Visible='on';
-        end
-    end
-end
-set(handles.InputFields,'Visible',InputFieldsVisible)
-set(handles.FieldName,'Visible',FieldNameVisible) % test for MenuBorser
-set(handles.FieldName_1,'Visible',FieldName_1Visible)
 
 %% Visibility of FieldTransform menu
 FieldTransformVisible='off';  %hidden by default
@@ -2229,7 +2166,6 @@ MaskVisible='off';  %hidden by default
 if isfield(ParamOut,'Mask')
     MaskVisible=ParamOut.Mask;
 end
-%set(handles.Mask,'Visible',MaskVisible)
 set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
@@ -2271,21 +2207,15 @@ end
 
 %% definition of an additional parameter set, determined by an ancillary GUI
 if isfield(ParamOut,'ActionInput')
-%     set(handles.ActionInput,'Visible','on')
-%     set(handles.ActionInput_title,'Visible','on')
     set(handles.ActionInput,'Visible','on')
- %   set(handles.ActionInput,'Value',0)
-%     set(handles.ActionInput,'String',ActionName)
     ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
     SeriesData.ActionInput=ParamOut.ActionInput;
 else
-%     set(handles.ActionInput,'Visible','off')
-%     set(handles.ActionInput_title,'Visible','off')
     set(handles.ActionInput,'Visible','off')
     if isfield(SeriesData,'ActionInput')
-    SeriesData=rmfield(SeriesData,'ActionInput');
+        SeriesData=rmfield(SeriesData,'ActionInput');
     end
-end   
+end
 set(handles.series,'UserData',SeriesData)
 set(handles.ActionName,'BackgroundColor',[1 1 1])
 
@@ -2346,12 +2276,14 @@ if isequal(field,'get_field...')
                 XName='X';
                 YName='y';
                 set(handles.VelType,'visible','on')
+                set(handles.VelType_title,'visible','on')
         end
         set(handles.FieldName,'Value',1)
         set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
             set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
             set(handles.VelType,'visible','off')
+            set(handles.VelType_title,'visible','off')
             XName=GetFieldData.Coordinates.Coord_x;
             YName=GetFieldData.Coordinates.Coord_y;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
@@ -2713,14 +2645,15 @@ end
 %-------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-else
-    addpath (fullfile(pathelp,'uvmat_doc'))
-    web([helpfile '#series'])
-end
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#series')
+% path_to_uvmat=which ('uvmat');% check the path of uvmat
+% pathelp=fileparts(path_to_uvmat);
+% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+% if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+% else
+%     addpath (fullfile(pathelp,'uvmat_doc'))
+%     web([helpfile '#series'])
+% end
 
 %-------------------------------------------------------------------
 % --- Executes on selection change in TransformName.
@@ -2773,7 +2706,7 @@ set(handles.TransformName,'UserData',TransformPathList);
 %------------------------------------------------------------------------
 % --- fct activated by the upper bar menu ExportConfig
 %------------------------------------------------------------------------
-function MenuExportConfig_Callback(hObject, eventdata, handles)
+function MenuDisplayConfig_Callback(hObject, eventdata, handles)
 
 global Param
 Param=read_GUI_series(handles);
@@ -2787,11 +2720,8 @@ commandwindow; %brings the Matlab command window to the front
 %     menu settings from an xml file (stored in /0_XML for each run)
 %------------------------------------------------------------------------
 function MenuImportConfig_Callback(hObject, eventdata, handles)
-% SeriesData=get(handles.series,'UserData');
-% if isfield(SeriesData,'RefFile')
-%     oldfile=SeriesData.RefFile{1};
-% end
-%% use a strating file name for browserr
+
+%% use a starting file name for browserr
 InputTable=get(handles.InputTable,'Data');
 oldfile=InputTable{1,1};
 if isempty(oldfile)
@@ -2829,6 +2759,7 @@ if ~isempty(filexml)
     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
         set(handles.ActionInput,'Visible','on')
         set(handles.ActionInput,'Value',0)
+        Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
         SeriesData.ActionInput=Param.ActionInput;
     end
     if isfield(Param,'ProjObject') %introduce projection object if relevant
@@ -3135,7 +3066,13 @@ set(hObject,'Pointer','arrow');
 
 
 % --- Executes on button press in SetPairs.
-function SetPairs_Callback(hObject, eventdata, handles)
+function SetPairs_Callback(hObject, iview, handles)
+
+%% delete previous occurrence of 'set_pairs'
+hfig=findobj(allchild(0),'Tag','set_pairs');
+if ~isempty(hfig)
+delete(hfig)
+end
 
 %% create the GUI set_pairs
 set(0,'Unit','points')
@@ -3148,67 +3085,116 @@ hfig=findobj(allchild(0),'Tag','set_slice');
 if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
 hfig=figure('name','set_pairs','tag','set_pairs','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
 BackgroundColor=get(hfig,'Color');
-hh=0.14; % box height (relative)
-ii=0.01; % gap between uicontrols
-
-ww=0.9; % box width (relative)
 SeriesData=get(handles.series,'UserData');
+TimeUnit=get(handles.TimeUnit,'String');
+PairString=get(handles.PairString,'Data');
+ListViewLines=find(cellfun('isempty',PairString)==0);%find list of non empty pairs
+ListViewMenu=cell(numel(ListViewLines),1);
+for ilist=1:numel(ListViewLines)
+    ListViewMenu{ilist}=num2str(ListViewLines(ilist));
+end
+if isempty(iview)
+    ListViewValue=numel(ListViewLines);% we work by default on the pair option for the last line which requires pairs
+    iview=ListViewLines(end);
+else
+    ListViewValue=find(ListViewLines==iview);
+end
+[ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j2_series{iview});
+displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j1_series{iview},SeriesData.j2_series{iview},ModeMenu{ModeValue},...
+                                                     SeriesData.Time{iview},TimeUnit,SeriesData.ref_i,SeriesData.ref_j);
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'tag','ListView','BackgroundColor',[1 1 1],...
-    'String',SeriesData.ListViewMenu,'Value',SeriesData.ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListView'':choice of the file series w for pair display');
+uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)ListView_Callback(hObject,eventdata),'String',ListViewMenu,'Value',ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','ListView','TooltipString','''ListView'':choice of the file series w for pair display');
 % second raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.79 0.7 0.1],'BackgroundColor',BackgroundColor,...
     'String','mode of index pairing:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
-uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.05 0.62 ww 0.2],'tag','Mode','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ModeMenu_Callback(hObject,eventdata),...
-    'String',SeriesData.ModeMenu,'Value',SeriesData.ModeValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''Mode'': choice of the image pair mode');
+uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.05 0.62 0.9 0.2],'BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)Mode_Callback(hObject,eventdata),'String',ModeMenu,'Value',ModeValue,'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','Mode','TooltipString','''Mode'': choice of the image pair mode');
 % third raw
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.6 0.7 0.1],'BackgroundColor',BackgroundColor,...
     'String','pair choice:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
-uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.42 ww 0.2],'tag','ListPairs','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)ListPairsMenu_Callback(hObject,eventdata),...
-    'String',SeriesData.ListPairsMenu,'Value',SeriesData.ListPairsValue,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''ListPairs'': menu for selecting the image pair');
+uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.42 0.9 0.2],'BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)ListPair_Callback(hObject,eventdata),'String',displ_pair,'Value',1,'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','ListPair','TooltipString','''ListPair'': menu for selecting the image pair');
 uicontrol('Style','text','Units','normalized', 'Position', [0.1 0.22 0.8 0.1],'BackgroundColor',BackgroundColor,...
     'String','ref_i           ref_j','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],'tag','num_ref_i','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),...
-    'String',num2str(SeriesData.ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_ref_i'': reference field index i used to display dt in ''list_pair_civ''');
-uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],'tag','num_ref_j','BackgroundColor',[1 1 1],'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),...
-    'String',num2str(SeriesData.ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_ref_j'': reference field index i used to display dt in ''list_pair_civ''');
+uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),'String',num2str(SeriesData.ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','num_ref_i','TooltipString','''num_ref_i'': reference field index i used to display dt in ''list_pair_civ''');
+uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),'String',num2str(SeriesData.ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','num_ref_j','TooltipString','''num_ref_j'': reference field index i used to display dt in ''list_pair_civ''');
 %  last raw  of the GUI: pushbuttons
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
+% uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
+%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
 drawnow
 
-function ModeMenu_Callback(hObject,eventdata)
-hseries=findobj(allchild(0),'tag','series');
-hhseries=guidata(hseries);
+%------------------------------------------------------------------------
+function ListView_Callback(hObject,eventdata)
+Mode_Callback(hObject,eventdata)
+
+%------------------------------------------------------------------------    
+function Mode_Callback(hObject,eventdata)
+%% get input info
+hseries=findobj(allchild(0),'tag','series');%handles of the GUI series
+hhseries=guidata(hseries);%handles of the elements in the GUI series
+TimeUnit=get(hhseries.TimeUnit,'String');
 SeriesData=get(hseries,'UserData');
+mode_list=get(hObject,'String');
+mode=mode_list{get(hObject,'Value')};
 hListView=findobj(get(hObject,'parent'),'Tag','ListView');
 iview=get(hListView,'Value');
-hMode=findobj(get(hObject,'parent'),'Tag','Mode');
-mode_list=get(hMode,'String');
-mode=mode_list{get(hMode,'Value')};
-if isequal(mode,'bursts')
-    enable_i(hhseries,'On')
-    enable_j(hhseries,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
-else
-    enable_i(hhseries,'On')
-    enable_j(hhseries,'Off')
+i1_series=SeriesData.i1_series{iview};
+i2_series=SeriesData.i2_series{iview};
+j1_series=SeriesData.j1_series{iview};
+j2_series=SeriesData.j2_series{iview};
+
+%% enable j index visibility after the new choice
+status_j='on';%default
+if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
+    status_j='off'; % no j index needed
+elseif strcmp(get(handles.PairString,'Visible'),'on')
+    check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
+    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
+        status_j='off'; % no j index needed for bust case
+    end
 end
-fill_ListPair(hhseries,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
-    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview})
-ListPairs_Callback([],[],hhseries)
+enable_j(handles,status_j) % no j index needed
+
+%% get the reference indices for the time interval Dt
+href_i=findobj(get(hObject,'parent'),'Tag','ref_i');
+ref_i=[];ref_j=[];
+if strcmp(get(href_i,'Visible'),'on')
+    ref_i=str2num(get(href_i,'String'));
+end
+if isempty(ref_i)
+    ref_i=1;
+end
+if isempty(ref_j)
+    ref_j=1;
+end
+
+%% update the menu ListPair
+Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j);
+hlist_pairs=findobj(get(hObject,'parent'),'Tag','ListPair');
+set(hlist_pairs,'Value',1)% set the first choice by default in ListPair
+set(hlist_pairs,'String',Menu)% set the menu in ListPair
+ListPair_Callback(hlist_pairs,[])% apply the default choice in ListPair
 
 %-------------------------------------------------------------
-% --- Executes on selection in ListPairs.
-function ListPairsMenu_Callback(hObject,eventdata)
+% --- Executes on selection in ListPair.
+function ListPair_Callback(hObject,eventdata)
 %------------------------------------------------------------
 list_pair=get(hObject,'String');%get the menu of image pairs
 if isempty(list_pair)
     string='';
 else
     string=list_pair{get(hObject,'Value')};
-    string=regexprep(string,',.*','');%removes time indication (after ',')
+   % string=regexprep(string,',.*','');%removes time indication (after ',')
 end
 hseries=findobj(allchild(0),'tag','series');
 hPairString=findobj(hseries,'tag','PairString');
@@ -3219,30 +3205,50 @@ PairString{iview,1}=string;
 % report the selected pair string to the table PairString
 set(hPairString,'Data',PairString)
 
+
 %------------------------------------------------------------------------
 function num_ref_i_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
-hMode=findobj(get(hObject,'parent'),'Tag','Mode');
-mode_list=get(hMode,'String');
-mode=mode_list{get(hMode,'Value')};
-hseries=findobj(allchild(0),'tag','series');
-hhseries=guidata(hseries);
-SeriesData=get(hseries,'UserData');
-hListView=findobj(get(hObject,'parent'),'Tag','ListView');
-iview=get(hListView,'Value');
-fill_ListPair(hhseries,SeriesData.i1_series{iview},SeriesData.i2_series{iview},...
-    SeriesData.j1_series{iview},SeriesData.j2_series{iview},SeriesData.Time{iview});% update the menu of pairs depending on the available netcdf files
-
-hListPairs=findobj(get(hObject,'parent'),'Tag','ListPairs');
-ListPairsMenu_Callback(hListPairs,eventdata)
+Mode_Callback([],[])
 
 %------------------------------------------------------------------------
 function num_ref_j_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
-num_ref_i_Callback(hObject, eventdata)
+Mode_Callback([],[])
 
-%-------------------------------------------------------------
-% --- Executes on selection in ListPairs.
-function OK_Callback(hObject,eventdata)
-%------------------------------------------------------------
-delete(get(hObject,'parent'))
+
+
+function Coord_z_Callback(hObject, eventdata, handles)
+% hObject    handle to Coord_z (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Coord_z as text
+%        str2double(get(hObject,'String')) returns contents of Coord_z as a double
+
+
+
+% % --- Executes on key press with focus on InputTable and none of its controls.
+% function InputTable_KeyPressFcn(hObject, eventdata, handles)
+% set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
+% % set(handles.REFRESH_title,'Visible','on')
+% iview=eventdata.Indices(1);
+% view_set=get(handles.REFRESH,'UserData');
+% if isempty(find(view_set==iview))
+%     set(handles.REFRESH,'UserData',[view_set iview])
+% end
+% %% enable other menus and uicontrols
+% set(handles.MenuOpenCampaign,'Enable','on')
+% set(handles.MenuCampaign_1,'Enable','on')
+% set(handles.MenuCampaign_2,'Enable','on')
+% set(handles.MenuCampaign_3,'Enable','on')
+% set(handles.MenuCampaign_4,'Enable','on')
+% set(handles.MenuCampaign_5,'Enable','on')
+% set(handles.RUN, 'Enable','On')
+% set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
+
+
+% hObject    handle to InputTable (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) currently selecteds
+% handles    structure with handles and user data (see GUIDATA)
