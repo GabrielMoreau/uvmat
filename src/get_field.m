@@ -65,21 +65,23 @@ guidata(hObject, handles);
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
 %% enter input data
-if ischar(filename)% input file name
+if ischar(filename) % input file name
     set(handles.inputfile,'String',filename)% fill the input file name
-    Field=nc2struct(filename,[]);% reads the  field structure, without the variables
+    [Field,tild,tild,errormsg]=nc2struct(filename,[]);% reads the  field structure, without the variables
 else
-    'bad input to get_field'
+    msgbox_uvmat('ERROR','get_field requires a file name as input')% display error message for input file reading
+    return
 end
-if ~exist('ParamIn','var')
-    ParamIn=[];
-end
-if isfield(Field,'Txt')
-    msgbox_uvmat('ERROR',['get_field/nc2struct/' Field.Txt])% display error message for input file reading
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['get_field/nc2struct/' errormsg])% display error message for input file reading
     return
 end
 if ~isfield(Field,'ListVarName')
+    msgbox_uvmat('ERROR',['no variable found in ' filename])% display error message for input file reading
     return
+end
+if ~exist('ParamIn','var')
+    ParamIn=[];
 end
 
 %% look at singletons and variables with a single dimension

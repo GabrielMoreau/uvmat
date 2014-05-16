@@ -242,14 +242,12 @@ end
 %% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
 if isfield(Param,'InputFile')
     
-    InputTable={};
     %% fill the list of file series
-    SeriesData=Param.HiddenData;
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
-    TimeTable=[{[]},{[]},{[]},{[]}];
+    TimeTable=[{Param.InputFile.TimeName},{[]},{[]},{[]},{[]}];
     if isfield(Param.InputFile,'RootPath_1')
         InputTable=[InputTable;[{Param.InputFile.RootPath_1},{Param.InputFile.SubDir_1},{Param.InputFile.RootFile_1},{Param.InputFile.NomType_1},{Param.InputFile.FileExt_1}]];
-        TimeTable=[TimeTable; [{[]},{[]},{[]},{[]}]];
+        TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
     
@@ -653,7 +651,7 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
     InputTable={'','','','',''};
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
-    set(handles.TimeTable,'Data',[{[]},{[]},{[]},{[]}])
+    set(handles.TimeTable,'Data',[{''},{[]},{[]},{[]},{[]}])
     set(handles.MinIndex_i,'Data',[])
     set(handles.MaxIndex_i,'Data',[])
     set(handles.MinIndex_j,'Data',[])
@@ -854,14 +852,18 @@ if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2num(get(handles.num_NbSlice,'String'));
 end
 
-%% default time unit
+%% default time settings
 TimeUnit='';
 % read  value set by the first series for the append mode (iwiew >1)
 if iview>1 
     TimeUnit=get(handles.TimeUnit,'String');
 end
-TimeSource='';
+TimeName='';
 Time=[];%default
+TimeMin=[];
+TimeFirst=[];
+TimeLast=[];
+TimeMax=[];
 
 %%  read image documentation file if found
 XmlData=[];
@@ -874,8 +876,8 @@ if ~isempty(XmlFileName)
     end
     % read time if available
     if isfield(XmlData,'Time')
-        Time=XmlData.Time;
-        TimeSource='xml';
+         Time=XmlData.Time;
+        TimeName='xml';
     end
     if isfield(XmlData,'Camera')
         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
@@ -907,38 +909,41 @@ if ~isempty(XmlFileName)
     set(handles.num_NbSlice,'String',num2str(NbSlice))
 end
 
-%% read timing and total frame number from the current file (movie files) if not already set by the xml file (prioritary)
-InputTable=get(handles.InputTable,'Data');
-
-% case of movies
-if isempty(Time)
-    if ~isempty(VideoObject)
-        imainfo=get(VideoObject);
-        if isempty(j1_series); %frame index along i
-            Time=zeros(imainfo.NumberOfFrames+1,2);
-            Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
-        else
-            Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
-        end
-        TimeSource='video';
+%% read timing  from the current file (prioritary)
+if ~isempty(VideoObject)% case of movies
+    imainfo=get(VideoObject);
+    if isempty(j1_series); %frame index along i
+        Time=zeros(imainfo.NumberOfFrames+1,2);
+        Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+    else
+        Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
     end
-end
+    TimeName='video';
+end 
 
-%% update time table
-if ~isempty(Time)
-    TimeTable=get(handles.TimeTable,'Data');
-    TimeTable{iview,1}=Time(MinIndex_i+1,MinIndex_j+1);
+
+%% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
+if ~isempty(TimeName)
+    TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
     if size(Time)>=[first_i+1 first_j+1]
-        TimeTable{iview,2}=Time(first_i+1,first_j+1);
+        TimeFirst=Time(first_i+1,first_j+1);
     end
     if size(Time)>=[last_i+1 last_j+1]
-        TimeTable{iview,3}=Time(last_i+1,last_j+1);
+        TimeLast=Time(last_i+1,last_j+1);
     end
     if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1];
-        TimeTable{iview,4}=Time(MaxIndex_i+1,MaxIndex_j+1);
+        TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
     end
-    set(handles.TimeTable,'Data',TimeTable)
 end
+
+%% update the time table
+TimeTable=get(handles.TimeTable,'Data');
+TimeTable{iview,1}=TimeName;
+TimeTable{iview,2}=TimeMin;
+TimeTable{iview,3}=TimeFirst;
+TimeTable{iview,4}=TimeLast;
+TimeTable{iview,5}=TimeMax;
+set(handles.TimeTable,'Data',TimeTable)
 
 %% update the series info in 'UserData'
 SeriesData.i1_series{iview}=i1_series;
@@ -948,9 +953,9 @@ SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileInfo.FileType;
 SeriesData.FileInfo{iview}=FileInfo;
 SeriesData.Time{iview}=Time;
-if ~isempty(TimeSource)
-    SeriesData.TimeSource=TimeSource;
-end
+% if ~isempty(TimeName)
+%     SeriesData.TimeSource=TimeSource;
+% end
 if check_calib
     SeriesData.GeometryCalib{iview}=XmlData.GeometryCalib;
 end
@@ -963,7 +968,7 @@ CheckPair= ~isempty(i2_series)||~isempty(j2_series); % check whether index pairs
 PairString=get(handles.PairString,'Data');
 if CheckPair% if pairs need to be display for line iview
     [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series);
-    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j);
+    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),FileInfo);
     PairString{iview,1}=Menu{1};
 else
     PairString{iview,1}='';%no pair for #iview
@@ -1111,7 +1116,7 @@ end
 
 
 %------------------------------------------------------------------------
-function displ_pair=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j)
+function displ_pair=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo)
 %------------------------------------------------------------------------
 displ_pair={};
 if isempty(TimeUnit)
@@ -1178,8 +1183,9 @@ switch mode
             for pair2=min_j2:min(max_j2,min_j2+20)
                 if numel(j1_series(j1_series==pair1))>0 && numel(j2_series(j2_series==pair2))>0
                     pair_string=['j= ' num2str(pair1) '-' num2str(pair2)];
-                    Dt=time(ref_i,pair2+1)-time(ref_i,pair1+1);
-                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
+                    [TimeValue,DtValue]=get_time(ref_i,[],pair_string,InputTable,FileInfo,TimeName,'Dt');
+                    %Dt=time(ref_i,pair2+1)-time(ref_i,pair1+1);
+                    pair_string=[pair_string ', Dt=' num2str(DtValue) ' ' dtunit];
                     displ_pair=[displ_pair;{pair_string}];
                 end
             end
@@ -1241,14 +1247,16 @@ end
 [i1_1,i2_1,j1_1,j2_1] = get_file_index(ref_i_1,ref_j_1,PairString);
 [i1_2,i2_2,j1_2,j2_2] = get_file_index(ref_i_2,ref_j_2,PairString);
 TimeTable=get(handles.TimeTable,'Data');
-
+%%%%%%
+%TODO: read time in netcdf file, see ActionName_Callback
+%%%%%%%
 %Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
     if size(SeriesData.Time,1)<iview
         break
     end
-    TimeTable{iview,2}=[];
     TimeTable{iview,3}=[];
+    TimeTable{iview,4}=[];
     if size(SeriesData.Time{iview},1)>=i2_2+1 && (isempty(ref_j_1)||size(SeriesData.Time{iview},2)>=j2_2+1)
         if isempty(ref_j_1)
             time_first=(SeriesData.Time{iview}(i1_1+1,2)+SeriesData.Time{iview}(i2_1+1,2))/2;
@@ -1257,8 +1265,8 @@ for iview=1:size(TimeTable,1)
             time_first=(SeriesData.Time{iview}(i1_1+1,j1_1+1)+SeriesData.Time{iview}(i2_1+1,j2_1+1))/2;
             time_last=(SeriesData.Time{iview}(i1_2+1,j1_2+1)+SeriesData.Time{iview}(i2_2+1,j2_1+1))/2;
         end
-        TimeTable{iview,2}=time_first; %TODO: take into account pairs
-        TimeTable{iview,3}=time_last; %TODO: take into account pairs
+        TimeTable{iview,3}=time_first; %TODO: take into account pairs
+        TimeTable{iview,4}=time_last; %TODO: take into account pairs
     end
 end
 set(handles.TimeTable,'Data',TimeTable)
@@ -1974,7 +1982,9 @@ SeriesData=get(handles.series,'UserData');% info on the input file series
 iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
 iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));% all nc files, icluding civ
 FieldList=get(handles.FieldName,'String');% previous list as default
+if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String');% previous list as default
+if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 CheckList=0;% indicate whether FieldName has been updated
 CheckList_1=1;% indicate whether FieldName_1 has been updated
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
@@ -2249,22 +2259,28 @@ field_str=get(handles.FieldName,'String');
 field_index=get(handles.FieldName,'Value');
 field=field_str{field_index(1)};
 if isequal(field,'get_field...')
+    SeriesData=get(handles.series,'UserData');
+    % input line for which the field choice is relevant
+    iview=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));% all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
     end
     Param=read_GUI(handles.series);
-    Param.InputTable=Param.InputTable(1,:);
+    InputTable=Param.InputTable(iview,:);
     % check the existence of the first file in the series
-    first_j=[];
-    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1;%default setting for index j
+    if isfield(Param.IndexRange,'first_j');% if index j is used
+        first_j=Param.IndexRange.first_j;
+        last_j=Param.IndexRange.last_j;
+        MinIndex_j=Param.IndexRange.MinIndex_j(iview);
+        MaxIndex_j=Param.IndexRange.MaxIndex_j(iview);
+    end
     PairString='';
-    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString{iview}; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    FirstFileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},...
+        InputTable{5},InputTable{4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
         ParamIn.Title='get_field: pick input variables and coordinates for series processing';
         ParamIn.SeriesInput=1;
@@ -2301,11 +2317,18 @@ if isequal(field,'get_field...')
             XName=GetFieldData.Coordinates.Coord_x;
             YName=GetFieldData.Coordinates.Coord_y;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+            % get the time info                     
+            TimeTable=get(handles.TimeTable,'Data');
             switch TimeNameStr
                 case 'file index'
-                    set(handles.TimeName,'String','');
+                    TimeName='';
                 case 'attribute'
-                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+                    TimeName=['att:' GetFieldData.Time.TimeName];
+                    % update the time table
+                    TimeTable{iview,2}=get_time(Param.IndexRange.MinIndex_i(iview),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % Min time     
+                    TimeTable{iview,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % first time              
+                    TimeTable{iview,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % last time                     
+                    TimeTable{iview,5}=get_time(Param.IndexRange.MaxIndex_i(iview),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % Max time
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
                     set(handles.NomType,'String','*')
@@ -2313,15 +2336,40 @@ if isequal(field,'get_field...')
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix_index'
-                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+                    TimeName=['dim:' GetFieldData.Time.TimeName];
                     set(handles.NomType,'String','*')
                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
+            TimeTable{iview,1}=TimeName;
+            set(handles.TimeTable,'Data',TimeTable);
         end
         set(handles.Coord_x,'String',XName)
         set(handles.Coord_y,'String',YName)
+    end
+end
+
+function [TimeValue,DtValue]=get_time(ref_i,ref_j,PairString,InputTable,FileInfo,TimeName,DtName)
+[i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
+FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
+Data=nc2struct(FileName,[]);
+TimeValue=[];
+DtValue=[];
+if isequal(FileInfo.FileType,'civdata')
+    if ismember(TimeName,{'civ1','filter1'})
+        TimeValue=Data.Civ1_Time;
+        DtValue=Data.Civ1_Dt;
+    else
+        TimeValue=Data.Civ2_Time;
+        DtValue=Data.Civ2_Dt;
+    end
+else
+    if ~isempty(TimeName)
+        TimeValue=Data.(TimeName);
+    end
+    if exist('DtName','var') && isfield(Data,DtName)
+        DtValue=Data.(DtName);
     end
 end
 
@@ -2659,7 +2707,8 @@ end
 %-------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#Series')
+
+
 % path_to_uvmat=which ('uvmat');% check the path of uvmat
 % pathelp=fileparts(path_to_uvmat);
 % helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
@@ -2895,7 +2944,7 @@ set(handles.TimeTable,'Unit','pixel')
 Pos=get(handles.TimeTable,'Position');
 set(handles.TimeTable,'Unit','normalized')
 % ColumnWidth=get(handles.TimeTable,'ColumnWidth');
-ColumnWidth=num2cell(floor([0.25 0.25 0.25 0.25]*(Pos(3)-20)));
+ColumnWidth=num2cell(floor([0.2 0.2 0.2 0.2 0.2]*(Pos(3)-20)));
 set(handles.TimeTable,'ColumnWidth',ColumnWidth)
 
 
@@ -3187,7 +3236,7 @@ else
 end
 [ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j2_series{iview});
 displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j1_series{iview},SeriesData.j2_series{iview},ModeMenu{ModeValue},...
-                                                     SeriesData.Time{iview},TimeUnit,SeriesData.ref_i,SeriesData.ref_j);
+                                                     SeriesData.Time{iview},TimeUnit,SeriesData.ref_i,SeriesData.ref_j,SeriesData.FileInfo{iview});
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
@@ -3265,7 +3314,7 @@ if isempty(ref_j)
 end
 
 %% update the menu ListPair
-Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j);
+Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,FileInfo);
 hlist_pairs=findobj(get(hObject,'parent'),'Tag','ListPair');
 set(hlist_pairs,'Value',1)% set the first choice by default in ListPair
 set(hlist_pairs,'String',Menu)% set the menu in ListPair
@@ -3301,42 +3350,5 @@ Mode_Callback([],[])
 function num_ref_j_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
 Mode_Callback([],[])
-
-
-
-function Coord_z_Callback(hObject, eventdata, handles)
-% hObject    handle to Coord_z (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Coord_z as text
-%        str2double(get(hObject,'String')) returns contents of Coord_z as a double
-
-
-
-% % --- Executes on key press with focus on InputTable and none of its controls.
-% function InputTable_KeyPressFcn(hObject, eventdata, handles)
-% set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
-% % set(handles.REFRESH_title,'Visible','on')
-% iview=eventdata.Indices(1);
-% view_set=get(handles.REFRESH,'UserData');
-% if isempty(find(view_set==iview))
-%     set(handles.REFRESH,'UserData',[view_set iview])
-% end
-% %% enable other menus and uicontrols
-% set(handles.MenuOpenCampaign,'Enable','on')
-% set(handles.MenuCampaign_1,'Enable','on')
-% set(handles.MenuCampaign_2,'Enable','on')
-% set(handles.MenuCampaign_3,'Enable','on')
-% set(handles.MenuCampaign_4,'Enable','on')
-% set(handles.MenuCampaign_5,'Enable','on')
-% set(handles.RUN, 'Enable','On')
-% set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
-
-
-% hObject    handle to InputTable (see GCBO)
-% eventdata  structure with the following fields (see UITABLE)
-%	Indices: row and column indices of the cell(s) currently selecteds
-% handles    structure with handles and user data (see GUIDATA)
 
 
