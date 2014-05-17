@@ -1767,7 +1767,7 @@ switch RunMode
                 return
             end
         end
-        max_walltime=3600*12; % 12h max total calculation 
+        max_walltime=3600*24; % 24h max total calculation 
         walltime_onejob=600;%seconds, max estimated time for asingle file index value
         filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
@@ -2365,7 +2365,7 @@ if isequal(FileInfo.FileType,'civdata')
         DtValue=Data.Civ2_Dt;
     end
 else
-    if ~isempty(TimeName)
+    if ~isempty(TimeName)&& isfield(Data,TimeName)
         TimeValue=Data.(TimeName);
     end
     if exist('DtName','var') && isfield(Data,DtName)

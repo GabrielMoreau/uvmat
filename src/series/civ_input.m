@@ -159,32 +159,35 @@ end
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 
 %% display the min and max indices for the whole file series
-if size(SeriesData.i1_series{iview_image},2)==2 && min(min(SeriesData.i1_series{iview_image}(:,1,:)))==0
-    MinIndex_j=1;% index j set to 1 by default
-    MaxIndex_j=1;
-    MinIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
-    MaxIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:),1,'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series) 
-else
-    ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
-    ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
-     MinIndex_i=min(find(ref_i))-1;
-     MaxIndex_i=max(find(ref_i))-1;
-     MaxIndex_j=max(find(ref_j))-1;
-     MinIndex_j=min(find(ref_j))-1;
+MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
+MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
+MaxIndex_j=1;%default
+MinIndex_j=1;
+if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')...
+        && numel(Param.IndexRange.MaxIndex_j')>=iview_image &&numel(Param.IndexRange.MinIndex_j')>=iview_image
+    MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_image);
+    MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
 end
-% MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
-% MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
-% MaxIndex_j=1;%default
-% MinIndex_j=1;
-% if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')...
-%         && numel(Param.IndexRange.MaxIndex_j')>=iview_image &&numel(Param.IndexRange.MinIndex_j')>=iview_image
-%     MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_image);
-%     MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
-% end
-CivInputData.MaxIndex_i=MaxIndex_i;
-CivInputData.MaxIndex_j=MaxIndex_j;
-CivInputData.MinIndex_i=MinIndex_i;
-CivInputData.MinIndex_j=MinIndex_j;
+%update the bounds if possible
+if isfield(SeriesData,'i1_series')&&numel(SeriesData.i1_series)>=iview_image
+    if size(SeriesData.i1_series{iview_image},2)==2 && min(min(SeriesData.i1_series{iview_image}(:,1,:)))==0
+        MinIndex_j=1;% index j set to 1 by default
+        MaxIndex_j=1;
+        MinIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
+        MaxIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:),1,'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
+    else
+        ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
+        ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
+        MinIndex_i=min(find(ref_i))-1;
+        MaxIndex_i=max(find(ref_i))-1;
+        MaxIndex_j=max(find(ref_j))-1;
+        MinIndex_j=min(find(ref_j))-1;
+    end
+end
+% CivInputData.MaxIndex_i=MaxIndex_i;
+% CivInputData.MaxIndex_j=MaxIndex_j;
+% CivInputData.MinIndex_i=MinIndex_i;
+% CivInputData.MinIndex_j=MinIndex_j;
 if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})
@@ -249,11 +252,6 @@ set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of t
 set(handles.TimeUnit,'String',TimeUnit);
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
-% indicate the min and max indices i and j on the GUI
-set(handles.MinIndex_i,'String',num2str(MinIndex_i))
-set(handles.MaxIndex_i,'String',num2str(MaxIndex_i))
-set(handles.MinIndex_j,'String',num2str(MinIndex_j))
-set(handles.MaxIndex_j,'String',num2str(MaxIndex_j))
 
 %% introduce the stored Civ parameters  if available (from previous input or ImportConfig in series)
 if isfield(Param,'ActionInput')
@@ -274,6 +272,11 @@ if isfield(Param,'ActionInput')
         end
     end
 end
+% indicate the min and max indices i and j on the GUI
+set(handles.MinIndex_i,'String',num2str(MinIndex_i))
+set(handles.MaxIndex_i,'String',num2str(MaxIndex_i))
+set(handles.MinIndex_j,'String',num2str(MinIndex_j))
+set(handles.MaxIndex_j,'String',num2str(MaxIndex_j))
 
 %% set the civ_input options, depending on the input file content if a nc file has been opened
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
@@ -924,8 +927,10 @@ switch mode
             end
         end
     case 'pair j1-j2'%case of pairs
-        MinIndex_j=CivInputData.MinIndex_j;
-        MaxIndex_j=min(CivInputData.MaxIndex_j,10);%limitate the number of pairs to 10x10
+%         MinIndex_j=CivInputData.MinIndex_j;
+%         MaxIndex_j=min(CivInputData.MaxIndex_j,10);%limitate the number of pairs to 10x10
+        MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
+        MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
         index_pair=0;
         %get all the Time intervals in bursts
         for numod_a=MinIndex_j:MaxIndex_j-1 %nbfield2 always >=2 for 'pair j1-j2' mode
@@ -1003,12 +1008,12 @@ first_i=str2double(get(handles.MinIndex_i,'String'));
 set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
 ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
-%------------------------------------------------------------------------
-function MinIndex_j_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-first_j=str2num(get(handles.MinIndex_j,'String'));
-set(handles.ref_j,'String', num2str(first_j))% reference index for pair dt = first index
-ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
+% %------------------------------------------------------------------------
+% function MinIndex_j_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% first_j=str2num(get(handles.MinIndex_j,'String'));
+% set(handles.ref_j,'String', num2str(first_j))% reference index for pair dt = first index
+% ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Callbacks in the uipanel Civ1
