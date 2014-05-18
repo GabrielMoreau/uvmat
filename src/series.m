@@ -1767,7 +1767,7 @@ switch RunMode
                 return
             end
         end
-        max_walltime=3600*24; % 24h max total calculation 
+        max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
         walltime_onejob=600;%seconds, max estimated time for asingle file index value
         filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
@@ -3234,9 +3234,11 @@ if isempty(iview)
 else
     ListViewValue=find(ListViewLines==iview);
 end
+ref_i=str2num(get(handles.num_first_i,'String'));
+ref_j=str2num(get(handles.num_first_j,'String'));
 [ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j2_series{iview});
 displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j1_series{iview},SeriesData.j2_series{iview},ModeMenu{ModeValue},...
-                                                     SeriesData.Time{iview},TimeUnit,SeriesData.ref_i,SeriesData.ref_j,SeriesData.FileInfo{iview});
+                                                     SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo{iview});
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
@@ -3258,10 +3260,10 @@ uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.42 0.9 0.2
 uicontrol('Style','text','Units','normalized', 'Position', [0.1 0.22 0.8 0.1],'BackgroundColor',BackgroundColor,...
     'String','ref_i           ref_j','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
-    'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),'String',num2str(SeriesData.ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),'String',num2str(ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','num_ref_i','TooltipString','''num_ref_i'': reference field index i used to display dt in ''list_pair_civ''');
 uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
-    'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),'String',num2str(SeriesData.ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),'String',num2str(ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','num_ref_j','TooltipString','''num_ref_j'': reference field index i used to display dt in ''list_pair_civ''');
 %  last raw  of the GUI: pushbuttons
 % uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
