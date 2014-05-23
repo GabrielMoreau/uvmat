@@ -635,37 +635,57 @@ RootPath_1_Callback(hObject,eventdata,handles)
 %------------------------------------------------------------------------
 % --- Executes on button press in InputFileREFRESH.
 function InputFileREFRESH_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------   
+%------------------------------------------------------------------------
 set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to indicate that refresh is under action
 set(handles.uvmat,'Pointer','watch') % set the mouse pointer to 'watch'
 drawnow
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-% if ~exist(fullfile(RootPath,SubDir),'dir')
-%     msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
-%     return
-% end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and inputfilerefresh the current field view: 
-errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,1);
-% inputfilerefresh the second series if selected
-if get(handles.SubField,'Value')
-    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-    if ~exist(fullfile(RootPath,SubDir),'dir')
-        msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
-        return
+if isempty(i1_series)
+    fileinput=uigetfile_uvmat('pick an input file',fullfile(RootPath,SubDir));
+    hh=dir(fileinput);
+    if numel(hh)>1
+        msgbox_uvmat('ERROR','invalid input, probably a broken link');
+    else
+        %% display the selected field and related information
+        if isempty(fileinput)
+            errormsg='aborted';
+        else
+            display_file_name(handles,fileinput,1)
+        end
     end
-    % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-    % initiate the input file series and inputfilerefresh the current field view:
-    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,2);
+else
+    % initiate the input file series and refresh the current field view:
+    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,1);
 end
 
-if isempty(errormsg)
-% set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
-else
-    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+%% refresh the second series if relevant
+if ~isempty(errormsg) && get(handles.SubField,'Value')
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+    % detect the file type, get the movie object if relevant, and look for the corresponding file series:
+    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    if isempty(i1_series)
+        fileinput=uigetfile_uvmat('pick an input file for the second line',fullfile(RootPath,SubDir));
+        hh=dir(fileinput);
+        if numel(hh)>1
+            msgbox_uvmat('ERROR','invalid input, probably a broken link');
+        else
+            %% display the selected field and related information
+            if isempty(fileinput)
+                errormsg='aborted';
+            else
+                display_file_name(handles,fileinput,2)
+            end
+        end
+    else
+        % initiate the input file series and inputfilerefresh the current field view:
+        errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,2);
+    end
+end
+if ~isempty(errormsg)
+    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% put back button color to magenta, input not succesfull
 end
 set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
@@ -4695,7 +4715,7 @@ function MenuExportMovie_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
 huvmat=get(handles.InputFileREFRESH,'parent');
-UvData=get(huvmat,'UserData');
+% UvData=get(huvmat,'UserData');
 %[xx,xx,FileBase]=read_file_boxes(handles);
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileBase=fullfile(RootPath,RootFile);
@@ -4737,8 +4757,8 @@ map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 msgbox_uvmat('INPUT_Y-N',{['adjust figure ' num2str(newfig) ' with its matlab edit menu '] ;...
         ['then press OK to get the avi movie as a copy of figure ' num2str(newfig) ' display']});
-UvData.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
-set(huvmat,'UserData',UvData);
+% UvData.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
+% set(huvmat,'UserData',UvData);
 increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
@@ -4755,9 +4775,12 @@ set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim
 time_str=get(handles.TimeValue,'String');
 set(htitle,'String',['t=' time_str])
 set(handles.speed,'Value',1)
+AxesPos=get(newaxes,'Position');
+handles.PlotAxes=newaxes;% the axis in the new figure becomes the current main plotting axes
 for i=1:imax
     if get(handles.speed,'Value')~=0 && isequal(get(handles.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
             runpm(hObject,eventdata,handles,increment)% run plus 
+            set(newaxes,'Position',AxesPos)
             drawnow
             time_str=get(handles.TimeValue,'String');
             if ishandle(htitle)
@@ -4768,8 +4791,8 @@ for i=1:imax
     end
 end
 aviobj=close(aviobj);
-UvData=rmfield(UvData,'plotaxes');
-set(huvmat,'UserData',UvData);
+% UvData=rmfield(UvData,'plotaxes');
+% set(huvmat,'UserData',UvData);
 msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
 
 
