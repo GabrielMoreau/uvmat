@@ -11,7 +11,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.p_formed';%set the output dir extension
+    ParamOut.OutputDirExt='.p_formed_1';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
       %check the input files
     first_j=[];
@@ -95,167 +95,177 @@ load (fullfile(RootPath,SubDir,[RootFile '.mat']))
 Data.ListVarName={'Coord_x','Coord_z','Pressure'};
 Data.VarDimName={'Coord_x','Coord_z',{'Coord_z','Coord_x'}};
 Data.Coord_x=5*(nbvoie_reception-0.5)/numel(nbvoie_reception); % totql length of e
+Data.Coord_z=(1:A)/133 ;% to check from input parameter ....
 %%%%%%
 %
 % while test_fin_fichier>0
 %     if read_data==1
-directory='manip_lgit';%%%%%%%%%%%%%%%%%
-name='test';%%%%%%%%%%%%%%%%%
+%directory='manip_lgit';%%%%%%%%%%%%%%%%%
+%name='test';%%%%%%%%%%%%%%%%%
 %         number=2;
-
-numero_tir_debut=1;
-numero_tir_fin=numero_tir_fin_old+pas_fichier;
-
-%  eval(['load ' directory '\' name '.mat'])
-matrice_finale=zeros(A,length(nbvoie_reception),numero_tir_fin);
-time=(b/rsf+[0:A-1]/rsf);
-freq1=0.5;freq2=1.5;
-[BB AA]=butter(4,[freq1 freq2]/rsf*2);
 number=1; %subsequence index (from 1 to 5)
-OutputDirExt=['.p_formed_' num2str(number)]; %TODO: loop on 'number' from 1 to 5 
-for ii=1:length(nbvoie_reception)%=64
-    %ii
-    %eval(['fid=fopen(''E:\ManipLGITLecoeur\' directory '\' name '_' num2str(number) '_' num2str(nbvoie_reception(ii)) '.dat'',''r'');']);
-    filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,number,ii)
-    fid=fopen(filename);
-    toto=zeros(Nsequence*A*numero_tir_fin+31,1);
-    toto=fread(fid,numero_tir_fin*A*Nsequence+31,'int16','ieee-le') ;
-    toto=double(bitxor(uint16(toto),uint16(2048)));
-    toto(1:31)=[];toto(numero_tir_fin*A*Nsequence)=mean(toto);
-    fclose(fid);
+OutputDirExt=['.p_formed_' num2str(number)]; %TODO: loop on 'number' from 1 to 5
+numero_tir_fin_old=1;
+pas_fichier=20;% nbre of successive shoots to read (to account for computer memory limit)
+Nmoy=20;  %%%%% value 20  FOR TEST : to shift to VALUE 8000 set by the .mat file
+
+test_fin_fichier=1;% test to stop input file reading
+while test_fin_fichier>0
+    numero_tir_debut=1;
+    numero_tir_fin=numero_tir_debut+pas_fichier;
     
-    tata=reshape(toto-2048,A,numero_tir_fin);
-    matrice_finale(:,ii,:)=reshape(tata,[A,1,numero_tir_fin]);
-    clear toto tata
-end
+    %  eval(['load ' directory '\' name '.mat'])
+    matrice_finale=zeros(A,length(nbvoie_reception),numero_tir_fin);%A=nbre of times (coord z)=2650, numero_tir_fin=time index
+    time=(b/rsf+[0:A-1]/rsf); %b=250, rsf=10,
+    freq1=0.5;freq2=1.5;
+    [BB AA]=butter(4,[freq1 freq2]/rsf*2);
 
-matrice_finale(:,:,numero_tir_debut:numero_tir_fin_old)=[];
-numero_tir_fin=numero_tir_fin-1;
-matrice_finale=reshape(filtfilt(BB,AA,matrice_finale(:,:)),size(matrice_finale));
-
-% if soustraction==1
-%     eval(['load moyenne_' name '_' num2str(number) '.mat matrice_finale_moy'])
-%     for kk=1:size(matrice_finale,3)
-%         matrice_finale(:,:,kk)=matrice_finale(:,:,kk)-matrice_finale_moy;
-%     end
-% end
-
-eval(['save matrice_finale_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
-
-%%%%%%%%%%%%%%Imagerie
-fe=rsf*1e6;
-cc=1475;
-hanning_window=25;
-hanning_vect=hanning(2*hanning_window+1);
-interval=[1:size(matrice_finale,1)];
-freq=0:fe/length(interval):fe*(1-1/length(interval));
-
-pas_reseau_z=0.75e-3;%0.75e-3
-pas_reseau_r=0;
-voie_mean=length(nbvoie_reception)/2;%32;
-reseau_z=[0:length(nbvoie_reception)-1]*pas_reseau_z;
-reseau_z=reseau_z-reseau_z(voie_mean);
-reseau_r=[0:length(nbvoie_reception)-1]*pas_reseau_r;
-reseau_r=reseau_r-reseau_r(voie_mean);
-
-debut_r=(time(1)+20)*1e-6*cc/2;
-fin_r=(time(end)-20)*1e-6*cc/2;
-
-image_r=debut_r:.5e-3:fin_r;
-image_z=-24e-3:.75e-3:24e-3;
-
-image_fin=zeros(length(image_r),length(image_z),size(matrice_finale,3));
-%image_fin_bis=zeros(length(image_r),length(image_z),size(matrice_finale,3));
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Data.Coord_z=(1:size(image_fin,1))/133 ;% to check from input parameter ....
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for kk=1:size(matrice_finale,3)
-    kk
-    tir=kk;
-    signal=squeeze(matrice_finale(interval,:,tir));
-    tata_fft=zeros(size(signal,1),size(signal,2));
-    tata_fft=fft(signal,[],1);
-    
-    if kk==1
+    for ii=1:length(nbvoie_reception)%=64
+        %eval(['fid=fopen(''E:\ManipLGITLecoeur\' directory '\' name '_' num2str(number) '_' num2str(nbvoie_reception(ii)) '.dat'',''r'');']);
+        filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,number,[],ii);
+        fid=fopen(filename);
+        toto=zeros(Nsequence*A*numero_tir_fin+31,1);% Nsequence=1
+        toto=fread(fid,numero_tir_fin*A*Nsequence+31,'int16','ieee-le') ;
+        toto=double(bitxor(uint16(toto),uint16(2048)));
+        toto(1:31)=[];toto(numero_tir_fin*A*Nsequence)=mean(toto);
+        fclose(fid);
         
-        matrice_freq_mean=mean(abs(fft(signal,[],1)),2);
-        X=[freq1*1e6 freq2*1e6];
-        [I J]=find(freq>=X(1) & freq<=X(2));
-        int_freq=find(matrice_freq_mean(round(1:length(freq)/2))>max(matrice_freq_mean(round(1:length(freq)/2)))/2);
-        bandwidth=freq(int_freq(end)-int_freq(1));
-        %clear matrice_freq_mean
+        tata=reshape(toto-2048,A,numero_tir_fin);
+        matrice_finale(:,ii,:)=reshape(tata,[A,1,numero_tir_fin]);
+        clear toto tata
     end
     
-    for ii=1:length(image_r)
-        [ii kk]
-        for jj=1:length(image_z)
+    matrice_finale(:,:,numero_tir_debut:numero_tir_fin_old)=[];
+    numero_tir_fin=numero_tir_fin-1;
+    matrice_finale=reshape(filtfilt(BB,AA,matrice_finale(:,:)),size(matrice_finale));
+    
+    % if soustraction==1
+    %     eval(['load moyenne_' name '_' num2str(number) '.mat matrice_finale_moy'])
+    %     for kk=1:size(matrice_finale,3)
+    %         matrice_finale(:,:,kk)=matrice_finale(:,:,kk)-matrice_finale_moy;
+    %     end
+    % end
+    %eval(['save matrice_finale_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
+    
+    %%%%%%%%%%%%%%Imagerie
+    fe=rsf*1e6;%acquisition frequency
+    cc=1475;%speed of sound
+    hanning_window=25;
+    hanning_vect=hanning(2*hanning_window+1);
+    interval=[1:size(matrice_finale,1)];
+    freq=0:fe/length(interval):fe*(1-1/length(interval));
+    
+    pas_reseau_z=0.75e-3;%0.75e-3
+    pas_reseau_r=0;
+    voie_mean=length(nbvoie_reception)/2;%32;
+    reseau_z=[0:length(nbvoie_reception)-1]*pas_reseau_z;
+    reseau_z=reseau_z-reseau_z(voie_mean);
+    reseau_r=[0:length(nbvoie_reception)-1]*pas_reseau_r;
+    reseau_r=reseau_r-reseau_r(voie_mean);
+    
+    debut_r=(time(1)+20)*1e-6*cc/2;
+    fin_r=(time(end)-20)*1e-6*cc/2;
+    
+    image_r=debut_r:.5e-3:fin_r;
+    image_z=-24e-3:.75e-3:24e-3;
+    
+    image_fin=zeros(length(image_r),length(image_z),size(matrice_finale,3));%size=(332,65,pas_fichier)
+    %image_fin_bis=zeros(length(image_r),length(image_z),size(matrice_finale,3));
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    for kk=1:size(matrice_finale,3)
+        kk
+        tir=kk;
+        signal=squeeze(matrice_finale(interval,:,tir));
+        tata_fft=zeros(size(signal,1),size(signal,2));
+        tata_fft=fft(signal,[],1);
+        
+        if kk==1
             
-            delay=zeros(length(nbvoie_reception),1);
-            delay=1/cc*sqrt((reseau_z-image_z(jj)).^2+(reseau_r-image_r(ii)).^2);
-            
-            [ind centre_z]=min(abs((reseau_z-image_z(jj))));
-            interval_utile=round(((delay(centre_z)+1/cc*abs(image_r(ii)))*fe)-(b+interval(1)-1)+round(length(motifbase)/2)+[-fe/bandwidth/2:fe/bandwidth/2]);
-            delay=delay-delay(centre_z);
-            
-            hanning_vecteur=zeros(1,length(nbvoie_reception));
-            if centre_z>hanning_window & centre_z<(length(nbvoie_reception)-hanning_window)
-                hanning_vecteur(centre_z+[-hanning_window:hanning_window])=hanning_vect;
-            elseif centre_z<=hanning_window
-                test=hanning_vect((centre_z+[-hanning_window:hanning_window])>=1);
-                hanning_vecteur(1:length(test))=test;
-            elseif centre_z>=(length(nbvoie_reception)-hanning_window)
-                test=hanning_vect((centre_z+[-hanning_window:hanning_window])<=length(nbvoie_reception));
-                hanning_vecteur(length(nbvoie_reception)+[-length(test)+1:0])=test;
+            matrice_freq_mean=mean(abs(fft(signal,[],1)),2);
+            X=[freq1*1e6 freq2*1e6];
+            [I J]=find(freq>=X(1) & freq<=X(2));
+            int_freq=find(matrice_freq_mean(round(1:length(freq)/2))>max(matrice_freq_mean(round(1:length(freq)/2)))/2);
+            bandwidth=freq(int_freq(end)-int_freq(1));
+            %clear matrice_freq_mean
+        end
+        
+        for ii=1:length(image_r)
+            [ii kk]
+            for jj=1:length(image_z)
+                
+                delay=zeros(length(nbvoie_reception),1);
+                delay=1/cc*sqrt((reseau_z-image_z(jj)).^2+(reseau_r-image_r(ii)).^2);
+                
+                [ind centre_z]=min(abs((reseau_z-image_z(jj))));
+                interval_utile=round(((delay(centre_z)+1/cc*abs(image_r(ii)))*fe)-(b+interval(1)-1)+round(length(motifbase)/2)+[-fe/bandwidth/2:fe/bandwidth/2]);
+                delay=delay-delay(centre_z);
+                
+                hanning_vecteur=zeros(1,length(nbvoie_reception));
+                if centre_z>hanning_window & centre_z<(length(nbvoie_reception)-hanning_window)
+                    hanning_vecteur(centre_z+[-hanning_window:hanning_window])=hanning_vect;
+                elseif centre_z<=hanning_window
+                    test=hanning_vect((centre_z+[-hanning_window:hanning_window])>=1);
+                    hanning_vecteur(1:length(test))=test;
+                elseif centre_z>=(length(nbvoie_reception)-hanning_window)
+                    test=hanning_vect((centre_z+[-hanning_window:hanning_window])<=length(nbvoie_reception));
+                    hanning_vecteur(length(nbvoie_reception)+[-length(test)+1:0])=test;
+                end
+                hanning_vecteur=hanning_vecteur/norm(hanning_vecteur);
+                clear test;
+                
+                amplitude_weight=ones(size(signal,1),1)*hanning_vecteur;
+                signal_new_rec=zeros(size(signal,1),length(nbvoie_reception));
+                
+                tata=zeros(size(signal,1),size(signal,2));
+                tata(J,:)=tata_fft(J,:).*exp(1i*2*pi*(freq(J)'*delay));
+                signal_new_rec=2*real(ifft(tata,[],1)).*amplitude_weight;
+                index_interval_utile=find(interval_utile>0 & interval_utile<size(signal,1));
+                toto=zeros(length(index_interval_utile),1);
+                toto=mean(signal_new_rec(interval_utile(index_interval_utile),:),2);
+                image_fin(ii,jj,kk)=sqrt(mean(toto.^2));
+                clear signal_bis interval_utile index_interval_utile hanning_vecteur
             end
-            hanning_vecteur=hanning_vecteur/norm(hanning_vecteur);
-            clear test;
-            
-            amplitude_weight=ones(size(signal,1),1)*hanning_vecteur;
-            signal_new_rec=zeros(size(signal,1),length(nbvoie_reception));
-            
-            tata=zeros(size(signal,1),size(signal,2));
-            tata(J,:)=tata_fft(J,:).*exp(1i*2*pi*(freq(J)'*delay));
-            signal_new_rec=2*real(ifft(tata,[],1)).*amplitude_weight;
-            index_interval_utile=find(interval_utile>0 & interval_utile<size(signal,1));
-            toto=zeros(length(index_interval_utile),1);
-            toto=mean(signal_new_rec(interval_utile(index_interval_utile),:),2);
-            image_fin(ii,jj,kk)=sqrt(mean(toto.^2));            
-            clear signal_bis interval_utile index_interval_utile hanning_vecteur
         end
     end
-end
-
-clear signal_new_em signal_new_rec m delay toto toto_bis tata tata_fft
-
-if affichage==1
-    for kk=1:size(image_fin,3)
-        
-        figure(1)
-        imagesc(image_r*1e2,image_z*1e2,image_fin(:,:,kk)'/max(max(image_fin(:,:,kk)))');
-        title(['avec beamforming - energie max = ' num2str(max(max(image_fin(:,:,kk))))])
-        colorbar;
-        xlabel('r (cm)');ylabel('z (cm)');
-        drawnow
-        pause(.2);
+    
+    clear signal_new_em signal_new_rec m delay toto toto_bis tata tata_fft
+    
+    if affichage==1
+        for kk=1:size(image_fin,3)
+            
+            figure(1)
+            imagesc(image_r*1e2,image_z*1e2,image_fin(:,:,kk)'/max(max(image_fin(:,:,kk)))');
+            title(['avec beamforming - energie max = ' num2str(max(max(image_fin(:,:,kk))))])
+            colorbar;
+            xlabel('r (cm)');ylabel('z (cm)');
+            drawnow
+            pause(.2);
+        end
+    end
+    
+    clear matrice_finale
+    
+    %%%%%%% TO ADAPT
+    for iii=1:size(image_fin,3)
+        Data.Pressure=image_fin(:,:,iii);
+        FileIndex=numero_tir_fin - pas_fichier+iii;%%%%%%TO CHECK!!!!!
+        %%%%%%%%%%
+        %eval(['save analyse_' name '_' num2str(number) '_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
+        OutputDir=[Param.OutputSubDir OutputDirExt];% subdirectory for output files
+        OutputFile=fullfile_uvmat(OutputDir,'','signal','.nc','_00001',FileIndex);
+        error=struct2nc(OutputFile,Data);%save result file
+        if isempty(error)
+            disp(['output file ' OutputFile ' written'])
+        else
+            disp(error)
+        end
+    end
+    numero_tir_fin_old=numero_tir_fin+1;
+    if (numero_tir_fin_old+pas_fichier)>Nmoy
+    test_fin_fichier=-1;
     end
 end
 
-clear matrice_finale
-
-%%%%%%% TO ADAPT
-for iii=1:size(image_fin,3)  
-    Data.Pressure=image_fin(:,:,iii);
-    FileIndex=iii+((kk-1)*nombre_tir_relu)+((qq-1)*Nmoy);%%%%%%TO CHECK!!!!!
-    %%%%%%%%%%
-    %eval(['save analyse_' name '_' num2str(number) '_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
-    OutputDir=[Param.OutputSubDir OutputDirExt];% subdirectory for output files
-    OutputFile=fullfile_uvmat(OutputDir,'','signal','.nc','_00001',FileIndex);
-    error=struct2nc(OutputFile,Data);%save result file
-    if isempty(error)
-        disp(['output file ' OutputFile ' written'])
-    else
-        disp(error)
-    end
-end
-%numero_tir_fin_old=numero_tir_fin+1;
 
