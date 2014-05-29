@@ -96,7 +96,7 @@ end
 ind_opening=0;%default
 NomTypeNc='';
 switch FileType
-    case {'image','multimage','video','mmreader'}
+    case {'image','multimage','video','mmreader','netcdf'}
         NomTypeImaA=NomTypeInput;
         iview_image=1;%line # for the input images
     case 'civdata'
@@ -133,7 +133,7 @@ switch FileType
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
         return
     otherwise 
-        msgbox_uvmat('ERROR','civ_series needs images or civ data as input')
+        msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
         return
 end
 if isfield(SeriesData,'FileType') && numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')

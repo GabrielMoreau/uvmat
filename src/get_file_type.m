@@ -39,6 +39,9 @@ switch FileExt
     case '.xls'
         FileInfo.FileType='xls';
         FileType='xls';
+    case '.dat'
+        FileInfo.FileType='dat';
+        FileType='dat';
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension

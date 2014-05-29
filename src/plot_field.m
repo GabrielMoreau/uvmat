@@ -96,7 +96,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
+function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam)
 
 %% default input and output
 if ~exist('PlotParam','var'),PlotParam=[];end;
@@ -179,13 +179,13 @@ AxeData=get(haxes,'UserData');
 
 %% 2D plots 
 if isempty(index_2D)
-    plot_plane([],[],haxes,[],[]);%removes images or vector plots in the absence of 2D field plot
+    plot_plane([],[],haxes,[]);%removes images or vector plots in the absence of 2D field plot
 else  %plot 2D field
-    if ~exist('PosColorbar','var'),PosColorbar=[];end;
-    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut,PosColorbar);
+%     if ~exist('PosColorbar','var'),PosColorbar=[];end;
+    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut);
     AxeData.NbDim=2;
     if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut,PosColorbar);
+        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut);
         AxeData.ZoomAxes=zoomaxes;
     end
 end
@@ -572,7 +572,7 @@ end
 % end
 
 %-------------------------------------------------------------------
-function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam,PosColorbar)
+function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam)
 %-------------------------------------------------------------------
 PlotType='plane';
 grid(haxes, 'off')% remove grid (possibly remaining from other graphs)
@@ -588,6 +588,11 @@ PlotParamOut=PlotParam;%default
 errormsg='';%default
 
 hfig=get(haxes,'parent');%handle of the figure containing the plot axes
+PosColorbar=[];
+FigData=get(hfig,'UserData');
+if isfield(FigData,'PosColorbar')
+    PosColorbar=FigData.PosColorbar;
+end
 hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
 test_ima=0; %default: test for image or map plot

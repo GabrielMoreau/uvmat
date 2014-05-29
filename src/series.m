@@ -1524,10 +1524,9 @@ if isfield(Param,'OutputSubDir')
             msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
             return
         end
-                [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
+        [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
         if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg1});%error message for directory creation
-            return
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
         end
     end
 end

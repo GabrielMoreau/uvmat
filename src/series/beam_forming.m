@@ -3,7 +3,7 @@ function ParamOut=beam_forming(Param)
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -11,7 +11,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.p_formed_1';%set the output dir extension
+    index=msgbox_uvmat('INPUT_TXT','index of the series to process (1 to 5)');%choose the i index of the dat files
+    ParamOut.OutputDirExt=['.p_formed_' index];%set the output dir extension
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    set(hhseries.num_last_i,'String',index)
+    set(hhseries.num_first_i,'String',index)
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
       %check the input files
     first_j=[];
@@ -28,6 +33,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 end
 
 ParamOut=[]; %default output
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
+if ischar(Param)
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
+end
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -83,19 +94,19 @@ end
 % clear all
 % close all
 % read_data=1;
-affichage=1;
+affichage=0;
 % soustraction=0;
-
-% test_fin_fichier=1;
-pas_fichier=1;
-numero_tir_fin_old=1;
 
 %%%%%% Prepare output 
 load (fullfile(RootPath,SubDir,[RootFile '.mat']))
-Data.ListVarName={'Coord_x','Coord_z','Pressure'};
-Data.VarDimName={'Coord_x','Coord_z',{'Coord_z','Coord_x'}};
-Data.Coord_x=5*(nbvoie_reception-0.5)/numel(nbvoie_reception); % totql length of e
-Data.Coord_z=(1:A)/133 ;% to check from input parameter ....
+Data.ListGlobalAttribute={'CoordUnit'}; %%TODO: add also time, how to get it  ?????
+Data.CoordUnit='pixel';
+Data.ListVarName={'AX','AY','A'};
+Data.VarDimName={'AX','AY',{'AY','AX'}};
+%Data.Coord_x=5*(nbvoie_reception-0.5)/numel(nbvoie_reception); % totql length of e
+Data.AX=1:65;
+%Data.Coord_z=(1:A)/133 ;% to check from input parameter ....
+Data.AY=1:332;
 %%%%%%
 %
 % while test_fin_fichier>0
@@ -103,16 +114,15 @@ Data.Coord_z=(1:A)/133 ;% to check from input parameter ....
 %directory='manip_lgit';%%%%%%%%%%%%%%%%%
 %name='test';%%%%%%%%%%%%%%%%%
 %         number=2;
-number=1; %subsequence index (from 1 to 5)
-OutputDirExt=['.p_formed_' num2str(number)]; %TODO: loop on 'number' from 1 to 5
-numero_tir_fin_old=1;
-pas_fichier=20;% nbre of successive shoots to read (to account for computer memory limit)
-Nmoy=20;  %%%%% value 20  FOR TEST : to shift to VALUE 8000 set by the .mat file
+number=str2num(Param.OutputDirExt(11:end));%extract the subsequence index (from 1 to 5) 
+numero_tir_fin_old=1%%%%%%% =0 ?????
+pas_fichier=20;%  %20;% nbre of successive shots to read (to account for computer memory limit)
+Nmoy=800;  %%%%% value 20  FOR TEST : to shift to VALUE 8000 set by the .mat file
 
 test_fin_fichier=1;% test to stop input file reading
 while test_fin_fichier>0
     numero_tir_debut=1;
-    numero_tir_fin=numero_tir_debut+pas_fichier;
+    numero_tir_fin=numero_tir_fin_old+pas_fichier-1;
     
     %  eval(['load ' directory '\' name '.mat'])
     matrice_finale=zeros(A,length(nbvoie_reception),numero_tir_fin);%A=nbre of times (coord z)=2650, numero_tir_fin=time index
@@ -122,10 +132,10 @@ while test_fin_fichier>0
 
     for ii=1:length(nbvoie_reception)%=64
         %eval(['fid=fopen(''E:\ManipLGITLecoeur\' directory '\' name '_' num2str(number) '_' num2str(nbvoie_reception(ii)) '.dat'',''r'');']);
-        filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,number,[],ii);
+        filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,number,[],ii); % input file name
         fid=fopen(filename);
         toto=zeros(Nsequence*A*numero_tir_fin+31,1);% Nsequence=1
-        toto=fread(fid,numero_tir_fin*A*Nsequence+31,'int16','ieee-le') ;
+        toto=fread(fid,numero_tir_fin*A*Nsequence+31,'int16','ieee-le') ;% why shift by 31 ?????
         toto=double(bitxor(uint16(toto),uint16(2048)));
         toto(1:31)=[];toto(numero_tir_fin*A*Nsequence)=mean(toto);
         fclose(fid);
@@ -135,9 +145,10 @@ while test_fin_fichier>0
         clear toto tata
     end
     
-    matrice_finale(:,:,numero_tir_debut:numero_tir_fin_old)=[];
-    numero_tir_fin=numero_tir_fin-1;
-    matrice_finale=reshape(filtfilt(BB,AA,matrice_finale(:,:)),size(matrice_finale));
+   % matrice_finale(:,:,numero_tir_debut:numero_tir_fin_old)=[];%%%%%%% first field removed (when numero_tir_fin_old=1) ?????
+     matrice_finale(:,:,numero_tir_debut:numero_tir_fin_old-1)=[];%%%%%%% 
+  %  numero_tir_fin=numero_tir_fin-1;  ?????
+    matrice_finale=reshape(filtfilt(BB,AA,matrice_finale(:,:)),size(matrice_finale));% low pass filtered input signal,along first (time) index? 
     
     % if soustraction==1
     %     eval(['load moyenne_' name '_' num2str(number) '.mat matrice_finale_moy'])
@@ -148,7 +159,7 @@ while test_fin_fichier>0
     %eval(['save matrice_finale_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
     
     %%%%%%%%%%%%%%Imagerie
-    fe=rsf*1e6;%acquisition frequency
+    fe=rsf*1e6;% sampling frequency for receptor (in Hz)
     cc=1475;%speed of sound
     hanning_window=25;
     hanning_vect=hanning(2*hanning_window+1);
@@ -175,14 +186,10 @@ while test_fin_fichier>0
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for kk=1:size(matrice_finale,3)
-        kk
-        tir=kk;
-        signal=squeeze(matrice_finale(interval,:,tir));
-        tata_fft=zeros(size(signal,1),size(signal,2));
-        tata_fft=fft(signal,[],1);
-        
-        if kk==1
-            
+        disp(kk)
+        signal=squeeze(matrice_finale(interval,:,kk));
+        tata_fft=fft(signal,[],1);%FFT of the time signal size=(2650,64)     
+        if kk==1           
             matrice_freq_mean=mean(abs(fft(signal,[],1)),2);
             X=[freq1*1e6 freq2*1e6];
             [I J]=find(freq>=X(1) & freq<=X(2));
@@ -192,7 +199,6 @@ while test_fin_fichier>0
         end
         
         for ii=1:length(image_r)
-            [ii kk]
             for jj=1:length(image_z)
                 
                 delay=zeros(length(nbvoie_reception),1);
@@ -249,12 +255,11 @@ while test_fin_fichier>0
     
     %%%%%%% TO ADAPT
     for iii=1:size(image_fin,3)
-        Data.Pressure=image_fin(:,:,iii);
+        Data.A=image_fin(:,:,iii);% time lapse decreasesas z coordinate increases.
         FileIndex=numero_tir_fin - pas_fichier+iii;%%%%%%TO CHECK!!!!!
         %%%%%%%%%%
         %eval(['save analyse_' name '_' num2str(number) '_' num2str(numero_tir_fin_old) '_' num2str(numero_tir_fin) '.mat'])
-        OutputDir=[Param.OutputSubDir OutputDirExt];% subdirectory for output files
-        OutputFile=fullfile_uvmat(OutputDir,'','signal','.nc','_00001',FileIndex);
+        OutputFile=fullfile_uvmat(RootPath,OutputDir,'signal','.nc','_00001',FileIndex);
         error=struct2nc(OutputFile,Data);%save result file
         if isempty(error)
             disp(['output file ' OutputFile ' written'])
@@ -262,8 +267,8 @@ while test_fin_fichier>0
             disp(error)
         end
     end
-    numero_tir_fin_old=numero_tir_fin+1;
-    if (numero_tir_fin_old+pas_fichier)>Nmoy
+    numero_tir_fin_old=numero_tir_fin+1% first index for next bloc reading
+     if (numero_tir_fin_old+pas_fichier-1)>Nmoy 
     test_fin_fichier=-1;
     end
 end

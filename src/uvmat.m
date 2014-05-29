@@ -189,7 +189,7 @@ Height=Height*RescaleFactor;
 LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Position',[LeftX LowY Width Height])
-UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
+UvData.PosColorbar=[0.80 0.02 0.018 0.445];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
 
@@ -372,7 +372,7 @@ set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height]
 %     pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);
     set(handles.TableDisplay,'Position',pos_1)
     % reset position of CheckTable
-    set(handles.CheckTable,'Unit','pixels')
+    set(handles.CheckTable,'Units','pixels')
 pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
 pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
 pos_CheckTable(2)=pos_InputFile(2)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
@@ -2076,7 +2076,7 @@ if isempty(j1_1)% case of movies, the index is not given by file index
 end
 % in case of movies the index is set by edit boxes i1 or j1 (case of movies indexed by index i)
 errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
-
+ResizeFcn(handles.uvmat,[],handles)
 if isempty(errormsg)
     set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
 else
@@ -2647,7 +2647,7 @@ else
         PlotParam{1}.Vectors.ColorScalar={''};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
     end
-    PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
+    %PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
     
     %% second projection object (view_field display)
     if length( IndexObj)==2
@@ -2656,7 +2656,7 @@ else
             plot_handles{2}=guidata(view_field_handle);
             haxes(2)=plot_handles{2}.PlotAxes;
             PlotParam{2}=read_GUI(view_field_handle);
-            PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
+            %PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
         end
     end
     
@@ -2719,8 +2719,7 @@ else
             if imap==2 && isempty(view_field_handle)
                 view_field(ObjectData)
             else
-              %  ObjectData.VarAttribute{5}.Role='scalar';TODO    CORRECT
-                [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
+                [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap});
                 if imap==1
                     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
                 else
@@ -2794,7 +2793,7 @@ if UvData.Field.NbDim==3
     set(handles.CheckEditObject,'Value',1)
     CheckEditObject_Callback(handles.uvmat, [], handles)
 end   
-ResizeFcn(handles.uvmat,[],handles)
+%ResizeFcn(handles.uvmat,[],handles)
 set(handles.uvmat,'Pointer',pointer)
 
 %------------------------------------------------------------------------
@@ -4231,9 +4230,9 @@ update_plot(handles);
 function set_vec_col_bar(handles)
 %------------------------------------------------------------------------
 %get the image of the color display button 'VecColBar' in pixels
-set(handles.VecColBar,'Unit','pixel');
+set(handles.VecColBar,'Units','pixel');
 pos_vert=get(handles.VecColBar,'Position');
-set(handles.VecColBar,'Unit','Normalized');
+set(handles.VecColBar,'Units','Normalized');
 width=ceil(pos_vert(3));
 height=ceil(pos_vert(4));
 
@@ -4656,6 +4655,7 @@ end
 
 % --------------------------------------------------------------------
 function MenuExportAxis_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------    
 ListFig=findobj(allchild(0),'Type','figure');
 nb_option=0;
 menu={};
@@ -4714,87 +4714,154 @@ end
 function MenuExportMovie_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
-huvmat=get(handles.InputFileREFRESH,'parent');
-% UvData=get(huvmat,'UserData');
-%[xx,xx,FileBase]=read_file_boxes(handles);
+
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileBase=fullfile(RootPath,RootFile);
- %read the current input file name
-prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
-dlg_title = 'select properties of the output avi movie';
-num_lines= 1;
-def     = {[FileBase '_out.avi'];'10';'1';'[0.03 0.05 0.95 0.92]';'10'};
-answer = inputdlg(prompt,dlg_title,num_lines,def,'on');
-aviname=answer{1};
-fps=str2double(answer{2});
-% check for existing file with output name aviname
-if exist(aviname,'file')
-    backup=aviname;
+
+%% create a fig and axis for movies 
+figure_movie=findobj(allchild(0),'name','figure_movie');
+
+if ~isempty(figure_movie)
+    delete(figure_movie)%delete existing figure_movie
+end
+figure_movie=figure;
+nbpix=[512 384];% resolution XVGA
+set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
+newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
+set(newaxes,'Tag','movieaxes')
+
+%% display time if defined in uvmat
+time_str=get(handles.TimeValue,'String');
+if ~isempty(time_str)
+    htitle=get(newaxes,'Title');
+%     xlim=get(newaxes,'XLim');
+%     ylim=get(newaxes,'YLim');
+%     set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
+    
+    set(htitle,'String',['t=' time_str])
+end
+map=colormap(handles.PlotAxes);
+colormap(map);%transmit the current colormap to the zoom fig
+colorbar
+
+%% create the GUI set_movie
+%set(0,'Units','points')
+%ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Position=get(figure_movie,'Position');
+Position(2)=Position(2)+1.2*Position(4);
+Position(3)=1.5*Position(3);
+Position(4)=Position(4)/2;
+hfig=findobj(allchild(0),'Tag','set_movie');
+if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+hfig=figure('name','set_movie','tag','set_movie','MenuBar','none','NumberTitle','off','Units','pixels',...
+    'Position',Position);
+BackgroundColor=get(hfig,'Color');
+hh=0.14; % box height (relative)
+% first raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-hh/2 0.9 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','movie name:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-1.5*hh 0.9 hh],'tag','MovieName','BackgroundColor',[1 1 1],...
+    'String',fullfile(RootPath,[SubDir '.movie'], [RootFile '.avi']),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''MovieName'': name (with path) of the movie to create');%edit box
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','frames per second:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [0.55 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','total nbre of frames:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-3.5*hh 0.3 hh],'tag','num_FramePerSecond','BackgroundColor',[1 1 1],...
+    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FramePerSecond'': nbre of frames per second');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [0.65 0.95-3.5*hh 0.3 hh],'tag','num_FrameNumber','BackgroundColor',[1 1 1],...
+    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FrameNumber'': total nbre of frames');%edit box
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.05 0.15 0.25 hh],'BackgroundColor',[1 0 0],'String','START','Callback',@(hObject,eventdata)set_movie_START_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.15 0.25 hh],'Callback',@(hObject,eventdata)set_movie_Cancel_Callback(hObject,eventdata),...
+    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.05 0.9 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','will extract the result of ++> on uvmat: adjust figure_movie with its Matlab edit menu, then press ''START ''','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+drawnow
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_movie_START_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+%% read info from the GUI set_movie
+hset_movie=get(hObject,'parent');
+hMovieName=findobj(hset_movie,'Tag','MovieName');
+MovieName=get(hMovieName,'String');
+hFramePerSecond=findobj(hset_movie,'Tag','num_FramePerSecond');
+fps=str2double(get(hFramePerSecond,'String'));
+hFrameNumber=findobj(hset_movie,'Tag','num_FrameNumber');
+FrameNumber=str2double(get(hFrameNumber,'String'));% total nbre of frames
+
+%% create the movie file
+MovieDir=fileparts(MovieName);
+if ~exist(MovieDir,'dir')
+    [success,message]=mkdir(MovieDir);
+    if ~isequal(success,1)
+        msgbox_uvmat('ERROR',message)
+        return
+    end
+    [success,message] = fileattrib(MovieDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    if success==0
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' MovieDir ':']; message});%error message for directory creation
+    end
+end
+if exist(MovieName,'file')
+    backup=MovieName;
     testexist=2;
     while testexist==2
         backup=[backup '~'];
         testexist=exist(backup,'file');      
     end
-    [success,message]=copyfile(aviname,backup);%make backup of the existing file
+    [success,message]=copyfile(MovieName,backup);%make backup of the existing file
     if isequal(success,1)
-        delete(aviname)%delete existing file 
+        delete(MovieName)%delete existing file 
     else
         msgbox_uvmat('ERROR',message)
         return
     end 
 end
 %create avi open
-aviobj=avifile(aviname,'Compression','None','fps',fps);
+aviobj=avifile(MovieName,'Compression','None','fps',fps);
 
-%display first view for tests
-newfig=figure;
-newaxes=copyobj(handles.PlotAxes,newfig);%new plotting axes in the new figure
-set(newaxes,'Tag','movieaxes')
-nbpix=[512 384]*str2double(answer{3});
-set(gcf,'Position',[1 1 nbpix])% resolution XVGA 
-set(newaxes,'Position',eval(answer{4}));
-map=colormap(handles.PlotAxes);
-colormap(map);%transmit the current colormap to the zoom fig
-msgbox_uvmat('INPUT_Y-N',{['adjust figure ' num2str(newfig) ' with its matlab edit menu '] ;...
-        ['then press OK to get the avi movie as a copy of figure ' num2str(newfig) ' display']});
-% UvData.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
-% set(huvmat,'UserData',UvData);
-increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
-set(handles.STOP,'Visible','on')
-set(handles.speed,'Visible','on')
-set(handles.speed_txt,'Visible','on')
-set(handles.Movie,'BusyAction','queue')
-
-%imin=str2double(get(handles.i1,'String'));
-imax=str2double(answer{5});
-% if isfield(UvData,'Time')
-htitle=get(newaxes,'Title');
-xlim=get(newaxes,'XLim');
-ylim=get(newaxes,'YLim');
-set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
-time_str=get(handles.TimeValue,'String');
-set(htitle,'String',['t=' time_str])
-set(handles.speed,'Value',1)
-AxesPos=get(newaxes,'Position');
-handles.PlotAxes=newaxes;% the axis in the new figure becomes the current main plotting axes
-for i=1:imax
-    if get(handles.speed,'Value')~=0 && isequal(get(handles.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
-            runpm(hObject,eventdata,handles,increment)% run plus 
-            set(newaxes,'Position',AxesPos)
+%% get info from uvmat and adjust it
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+increment=str2num(get(hhuvmat.num_IndexIncrement,'String')); %get the field increment from uvmat
+set(hhuvmat.STOP,'Visible','on')
+set(hhuvmat.speed,'Visible','on')
+set(hhuvmat.speed_txt,'Visible','on')
+set(hhuvmat.Movie,'BusyAction','queue')
+set(hhuvmat.speed,'Value',1)
+figure_movie=findobj(allchild(0),'name','figure_movie');
+hhuvmat.PlotAxes=findobj(figure_movie,'Tag','movieaxes');% the axis in the new figure becomes the current main plotting axes
+for i=1:FrameNumber
+    if get(hhuvmat.speed,'Value')~=0 && isequal(get(hhuvmat.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
+            runpm(hObject,eventdata,hhuvmat,increment)% run plus 
             drawnow
-            time_str=get(handles.TimeValue,'String');
-            if ishandle(htitle)
-             set(htitle,'String',['t=' time_str])
-            end
-            mov=getframe(newfig);
+            time_str=get(hhuvmat.TimeValue,'String');
+            htitle=get(hhuvmat.PlotAxes,'Title');
+            Title=get(htitle,'String');
+            set(htitle,'String',regexprep(Title,'t=\d+.\d*',['t=' time_str]))
+            mov=getframe(figure_movie);
             aviobj=addframe(aviobj,mov);
     end
 end
 aviobj=close(aviobj);
-% UvData=rmfield(UvData,'plotaxes');
-% set(huvmat,'UserData',UvData);
-msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
+msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
 
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_movie_Cancel_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+delete(hObject)
+% 
+% 
+% 
+%  %read the current input file name
+% prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
+% dlg_title = 'select properties of the output avi movie';
+% num_lines= 1;
+% def     = {[FileBase '_out.avi'];'10';'1';'[0.05 0.07 0.9 0.9]';'10'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Projection Objects Menu Callbacks
@@ -5076,7 +5143,7 @@ if isfield(GeometryCalib,'SliceAngle')
 end
 
 %% create the GUI set_slice
-set(0,'Unit','points')
+set(0,'Units','points')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
 Width=350;% fig width in points (1/72 inch)
 Height=min(0.8*ScreenSize(4),300);
@@ -5084,7 +5151,7 @@ Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
 hfig=findobj(allchild(0),'Tag','set_slice');
 if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
-hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
+hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
 BackgroundColor=get(hfig,'Color');
 hh=0.14; % box height (relative)
 ii=0.01; % gap between uicontrols
@@ -5481,10 +5548,14 @@ else
     if ~strcmp(answer,'Cancel')
         mask_dir=fileparts(answer);
         if ~exist(mask_dir,'dir')
-            [xx,msg1]=mkdir(mask_dir);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' mask_dir ': ' msg1];%error message for directory creation
+            [success,msg]=mkdir(mask_dir);
+            if success==0
+                msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
                 return
+            end
+            [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+            if success==0
+                msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
             end
         end
         imwrite(imflag,answer,'BitDepth',8);

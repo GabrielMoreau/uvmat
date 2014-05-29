@@ -56,7 +56,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     end
     Data.NbSlice='off'; %nbre of slices ('off' by default)
     Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    Data.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    Data.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     Data.FieldTransform = 'off';%can use a transform function
     Data.ProjObject='off';%can use projection object(option 'off'/'on',
     Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
@@ -220,14 +220,26 @@ try
             return
         end
         [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        if strcmp(FileInfo_A.FileType,'netcdf')
+            FieldName_A=Param.InputFields.FieldName;
+            [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
+            par_civ1.ImageA=DataIn.(FieldName_A);
+        else          
         [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
+        end
         ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
         if ~exist(ImageName_B,'file')
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
             return
         end
         [FileType_B,FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
-        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
+        if strcmp(FileInfo_B.FileType,'netcdf')
+            FieldName_B=Param.InputFields.FieldName;
+             [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
+             par_civ1.ImageB=DataIn.(FieldName_B);
+        else
+        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,Param.InputFields,FrameIndex_B_Civ1(1));
+        end
         NbField=numel(i1_series_Civ1);
     elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
         ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(1),[],j1_series_Civ2(1));
@@ -236,7 +248,7 @@ try
             return
         end
         [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
-        [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2(1));
+        [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
         ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
         if ~exist(ImageName_B,'file')
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
@@ -334,17 +346,29 @@ for ifield=1:NbField
         par_civ1=Param.ActionInput.Civ1;
         try
             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
-            [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
+            if strcmp(FileInfo_A.FileType,'netcdf')
+                FieldName_A=Param.InputFields.FieldName;
+                [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
+                par_civ1.ImageA=DataIn.(FieldName_A);
+            else
+                [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
+            end
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+            if strcmp(FileInfo_B.FileType,'netcdf')
+                FieldName_B=Param.InputFields.FieldName;
+                [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
+                par_civ1.ImageB=DataIn.(FieldName_B);
+            else
+                [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+            end
         catch ME
             if ~isempty(ME.message)
                 disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
                 return
             end
         end
-        par_civ1.ImageWidth=FileInfo_A.Width;
-        par_civ1.ImageHeight=FileInfo_A.Height;
+        par_civ1.ImageWidth=size(par_civ1.ImageA,2);%FileInfo_A.Width;
+        par_civ1.ImageHeight=size(par_civ1.ImageA,1);%FileInfo_A.Height;
         list_param=(fieldnames(Param.ActionInput.Civ1))';
         Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
         Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
