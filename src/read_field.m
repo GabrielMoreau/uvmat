@@ -233,12 +233,12 @@ if ~isempty(A)
     %     Rangy=[npxy(1)-0.5 0.5]; %
     Field.NbDim=2;%default
     Field.AName='image';
-    Field.ListVarName={'AY','AX','A'}; %
+    Field.ListVarName={'Coord_y','Coord_x','A'}; %
     if ndims(A)==3
         if Npz==1;%color
-            Field.VarDimName={'AY','AX',{'AY','AX','rgb'}}; %
-            Field.AY=[npxy(1)-0.5 0.5];
-            Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+            Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x','rgb'}}; %
+            Field.Coord_y=[npxy(1)-0.5 0.5];
+            Field.Coord_x=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
             if isstruct(ParamOut)
                 ParamOut.Npx=npxy(2);% display image size on the interface
                 ParamOut.Npy=npxy(1);
@@ -247,10 +247,10 @@ if ~isempty(A)
         else
             Field.NbDim=3;
             Field.ListVarName=['AZ' Field.ListVarName];
-            Field.VarDimName={'AZ','AY','AX',{'AZ','AY','AX'}};
+            Field.VarDimName={'AZ','Coord_y','Coord_x',{'AZ','Coord_y','Coord_x'}};
             Field.AZ=[npxy(1)-0.5 0.5];
-            Field.AY=[npxy(2)-0.5 0.5];
-            Field.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
+            Field.Coord_y=[npxy(2)-0.5 0.5];
+            Field.Coord_x=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
             if isstruct(ParamOut)
                 ParamOut.Npx=npxy(3);% display image size on the interface
                 ParamOut.Npy=npxy(2);
@@ -258,9 +258,9 @@ if ~isempty(A)
             Field.VarAttribute{4}.Mesh=1;
         end
     else
-        Field.VarDimName={'AY','AX',{'AY','AX'}}; %
-        Field.AY=[npxy(1)-0.5 0.5];
-        Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+        Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x'}}; %
+        Field.Coord_y=[npxy(1)-0.5 0.5];
+        Field.Coord_x=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
         ParamOut.Npx=npxy(2);% display image size on the interface
         ParamOut.Npy=npxy(1);
         Field.VarAttribute{3}.Mesh=1;

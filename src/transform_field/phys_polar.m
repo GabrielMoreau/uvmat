@@ -79,8 +79,8 @@ iscalar=0;
 if  ~isempty(Calib{1})
     DataOut=phys_1(Data,Calib{1},origin_xy,radius_offset,angle_offset,angle_scale);
     %case of images or scalar
-    if isfield(Data,'A')&isfield(Data,'AX')&~isempty(Data.AX) & isfield(Data,'AY')&...
-                                           ~isempty(Data.AY)&length(Data.A)>1
+    if isfield(Data,'A')&isfield(Data,'Coord_x')&~isempty(Data.Coord_x) & isfield(Data,'Coord_y')&...
+                                           ~isempty(Data.Coord_y)&length(Data.A)>1
         iscalar=1;
         A{1}=Data.A;
     end
@@ -95,8 +95,8 @@ end
 %transform second field (if exists) to cartesian phys coordiantes
 if test_1
     DataOut_1=phys_1(Data_1,Calib{2},origin_xy,radius_offset,angle_offset,angle_scale);
-    if isfield(Data_1,'A')&isfield(Data_1,'AX')&~isempty(Data_1.AX) & isfield(Data_1,'AY')&...
-                                       ~isempty(Data_1.AY)&length(Data_1.A)>1
+    if isfield(Data_1,'A')&isfield(Data_1,'Coord_x')&~isempty(Data_1.Coord_x) & isfield(Data_1,'Coord_y')&...
+                                       ~isempty(Data_1.Coord_y)&length(Data_1.A)>1
           iscalar=iscalar+1;
           Calib{iscalar}=Calib{2};
           A{iscalar}=Data_1.A;
@@ -104,23 +104,23 @@ if test_1
               DataOut.Txt='inconsistent plane indexes in the two input fields';
           end
           if iscalar==1% case for which only the second field is a scalar
-               [A,AX,AY]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);
+               [A,Coord_x,Coord_y]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);
                DataOut_1.A=A{1};
-               DataOut_1.AX=AX; 
-               DataOut_1.AY=AY;
+               DataOut_1.Coord_x=Coord_x; 
+               DataOut_1.Coord_y=Coord_y;
                return
           end
     end
 end
 if iscalar~=0
-    [A,AX,AY]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);%
+    [A,Coord_x,Coord_y]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);%
     DataOut.A=A{1};
-    DataOut.AX=AX; 
-    DataOut.AY=AY;
+    DataOut.Coord_x=Coord_x; 
+    DataOut.Coord_y=Coord_y;
     if iscalar==2
         DataOut_1.A=A{2};
-        DataOut_1.AX=AX; 
-        DataOut_1.AY=AY;
+        DataOut_1.Coord_x=Coord_x; 
+        DataOut_1.Coord_y=Coord_y;
     end
 end
 

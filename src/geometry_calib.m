@@ -915,21 +915,21 @@ GeometryCalib.CoordUnit='cm';
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 addpath(fullfile(path_UVMAT,'transform_field'))
-Data.ListVarName={'AY','AX','A'};
-Data.VarDimName={'AY','AX',{'AY','AX'}};
+Data.ListVarName={'Coord_y','Coord_x','A'};
+Data.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x'}};
 if ndims(A)==3
     A=mean(A,3);
 end
 Data.A=A-min(min(A));
-Data.AY=[npxy(1)-0.5 0.5];
-Data.AX=[0.5 npxy(2)];
+Data.Coord_y=[npxy(1)-0.5 0.5];
+Data.Coord_x=[0.5 npxy(2)];
 Data.CoordUnit='pixel';
 Calib.GeometryCalib=GeometryCalib;
 DataOut=phys(Data,Calib);
 rmpath(fullfile(path_UVMAT,'transform_field'))
 Amod=DataOut.A;% current image expressed in 'phys' coord
-Rangx=DataOut.AX;% x coordinates of first and last pixel centres in phys 
-Rangy=DataOut.AY;% y coordinates of first and last pixel centres in phys 
+Rangx=DataOut.Coord_x;% x coordinates of first and last pixel centres in phys 
+Rangy=DataOut.Coord_y;% y coordinates of first and last pixel centres in phys 
 if CalibData.grid.CheckWhite
     Amod=double(Amod);%case of white grid markers: will look for image maxima
 else

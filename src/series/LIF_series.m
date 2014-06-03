@@ -119,10 +119,10 @@ for ifile=1:nbfield
         end
         Resu.ZIndex=Data.ZIndex;
         Resu.z=XmlData.GeometryCalib.SliceCoord(Data.ZIndex,3);
-        Resu.ListVarName={'AY' ,'AX' ,'c','mask'};
-        Resu.VarDimName={'AY','AX',{'AY','AX'},{'AY','AX'}};        
-        Resu.AY=[DataOut.AY(1), DataOut.AY(end)];
-        Resu.AX=[DataOut.AX(1), DataOut.AX(end)];
+        Resu.ListVarName={'Coord_y' ,'Coord_x' ,'c','mask'};
+        Resu.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x'},{'Coord_y','Coord_x'}};        
+        Resu.Coord_y=[DataOut.Coord_y(1), DataOut.Coord_y(end)];
+        Resu.Coord_x=[DataOut.Coord_x(1), DataOut.Coord_x(end)];
         Resu.c=DataOut.A;
         Resu.mask=DataMask.A;%to chnge to  cartesian coordinates (polar2phys)
         error=struct2nc(outputfile,Resu); %save result file

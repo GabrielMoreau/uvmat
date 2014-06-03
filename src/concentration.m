@@ -48,13 +48,13 @@ C=filter2(ones(nfilt,nfilt),Ref.Aref);
 D=C./Mask;
 Ref.Aref(ind_bad)=D(ind_bad);
 DataOut_1=[];
-AX=DataOut.AX;
-AY=DataOut.AY;
+Coord_x=DataOut.Coord_x;
+Coord_y=DataOut.Coord_y;
 
-dX=(AX(2)-AX(1))/(npx-1);
-dY=(AY(1)-AY(2))/(npy-1);%mesh of new pixels
-[R,Y]=meshgrid(linspace(AX(1),AX(2),npx),linspace(AY(1),AY(2),npy));
-r=AX(1)+[0:npx-1]*dX;%distance from laser
+dX=(Coord_x(2)-Coord_x(1))/(npx-1);
+dY=(Coord_y(1)-Coord_y(2))/(npy-1);%mesh of new pixels
+[R,Y]=meshgrid(linspace(Coord_x(1),Coord_x(2),npx),linspace(Coord_y(1),Coord_y(2),npy));
+r=Coord_x(1)+[0:npx-1]*dX;%distance from laser
 %A(ind_good)=(A(ind_good)>=0).*A(ind_good); %replaces negative values  by zeros
 A=A./Ref.Aref;% luminosity normalised by the reference (value at the edge of the box)
 
@@ -70,13 +70,13 @@ DataMask.A(isnan(A)|isinf(A)|A>1.5)=0;% mask=1 for interpolated data
 r_edge=Ref.r_edge*ones(1,npx);
 Edge_ind=find((abs(R-r_edge)/dX)<=1 & DataMask.A~=0);%indies of positions close to r_edge, values greater than 1 are not expected
 yedge=min(min(Y(Edge_ind)));
-jmax=round(-(yedge-AY(1))/dY+1);
+jmax=round(-(yedge-Coord_y(1))/dY+1);
 DataMask.A(jmax:end,:)=0;
 
 A(isnan(A)|isinf(A))=0;
 
 % radius along the reference line
-Theta=(linspace(AY(1),AY(2),npy)*pi/180)'*ones(1,npx);%theta in radians
+Theta=(linspace(Coord_y(1),Coord_y(2),npy)*pi/180)'*ones(1,npx);%theta in radians
 
 gamma_coeff=Ref.GammaCoeff*ones(1,npx);
 
@@ -90,21 +90,21 @@ RangeX=Ref.RangeX-XmlData.GeometryCalib.PolarCentre(1);
 RangeY=Ref.RangeY-XmlData.GeometryCalib.PolarCentre(2);
 
 DataOut=polar2phys(DataOut,RangeX,RangeY);
-DataOut.AX=DataOut.AX+XmlData.GeometryCalib.PolarCentre(1);
-DataOut.AY=DataOut.AY+XmlData.GeometryCalib.PolarCentre(2);
+DataOut.Coord_x=DataOut.Coord_x+XmlData.GeometryCalib.PolarCentre(1);
+DataOut.Coord_y=DataOut.Coord_y+XmlData.GeometryCalib.PolarCentre(2);
 DataMask=polar2phys(DataMask,RangeX,RangeY);
-DataMask.AX=DataMask.AX+XmlData.GeometryCalib.PolarCentre(1);
-DataMask.AY=DataMask.AY+XmlData.GeometryCalib.PolarCentre(2);
+DataMask.Coord_x=DataMask.Coord_x+XmlData.GeometryCalib.PolarCentre(1);
+DataMask.Coord_y=DataMask.Coord_y+XmlData.GeometryCalib.PolarCentre(2);
 
 
 function DataOut=polar2phys(DataIn,RangeX,RangeY)
 %%%%%%%%%%%%%%%%%%%%
 DataOut=DataIn; %fdefault
 [npy,npx]=size(DataIn.A);
-dx=(DataIn.AX(2)-DataIn.AX(1))/(npx-1); 
-dy=(DataIn.AY(2)-DataIn.AY(1))/(npy-1);%mesh
-rcorner=[DataIn.AX(1) DataIn.AX(2) DataIn.AX(1) DataIn.AX(2)];% radius of the corners
-ycorner=[DataIn.AY(2) DataIn.AY(2) DataIn.AY(1) DataIn.AY(1)];% azimuth of the corners
+dx=(DataIn.Coord_x(2)-DataIn.Coord_x(1))/(npx-1); 
+dy=(DataIn.Coord_y(2)-DataIn.Coord_y(1))/(npy-1);%mesh
+rcorner=[DataIn.Coord_x(1) DataIn.Coord_x(2) DataIn.Coord_x(1) DataIn.Coord_x(2)];% radius of the corners
+ycorner=[DataIn.Coord_y(2) DataIn.Coord_y(2) DataIn.Coord_y(1) DataIn.Coord_y(1)];% azimuth of the corners
 thetacorner=pi*ycorner/180;% azimuth in radians
 [Xcorner,Ycorner] = pol2cart(thetacorner,rcorner);% cartesian coordinates of the corners (with respect to lser source)
 if ~exist('RangeX','var')
@@ -125,9 +125,9 @@ y=linspace(RangeY(2),RangeY(1),npy);
 
 [Theta,R] = cart2pol(X,Y);%corresponding polar coordiantes
 Theta=Theta*180/pi;
-%Theta=1+round((Theta-DataIn.AY(1))/dy); %index along y (dy negative)
-Theta=1-round((Theta-DataIn.AY(2))/dy); %index along y (dy negative)
-R=1+round((R-DataIn.AX(1))/dx); %index along x 
+%Theta=1+round((Theta-DataIn.Coord_y(1))/dy); %index along y (dy negative)
+Theta=1-round((Theta-DataIn.Coord_y(2))/dy); %index along y (dy negative)
+R=1+round((R-DataIn.Coord_x(1))/dx); %index along x 
 R=reshape(R,1,npx*npy);%indices reorganized in 'line'
 Theta=reshape(Theta,1,npx*npy);
 flagin=R>=1 & R<=npx & Theta >=1 & Theta<=npy;%flagin=1 inside the original image
@@ -141,6 +141,6 @@ vec_B(ind_out)=zeros(size(ind_out));
 DataOut.A=flipdim(reshape(vec_B,npy,npx),1);%new image in real coordinates
 
      %Rangx=Rangx-radius_ref;
-DataOut.AX=RangeX;
-DataOut.AY=RangeY;  
+DataOut.Coord_x=RangeX;
+DataOut.Coord_y=RangeY;  
 

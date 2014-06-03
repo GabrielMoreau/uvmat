@@ -70,8 +70,8 @@ if  ~isempty(Calib{1})
     end
     DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordiantes and velocity components
     %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
-    if isfield(DataIn,'A') && isfield(DataIn,'AX') && ~isempty(DataIn.AX) && isfield(DataIn,'AY')&&...
-                                           ~isempty(DataIn.AY) && length(DataIn.A)>1
+    if isfield(DataIn,'A') && isfield(DataIn,'Coord_x') && ~isempty(DataIn.Coord_x) && isfield(DataIn,'Coord_y')&&...
+                                           ~isempty(DataIn.Coord_y) && length(DataIn.A)>1
         iscalar=1;
         A{1}=DataIn.A;
     end
@@ -116,8 +116,8 @@ if ~isempty(DataOut_1)
             DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields
         end
     end
-    if isfield(DataIn_1,'A')&&isfield(DataIn_1,'AX')&&~isempty(DataIn_1.AX) && isfield(DataIn_1,'AY')&&...
-            ~isempty(DataIn_1.AY)&&length(DataIn_1.A)>1
+    if isfield(DataIn_1,'A')&&isfield(DataIn_1,'Coord_x')&&~isempty(DataIn_1.Coord_x) && isfield(DataIn_1,'Coord_y')&&...
+            ~isempty(DataIn_1.Coord_y)&&length(DataIn_1.A)>1
         iscalar=iscalar+1;
         Calib{iscalar}=Calib{2};
         A{iscalar}=DataIn_1.A;
@@ -126,26 +126,26 @@ end
 
 %% transform the scalar(s) or image(s)
 if iscalar~=0
-    [A,AX,AY]=phys_Ima(A,Calib,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
+    [A,Coord_x,Coord_y]=phys_Ima(A,Calib,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
     if iscalar==1 && ~isempty(DataOut_1) % case for which only the second field is a scalar
          DataOut_1.A=A{1};
-         DataOut_1.AX=AX; 
-         DataOut_1.AY=AY;
+         DataOut_1.Coord_x=Coord_x; 
+         DataOut_1.Coord_y=Coord_y;
     else
         DataOut.A=A{1};
-        DataOut.AX=AX; 
-        DataOut.AY=AY;
+        DataOut.Coord_x=Coord_x; 
+        DataOut.Coord_y=Coord_y;
     end
     if iscalar==2
         DataOut_1.A=A{2};
-        DataOut_1.AX=AX; 
-        DataOut_1.AY=AY;
+        DataOut_1.Coord_x=Coord_x; 
+        DataOut_1.Coord_y=Coord_y;
     end
 end
 
 % subtract fields
 if ~isempty(DataOut_1)
-DataOut=sub_field(DataOut,[],DataOut_1);
+    DataOut=sub_field(DataOut,[],DataOut_1);
 end
 %------------------------------------------------
 %--- transform a single field

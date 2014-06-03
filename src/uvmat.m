@@ -82,9 +82,9 @@
 % scalars are displayed either as an image or countour plot, either as a color of
 % velocity vectors. The scalar values in the first case is represented by
 % UvData.Field.A, and by UvData.Field.C in the second case. The corresponding set of X
-% and Y axes are represented by UvData.Field.AX and UvData.Field.AY, and .X and
+% and Y axes are represented by UvData.Field.Coord_x and UvData.Field.Coord_y, and .X and
 % .Y for C (the same as velocity vectors). If A is a nxxny matrix (scalar
-% on a regtular grid), then .AX andf.AY contains only two elements, represneting the
+% on a regtular grid), then .Coord_x andf.Coord_y contains only two elements, represneting the
 % axes of the four image corners. The scalar name is represented by
 % the strings .AName and/or .CName.
 % If the scalar exists in an input open (image or scalar stored under its
@@ -1144,8 +1144,8 @@ switch FileType
         set(handles_Fields,'Value',1) % set menu to 'image'
         set(handles_Fields,'String',{'image'})
         %set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String','AX');
-    set(handles.Coord_y,'String','AY');
+        set(handles.Coord_x,'String','Coord_x');
+    set(handles.Coord_y,'String','Coord_y');
 end
 set(handles.uvmat,'UserData',UvData)
 
@@ -1496,13 +1496,13 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         if ~isempty(hmask)
             set(hmask,'CData',imflag)    
             set(hmask,'AlphaData',flagmask*0.6)
-            set(hmask,'XData',MaskField.AX);
-            set(hmask,'YData',MaskField.AY);
+            set(hmask,'XData',MaskField.Coord_x);
+            set(hmask,'YData',MaskField.Coord_y);
 %             uistack(hmask,'top')
         else
             axes(handles.PlotAxes)
             hold on    
-            Mask.maskhandle=image(MaskField.AX,MaskField.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
+            Mask.maskhandle=image(MaskField.Coord_x,MaskField.Coord_y,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
             set(handles.CheckMask,'UserData',Mask)
         end
     end
@@ -2690,11 +2690,11 @@ else
         %use of mask (TODO: check)
         if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
             flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
-            AX=ObjectData.AX;%x coordiantes for the scalar field
-            AY=ObjectData.AY;%y coordinates for the scalar field
+            Coord_x=ObjectData.Coord_x;%x coordiantes for the scalar field
+            Coord_y=ObjectData.Coord_y;%y coordinates for the scalar field
             MaskX=ObjectData.MaskX;%x coordiantes for the mask
             MaskY=ObjectData.MaskY;%y coordiantes for the mask
-            if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
+            if ~isequal(MaskX,Coord_x)||~isequal(MaskY,Coord_y)
                 nxy=size(flag_mask);
                 sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
                 sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
@@ -2702,10 +2702,10 @@ else
                 y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
                 %project on the positions of the scalar
                 npxy=size(ObjectData.A);
-                dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
-                dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
-                xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
-                yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);
+                dxy(1)=(ObjectData.Coord_y(end)-ObjectData.Coord_y(1))/(npxy(1)-1);%grid mesh in y
+                dxy(2)=(ObjectData.Coord_x(end)-ObjectData.Coord_x(1))/(npxy(2)-1);%grid mesh in x
+                xi=ObjectData.Coord_x(1):dxy(2):ObjectData.Coord_x(end);
+                yi=ObjectData.Coord_y(1):dxy(1):ObjectData.Coord_y(end);
                 [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
                 flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
             end
@@ -3640,10 +3640,10 @@ if isequal(get(handles.VOLUME,'Value'),1)
         data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         data.DX=UvData.Field.CoordMesh;
         data.DY=UvData.Field.CoordMesh;
-    elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
+    elseif isfield(UvData.Field,'Coord_x')&isfield(UvData.Field,'Coord_y')& isfield(UvData.Field,'A')%only image
         np=size(UvData.Field.A);
-        meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
-        meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
+        meshx=(UvData.Field.Coord_x(end)-UvData.Field.Coord_x(1))/np(2);
+        meshy=abs(UvData.Field.Coord_y(end)-UvData.Field.Coord_y(1))/np(1);
         data.RangeY=max(meshx,meshy);
         data.RangeX=max(meshx,meshy);
         data.DX=max(meshx,meshy);
@@ -5380,9 +5380,9 @@ if numel(val)==3
     theta_ref=theta_ref*180/pi;
     figure
     plot(theta_ref,r_ref)
-    azimuth_ima=linspace(DataOut.AY(1),DataOut.AY(2),size(DataOut.A,1));%profile of x index on the transformed image
+    azimuth_ima=linspace(DataOut.Coord_y(1),DataOut.Coord_y(2),size(DataOut.A,1));%profile of x index on the transformed image
     dist_source = interp1(theta_ref,r_ref,azimuth_ima);
-    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.AX(1))/(DataOut.AX(2)-DataOut.AX(1)));
+    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.Coord_x(1))/(DataOut.Coord_x(2)-DataOut.Coord_x(1)));
     line_nan= isnan(dist_source_pixel);
     dist_source_pixel(line_nan)=1;
     width=20; %number of pixels used for reference

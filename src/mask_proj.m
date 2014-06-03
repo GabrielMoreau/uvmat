@@ -53,10 +53,10 @@ for icell=1:numel(CellInfo)
             case  'scattered'   
                 XName=FieldData.ListVarName{CellInfo{icell}.Coord_x};
                 YName=FieldData.ListVarName{CellInfo{icell}.Coord_y};
-                DX=(MaskData.AX(2)-MaskData.AX(1))/(Npx-1);
-                DY=(MaskData.AY(2)-MaskData.AY(1))/(Npy-1);
-                mask_ind_i=round(0.5+(FieldData.(XName)-MaskData.AX(1))/DX);%nbpoint terms
-                mask_ind_j=round(0.5+(FieldData.(YName)-MaskData.AY(1))/DY);%nbpoint terms
+                DX=(MaskData.Coord_x(2)-MaskData.Coord_x(1))/(Npx-1);
+                DY=(MaskData.Coord_y(2)-MaskData.Coord_y(1))/(Npy-1);
+                mask_ind_i=round(0.5+(FieldData.(XName)-MaskData.Coord_x(1))/DX);%nbpoint terms
+                mask_ind_j=round(0.5+(FieldData.(YName)-MaskData.Coord_y(1))/DY);%nbpoint terms
                 checkin=mask_ind_j+Npy*(mask_ind_i-1);%array  of mask indices for the nbpoints
                 checkin=checkin(mask_ind_i>=1 & mask_ind_i<=Npx & mask_ind_j>=1 & mask_ind_j<=Npy);%reduced array  of mask indices (inside the image)
                 checkfalse=true(size(FieldData.(XName)));
@@ -78,8 +78,8 @@ for icell=1:numel(CellInfo)
                 [Npy_field,Npx_field]=size(FieldData.(Var1Name));
                 XArray=linspace(FieldData.(XName)(1),FieldData.(XName)(end),Npx_field);
                 YArray=linspace(FieldData.(YName)(1),FieldData.(YName)(end),Npy_field);
-                XMask=linspace(MaskData.AX(1),MaskData.AX(end),Npx);
-                YMask=linspace(MaskData.AY(1),MaskData.AY(end),Npy);
+                XMask=linspace(MaskData.Coord_x(1),MaskData.Coord_x(end),Npx);
+                YMask=linspace(MaskData.Coord_y(1),MaskData.Coord_y(end),Npy);
                 [XMask,YMask]=meshgrid(XMask,YMask);
                 Mask = interp2(XMask,YMask,MaskData.A,XArray,YArray','nearest');
                 Mask=Mask>200;                

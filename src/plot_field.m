@@ -693,9 +693,9 @@ for icell=1:numel(CellInfo)
             A=reshape(A,1,[]);
             XName=Data.ListVarName{ivar_X};
             YName=Data.ListVarName{ivar_Y};
-            eval(['AX=reshape(Data.' XName ',1,[]);'])
-            eval(['AY=reshape(Data.' YName ',1,[]);'])
-            [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid
+            eval(['Coord_x=reshape(Data.' XName ',1,[]);'])
+            eval(['Coord_y=reshape(Data.' YName ',1,[]);'])
+            [A,Coord_x,Coord_y]=proj_grid(Coord_x',Coord_y',A',[],[],'np>256');  % interpolate on a grid
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')
                     x_units=[' (' Data.VarAttribute{ivar_X}.units ')'];
@@ -706,8 +706,8 @@ for icell=1:numel(CellInfo)
             end
         elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates
             YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-            AY=Data.(YName);
-            AX=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
+            Coord_y=Data.(YName);
+            Coord_x=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
             if isfield(Data,'VarAttribute')
@@ -718,48 +718,48 @@ for icell=1:numel(CellInfo)
                     y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
                 end
             end
-            if numel(AY)>2
-                DAY=diff(AY);
-                DAY_min=min(DAY);
-                DAY_max=max(DAY);
-                if sign(DAY_min)~=sign(DAY_max);% =1 for increasing values, 0 otherwise
+            if numel(Coord_y)>2
+                DCoord_y=diff(Coord_y);
+                DCoord_y_min=min(DCoord_y);
+                DCoord_y_max=max(DCoord_y);
+                if sign(DCoord_y_min)~=sign(DCoord_y_max);% =1 for increasing values, 0 otherwise
                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(1)} ];
                     return
                 end
-                test_interp_Y=(DAY_max-DAY_min)> 0.0001*abs(DAY_max);
+                test_interp_Y=(DCoord_y_max-DCoord_y_min)> 0.0001*abs(DCoord_y_max);
             end
-            if numel(AX)>2
-                DAX=diff(AX);
-                DAX_min=min(DAX);
-                DAX_max=max(DAX);
-                if sign(DAX_min)~=sign(DAX_max);% =1 for increasing values, 0 otherwise
+            if numel(Coord_x)>2
+                DCoord_x=diff(Coord_x);
+                DCoord_x_min=min(DCoord_x);
+                DCoord_x_max=max(DCoord_x);
+                if sign(DCoord_x_min)~=sign(DCoord_x_max);% =1 for increasing values, 0 otherwise
                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(2)} ];
                     return
                 end
-                test_interp_X=(DAX_max-DAX_min)> 0.0001*abs(DAX_max);
+                test_interp_X=(DCoord_x_max-DCoord_x_min)> 0.0001*abs(DCoord_x_max);
             end
             if test_interp_Y
-                npxy(1)=max([256 floor((AY(end)-AY(1))/DAY_min) floor((AY(end)-AY(1))/DAY_max)]);
-                yI=linspace(AY(1),AY(end),npxy(1));
+                npxy(1)=max([256 floor((Coord_y(end)-Coord_y(1))/DCoord_y_min) floor((Coord_y(end)-Coord_y(1))/DCoord_y_max)]);
+                yI=linspace(Coord_y(1),Coord_y(end),npxy(1));
                 if ~test_interp_X
-                    xI=linspace(AX(1),AX(end),size(A,2));%default
-                    AX=xI;
+                    xI=linspace(Coord_x(1),Coord_x(end),size(A,2));%default
+                    Coord_x=xI;
                 end
             end
             if test_interp_X
-                npxy(2)=max([256 floor((AX(end)-AX(1))/DAX_min) floor((AX(end)-AX(1))/DAX_max)]);
-                xI=linspace(AX(1),AX(end),npxy(2));
+                npxy(2)=max([256 floor((Coord_x(end)-Coord_x(1))/DCoord_x_min) floor((Coord_x(end)-Coord_x(1))/DCoord_x_max)]);
+                xI=linspace(Coord_x(1),Coord_x(end),npxy(2));
                 if ~test_interp_Y
-                    yI=linspace(AY(1),AY(end),size(A,1));
-                    AY=yI;
+                    yI=linspace(Coord_y(1),Coord_y(end),size(A,1));
+                    Coord_y=yI;
                 end
             end
             if test_interp_X || test_interp_Y
-                [AX2D,AY2D]=meshgrid(AX,AY);
-                A=interp2(AX2D,AY2D,double(A),xI,yI');
+                [Coord_x2D,Coord_y2D]=meshgrid(Coord_x,Coord_y);
+                A=interp2(Coord_x2D,Coord_y2D,double(A),xI,yI');
             end
-            AX=[AX(1) AX(end)];% keep only the lower and upper bounds for image represnetation
-            AY=[AY(1) AY(end)];
+            Coord_x=[Coord_x(1) Coord_x(end)];% keep only the lower and upper bounds for image represnetation
+            Coord_y=[Coord_y(1) Coord_y(end)];
         end
     end
     %define coordinates as CoordUnits, if not defined as attribute for each variable
@@ -873,10 +873,10 @@ if test_ima
             cont_pos_min=double(contmin):interval:-interval;% negative contour values (plotted as dashed lines)
             cont_pos=[cont_pos_min cont_pos_plus];% set of all contour values
             
-            sizpx=(AX(end)-AX(1))/(np(2)-1);
-            sizpy=(AY(1)-AY(end))/(np(1)-1);
-            x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display
-            y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
+            sizpx=(Coord_x(end)-Coord_x(1))/(np(2)-1);
+            sizpy=(Coord_y(1)-Coord_y(end))/(np(1)-1);
+            x_cont=Coord_x(1):sizpx:Coord_x(end); % pixel x coordinates for image display
+            y_cont=Coord_y(1):-sizpy:Coord_y(end); % pixel x coordinates for image display
             
             %axes(haxes)% set the input axes handle as current axis
 
@@ -962,20 +962,20 @@ if test_ima
             end
         end
         if test_interp%if we interpolate
-            x=linspace(AX(1),AX(2),np(2));
-            y=linspace(AY(1),AY(2),np(1));
+            x=linspace(Coord_x(1),Coord_x(2),np(2));
+            y=linspace(Coord_y(1),Coord_y(2),np(1));
             [X,Y]=meshgrid(x,y);
-            xi=linspace(AX(1),AX(2),npxy(2));
-            yi=linspace(AY(1),AY(2),npxy(1));
+            xi=linspace(Coord_x(1),Coord_x(2),npxy(2));
+            yi=linspace(Coord_y(1),Coord_y(2),npxy(1));
             A = interp2(X,Y,double(A),xi,yi');
         end
         % create new image if there  no image handle is found
         if isempty(hima)
             tag=get(haxes,'Tag');
             if MinA<MaxA
-                hima=imagesc(AX,AY,A,[MinA MaxA]);
+                hima=imagesc(Coord_x,Coord_y,A,[MinA MaxA]);
             else % to deal with uniform field
-                hima=imagesc(AX,AY,A,[MaxA-1 MaxA]);
+                hima=imagesc(Coord_x,Coord_y,A,[MaxA-1 MaxA]);
             end
             % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixAspectRatio is
             % requested:
@@ -991,8 +991,8 @@ if test_ima
             else
                 set(haxes,'CLim',[MinA MaxA+1])
             end
-            set(hima,'XData',AX);
-            set(hima,'YData',AY);
+            set(hima,'XData',Coord_x);
+            set(hima,'YData',Coord_y);
         end
         
         % set the transparency to 0.5 if vectors are also plotted
@@ -1192,10 +1192,10 @@ if ~isempty(Data)
         end  %else PlotParamOut.MinX =PlotParam.MinX...
     else
         if test_ima %both background image and vectors coexist, take the wider bound
-            MinX=min(AX);
-            MaxX=max(AX);
-            MinY=min(AY);
-            MaxY=max(AY);
+            MinX=min(Coord_x);
+            MaxX=max(Coord_x);
+            MinY=min(Coord_y);
+            MaxY=max(Coord_y);
             if test_vec
                 MinX=min(MinX,min(vec_X));
                 MaxX=max(MaxX,max(vec_X));

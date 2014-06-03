@@ -101,12 +101,12 @@ affichage=0;
 load (fullfile(RootPath,SubDir,[RootFile '.mat']))
 Data.ListGlobalAttribute={'CoordUnit'}; %%TODO: add also time, how to get it  ?????
 Data.CoordUnit='pixel';
-Data.ListVarName={'AX','AY','A'};
-Data.VarDimName={'AX','AY',{'AY','AX'}};
+Data.ListVarName={'Coord_x','Coord_y','A'};
+Data.VarDimName={'Coord_x','Coord_y',{'Coord_y','Coord_x'}};
 %Data.Coord_x=5*(nbvoie_reception-0.5)/numel(nbvoie_reception); % totql length of e
-Data.AX=1:65;
+Data.Coord_x=1:65;
 %Data.Coord_z=(1:A)/133 ;% to check from input parameter ....
-Data.AY=1:332;
+Data.Coord_y=1:332;
 %%%%%%
 %
 % while test_fin_fichier>0

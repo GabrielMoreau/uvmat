@@ -238,7 +238,7 @@ try
              [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
              par_civ1.ImageB=DataIn.(FieldName_B);
         else
-        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,Param.InputFields,FrameIndex_B_Civ1(1));
+        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
         end
         NbField=numel(i1_series_Civ1);
     elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
