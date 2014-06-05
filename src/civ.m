@@ -432,7 +432,8 @@ end
 [FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,FileInfo,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
+[RootPath,SubDirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileInfo,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
+FileType=FileInfo.FileType;
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -1203,12 +1204,16 @@ nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
 % if strcmp(Param.Program,'civ_matlab')
     if Param.CheckCiv1
-        [Param.Civ1.FileTypeA,ImageInfoA_civ1,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
-        [Param.Civ1.FileTypeB,ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+        [ImageInfoA_civ1,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
+        Param.Civ1.FileTypeA=ImageInfoA_civ1.FileType;
+        [ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+        Param.Civ1.FileTypeB=ImageInfoB_civ1.FileType;
     end
     if Param.CheckCiv2
-        [Param.Civ2.FileTypeA,ImageInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
-        [Param.Civ2.FileTypeB,ImageInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+        [ImageInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+        Param.Civ2.FileTypeA=ImageInfoA_civ2.FileType;
+        [ImageInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+        Param.Civ2.FileTypeB=ImageInfoB_civ2.FileType;
     end
 % end
 
@@ -2320,7 +2325,8 @@ if strcmp(CivMode,'CivX')
     NomType_imanew2=NomType_ima2;
     if ~isequal(ext_ima,'.png')
         if checkbox(1) %if civ1 is performed
-             [FileType,FileInfo,MovieObject]=get_file_type(filecell.ima1.civ1{1});
+             [FileInfo,MovieObject]=get_file_type(filecell.ima1.civ1{1});
+             FileType=FileInfo.FileType;
             check_j=0;
             if strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader')||strcmp(FileType,'multimage')
                 if max(j1_civ1)>1
@@ -2359,7 +2365,8 @@ if strcmp(CivMode,'CivX')
             close(h)
         end
         if checkbox(4) %if civ2 is performed
-             [FileType,FileInfo,MovieObject]=get_file_type(filecell.ima1.civ2{1});
+             [FileInfo,MovieObject]=get_file_type(filecell.ima1.civ2{1});
+             FileType=FileInfo.FileType;
             check_j=0;
             if strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader')||strcmp(FileType,'multimage')
                 if max(j1_civ2)>1
@@ -2568,8 +2575,8 @@ switch option
             [FilePath,FileName,Ext]=fileparts(fileinput);
             % detect the file type, get the movie object if relevant, and look for the corresponding file series:
             % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,FileInfo,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
-            
+            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileInfo,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
+            FileType=FileInfo.FileType;
             %check image nom type
             if ~strcmp(nom_type_1,get(handles.NomType,'String'))
                 msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')
@@ -3774,7 +3781,8 @@ if get(handles.TestCiv1,'Value')
     Data.nx=[1 size(Data.A,2)];
     Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispaly
     par_civ1=read_GUI(handles.Civ1);
-    par_civ1.FileTypeA=get_file_type(filecell.ima1.civ1{1});
+    FileInfo=get_file_type(filecell.ima1.civ1{1});
+    par_civ1.FileTypeA=FileInfo.FileType;
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation

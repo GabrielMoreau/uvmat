@@ -120,7 +120,8 @@ for iview=1:NbView
         msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
         return
     end
-    [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    [FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    FileType{iview}=FileInfo{iview}.FileType;
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
     if ~isempty(j1_series{iview})

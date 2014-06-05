@@ -423,8 +423,8 @@ FileName='';
 for ilist=1:numel(ListStruct)
     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
         FileName=ListStruct(ilist).name;
-        FileType=get_file_type(fullfile(DirName,FileName));
-        switch FileType
+        FileInfo=get_file_type(fullfile(DirName,FileName));
+        switch FileInfo.FileType
             case {'image','multimage','civx','civdata','netcdf'}
                 break
         end
@@ -476,8 +476,8 @@ hdir=dir(DirName); %list files and dirs
 for ilist=1:numel(hdir)
     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
         FileName=hdir(ilist).name;
-        FileType=get_file_type(fullfile(DirName,FileName));
-        switch FileType
+        FileInfo=get_file_type(fullfile(DirName,FileName));
+        switch FileInfo.FileType
             case {'image','multimage','civx','civdata','netcdf'}
             break
         end
@@ -552,7 +552,7 @@ for iview=1:size(InputTable,1)
         i1_series=[];
         RootPath=fileparts(RootPath); %will try the upper folder
     else %scan the input folder
-        [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=...
+        [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
     % if no file is found, open a browser
@@ -606,7 +606,8 @@ end
 %%%%%%%%%%%%%%%%%%%
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+FileType=FileInfo.FileType;
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     msgbox_uvmat('ERROR',errormsg)
@@ -1023,55 +1024,6 @@ ActionName_Callback([],[], handles)
 
 %% set length of waitbar
 displ_time(handles)
-
-
-% look for netcdf data as input
-% switch FileType
-%     case {'civx','civdata'}
-%         FieldList=[set_field_list('U','V');{'C'}];%standard menu for civx data
-%         set(handles.Coord_x,'String','X');
-%         set(handles.Coord_y,'String','Y');
-%     case 'netcdf'
-%         ind_x=find(strcmp(get(handles.Coord_x,'String'),FileInfo.ListVarName));
-%         if isempty(ind_x)
-%             FieldList={};% new kind of file opened, we need to pick variables with get_field...
-%             set(handles.Coord_x,'String','')
-%             set(handles.Coord_y,'String','')
-%         else
-%             FileInfo.ListVarName(ind_x)=[];%remove coord-x from the list of variables to display
-%             ind_y=find(strcmp(get(handles.Coord_y,'String'),FileInfo.ListVarName));
-%             if isempty(ind_y)
-%             FieldList={};% new kind of file opened, we need to pick variables with get_field...
-%             set(handles.Coord_x,'String','')
-%             set(handles.Coord_y,'String','')
-%             else
-%                 FileInfo.ListVarName(ind_y)=[];%remove coord-y from the list of variables to display
-%                 FieldList=(FileInfo.ListVarName)';
-%             end
-%         end  
-%     otherwise
-%         set(handles.FieldName,'Value',1) % set menu to 'image'
-%         set(handles.FieldName,'String',{'image'})
-%         set(handles.Coord_x,'String','AX');
-%         set(handles.Coord_y,'String','AY');
-% end
-% if ismember(FileType,{'civx','civdata','netcdf'})
-%     PrevMenu=get(handles.FieldName,'String');
-%     PrevValue=get(handles.FieldName,'Value');
-%     PrevMenu=PrevMenu(PrevValue(PrevValue<=numel(PrevMenu)));
-%     FieldValue=[];
-%     for ilist=1:numel(PrevMenu)
-%         index_menu=find(strcmp(PrevMenu{ilist},FieldList));
-%         if ~isempty(index_menu)
-%             FieldValue=[FieldValue index_menu];
-%         end
-%     end
-%     if isempty(FieldValue)
-%         FieldValue=1;
-%     end
-%     set(handles.FieldName,'Value',FieldValue)
-%     set(handles.FieldName,'String',[FieldList;{'get_field...'}])
-% end 
 
 
 %-----------------------------------------------------------guide -------------
@@ -3022,10 +2974,10 @@ if exist(FullSelectName,'dir')% a directory has been selected
     htitlebox=findobj(hfig,'tag','titlebox');    
     set(htitlebox,'String',FullSelectName)
 elseif exist(FullSelectName,'file')%visualise the vel field if it exists
-    FileType=get_file_type(FullSelectName);
-    if strcmp(FileType,'txt')
+    FileInfo=get_file_type(FullSelectName);    
+    if strcmp(FileInfo.FileType,'txt')
         edit(FullSelectName)
-    elseif strcmp(FileType,'xml')
+    elseif strcmp(FileInfo.FileType,'xml')
         editxml(FullSelectName)
     else
         uvmat(FullSelectName)

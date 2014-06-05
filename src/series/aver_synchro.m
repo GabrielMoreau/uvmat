@@ -92,7 +92,8 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
- [FileType,FileInfo]=get_file_type(filecell{1,1});
+FileInfo=get_file_type(filecell{1,1});
+ FileType=FileInfo.FileType;
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:

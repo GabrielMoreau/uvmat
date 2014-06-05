@@ -219,7 +219,8 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
             return
         end
-        [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        [FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        FileType_A=FileInfo_A.FileType;
         if strcmp(FileInfo_A.FileType,'netcdf')
             FieldName_A=Param.InputFields.FieldName;
             [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
@@ -232,7 +233,8 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
             return
         end
-        [FileType_B,FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        FileType_B=FileInfo_B.FileType;
         if strcmp(FileInfo_B.FileType,'netcdf')
             FieldName_B=Param.InputFields.FieldName;
              [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
@@ -254,7 +256,8 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
             return
         end
-        [FileType_B,FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        FileType_B=FileInfo_B.FileType;
         [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
         NbField=numel(i1_series_Civ2);
     end

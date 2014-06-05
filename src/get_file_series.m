@@ -61,7 +61,7 @@ for iview=1:NbView
     if isempty(incr_i) || isempty(incr_j) || isequal(r(1).mode,'*-*')|| isequal(r(1).mode,'*|*')% free pairs or increment
         FilePath=fullfile(InputTable{iview,1},InputTable{iview,2});
         fileinput=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
-        [tild,tild,tild,i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview},NomType,FileType,FileInfo,MovieObject,...
+        [tild,tild,tild,i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview},NomType,FileInfo,MovieObject,...
             i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput);
         i1_series{iview}=squeeze(i1_series{iview}(1,:,:)); %select first  pair index as ordered by find_file_series
         i2_series{iview}=squeeze(i2_series{iview}(1,:,:)); %select first  pair index as ordered by find_file_series

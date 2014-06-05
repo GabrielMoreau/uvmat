@@ -146,12 +146,12 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
                 set(htitlebox,'String',FullSelectName);
                 uiresume(hfig)
             case 'status_display'
-                FileType=get_file_type(FullSelectName);
-                if strcmp(FileType,'txt')
+                FileInfo=get_file_type(FullSelectName);
+                if strcmp(FileInfo.FileType,'txt')
                     edit(FullSelectName)
-                elseif strcmp(FileType,'xml')
+                elseif strcmp(FileInfo.FileType,'xml')
                     editxml(FullSelectName)
-                elseif strcmp(FileType,'figure')
+                elseif strcmp(FileInfo.FileType,'figure')
                     open(FullSelectName)
                 else
                     uvmat(FullSelectName);

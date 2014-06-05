@@ -227,8 +227,8 @@ if ~exist(GUI.ImageA,'file')
     msgbox_uvmat('ERROR',['input image file' imageA 'does not exist'])
     return
 end
-[FileType,tild,VideoObject]=get_file_type(GUI.ImageA);
-switch FileType
+[FileInfo,VideoObject]=get_file_type(GUI.ImageA);
+switch FileInfo.FileType
     case {'image','multimage','video','mmreader'}% case of input image or movie OK
     otherwise
         msgbox_uvmat('ERROR',['error: ' GUI.ImageA ' is not an image type recognized by Matlab '])
@@ -264,7 +264,7 @@ if strcmp(GUI.CoordType,'phys')
 end
 
 %% detect the grid points which are inside image A
-A=read_image(GUI.ImageA,FileType,VideoObject,1);
+A=read_image(GUI.ImageA,FileInfo.FileType,VideoObject,1);
 npxA=size(A,2);
 npyA=size(A,1);
 flag=grid_x_imaA>=1 & grid_x_imaA<=npxA & grid_y_imaA>=1 & grid_y_imaA<=npyA;% ='true' inside the image
@@ -322,8 +322,8 @@ if isequal(get(handles.GetImageB,'Value'),1)
             {'*.*', 'All Files (*.*)'}, ...
             'Pick the second image file',fileparts(fileparts(get(handles.ImageA,'String'))));
         ImageB=fullfile(PathName,FileName);
-        [FileType,tild,VideoObject]=get_file_type(ImageB);
-    switch FileType
+        [FileInfo,tild,VideoObject]=get_file_type(ImageB);
+    switch FileInfo.FileType
         case {'image','multimage','video','mmreader'}% case of input image or movie OK
             set(handles.ImageB,'String',ImageB)
         otherwise

@@ -64,7 +64,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist')
     else
-        FileType=get_file_type(filecell{1,1});
+        FileInfo=get_file_type(filecell{1,1});
+        FileType=FileInfo.FileType;
         if isempty(find(strcmp(FileType,{'image','multimage','mmreader','video'})));% =1 for images
             msgbox_uvmat('ERROR',['bad input file type for ' mfilename ': an image is needed'])
         end
@@ -105,7 +106,8 @@ FileExt=Param.InputTable(:,5);
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-[FileType{1},FileInfo{1},VideoObject{1}]=get_file_type(filecell{1,1});% type of input file
+[FileInfo{1},VideoObject{1}]=get_file_type(filecell{1,1});% type of input file
+FileType{1}=FileInfo{1}.FileType;
 
 %% frame index for movie or multimage file input  
 if ~isempty(j1_series{1})

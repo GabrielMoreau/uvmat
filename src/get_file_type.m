@@ -15,33 +15,26 @@
 %
 % INPUT:
 % fileinput: name, including path, of the file to analyse
-function [FileType,FileInfo,VideoObject]=get_file_type(fileinput)
-%%%% TODO: suppress the output argument FileType, contained in FileInfo %%%%
-FileInfo=[];% will remain empty in the absence of input file
+function [FileInfo,VideoObject]=get_file_type(fileinput)
 VideoObject=[];
 if exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
-    FileType='txt';%default, text file
 else
-    FileType='';
+    FileInfo.FileType='';
     return
 end
-[tild,tild,FileExt]=fileparts(fileinput);
+[tild,tild,FileExt]=fileparts(fileinput);%get the fiel extension FileExt
 
 switch FileExt
     case '.fig'
         FileInfo.FileType='figure';
-        FileType='figure';
     case '.xml'
         FileInfo.FileType='xml';
-        FileType='xml';
     case '.xls'
         FileInfo.FileType='xls';
-        FileType='xls';
     case '.dat'
-        FileInfo.FileType='dat';
-        FileType='dat';
+        FileInfo.FileType='dat';;
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -49,23 +42,20 @@ switch FileExt
                 if ~isempty(imformats(FileExt))%case of images
                     try
                         imainfo=imfinfo(fileinput);
-                        if length(imainfo) >1 %case of image with multiple frames
-                            FileType='multimage';
+                        if length(imainfo) >1 %case of image with multiple frames   
                             FileInfo=imainfo(1);%take info from the first frame
+                            FileInfo.FileType='multimage';
                             FileInfo.NumberOfFrames=length(imainfo);
                         else
-                            FileType='image';
                             FileInfo=imainfo;
+                            FileInfo.FileType='image';
                             FileInfo.NumberOfFrames=1;
                         end
                         FileInfo.FileName=FileInfo.Filename; %correct the info given by imfinfo
-                        FileInfo.FileType=FileType;
                     end
                 else
                     error_nc=0;
                     try
-                      %  [Data,tild,tild,errormsg]=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions',...
-                       %     'CivStage','patch2','fix2','civ2','patch','fix','hart');
                        [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if ~isempty(errormsg)
                             error_nc=1;
@@ -88,11 +78,11 @@ switch FileExt
                                 end
                             elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
                                 FileInfo.FileType='civdata'; % test for civx velocity fields
-                                FileType='civdata'; % test for civx velocity fields
+                               % FileType='civdata'; % test for civx velocity fields
                                 FileInfo.CivStage=Data.CivStage;
                             else
                                 FileInfo.FileType='netcdf';
-                                FileType='netcdf';
+                                %FileType='netcdf';
                                 FileInfo.ListVarName=Data.ListVarName;
                             end
                         end
@@ -104,14 +94,13 @@ switch FileExt
                             if exist('VideoReader.m','file')%recent version of Matlab
                                 VideoObject=VideoReader(fileinput);
                                 FileInfo=get(VideoObject);
-                                FileType='video';
+                                FileInfo.FileType='video';
                             elseif exist('mmreader.m','file')% Matlab 2009a
                                 VideoObject=mmreader(fileinput);
                                 FileInfo=get(VideoObject);
-                                FileType='mmreader';
+                                FileInfo.FileType='mmreader';
                             end
                             FileInfo.FileName=fileinput;
-                            FileInfo.FileType=FileType;
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                         end
                     end

@@ -642,7 +642,7 @@ drawnow
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 if isempty(i1_series)
     fileinput=uigetfile_uvmat('pick an input file',fullfile(RootPath,SubDir));
     hh=dir(fileinput);
@@ -665,7 +665,7 @@ end
 if ~isempty(errormsg) && get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
     if isempty(i1_series)
         fileinput=uigetfile_uvmat('pick an input file for the second line',fullfile(RootPath,SubDir));
         hh=dir(fileinput);
@@ -736,8 +736,8 @@ drawnow
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
-
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+FileType=FileInfo.FileType;
 if strcmp(FileType,'txt')
     try
         edit(fileinput)
@@ -1383,7 +1383,8 @@ if isequal(get(handles.CheckMask,'Value'),1)
         if ~isempty(ListFiles)
             for ifile=1:numel(ListFiles)
                 [tild,tild,MaskExt]=fileparts(ListFiles{1});
-                [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{ifile},0);
+                [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileInfo]=find_file_series(MaskPath,ListFiles{ifile},0);
+                MaskFileType=MaskFileInfo.FileType;
                 if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
                     mdetect=1;
                 end
@@ -2184,9 +2185,21 @@ switch UvData.FileType{1}
         end
     case 'multimage'
         if ~strcmp(NomType,'*')
+            MaxIndex_j_cell=get(handles.MaxIndex_j,'String');
+            if num_j1>str2num(MaxIndex_j_cell{1})
+                errormsg='specified frame index exceeds file content';
+                return
+            else
             frame_index=num_j1;%frame index for movies or multimage
+            end
         else
+            MaxIndex_i_cell=get(handles.MaxIndex_i,'String');
+            if num_i1>str2num(MaxIndex_i_cell{1})
+                errormsg='specified frame index exceeds file content';
+                return
+            else
             frame_index=num_i1;
+            end
         end
     case 'vol' %TODO: update
         if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -3876,7 +3889,7 @@ if ~isempty(list_path{ichoice})
 end
 
 %% delete drawn objects if the output CooordUnit is different from the previous one
-if  ~strcmp(CoordUnit,CoordUnitPrev)
+if  ~isempty(CoordUnit) && ~isempty(CoordUnitPrev) && ~strcmp(CoordUnit,CoordUnitPrev)
     set(handles.CheckFixLimits,'Value',0)
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
