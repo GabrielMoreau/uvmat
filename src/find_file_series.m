@@ -55,7 +55,7 @@ i1_series=zeros(1,1,1);
 i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
-[FileInfo,MovieObject]=get_file_type(fullfileinput);
+[FileInfo,MovieObject]=get_file_info(fullfileinput);
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
@@ -237,7 +237,7 @@ else
         NomType=regexprep(NomType,['^' NomTypePref],'');
         %% update the file type if the input file does not exist (pb of 0001)
         if isempty(FileInfo.FileType)
-            [FileInfo,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
+            [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,dirpair(ifile_min).name));
         end
     end
 end
@@ -247,6 +247,14 @@ if isequal(i1_series,0), i1_series=[]; end
 if isequal(i2_series,0), i2_series=[]; end
 if isequal(j1_series,0), j1_series=[]; end
 if isequal(j2_series,0), j2_series=[]; end
+
+%% detect rdvision format
+if strcmp(FileExt,'.bin')
+    if exist(fullfile(RootPath,SubDir,[RootFile '.seq']),'file')
+        FileInfo.FileType='rdvision';
+        FileInfo.SeqFile=[RootFile '.seq'];
+    end
+end
 
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1

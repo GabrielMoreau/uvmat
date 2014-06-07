@@ -13,7 +13,7 @@
 %
 %INPUT
 % FileName: name of the input file
-% FileType: type of file, as determined by the function get_file_type.m
+% FileType: type of file, as determined by the function get_file_info.m
 % ParamIn: movie object or Matlab structure of input parameters
 %     .FieldName: name (char string) of the input field (for Civx data)
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
@@ -212,18 +212,21 @@ switch FileType
         A=reshape(A',ParamIn.Npx,ParamIn.Npy,Npz);
         A=permute(A,[3 2 1]);
     case 'multimage'
-        warning 'off'
+      %  warning 'off'
         A=imread(FileName,num);
     case 'image'
         A=imread(FileName);
-end
-if ~isempty(errormsg)
-    errormsg=[FileType ' input: ' errormsg];
-    return
+    case 'rdvision'
+        [A,timestamps]=binread_rdv(FileName,num);
+    otherwise
+        errormsg=[ FileType ': invalid input file type for uvmat'];
 end
 
 %% case of image
 if ~isempty(A)
+    if strcmp(FileType,'rdvision')
+        Field.Time=timestamps;
+    end
     if isstruct(ParamOut)
         ParamOut.FieldName='image';
     end
@@ -267,6 +270,7 @@ if ~isempty(A)
     end
     Field.A=A;
     Field.CoordUnit='pixel'; %used for mouse_motion
+        
 end
 
 

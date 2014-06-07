@@ -89,7 +89,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 
     %% check the validity of  input file types
     ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
-    FileInfo=get_file_type(FirstFileName);
+    FileInfo=get_file_info(FirstFileName);
     FileType=FileInfo.FileType;
     CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
     if ~CheckImage
@@ -200,7 +200,7 @@ if ~isempty(hdisp),delete(hdisp),end;
     % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
     % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-[FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
+[FileInfo{1},MovieObject{1}]=get_file_info(filecell{1,1});
 FileType{1}=FileInfo{1}.FileType;
     if ~isempty(j1_series{1})
         frame_index{1}=j1_series{1};

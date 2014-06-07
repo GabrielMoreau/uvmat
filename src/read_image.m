@@ -9,7 +9,7 @@
 % INPUT:
 % FileName: input file name
 %                 other inputs needed  only for video and multi-image file:
-% FileType: input file type, as determined by the function get_file_type.m
+% FileType: input file type, as determined by the function get_file_info.m
 % VideoObject: video object (for faster reading if availlable)
 % num: frame index for movies or multimage types
 %

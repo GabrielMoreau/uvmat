@@ -94,7 +94,7 @@ if ~exist(filecell{1,1}','file')
     msgbox_uvmat('ERROR',['the first input file ' filecell{1,1} ' does not exist'])
     return
 end
-[FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
+[FileInfo{1},MovieObject{1}]=get_file_info(filecell{1,1});
 FileType{1}=FileInfo{1}.FileType;
 CheckImage=~isempty(find(strcmp(FileType{1},ImageTypeOptions)));% =1 for images
 

@@ -123,7 +123,7 @@ for iview=1:nbview
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
-    [FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
     if strcmp(FileType{iview},'civdata')||strcmp(FileType{iview},'civx')
         if ~isfield(Param.InputFields,'VelType')

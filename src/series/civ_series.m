@@ -219,7 +219,7 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
             return
         end
-        [FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
         FileType_A=FileInfo_A.FileType;
         if strcmp(FileInfo_A.FileType,'netcdf')
             FieldName_A=Param.InputFields.FieldName;
@@ -233,7 +233,7 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
             return
         end
-        [FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
         FileType_B=FileInfo_B.FileType;
         if strcmp(FileInfo_B.FileType,'netcdf')
             FieldName_B=Param.InputFields.FieldName;
@@ -249,14 +249,14 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
             return
         end
-        [FileType_A,FileInfo_A,VideoObject_A]=get_file_type(ImageName_A);
+        [FileType_A,FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
         [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
         ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
         if ~exist(ImageName_B,'file')
             disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
             return
         end
-        [FileInfo_B,VideoObject_B]=get_file_type(ImageName_B);
+        [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
         FileType_B=FileInfo_B.FileType;
         [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
         NbField=numel(i1_series_Civ2);

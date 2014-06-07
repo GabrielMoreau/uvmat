@@ -91,7 +91,7 @@ nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
-    [FileInfo{iview},Object{iview}]=get_file_type(filecell{iview,1});
+    [FileInfo{iview},Object{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
@@ -100,7 +100,7 @@ end
 %% MAIN LOOP ON VIEWS (INPUT LINES)
 for iview=1:nbview
     if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')||isequal(FileType{iview},'multimage')
-        [FileInfo]=get_file_type(filecell{iview,1});
+        [FileInfo]=get_file_info(filecell{iview,1});
         Tabchar{1}=filecell{iview,1};%info.Filename;
         Tabchar{2}='';
         Tabchar{3}=[num2str(FileInfo.FrameRate) ' frames/s '];
@@ -130,7 +130,7 @@ for iview=1:nbview
                         filefound(ifile)={datfile.name};
                     end
                     lastfield='';
-                    [FileInfo,Object]=get_file_type(file);
+                    [FileInfo,Object]=get_file_info(file);
                     FileType{iview}=FileInfo.FileType;
                     if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                         if isfield(FileInfo,'CivStage')

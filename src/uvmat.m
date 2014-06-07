@@ -356,28 +356,19 @@ pos_InputFile(3)=size_fig(3);
 set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] for text_display
 
 %% reset position of text_display and TableDisplay
-% if strcmp(get(handles.TableDisplay,'Visible'),'off')
-    set(handles.text_display,'Units','pixels')
-    pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
-        pos_1(3)=1.2*ColumnWidth;
-    pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
-    pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
-    set(handles.text_display,'Position',pos_1)
-    % reset position of TableDisplay
-% else
-%     set(handles.TableDisplay,'Units','pixels')
-%     pos_1=get(handles.TableDisplay,'Position');
-%     pos_1(3)=1.2*ColumnWidth;
-%     pos_1(1)=size_fig(3)-pos_1(3);
-%     pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);
-    set(handles.TableDisplay,'Position',pos_1)
-    % reset position of CheckTable
-    set(handles.CheckTable,'Units','pixels')
+set(handles.text_display,'Units','pixels')
+pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
+    pos_1(3)=1.2*ColumnWidth;
+pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
+pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
+set(handles.text_display,'Position',pos_1)
+set(handles.TableDisplay,'Position',pos_1)
+% reset position of CheckTable
+set(handles.CheckTable,'Units','pixels')
 pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
 pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
 pos_CheckTable(2)=pos_InputFile(2)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
 set(handles.CheckTable,'Position',pos_CheckTable)
-% end
 
 %% reset position of CheckHold
 % pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
@@ -435,14 +426,17 @@ set(handles.PlotAxes,'Position',pos)
 set(handles.PlotAxes,'Units','normalized')
 
 
+
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-%  II - FUNCTIONS FOR INTRODUCING THE INPUT FILES
-% automatically sets the global properties when the rootfile name is introduced
-% then activate the view-field action if selected
-% it is activated either by clicking on the RootPath window or by the 
-% browser 
+%  II - TOOLS FROM THE UPPER MENU BAR
 %------------------------------------------------------------------------
+%------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Open Menu Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %------------------------------------------------------------------------
 % --- Executes on the menu Open/Browse...
 % search the files, recognize their type according to their name and fill the rootfile input windows
@@ -513,26 +507,6 @@ if numel(hh)>1
     return
 end
 
-% 
-% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-% ListStruct=dir(DirName); %list files and the dir DataSeries
-% % select the first appropriate file in the dir
-% FileName='';
-% for ilist=1:numel(ListStruct)
-%     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
-%         FileName=ListStruct(ilist).name;
-%         FileType=get_file_type(fullfile(DirName,FileName));
-%         switch FileType
-%             case {'image','multimage','civx','civdata','netcdf'}
-%                 break
-%         end
-%     end
-% end
-% if isempty(FileName)
-%     msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
-%     return
-% end
-
 %% update the list of campaigns in the menubar
 MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
     {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
@@ -565,35 +539,1027 @@ function MenuCampaign_Callback(hObject, eventdata, handles)
 
 set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
 OutPut=browse_data(get(hObject,'Label'));% open the GUI browse_data to get select a campaign dir, experiment and device
-if ~isfield(OutPut,'Campaign')
-    return
+if isfield(OutPut,'Campaign')
+    fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
+    hh=dir(fileinput);
+    if numel(hh)>1
+        msgbox_uvmat('ERROR','invalid input, probably a broken link');
+    else
+        display_file_name(handles,fileinput)
+    end
 end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
-hh=dir(fileinput);
-if numel(hh)>1
-    msgbox_uvmat('ERROR','invalid input, probably a broken link');
-    return
-end
-% 
-% hdir=dir(DirName); %list files and dirs
-% FileName='';
-% for ilist=1:numel(hdir)
-%     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
-%         FileName=hdir(ilist).name;
-%         FileType=get_file_type(fullfile(DirName,FileName));
-%         switch FileType
-%             case {'image','multimage','civx','civdata','netcdf'}
-%             break
-%         end
-%     end
-% end
-% if isempty(FileName)
-%     msgbox_uvmat('ERROR','no valid input file in the selected directory')
-% else
-display_file_name(handles,fileinput)
-% end
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Export  Menu Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
+% --- Executes on button press in Menu/Export/field in workspace.
+function MenuExportField_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+global Data_uvmat
+Data_uvmat=get(handles.uvmat,'UserData');
+evalin('base','global Data_uvmat')%make CurData global in the workspace
+disp('Data_uvmat.Field=')
+evalin('base','Data_uvmat.Field') %display CurData in the workspace
+commandwindow; %brings the Matlab command window to the front
+
+%------------------------------------------------------------------------
+% --- Executes on button press in Menu/Export/extract figure.
+function MenuExportFigure_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+hfig=figure;
+hc=copyobj(handles.PlotAxes,hfig);
+set(hc,'Position',[0.1 0.1 0.8 0.8])
+h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
+if ~isempty(h)
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the new fig
+    colorbar
+end
+
+% --------------------------------------------------------------------
+function MenuExportAxis_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------    
+ListFig=findobj(allchild(0),'Type','figure');
+nb_option=0;
+menu={};
+for ilist=1:numel(ListFig)
+    FigName=get(ListFig(ilist),'name');
+    if isempty(FigName)
+        FigName=['figure ' num2str(ListFig(ilist))];
+    end
+    if ~strcmp(FigName,'uvmat')
+        ListAxes=findobj(ListFig(ilist),'Type','axes');
+        ListTags=get(ListAxes,'Tag');
+        if ~isempty(ListTags) && ~isempty(find(~strcmp('Colorbar',ListTags), 1))
+            ListAxes=ListAxes(~strcmp('Colorbar',ListTags));
+            if numel(ListAxes)==1
+                nb_option=nb_option+1;
+                menu{nb_option}=FigName ;
+                AxesHandle(nb_option)=ListAxes;
+            else
+                nb_axis=0;
+                for iaxes=1:numel(ListAxes)
+                    nb_axis=nb_axis+1;
+                    nb_option=nb_option+1;
+                    menu{nb_option}=[FigName '_' num2str(nb_axis)];
+                    AxesHandle(nb_option)=ListAxes(nb_axis);
+                end
+            end
+        end
+    end
+end
+if isempty(menu)
+    answer=msgbox_uvmat('INPUT_Y-N','no existing plotting axes available, create new figure?');
+    if strcmp(answer,'Yes')
+        hfig=figure;
+        copyobj(handles.PlotAxes,hfig);
+    else
+        return
+    end
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
+else
+    answer=msgbox_uvmat('INPUT_MENU','select a figure/axis on which the current uvmat plot will be exported',menu);
+    if isempty(answer)
+        return
+    else
+        axes(AxesHandle(answer))
+        hold on
+        hchild=get(handles.PlotAxes,'children');
+        copyobj(hchild,gca);
+    end
+end
+
+
+%------------------------------------------------------------------------
+% --------------------------------------------------------------------
+function MenuExportMovie_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
+
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileBase=fullfile(RootPath,RootFile);
+
+%% create a fig and axis for movies 
+figure_movie=findobj(allchild(0),'name','figure_movie');
+
+if ~isempty(figure_movie)
+    delete(figure_movie)%delete existing figure_movie
+end
+figure_movie=figure;
+nbpix=[512 384];% resolution XVGA
+set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
+newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
+set(newaxes,'Tag','movieaxes')
+
+%% display time if defined in uvmat
+time_str=get(handles.TimeValue,'String');
+if ~isempty(time_str)
+    htitle=get(newaxes,'Title');
+%     xlim=get(newaxes,'XLim');
+%     ylim=get(newaxes,'YLim');
+%     set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
+    
+    set(htitle,'String',['t=' time_str])
+end
+map=colormap(handles.PlotAxes);
+colormap(map);%transmit the current colormap to the zoom fig
+colorbar
+
+%% create the GUI set_movie
+%set(0,'Units','points')
+%ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Position=get(figure_movie,'Position');
+Position(2)=Position(2)+1.2*Position(4);
+Position(3)=1.5*Position(3);
+Position(4)=Position(4)/2;
+hfig=findobj(allchild(0),'Tag','set_movie');
+if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+hfig=figure('name','set_movie','tag','set_movie','MenuBar','none','NumberTitle','off','Units','pixels',...
+    'Position',Position);
+BackgroundColor=get(hfig,'Color');
+hh=0.14; % box height (relative)
+% first raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-hh/2 0.9 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','movie name:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-1.5*hh 0.9 hh],'tag','MovieName','BackgroundColor',[1 1 1],...
+    'String',fullfile(RootPath,[SubDir '.movie'], [RootFile '.avi']),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''MovieName'': name (with path) of the movie to create');%edit box
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','frames per second:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [0.55 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','total nbre of frames:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-3.5*hh 0.3 hh],'tag','num_FramePerSecond','BackgroundColor',[1 1 1],...
+    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FramePerSecond'': nbre of frames per second');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [0.65 0.95-3.5*hh 0.3 hh],'tag','num_FrameNumber','BackgroundColor',[1 1 1],...
+    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FrameNumber'': total nbre of frames');%edit box
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.05 0.15 0.25 hh],'BackgroundColor',[1 0 0],'String','START','Callback',@(hObject,eventdata)set_movie_START_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.15 0.25 hh],'Callback',@(hObject,eventdata)set_movie_Cancel_Callback(hObject,eventdata),...
+    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.05 0.9 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','will extract the result of ++> on uvmat: adjust figure_movie with its Matlab edit menu, then press ''START ''','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+drawnow
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_movie_START_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+%% read info from the GUI set_movie
+hset_movie=get(hObject,'parent');
+hMovieName=findobj(hset_movie,'Tag','MovieName');
+MovieName=get(hMovieName,'String');
+hFramePerSecond=findobj(hset_movie,'Tag','num_FramePerSecond');
+fps=str2double(get(hFramePerSecond,'String'));
+hFrameNumber=findobj(hset_movie,'Tag','num_FrameNumber');
+FrameNumber=str2double(get(hFrameNumber,'String'));% total nbre of frames
+
+%% create the movie file
+MovieDir=fileparts(MovieName);
+if ~exist(MovieDir,'dir')
+    [success,message]=mkdir(MovieDir);
+    if ~isequal(success,1)
+        msgbox_uvmat('ERROR',message)
+        return
+    end
+    [success,message] = fileattrib(MovieDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    if success==0
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' MovieDir ':']; message});%error message for directory creation
+    end
+end
+if exist(MovieName,'file')
+    backup=MovieName;
+    testexist=2;
+    while testexist==2
+        backup=[backup '~'];
+        testexist=exist(backup,'file');      
+    end
+    [success,message]=copyfile(MovieName,backup);%make backup of the existing file
+    if isequal(success,1)
+        delete(MovieName)%delete existing file 
+    else
+        msgbox_uvmat('ERROR',message)
+        return
+    end 
+end
+%create avi open
+aviobj=avifile(MovieName,'Compression','None','fps',fps);
+
+%% get info from uvmat and adjust it
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+increment=str2num(get(hhuvmat.num_IndexIncrement,'String')); %get the field increment from uvmat
+set(hhuvmat.STOP,'Visible','on')
+set(hhuvmat.speed,'Visible','on')
+set(hhuvmat.speed_txt,'Visible','on')
+set(hhuvmat.Movie,'BusyAction','queue')
+set(hhuvmat.speed,'Value',1)
+figure_movie=findobj(allchild(0),'name','figure_movie');
+hhuvmat.PlotAxes=findobj(figure_movie,'Tag','movieaxes');% the axis in the new figure becomes the current main plotting axes
+for i=1:FrameNumber
+    if get(hhuvmat.speed,'Value')~=0 && isequal(get(hhuvmat.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
+            runpm(hObject,eventdata,hhuvmat,increment)% run plus 
+            drawnow
+            time_str=get(hhuvmat.TimeValue,'String');
+            htitle=get(hhuvmat.PlotAxes,'Title');
+            Title=get(htitle,'String');
+            set(htitle,'String',regexprep(Title,'t=\d+.\d*',['t=' time_str]))
+            mov=getframe(figure_movie);
+            aviobj=addframe(aviobj,mov);
+    end
+end
+aviobj=close(aviobj);
+msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_movie_Cancel_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+delete(hObject)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Projection Objects Menu Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% -----------------------------------------------------------------------
+function Menupoints_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='points';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+% --- Callback of the Menu command line
+%------------------------------------------------------------------------
+function Menuline_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='line';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+% --- Callback of the Menu command line_x
+%------------------------------------------------------------------------
+function Menuline_x_Callback(hObject, eventdata, handles)
+
+data.Type='line_x';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+% --- Callback of the Menu command line_y
+% -----------------------------------------------------------------------
+function Menuline_y_Callback(hObject, eventdata, handles)
+
+data.Type='line_y';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menupolyline_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polyline';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menupolygon_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polygon';
+data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menurectangle_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='rectangle';
+data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuellipse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='ellipse';
+data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function MenuMaskObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polygon';
+data.TypeMenu={'polygon'};
+data.ProjMode='mask_inside';%default
+data.ProjModeMenu={'mask_inside';'mask_outside'};
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuplane_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='plane';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuvolume_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='volume';
+data.ProjMode='interp_lin';%default
+data.ProjModeMenu={};
+% set(handles.create,'Visible','on')
+% set(handles.create,'Value',1)
+% VOLUME_Callback(hObject,eventdata,handles)data.ProjModeMenu={};
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+% --- generic function used for the creation of a projection object
+function create_object(data,handles)
+%------------------------------------------------------------------------
+%% desactivate concurrent tools
+set(handles.MenuRuler,'checked','off')%desactivate ruler
+hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');% search the GUI geometric calibration 
+if ishandle(hgeometry_calib)
+    hhgeometry_calib=guidata(hgeometry_calib);
+    set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
+    set(hhgeometry_calib.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
+end
+set(handles.CheckEditObject,'Value',0)  %desactivate the object edit mode
+CheckEditObject_Callback([],[],handles)
+set(handles.CheckViewObject,'Value',0) % desactivate view_object (new object created)
+set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
+set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
+set(handles.MenuObject,'checked','on')% indicate object creation for mouse pointer display
+if ishandle(handles.UVMAT_title)
+    delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
+end
+
+%% initiate the new projection object
+UvData=get(handles.uvmat,'UserData');
+data.Name=data.Type;% default name=type
+data.Coord=[0 0]; %default
+check_plot=0;
+if isfield(UvData,'Field')
+    Field=UvData.Field;
+    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+         data.Coord=[0 0 0]; %default
+    end
+    if isfield(Field,'CoordUnit')
+        data.CoordUnit=Field.CoordUnit;
+    end
+    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
+        data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+        switch data.Type
+            case {'line','polyline','points'}
+                data.RangeY=UvData.Field.CoordMesh;
+            case 'line_x'
+                check_plot=1; %plot the line directly when set_object is opened
+                data.Type='line';
+                data.RangeX=UvData.Field.XMin ;
+                data.RangeY=UvData.Field.CoordMesh;
+                data.Coord=[UvData.Field.XMin (UvData.Field.YMin +UvData.Field.YMax)/2;...
+                           UvData.Field.XMax (UvData.Field.YMin +UvData.Field.YMax)/2];% put line at the middle of the y axis
+            case 'line_y'
+                check_plot=1; %plot the line directly when set_object is opened
+                data.Type='line';
+                data.RangeX=UvData.Field.YMin ;
+                data.RangeY=UvData.Field.CoordMesh;
+                data.Coord=[(UvData.Field.XMin+UvData.Field.XMax)/2 UvData.Field.YMin;...
+                            (UvData.Field.XMin +UvData.Field.XMax)/2 UvData.Field.YMax];% put line at the middle of the y axis
+            case {'rectangle','ellipse'}
+                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+                data.RangeX=UvData.Field.CoordMesh;
+                data.RangeY=UvData.Field.CoordMesh;
+            otherwise
+                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        end
+        data.DX=UvData.Field.CoordMesh;
+        data.DY=UvData.Field.CoordMesh;
+    end
+end
+
+hset_object=set_object(data,handles);% call the GUI set_object 
+hchild=get(hset_object,'children');
+set(hchild,'enable','on')
+set(handles.DeleteObject,'Visible','on')% make the object delete button visible
+if check_plot
+    hhset_object=guidata(hset_object);
+    set_object('REFRESH_Callback',1,[],hhset_object);% call the GUI set_object 
+end
+set(handles.CheckViewField,'Visible','on')
+set(handles.DeleteObject,'Visible','on')
+set(handles.ListObject_1,'Visible','on')
+set(handles.ListObject_1_title,'Visible','on')
+
+%------------------------------------------------------------------------
+function MenuBrowseObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%get the object file
+fileinput=uigetfile_uvmat('pick an xml object file:',get(handles.RootPath,'String'),'.xml');
+if ~isempty(fileinput)
+    %read the file
+    [data,heading]=xml2struct(fileinput);
+    if ~strcmp(heading,'ProjObject')
+        msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
+    end
+    ListObject=get(handles.ListObject,'String');
+    ListObject=[ListObject;{data.Name}];
+    IndexObj=length(ListObject);
+    UvData=get(handles.uvmat,'UserData');
+    UvData.ProjObject{IndexObj}=[]; %create a new empty object
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
+    UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+    set(handles.uvmat,'UserData',UvData)
+    set(handles.CheckViewObject,'Value',1)
+    set(handles.CheckViewField,'Value',1)
+    hset_object=set_object(data);% call the set_object interface
+    hhset_object=guidata(hset_object);
+    set_object('REFRESH_Callback',hObject,eventdata,hhset_object);% plot projection
+    set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
+    CheckEditObject_Callback([],[],handles)
+    set(handles.DeleteObject,'Visible','on')
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuTools Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
+function MenuCalib_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%% suppress the second field if exists
+if get(handles.SubField,'Value')
+    set(handles.SubField,'Value',0)
+    SubField_Callback(hObject, eventdata, handles)
+end
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+
+%% suppress competing tools
+set(handles.MenuRuler,'checked','off')%desactivate ruler
+set(handles.CheckZoom,'Value',0)
+set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.ListObject,'Value',1) 
+
+%% initiate display of the GUI geometry_calib
+data=[]; %default
+if isfield(UvData,'CoordType')
+    data.CoordType=UvData.CoordType;
+end
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+set(handles.view_xml,'BackgroundColor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
+geometry_calib(FileName);% call the geometry_calib interface	
+set(handles.view_xml,'BackgroundColor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
+set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
+
+
+% --------------------------------------------------------------------
+% --- set the slice plane ro the set of slice planes when volume scan is used
+function MenuSetSlice_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+%% suppress the second input field if exists
+if get(handles.SubField,'Value')
+    set(handles.SubField,'Value',0)
+    SubField_Callback(hObject, eventdata, handles)
+end
+
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+check=0;
+if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
+    GeometryCalib=UvData.XmlData{1}.GeometryCalib;
+else
+    msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
+    return
+end    
+SliceCoord=GeometryCalib.SliceCoord;
+InterfaceCoord=min(SliceCoord(:,3));
+if isfield(GeometryCalib,'InterfaceCoord')
+    InterfaceCoord=GeometryCalib.InterfaceCoord(1,3);
+end
+NbSlice=size(SliceCoord,1);
+CheckVolumeScan=0;
+if isfield(GeometryCalib,'CheckVolumeScan')
+    CheckVolumeScan=GeometryCalib.CheckVolumeScan;
+end	
+RefractionIndex=1.33;
+if isfield(GeometryCalib,'RefractionIndex')
+    RefractionIndex=GeometryCalib.RefractionIndex;
+end	
+SliceAngle=[0 0 0];
+if isfield(GeometryCalib,'SliceAngle')
+    SliceAngle=GeometryCalib.SliceAngle;
+end
+
+%% create the GUI set_slice
+set(0,'Units','points')
+ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Width=350;% fig width in points (1/72 inch)
+Height=min(0.8*ScreenSize(4),300);
+Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
+Bottom=ScreenSize(4)-Height-40; %put fig at top right
+hfig=findobj(allchild(0),'Tag','set_slice');
+if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
+BackgroundColor=get(hfig,'Color');
+hh=0.14; % box height (relative)
+ii=0.01; % gap between uicontrols
+
+ww=(1-5*ii)/4; % box width (relative)
+% first raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','surface','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+%  raw 2 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
+    'String',num2str(InterfaceCoord),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
+%  raw 3 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-1.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
+    'String','refraction index','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
+    'String',num2str(RefractionIndex),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
+%  raw 4 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.25*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+    'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-3*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
+    'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
+uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-3*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
+    'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
+%  raw 5 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
+    'String','x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
+    'String','y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+%  raw 6 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+    'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the x axis');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the y axis');%edit box
+%  raw 7 of the GUI: pushbuttons
+wwp=(1-4*ii)/3; %width of the push buttons
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','REPLICATE','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''REPLICATE'': replicate the output for a series of experiments');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
+    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
+drawnow
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_slice_APPLY_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+
+%% get the uvmat GUI data and read the current xml file
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml file for calibration
+[RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
+XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+if~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+GeometryCalib=s.GeometryCalib;
+
+%% read the content of the GUI set_slice
+SliceData=read_GUI(get(hObject,'parent'));
+GeometryCalib.NbSlice=SliceData.NbSlice;
+GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
+Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+GeometryCalib.SliceAngle(:,3)=0;
+GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+
+%% store the result in the xml file used for calibration
+errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+if strcmp(errormsg,'')
+    msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
+else
+    msgbox_uvmat('ERROR',errormsg);
+end
+
+%% display image with new calibration in the currently opened uvmat interface
+set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+
+%------------------------------------------------------------------------
+% function called by pressing REPLICATE in the GUI  set_slices
+function set_slice_REPLICATE_Callback(hObject,eventdata)
+%------------------------------------------------------------------------ 
+
+%% read the GUI set_slice
+SliceData=read_GUI(get(hObject,'parent'));
+
+%% get info on the GUI uvmat
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
+
+%% open the GUI browse_data
+answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
+if strcmp(answer,'Cancel')
+    return
+end
+OutPut=browse_data(answer);
+nbcalib=0;
+for ilist=1:numel(OutPut.Experiment)
+    SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
+    XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+    
+    % read the current xml file
+    [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
+        return
+    end
+    GeometryCalib=s.GeometryCalib;
+    GeometryCalib.NbSlice=SliceData.NbSlice;
+    GeometryCalib.VolumeScan=SliceData.CheckVolumeScan;
+    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+    GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+    GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+    GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+    GeometryCalib.SliceAngle(:,3)=0;
+    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+    
+    % update the current xml file
+    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+    if ~strcmp(errormsg,'')
+        msgbox_uvmat('ERROR',errormsg);
+    else
+        display([XmlFile ' updated with slice positions'])
+        nbcalib=nbcalib+1;
+    end
+end
+msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
+
+%------------------------------------------------------------------------
+% function called by pressing Cancel in the GUI  set_slices
+function set_slice_Cancel_Callback(hObject,eventdata)
+%------------------------------------------------------------------------
+hfig=get(hObject,'parent');
+delete(hfig)
+
+%-----------------------------------------------------------------------
+function MenuLIFCalib_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%% read UvData properties stored on the uvmat interface 
+UvData=get(handles.uvmat,'UserData');
+if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+    XmlData=UvData.XmlData{1};
+else
+    msgbox_uvmat('ERROR','geometric calibration needed: use Tools/geometric calibration in the menu bar');
+    return
+end
+
+%% read lines currently drawn
+ListObj=UvData.ProjObject;
+select=zeros(1,numel(ListObj));
+for iobj=1:numel(ListObj);
+    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
+        select(iobj)=1;
+    end
+end
+val=find(select);
+if numel(val)<2
+    msgbox_uvmat('ERROR','light rays must be defined by at least two lines created by Projection object/line in the menu bar');
+    return
+else
+    set(handles.ListObject,'Value',val);% show the selected lines on the list
+    ObjectData=UvData.ProjObject(val);
+    for iobj=1:length(ObjectData)
+            xA(iobj)=ObjectData{iobj}.Coord(1,1);
+            yA(iobj)=ObjectData{iobj}.Coord(1,2);
+            xB(iobj)=ObjectData{iobj}.Coord(2,1);
+            yB(iobj)=ObjectData{iobj}.Coord(2,2);
+    end
+end
+
+%% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
+x1=xA(1);x2=xB(1);
+x3=xA(2);x4=xB(2);
+y1=yA(1);y2=yB(1);
+y3=yA(2);y4=yB(2);
+D = (x1-x2)*(y3-y4) -(y1-y2)*(x3-x4);
+if D==0
+    msgbox_uvmat('ERROR','the two lines are parallel');
+    return
+end
+x0=((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/D;
+y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
+XmlData.Illumination.Origin=[x0 y0];
+XmlData.PolarCentre=[x0 y0];
+
+%% display the current image in polar axes with origin at the  illumination source
+currentdir=pwd;  
+uvmatpath=fileparts(which('uvmat'));
+cd(fullfile(uvmatpath,'transform_field'));
+phys_polar=str2func('phys_polar');
+cd(currentdir)
+DataOut=phys_polar(UvData.Field,XmlData);
+view_field(DataOut);
+
+%% use the third line for reference luminosity
+if numel(val)==3
+    x_ref=linspace(ObjectData{3}.Coord(1,1),ObjectData{3}.Coord(2,1),10);
+    y_ref=linspace(ObjectData{3}.Coord(1,2),ObjectData{3}.Coord(2,2),10);
+    x_ref=x_ref-x0;
+    y_ref=y_ref-y0;
+    [theta_ref,r_ref] = cart2pol(x_ref,y_ref);%theta_ref  and r_ref are the polar coordinates of the points on the line
+    theta_ref=theta_ref*180/pi;
+    figure
+    plot(theta_ref,r_ref)
+    azimuth_ima=linspace(DataOut.Coord_y(1),DataOut.Coord_y(2),size(DataOut.A,1));%profile of x index on the transformed image
+    dist_source = interp1(theta_ref,r_ref,azimuth_ima);
+    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.Coord_x(1))/(DataOut.Coord_x(2)-DataOut.Coord_x(1)));
+    line_nan= isnan(dist_source_pixel);
+    dist_source_pixel(line_nan)=1;
+    width=20; %number of pixels used for reference
+    DataOut.A=double(DataOut.A);
+    Anorm=zeros(size(DataOut.A));
+    Aval=mean(mean(DataOut.A));
+    for iline=1:size(DataOut.A,1)
+        lum(iline)=mean(DataOut.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));
+        Anorm(iline,:)=uint16(Aval*DataOut.A(iline,:)/lum(iline));
+    end
+    lum(line_nan)=NaN;
+    figure
+    plot(1:size(DataOut.A,1),lum)
+end
+ImaName=regexprep([get(handles.RootFile,'String') get(handles.FileIndex,'String')],'//','');
+NewImageName=fullfile(get(handles.RootPath,'String'),'polar',[ImaName get(handles.FileExt,'String')]);
+imwrite(Anorm,NewImageName,'BitDepth',16)
+
+%% record the origin in the xml file
+XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
+answer=msgbox_uvmat('INPUT_Y-N','save the illumination origin in the current xml file?');
+if strcmp(answer,'Yes')
+    t=xmltree(XmlFileName); %read the file
+    title=get(t,1,'name');
+    if ~strcmp(title,'ImaDoc')
+        msgbox_uvmat('ERROR','wrong xml file');
+        return
+    end
+    % backup the output file if it already exist, and read it
+    backupfile=XmlFileName;
+    testexist=2;
+    while testexist==2
+        backupfile=[backupfile '~'];
+        testexist=exist(backupfile,'file');
+    end
+    [success,message]=copyfile(XmlFileName,backupfile);%make backup
+    if success~=1
+        errormsg=['errror in xml file backup: ' message];
+        return
+    end
+    uid_illumination=find(t,'ImaDoc/Illumination');
+    if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
+        [t,uid_illumination]=add(t,1,'element','Illumination');
+    end
+    uid_origin=find(t,'ImaDoc/Illumination/Origin');
+    if ~isempty(uid_origin)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_origin);
+    end
+    % save the illumination origin
+    t=struct2xml(XmlData.Illumination,t,uid_illumination); 
+    save(t,XmlFileName);
+end
+    
+
+
+%------------------------------------------------------------------------
+function MenuMask_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+ListObj=UvData.ProjObject;
+select=zeros(1,numel(ListObj));
+for iobj=1:numel(ListObj);
+    if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
+        select(iobj)=1;
+    end
+end
+val=find(select);
+if isempty(val)
+    msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
+    return
+else
+    set(handles.ListObject,'Value',val);
+    flag=1;
+    if ~isfield(UvData.Field,'A')
+            msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
+    return
+    end
+    npx=size(UvData.Field.A,2);
+    npy=size(UvData.Field.A,1);
+    xi=0.5:npx-0.5;
+    yi=0.5:npy-0.5;
+    [Xi,Yi]=meshgrid(xi,yi);
+        for iobj=1:length(UvData.ProjObject)
+            ObjectData=UvData.ProjObject{iobj};
+            if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
+                flagobj=1;
+                testphys=0; %coordinates in pixels by default
+                if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
+                    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+                        Calib=UvData.XmlData{1}.GeometryCalib;
+                        testphys=1;
+                    end
+                end
+                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
+                    if isequal(ObjectData.Type,'polygon')
+                        X=ObjectData.Coord(:,1);
+                        Y=ObjectData.Coord(:,2);
+                        if testphys
+                            pos=[X Y zeros(size(X))];
+                            if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
+                                if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
+                                    om=norm(Calib.SliceAngle);%norm of rotation angle in radians
+                                    OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
+                                    cos_om=cos(pi*om/180);
+                                    sin_om=sin(pi*om/180);
+                                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                                end
+                                pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
+                                pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
+                                pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
+                            end                           
+                            [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
+                        end
+                        flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+                    elseif isequal(ObjectData.Type,'ellipse')
+                        if testphys
+                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                        end
+                        RangeX=max(ObjectData.RangeX);
+                        RangeY=max(ObjectData.RangeY);
+                        X2Max=RangeX*RangeX;
+                        Y2Max=RangeY*RangeY;
+                        distX=(Xi-ObjectData.Coord(1,1));
+                        distY=(Yi-ObjectData.Coord(1,2));
+                        flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+                    elseif isequal(ObjectData.Type,'rectangle')
+                        if testphys
+                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                        end
+                        distX=abs(Xi-ObjectData.Coord(1,1));
+                        distY=abs(Yi-ObjectData.Coord(1,2));
+                        flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
+                    end
+                    if isequal(ObjectData.ProjMode,'mask_outside')
+                        flagobj=~flagobj;
+                    end
+                    flag=flag & flagobj;
+                end
+            end
+        end
+    %mask name
+    RootPath=get(handles.RootPath,'String');
+    SubDir=get(handles.SubDir,'String');
+    RootFile=get(handles.RootFile,'String');
+    if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
+        RootFile(1)=[];
+    end
+    list=get(handles.masklevel,'String');
+    masknumber=num2str(length(list));
+    maskindex=get(handles.masklevel,'Value');
+    mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
+    imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
+    imflag=flipdim(imflag,1);
+
+    %display the mask
+    hfigmask=figure;
+    set(hfigmask,'Name','mask image')
+    vec=linspace(0,1,256);%define a linear greyscale colormap
+    map=[vec' vec' vec'];
+    colormap(map)
+    image(imflag);
+    answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
+    if ~strcmp(answer,'Cancel')
+        mask_dir=fileparts(answer);
+        if ~exist(mask_dir,'dir')
+            [success,msg]=mkdir(mask_dir);
+            if success==0
+                msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
+                return
+            end
+            [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+            if success==0
+                msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
+            end
+        end
+        imwrite(imflag,answer,'BitDepth',8);
+    end
+    set(handles.ListObject,'Value',1)
+end
+
+%------------------------------------------------------------------------
+%-- open the GUI set_grid.fig to create grid
+function MenuGrid_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%suppress the other options if grid is chosen
+set(handles.edit_vect,'Value',0)
+edit_vect_Callback(hObject, eventdata, handles)
+set(handles.ListObject,'Value',1)      
+
+%prepare display of the set_grid GUI
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+UvData=get(handles.uvmat,'UserData');
+% CoordList=get(handles.TransformName,'String');
+% val=get(handles.TransformName,'Value');
+set_grid(FileName,UvData.Field);% call the set_object interface
+
+
+%------------------------------------------------------------------------
+function MenuRuler_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+if strcmp(get(handles.MenuRuler,'checked'),'on')
+    set(handles.MenuRuler,'checked','off')%desactivate if activated
+else
+    set(handles.MenuRuler,'checked','on')%activate if selected
+    set(handles.CheckZoom,'Value',0)
+    CheckZoom_Callback(handles.uvmat, [], handles)
+    UvData=get(handles.uvmat,'UserData');
+    UvData.MouseAction='ruler';
+    set(handles.uvmat,'UserData',UvData);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuRun Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%------------------------------------------------------------------------
+% open the GUI 'series'
+function MenuSeries_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+Param=read_GUI(handles.uvmat);
+Param.HiddenData=get(handles.uvmat,'UserData');
+series(Param); %run the series interface
+
+% --------------------------------------------------------------------
+function MenuPIV_Callback(hObject, eventdata, handles)
+Param=read_GUI(handles.uvmat);
+Param.HiddenData=get(handles.uvmat,'UserData');
+hseries=series(Param);
+hhseries=guidata(hseries);
+ActionMenu=get(hhseries.ActionName,'String');
+index_action=find(strcmp('civ_series',ActionMenu));
+set(hhseries.ActionName,'Value',index_action);
+series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+
+%------------------------------------------------------------------------
+% -- open the GUI civ.fig for PIV
+function MenuCIVx_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+ [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+civ(FileName);% interface de civ(not in the uvmat file)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuHelp Callback
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------
+function MenuHelp_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
+
+
+
+
+
+
+
+
+
 
 %------------------------------------------------------------------------
 % --- Called by action in FileIndex edit box
@@ -882,6 +1848,7 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,index)
 %------------------------------------------------------------------------
 errormsg=''; %default error msg
+
 %% define the relevant handles depending on the index (1=first file series, 2= second file series)
 if ~exist('index','var')
     index=1;
@@ -891,74 +1858,51 @@ if index==1
 elseif index==2
     handles_Fields=handles.FieldName_1;
 end
+set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
 
-set(handles.FieldName,'UserData',[])% reinialize data from uvmat opening
+%% record info in UserData of the figure uvmat
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
 UvData.FileType{index}=FileInfo.FileType;
 UvData.FileInfo{index}=FileInfo;
+UvData.MovieObject{index}=VideoObject;
 UvData.i1_series{index}=i1_series;
 UvData.i2_series{index}=i2_series;
 UvData.j1_series{index}=j1_series;
 UvData.j2_series{index}=j2_series;
-set(handles.FixVelType,'Value',0); %desactivate fixed veltype
-if index==1
-    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-else
-    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-end
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-FileBase=fullfile(RootPath,RootFile);
-if ~exist(FileName,'file')
-    errormsg=['input file ' FileName ' not found'];
-   msgbox_uvmat('ERROR',errormsg);   
-    return
-end
 
-%% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
+%% read timing and total frame number from the current file (e.g. movie files) 
 TimeUnit='';%default
 TimeName='';%default
 XmlData.Time=[];%default
-imainfo=[];
 ColorType='falsecolor'; %default
-UvData.MovieObject{index}=VideoObject;
-if ~isempty(VideoObject)% case of video data
-    imainfo=get(VideoObject);
+if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video data)
     TimeUnit='s';
     if isempty(j1_series); %frame index along i
-        XmlData.Time=zeros(imainfo.NumberOfFrames+1,2);
-        XmlData.Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+        XmlData.Time=zeros(FileInfo.NumberOfFrames+1,2);
+        XmlData.Time(:,2)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate)';
     else
-        XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+        XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
     end
-    %set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+    if strcmp(FileInfo.FileType,'rdvision')
+        TimeName='timestamp';
+    else
     TimeName='video';
-    ColorType='truecolor';
-elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
-    if ~isequal(SubDir,'')
-        imainfo=imfinfo([fullfile(RootPath,SubDir,RootFile) FileIndices FileExt]);
-    else
-        imainfo=imfinfo([FileBase FileIndices FileExt]);
     end
-    ColorType=imainfo.ColorType;%='truecolor' for color images
 end
-if isfield(imainfo,'Width') && isfield(imainfo,'Height')
-    if length(imainfo)>1
-        set(handles.num_Npx,'String',num2str(imainfo(1).Width));%fills nbre of pixels x box
-        set(handles.num_Npy,'String',num2str(imainfo(1).Height));%fills nbre of pixels x box
-    else
-        set(handles.num_Npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
-        set(handles.num_Npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
-    end
-else
-    set(handles.num_Npx,'String','');%fills nbre of pixels x box
-    set(handles.num_Npy,'String','');%fills nbre of pixels x box
+if isfield(FileInfo,'ColorType')
+    ColorType=FileInfo.ColorType;%='truecolor' for color images
 end
 set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.CheckBW if grayscale image
 
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
 XmlData.GeometryCalib=[];%default
+if index==1
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+else
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+end
 XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 [tild,tild,DocExt]=fileparts(XmlFileName);
 warntext='';%default warning message
@@ -975,7 +1919,6 @@ if ~isempty(XmlFileName)
     end
     if ~isempty(XmlDataRead)
         ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
-        %XmlData=XmlDataRead;
         if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
             TimeUnit=XmlDataRead.TimeUnit;
         end
@@ -2176,7 +3119,7 @@ switch UvData.FileType{1}
                 ParamIn.ColorVar= list_code{index_code}; % selected field
             end
         end
-    case {'video','mmreader'}
+    case {'video','mmreader','rdvision'}
         ParamIn=UvData.MovieObject{1}; % movie object     
         if strcmp(NomType,'*')
             frame_index=num_i1;%frame index from a single movies or multimage
@@ -2447,7 +3390,7 @@ end
 
 % time in the input file, not defined in a xml file or movie
 if isempty(abstime)
-    if strcmp(TimeName,'civdata')||strcmp(TimeName,'civx')
+    if strcmp(TimeName,'civdata')||strcmp(TimeName,'civx')||strcmp(TimeName,'timestamp')
         abstime=Field{1}.Time;
     elseif ~isempty(regexp(TimeName,'^att:', 'once'))
         abstime=Field{1}.(TimeName(5:end));%the time is an attribute  selected by get_file 
@@ -4632,1073 +5575,6 @@ if IndexObj<=old_index
     set(hlist_object_1,'Value',old_index-1)
 end
 
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-%  II - TOOLS FROM THE UPPER MENU BAR
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Export  Menu Callbacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------
-% --- Executes on button press in Menu/Export/field in workspace.
-function MenuExportField_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-global Data_uvmat
-Data_uvmat=get(handles.uvmat,'UserData');
-evalin('base','global Data_uvmat')%make CurData global in the workspace
-disp('Data_uvmat.Field=')
-evalin('base','Data_uvmat.Field') %display CurData in the workspace
-commandwindow; %brings the Matlab command window to the front
-
-%------------------------------------------------------------------------
-% --- Executes on button press in Menu/Export/extract figure.
-function MenuExportFigure_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-hfig=figure;
-hc=copyobj(handles.PlotAxes,hfig);
-set(hc,'Position',[0.1 0.1 0.8 0.8])
-h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
-if ~isempty(h)
-    map=colormap(handles.PlotAxes);
-    colormap(map);%transmit the current colormap to the new fig
-    colorbar
-end
-
-% --------------------------------------------------------------------
-function MenuExportAxis_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------    
-ListFig=findobj(allchild(0),'Type','figure');
-nb_option=0;
-menu={};
-for ilist=1:numel(ListFig)
-    FigName=get(ListFig(ilist),'name');
-    if isempty(FigName)
-        FigName=['figure ' num2str(ListFig(ilist))];
-    end
-    if ~strcmp(FigName,'uvmat')
-        ListAxes=findobj(ListFig(ilist),'Type','axes');
-        ListTags=get(ListAxes,'Tag');
-        if ~isempty(ListTags) && ~isempty(find(~strcmp('Colorbar',ListTags), 1))
-            ListAxes=ListAxes(~strcmp('Colorbar',ListTags));
-            if numel(ListAxes)==1
-                nb_option=nb_option+1;
-                menu{nb_option}=FigName ;
-                AxesHandle(nb_option)=ListAxes;
-            else
-                nb_axis=0;
-                for iaxes=1:numel(ListAxes)
-                    nb_axis=nb_axis+1;
-                    nb_option=nb_option+1;
-                    menu{nb_option}=[FigName '_' num2str(nb_axis)];
-                    AxesHandle(nb_option)=ListAxes(nb_axis);
-                end
-            end
-        end
-    end
-end
-if isempty(menu)
-    answer=msgbox_uvmat('INPUT_Y-N','no existing plotting axes available, create new figure?');
-    if strcmp(answer,'Yes')
-        hfig=figure;
-        copyobj(handles.PlotAxes,hfig);
-    else
-        return
-    end
-    map=colormap(handles.PlotAxes);
-    colormap(map);%transmit the current colormap to the zoom fig
-    colorbar
-else
-    answer=msgbox_uvmat('INPUT_MENU','select a figure/axis on which the current uvmat plot will be exported',menu);
-    if isempty(answer)
-        return
-    else
-        axes(AxesHandle(answer))
-        hold on
-        hchild=get(handles.PlotAxes,'children');
-        copyobj(hchild,gca);
-    end
-end
-
-
-%------------------------------------------------------------------------
-% --------------------------------------------------------------------
-function MenuExportMovie_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
-
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-FileBase=fullfile(RootPath,RootFile);
-
-%% create a fig and axis for movies 
-figure_movie=findobj(allchild(0),'name','figure_movie');
-
-if ~isempty(figure_movie)
-    delete(figure_movie)%delete existing figure_movie
-end
-figure_movie=figure;
-nbpix=[512 384];% resolution XVGA
-set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
-newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
-set(newaxes,'Tag','movieaxes')
-
-%% display time if defined in uvmat
-time_str=get(handles.TimeValue,'String');
-if ~isempty(time_str)
-    htitle=get(newaxes,'Title');
-%     xlim=get(newaxes,'XLim');
-%     ylim=get(newaxes,'YLim');
-%     set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
-    
-    set(htitle,'String',['t=' time_str])
-end
-map=colormap(handles.PlotAxes);
-colormap(map);%transmit the current colormap to the zoom fig
-colorbar
-
-%% create the GUI set_movie
-%set(0,'Units','points')
-%ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Position=get(figure_movie,'Position');
-Position(2)=Position(2)+1.2*Position(4);
-Position(3)=1.5*Position(3);
-Position(4)=Position(4)/2;
-hfig=findobj(allchild(0),'Tag','set_movie');
-if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
-hfig=figure('name','set_movie','tag','set_movie','MenuBar','none','NumberTitle','off','Units','pixels',...
-    'Position',Position);
-BackgroundColor=get(hfig,'Color');
-hh=0.14; % box height (relative)
-% first raw of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-hh/2 0.9 hh/2],'BackgroundColor',BackgroundColor,...
-    'String','movie name:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-1.5*hh 0.9 hh],'tag','MovieName','BackgroundColor',[1 1 1],...
-    'String',fullfile(RootPath,[SubDir '.movie'], [RootFile '.avi']),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''MovieName'': name (with path) of the movie to create');%edit box
-uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
-    'String','frames per second:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [0.55 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
-    'String','total nbre of frames:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-3.5*hh 0.3 hh],'tag','num_FramePerSecond','BackgroundColor',[1 1 1],...
-    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FramePerSecond'': nbre of frames per second');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [0.65 0.95-3.5*hh 0.3 hh],'tag','num_FrameNumber','BackgroundColor',[1 1 1],...
-    'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FrameNumber'': total nbre of frames');%edit box
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.05 0.15 0.25 hh],'BackgroundColor',[1 0 0],'String','START','Callback',@(hObject,eventdata)set_movie_START_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.15 0.25 hh],'Callback',@(hObject,eventdata)set_movie_Cancel_Callback(hObject,eventdata),...
-    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
-uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.05 0.9 hh/2],'BackgroundColor',BackgroundColor,...
-    'String','will extract the result of ++> on uvmat: adjust figure_movie with its Matlab edit menu, then press ''START ''','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-drawnow
-
-%------------------------------------------------------------------------
-% function called by pressing APPLY in the GUI  set_slices
-function set_movie_START_Callback(hObject,eventdata)
-%------------------------------------------------------------------------    
-%% read info from the GUI set_movie
-hset_movie=get(hObject,'parent');
-hMovieName=findobj(hset_movie,'Tag','MovieName');
-MovieName=get(hMovieName,'String');
-hFramePerSecond=findobj(hset_movie,'Tag','num_FramePerSecond');
-fps=str2double(get(hFramePerSecond,'String'));
-hFrameNumber=findobj(hset_movie,'Tag','num_FrameNumber');
-FrameNumber=str2double(get(hFrameNumber,'String'));% total nbre of frames
-
-%% create the movie file
-MovieDir=fileparts(MovieName);
-if ~exist(MovieDir,'dir')
-    [success,message]=mkdir(MovieDir);
-    if ~isequal(success,1)
-        msgbox_uvmat('ERROR',message)
-        return
-    end
-    [success,message] = fileattrib(MovieDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-    if success==0
-        msgbox_uvmat('WARNING',{['unable to set group write access to ' MovieDir ':']; message});%error message for directory creation
-    end
-end
-if exist(MovieName,'file')
-    backup=MovieName;
-    testexist=2;
-    while testexist==2
-        backup=[backup '~'];
-        testexist=exist(backup,'file');      
-    end
-    [success,message]=copyfile(MovieName,backup);%make backup of the existing file
-    if isequal(success,1)
-        delete(MovieName)%delete existing file 
-    else
-        msgbox_uvmat('ERROR',message)
-        return
-    end 
-end
-%create avi open
-aviobj=avifile(MovieName,'Compression','None','fps',fps);
-
-%% get info from uvmat and adjust it
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-increment=str2num(get(hhuvmat.num_IndexIncrement,'String')); %get the field increment from uvmat
-set(hhuvmat.STOP,'Visible','on')
-set(hhuvmat.speed,'Visible','on')
-set(hhuvmat.speed_txt,'Visible','on')
-set(hhuvmat.Movie,'BusyAction','queue')
-set(hhuvmat.speed,'Value',1)
-figure_movie=findobj(allchild(0),'name','figure_movie');
-hhuvmat.PlotAxes=findobj(figure_movie,'Tag','movieaxes');% the axis in the new figure becomes the current main plotting axes
-for i=1:FrameNumber
-    if get(hhuvmat.speed,'Value')~=0 && isequal(get(hhuvmat.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
-            runpm(hObject,eventdata,hhuvmat,increment)% run plus 
-            drawnow
-            time_str=get(hhuvmat.TimeValue,'String');
-            htitle=get(hhuvmat.PlotAxes,'Title');
-            Title=get(htitle,'String');
-            set(htitle,'String',regexprep(Title,'t=\d+.\d*',['t=' time_str]))
-            mov=getframe(figure_movie);
-            aviobj=addframe(aviobj,mov);
-    end
-end
-aviobj=close(aviobj);
-msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
-
-
-%------------------------------------------------------------------------
-% function called by pressing APPLY in the GUI  set_slices
-function set_movie_Cancel_Callback(hObject,eventdata)
-%------------------------------------------------------------------------    
-delete(hObject)
-% 
-% 
-% 
-%  %read the current input file name
-% prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
-% dlg_title = 'select properties of the output avi movie';
-% num_lines= 1;
-% def     = {[FileBase '_out.avi'];'10';'1';'[0.05 0.07 0.9 0.9]';'10'};
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Projection Objects Menu Callbacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% -----------------------------------------------------------------------
-function Menupoints_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='points';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-% -----------------------------------------------------------------------
-% --- Callback of the Menu command line
-%------------------------------------------------------------------------
-function Menuline_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='line';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-% -----------------------------------------------------------------------
-% --- Callback of the Menu command line_x
-%------------------------------------------------------------------------
-function Menuline_x_Callback(hObject, eventdata, handles)
-
-data.Type='line_x';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-% -----------------------------------------------------------------------
-% --- Callback of the Menu command line_y
-% -----------------------------------------------------------------------
-function Menuline_y_Callback(hObject, eventdata, handles)
-
-data.Type='line_y';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menupolyline_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polyline';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menupolygon_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polygon';
-data.ProjMode='inside';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menurectangle_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='rectangle';
-data.ProjMode='inside';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuellipse_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='ellipse';
-data.ProjMode='inside';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function MenuMaskObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polygon';
-data.TypeMenu={'polygon'};
-data.ProjMode='mask_inside';%default
-data.ProjModeMenu={'mask_inside';'mask_outside'};
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuplane_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='plane';
-data.ProjMode='projection';%default
-data.ProjModeMenu={};% do not restrict ProjMode menus
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuvolume_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='volume';
-data.ProjMode='interp_lin';%default
-data.ProjModeMenu={};
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% VOLUME_Callback(hObject,eventdata,handles)data.ProjModeMenu={};
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-% --- generic function used for the creation of a projection object
-function create_object(data,handles)
-%------------------------------------------------------------------------
-%% desactivate concurrent tools
-set(handles.MenuRuler,'checked','off')%desactivate ruler
-hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');% search the GUI geometric calibration 
-if ishandle(hgeometry_calib)
-    hhgeometry_calib=guidata(hgeometry_calib);
-    set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
-    set(hhgeometry_calib.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
-end
-set(handles.CheckEditObject,'Value',0)  %desactivate the object edit mode
-CheckEditObject_Callback([],[],handles)
-set(handles.CheckViewObject,'Value',0) % desactivate view_object (new object created)
-set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
-set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
-set(handles.MenuObject,'checked','on')% indicate object creation for mouse pointer display
-if ishandle(handles.UVMAT_title)
-    delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
-end
-
-%% initiate the new projection object
-UvData=get(handles.uvmat,'UserData');
-data.Name=data.Type;% default name=type
-data.Coord=[0 0]; %default
-check_plot=0;
-if isfield(UvData,'Field')
-    Field=UvData.Field;
-    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
-         data.Coord=[0 0 0]; %default
-    end
-    if isfield(Field,'CoordUnit')
-        data.CoordUnit=Field.CoordUnit;
-    end
-    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
-        data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-        switch data.Type
-            case {'line','polyline','points'}
-                data.RangeY=UvData.Field.CoordMesh;
-            case 'line_x'
-                check_plot=1; %plot the line directly when set_object is opened
-                data.Type='line';
-                data.RangeX=UvData.Field.XMin ;
-                data.RangeY=UvData.Field.CoordMesh;
-                data.Coord=[UvData.Field.XMin (UvData.Field.YMin +UvData.Field.YMax)/2;...
-                           UvData.Field.XMax (UvData.Field.YMin +UvData.Field.YMax)/2];% put line at the middle of the y axis
-            case 'line_y'
-                check_plot=1; %plot the line directly when set_object is opened
-                data.Type='line';
-                data.RangeX=UvData.Field.YMin ;
-                data.RangeY=UvData.Field.CoordMesh;
-                data.Coord=[(UvData.Field.XMin+UvData.Field.XMax)/2 UvData.Field.YMin;...
-                            (UvData.Field.XMin +UvData.Field.XMax)/2 UvData.Field.YMax];% put line at the middle of the y axis
-            case {'rectangle','ellipse'}
-                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
-                data.RangeX=UvData.Field.CoordMesh;
-                data.RangeY=UvData.Field.CoordMesh;
-            otherwise
-                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
-        end
-        data.DX=UvData.Field.CoordMesh;
-        data.DY=UvData.Field.CoordMesh;
-    end
-end
-
-hset_object=set_object(data,handles);% call the GUI set_object 
-hchild=get(hset_object,'children');
-set(hchild,'enable','on')
-set(handles.DeleteObject,'Visible','on')% make the object delete button visible
-if check_plot
-    hhset_object=guidata(hset_object);
-    set_object('REFRESH_Callback',1,[],hhset_object);% call the GUI set_object 
-end
-set(handles.CheckViewField,'Visible','on')
-set(handles.DeleteObject,'Visible','on')
-set(handles.ListObject_1,'Visible','on')
-set(handles.ListObject_1_title,'Visible','on')
-
-%------------------------------------------------------------------------
-function MenuBrowseObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%get the object file
-fileinput=uigetfile_uvmat('pick an xml object file:',get(handles.RootPath,'String'),'.xml');
-if ~isempty(fileinput)
-    %read the file
-    [data,heading]=xml2struct(fileinput);
-    if ~strcmp(heading,'ProjObject')
-        msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
-    end
-    ListObject=get(handles.ListObject,'String');
-    ListObject=[ListObject;{data.Name}];
-    IndexObj=length(ListObject);
-    UvData=get(handles.uvmat,'UserData');
-    UvData.ProjObject{IndexObj}=[]; %create a new empty object
-    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
-    UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-    set(handles.uvmat,'UserData',UvData)
-    set(handles.CheckViewObject,'Value',1)
-    set(handles.CheckViewField,'Value',1)
-    hset_object=set_object(data);% call the set_object interface
-    hhset_object=guidata(hset_object);
-    set_object('REFRESH_Callback',hObject,eventdata,hhset_object);% plot projection
-    set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
-    CheckEditObject_Callback([],[],handles)
-    set(handles.DeleteObject,'Visible','on')
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% MenuTools Callbacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------
-function MenuCalib_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%% suppress the second field if exists
-if get(handles.SubField,'Value')
-    set(handles.SubField,'Value',0)
-    SubField_Callback(hObject, eventdata, handles)
-end
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-
-%% suppress competing tools
-set(handles.MenuRuler,'checked','off')%desactivate ruler
-set(handles.CheckZoom,'Value',0)
-set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.ListObject,'Value',1) 
-
-%% initiate display of the GUI geometry_calib
-data=[]; %default
-if isfield(UvData,'CoordType')
-    data.CoordType=UvData.CoordType;
-end
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-set(handles.view_xml,'BackgroundColor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
-geometry_calib(FileName);% call the geometry_calib interface	
-set(handles.view_xml,'BackgroundColor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
-set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
-
-
-% --------------------------------------------------------------------
-% --- set the slice plane ro the set of slice planes when volume scan is used
-function MenuSetSlice_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-%% suppress the second input field if exists
-if get(handles.SubField,'Value')
-    set(handles.SubField,'Value',0)
-    SubField_Callback(hObject, eventdata, handles)
-end
-
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-check=0;
-if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
-    GeometryCalib=UvData.XmlData{1}.GeometryCalib;
-else
-    msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
-    return
-end    
-SliceCoord=GeometryCalib.SliceCoord;
-InterfaceCoord=min(SliceCoord(:,3));
-if isfield(GeometryCalib,'InterfaceCoord')
-    InterfaceCoord=GeometryCalib.InterfaceCoord(1,3);
-end
-NbSlice=size(SliceCoord,1);
-CheckVolumeScan=0;
-if isfield(GeometryCalib,'CheckVolumeScan')
-    CheckVolumeScan=GeometryCalib.CheckVolumeScan;
-end	
-RefractionIndex=1.33;
-if isfield(GeometryCalib,'RefractionIndex')
-    RefractionIndex=GeometryCalib.RefractionIndex;
-end	
-SliceAngle=[0 0 0];
-if isfield(GeometryCalib,'SliceAngle')
-    SliceAngle=GeometryCalib.SliceAngle;
-end
-
-%% create the GUI set_slice
-set(0,'Units','points')
-ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=350;% fig width in points (1/72 inch)
-Height=min(0.8*ScreenSize(4),300);
-Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
-Bottom=ScreenSize(4)-Height-40; %put fig at top right
-hfig=findobj(allchild(0),'Tag','set_slice');
-if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
-hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
-BackgroundColor=get(hfig,'Color');
-hh=0.14; % box height (relative)
-ii=0.01; % gap between uicontrols
-
-ww=(1-5*ii)/4; % box width (relative)
-% first raw of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','surface','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-%  raw 2 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
-    'String',num2str(InterfaceCoord),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
-%  raw 3 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-1.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
-    'String','refraction index','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
-    'String',num2str(RefractionIndex),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
-%  raw 4 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.25*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-    'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-3*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
-    'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
-uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-3*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
-    'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
-%  raw 5 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
-    'String','x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
-    'String','y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-%  raw 6 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-    'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the x axis');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the y axis');%edit box
-%  raw 7 of the GUI: pushbuttons
-wwp=(1-4*ii)/3; %width of the push buttons
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','REPLICATE','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''REPLICATE'': replicate the output for a series of experiments');
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
-    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
-drawnow
-
-%------------------------------------------------------------------------
-% function called by pressing APPLY in the GUI  set_slices
-function set_slice_APPLY_Callback(hObject,eventdata)
-%------------------------------------------------------------------------    
-
-%% get the uvmat GUI data and read the current xml file
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml file for calibration
-[RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
-XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
-[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-if~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-    return
-end
-GeometryCalib=s.GeometryCalib;
-
-%% read the content of the GUI set_slice
-SliceData=read_GUI(get(hObject,'parent'));
-GeometryCalib.NbSlice=SliceData.NbSlice;
-GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
-Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
-GeometryCalib.SliceAngle(:,3)=0;
-GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-
-%% store the result in the xml file used for calibration
-errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-if strcmp(errormsg,'')
-    msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
-else
-    msgbox_uvmat('ERROR',errormsg);
-end
-
-%% display image with new calibration in the currently opened uvmat interface
-set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-
-%------------------------------------------------------------------------
-% function called by pressing REPLICATE in the GUI  set_slices
-function set_slice_REPLICATE_Callback(hObject,eventdata)
-%------------------------------------------------------------------------ 
-
-%% read the GUI set_slice
-SliceData=read_GUI(get(hObject,'parent'));
-
-%% get info on the GUI uvmat
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
-
-%% open the GUI browse_data
-answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
-if strcmp(answer,'Cancel')
-    return
-end
-OutPut=browse_data(answer);
-nbcalib=0;
-for ilist=1:numel(OutPut.Experiment)
-    SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
-    XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
-    
-    % read the current xml file
-    [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
-        return
-    end
-    GeometryCalib=s.GeometryCalib;
-    GeometryCalib.NbSlice=SliceData.NbSlice;
-    GeometryCalib.VolumeScan=SliceData.CheckVolumeScan;
-    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-    GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-    GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-    GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-    GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
-    GeometryCalib.SliceAngle(:,3)=0;
-    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-    
-    % update the current xml file
-    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-    if ~strcmp(errormsg,'')
-        msgbox_uvmat('ERROR',errormsg);
-    else
-        display([XmlFile ' updated with slice positions'])
-        nbcalib=nbcalib+1;
-    end
-end
-msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
-
-%------------------------------------------------------------------------
-% function called by pressing Cancel in the GUI  set_slices
-function set_slice_Cancel_Callback(hObject,eventdata)
-%------------------------------------------------------------------------
-hfig=get(hObject,'parent');
-delete(hfig)
-
-%-----------------------------------------------------------------------
-function MenuLIFCalib_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%% read UvData properties stored on the uvmat interface 
-UvData=get(handles.uvmat,'UserData');
-if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-    XmlData=UvData.XmlData{1};
-else
-    msgbox_uvmat('ERROR','geometric calibration needed: use Tools/geometric calibration in the menu bar');
-    return
-end
-
-%% read lines currently drawn
-ListObj=UvData.ProjObject;
-select=zeros(1,numel(ListObj));
-for iobj=1:numel(ListObj);
-    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
-        select(iobj)=1;
-    end
-end
-val=find(select);
-if numel(val)<2
-    msgbox_uvmat('ERROR','light rays must be defined by at least two lines created by Projection object/line in the menu bar');
-    return
-else
-    set(handles.ListObject,'Value',val);% show the selected lines on the list
-    ObjectData=UvData.ProjObject(val);
-    for iobj=1:length(ObjectData)
-            xA(iobj)=ObjectData{iobj}.Coord(1,1);
-            yA(iobj)=ObjectData{iobj}.Coord(1,2);
-            xB(iobj)=ObjectData{iobj}.Coord(2,1);
-            yB(iobj)=ObjectData{iobj}.Coord(2,2);
-    end
-end
-
-%% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
-x1=xA(1);x2=xB(1);
-x3=xA(2);x4=xB(2);
-y1=yA(1);y2=yB(1);
-y3=yA(2);y4=yB(2);
-D = (x1-x2)*(y3-y4) -(y1-y2)*(x3-x4);
-if D==0
-    msgbox_uvmat('ERROR','the two lines are parallel');
-    return
-end
-x0=((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/D;
-y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
-XmlData.Illumination.Origin=[x0 y0];
-XmlData.PolarCentre=[x0 y0];
-
-%% display the current image in polar axes with origin at the  illumination source
-currentdir=pwd;  
-uvmatpath=fileparts(which('uvmat'));
-cd(fullfile(uvmatpath,'transform_field'));
-phys_polar=str2func('phys_polar');
-cd(currentdir)
-DataOut=phys_polar(UvData.Field,XmlData);
-view_field(DataOut);
-
-%% use the third line for reference luminosity
-if numel(val)==3
-    x_ref=linspace(ObjectData{3}.Coord(1,1),ObjectData{3}.Coord(2,1),10);
-    y_ref=linspace(ObjectData{3}.Coord(1,2),ObjectData{3}.Coord(2,2),10);
-    x_ref=x_ref-x0;
-    y_ref=y_ref-y0;
-    [theta_ref,r_ref] = cart2pol(x_ref,y_ref);%theta_ref  and r_ref are the polar coordinates of the points on the line
-    theta_ref=theta_ref*180/pi;
-    figure
-    plot(theta_ref,r_ref)
-    azimuth_ima=linspace(DataOut.Coord_y(1),DataOut.Coord_y(2),size(DataOut.A,1));%profile of x index on the transformed image
-    dist_source = interp1(theta_ref,r_ref,azimuth_ima);
-    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.Coord_x(1))/(DataOut.Coord_x(2)-DataOut.Coord_x(1)));
-    line_nan= isnan(dist_source_pixel);
-    dist_source_pixel(line_nan)=1;
-    width=20; %number of pixels used for reference
-    DataOut.A=double(DataOut.A);
-    Anorm=zeros(size(DataOut.A));
-    Aval=mean(mean(DataOut.A));
-    for iline=1:size(DataOut.A,1)
-        lum(iline)=mean(DataOut.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));
-        Anorm(iline,:)=uint16(Aval*DataOut.A(iline,:)/lum(iline));
-    end
-    lum(line_nan)=NaN;
-    figure
-    plot(1:size(DataOut.A,1),lum)
-end
-ImaName=regexprep([get(handles.RootFile,'String') get(handles.FileIndex,'String')],'//','');
-NewImageName=fullfile(get(handles.RootPath,'String'),'polar',[ImaName get(handles.FileExt,'String')]);
-imwrite(Anorm,NewImageName,'BitDepth',16)
-
-%% record the origin in the xml file
-XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
-answer=msgbox_uvmat('INPUT_Y-N','save the illumination origin in the current xml file?');
-if strcmp(answer,'Yes')
-    t=xmltree(XmlFileName); %read the file
-    title=get(t,1,'name');
-    if ~strcmp(title,'ImaDoc')
-        msgbox_uvmat('ERROR','wrong xml file');
-        return
-    end
-    % backup the output file if it already exist, and read it
-    backupfile=XmlFileName;
-    testexist=2;
-    while testexist==2
-        backupfile=[backupfile '~'];
-        testexist=exist(backupfile,'file');
-    end
-    [success,message]=copyfile(XmlFileName,backupfile);%make backup
-    if success~=1
-        errormsg=['errror in xml file backup: ' message];
-        return
-    end
-    uid_illumination=find(t,'ImaDoc/Illumination');
-    if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
-        [t,uid_illumination]=add(t,1,'element','Illumination');
-    end
-    uid_origin=find(t,'ImaDoc/Illumination/Origin');
-    if ~isempty(uid_origin)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_origin);
-    end
-    % save the illumination origin
-    t=struct2xml(XmlData.Illumination,t,uid_illumination); 
-    save(t,XmlFileName);
-end
-    
-
-
-%------------------------------------------------------------------------
-function MenuMask_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-ListObj=UvData.ProjObject;
-select=zeros(1,numel(ListObj));
-for iobj=1:numel(ListObj);
-    if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
-        select(iobj)=1;
-    end
-end
-val=find(select);
-if isempty(val)
-    msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
-    return
-else
-    set(handles.ListObject,'Value',val);
-    flag=1;
-    if ~isfield(UvData.Field,'A')
-            msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
-    return
-    end
-    npx=size(UvData.Field.A,2);
-    npy=size(UvData.Field.A,1);
-    xi=0.5:npx-0.5;
-    yi=0.5:npy-0.5;
-    [Xi,Yi]=meshgrid(xi,yi);
-        for iobj=1:length(UvData.ProjObject)
-            ObjectData=UvData.ProjObject{iobj};
-            if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-                flagobj=1;
-                testphys=0; %coordinates in pixels by default
-                if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
-                    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-                        Calib=UvData.XmlData{1}.GeometryCalib;
-                        testphys=1;
-                    end
-                end
-                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
-                    if isequal(ObjectData.Type,'polygon')
-                        X=ObjectData.Coord(:,1);
-                        Y=ObjectData.Coord(:,2);
-                        if testphys
-                            pos=[X Y zeros(size(X))];
-                            if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
-                                if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
-                                    om=norm(Calib.SliceAngle);%norm of rotation angle in radians
-                                    OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
-                                    cos_om=cos(pi*om/180);
-                                    sin_om=sin(pi*om/180);
-                                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                                end
-                                pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
-                                pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
-                                pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
-                            end                           
-                            [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
-                        end
-                        flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                    elseif isequal(ObjectData.Type,'ellipse')
-                        if testphys
-                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                        end
-                        RangeX=max(ObjectData.RangeX);
-                        RangeY=max(ObjectData.RangeY);
-                        X2Max=RangeX*RangeX;
-                        Y2Max=RangeY*RangeY;
-                        distX=(Xi-ObjectData.Coord(1,1));
-                        distY=(Yi-ObjectData.Coord(1,2));
-                        flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                    elseif isequal(ObjectData.Type,'rectangle')
-                        if testphys
-                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                        end
-                        distX=abs(Xi-ObjectData.Coord(1,1));
-                        distY=abs(Yi-ObjectData.Coord(1,2));
-                        flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
-                    end
-                    if isequal(ObjectData.ProjMode,'mask_outside')
-                        flagobj=~flagobj;
-                    end
-                    flag=flag & flagobj;
-                end
-            end
-        end
-    %mask name
-    RootPath=get(handles.RootPath,'String');
-    SubDir=get(handles.SubDir,'String');
-    RootFile=get(handles.RootFile,'String');
-    if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
-        RootFile(1)=[];
-    end
-    list=get(handles.masklevel,'String');
-    masknumber=num2str(length(list));
-    maskindex=get(handles.masklevel,'Value');
-    mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
-    imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
-    imflag=flipdim(imflag,1);
-
-    %display the mask
-    hfigmask=figure;
-    set(hfigmask,'Name','mask image')
-    vec=linspace(0,1,256);%define a linear greyscale colormap
-    map=[vec' vec' vec'];
-    colormap(map)
-    image(imflag);
-    answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
-    if ~strcmp(answer,'Cancel')
-        mask_dir=fileparts(answer);
-        if ~exist(mask_dir,'dir')
-            [success,msg]=mkdir(mask_dir);
-            if success==0
-                msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
-                return
-            end
-            [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-            if success==0
-                msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
-            end
-        end
-        imwrite(imflag,answer,'BitDepth',8);
-    end
-    set(handles.ListObject,'Value',1)
-end
-
-%------------------------------------------------------------------------
-%-- open the GUI set_grid.fig to create grid
-function MenuGrid_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%suppress the other options if grid is chosen
-set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.ListObject,'Value',1)      
-
-%prepare display of the set_grid GUI
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-UvData=get(handles.uvmat,'UserData');
-% CoordList=get(handles.TransformName,'String');
-% val=get(handles.TransformName,'Value');
-set_grid(FileName,UvData.Field);% call the set_object interface
-
-
-%------------------------------------------------------------------------
-function MenuRuler_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-if strcmp(get(handles.MenuRuler,'checked'),'on')
-    set(handles.MenuRuler,'checked','off')%desactivate if activated
-else
-    set(handles.MenuRuler,'checked','on')%activate if selected
-    set(handles.CheckZoom,'Value',0)
-    CheckZoom_Callback(handles.uvmat, [], handles)
-    UvData=get(handles.uvmat,'UserData');
-    UvData.MouseAction='ruler';
-    set(handles.uvmat,'UserData',UvData);
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% MenuRun Callbacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%------------------------------------------------------------------------
-% open the GUI 'series'
-function MenuSeries_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-Param=read_GUI(handles.uvmat);
-Param.HiddenData=get(handles.uvmat,'UserData');
-series(Param); %run the series interface
-
-% --------------------------------------------------------------------
-function MenuPIV_Callback(hObject, eventdata, handles)
-Param=read_GUI(handles.uvmat);
-Param.HiddenData=get(handles.uvmat,'UserData');
-hseries=series(Param);
-hhseries=guidata(hseries);
-ActionMenu=get(hhseries.ActionName,'String');
-index_action=find(strcmp('civ_series',ActionMenu));
-set(hhseries.ActionName,'Value',index_action);
-series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
-
-
-%------------------------------------------------------------------------
-% -- open the GUI civ.fig for PIV
-function MenuCIVx_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
- [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
- FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-civ(FileName);% interface de civ(not in the uvmat file)
-
-% function Param=read_param(handles)
-%     
-% [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-% Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
-% if isequal(get(handles.SubField,'Value'),1)
-%     [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
-%     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
-%     if ~isequal(FileName_1,Param.FileName)
-%         Param.FileName_1=FileName_1;%second input file name if relevant
-%     end
-% end
-% Param.NomType=get(handles.NomType,'String');
-% Param.NomType_1=get(handles.NomType_1,'String');
-% Param.CheckFixPair=get(handles.CheckFixPair,'Value');
-% UvData=get(handles.uvmat,'UserData');
-% if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'Time')
-%     Param.Time=UvData.XmlData{1}.Time;
-% end
-% if isequal(get(handles.scan_i,'Value'),1)
-%     Param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
-% elseif isequal(get(handles.scan_j,'Value'),1)
-%     Param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
-% end
-% 
-% %% transfer fields and coordinate names
-% Param.list_fields=get(handles.FieldName,'String');% list menu fields
-% FieldName=Param.list_fields{get(handles.FieldName,'Value')};
-% ind_image=find(strcmp('image',Param.list_fields));
-% if ~isempty(ind_image) && numel(Param.list_fields)>1
-%     Param.list_fields(ind_image)=[]; %suppress  'image' option
-% end
-% Param.index_fields=find(strcmp(FieldName,Param.list_fields));% selected string index
-% Param.list_fields_1=get(handles.FieldName_1,'String');% list menu fields
-% if ischar(Param.list_fields_1),Param.list_fields_1={Param.list_fields_1};end
-% FieldName_1=Param.list_fields_1{get(handles.FieldName_1,'Value')};
-% ind_image=find(strcmp('image',Param.list_fields_1));
-% if ~isempty(ind_image) && numel(Param.list_fields_1)>1
-%     Param.list_fields_1(ind_image)=[]; %suppress  'image' option
-% end
-% Param.index_fields_1=find(strcmp(FieldName_1,Param.list_fields_1));% selected string index
-% TransformList=get(handles.TransformName,'String');
-% Param.TransformName=TransformList{get(handles.TransformName,'Value')};
-% Param.Coord_x_str=get(handles.Coord_x,'String');
-% %Param.Coord_x_val=get(handles.Coord_x,'Value');
-% Param.Coord_y_str=get(handles.Coord_y,'String');
-
-% --------------------------------------------------------------------
-function MenuHelp_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
-
-% path_to_uvmat=which ('uvmat');% check the path of uvmat
-% pathelp=fileparts(path_to_uvmat);
-% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-% if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-% else
-%     addpath (fullfile(pathelp,'uvmat_doc'))
-%     web(helpfile);
-% end
 
 
 

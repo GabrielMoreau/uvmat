@@ -423,7 +423,7 @@ FileName='';
 for ilist=1:numel(ListStruct)
     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
         FileName=ListStruct(ilist).name;
-        FileInfo=get_file_type(fullfile(DirName,FileName));
+        FileInfo=get_file_info(fullfile(DirName,FileName));
         switch FileInfo.FileType
             case {'image','multimage','civx','civdata','netcdf'}
                 break
@@ -476,7 +476,7 @@ hdir=dir(DirName); %list files and dirs
 for ilist=1:numel(hdir)
     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
         FileName=hdir(ilist).name;
-        FileInfo=get_file_type(fullfile(DirName,FileName));
+        FileInfo=get_file_info(fullfile(DirName,FileName));
         switch FileInfo.FileType
             case {'image','multimage','civx','civdata','netcdf'}
             break
@@ -2974,7 +2974,7 @@ if exist(FullSelectName,'dir')% a directory has been selected
     htitlebox=findobj(hfig,'tag','titlebox');    
     set(htitlebox,'String',FullSelectName)
 elseif exist(FullSelectName,'file')%visualise the vel field if it exists
-    FileInfo=get_file_type(FullSelectName);    
+    FileInfo=get_file_info(FullSelectName);    
     if strcmp(FileInfo.FileType,'txt')
         edit(FullSelectName)
     elseif strcmp(FileInfo.FileType,'xml')

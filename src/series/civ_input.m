@@ -2067,7 +2067,7 @@ function [Data,par_civ1]=get_param_civ1(handles)
  Data.nx=[1 size(Data.A,2)];
  Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly
  par_civ1=read_GUI(handles.Civ1);
- FileInfo=get_file_type(ImageName_A);
+ FileInfo=get_file_info(ImageName_A);
  par_civ1.FileTypeA=FileInfo.FileType;
  par_civ1.ImageWidth=size(Data.A,2);
  par_civ1.ImageHeight=size(Data.A,1);

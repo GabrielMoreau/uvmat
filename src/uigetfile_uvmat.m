@@ -146,7 +146,7 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
                 set(htitlebox,'String',FullSelectName);
                 uiresume(hfig)
             case 'status_display'
-                FileInfo=get_file_type(FullSelectName);
+                FileInfo=get_file_info(FullSelectName);
                 if strcmp(FileInfo.FileType,'txt')
                     edit(FullSelectName)
                 elseif strcmp(FileInfo.FileType,'xml')

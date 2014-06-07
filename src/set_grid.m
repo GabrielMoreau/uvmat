@@ -227,7 +227,7 @@ if ~exist(GUI.ImageA,'file')
     msgbox_uvmat('ERROR',['input image file' imageA 'does not exist'])
     return
 end
-[FileInfo,VideoObject]=get_file_type(GUI.ImageA);
+[FileInfo,VideoObject]=get_file_info(GUI.ImageA);
 switch FileInfo.FileType
     case {'image','multimage','video','mmreader'}% case of input image or movie OK
     otherwise
@@ -322,7 +322,7 @@ if isequal(get(handles.GetImageB,'Value'),1)
             {'*.*', 'All Files (*.*)'}, ...
             'Pick the second image file',fileparts(fileparts(get(handles.ImageA,'String'))));
         ImageB=fullfile(PathName,FileName);
-        [FileInfo,tild,VideoObject]=get_file_type(ImageB);
+        [FileInfo,tild,VideoObject]=get_file_info(ImageB);
     switch FileInfo.FileType
         case {'image','multimage','video','mmreader'}% case of input image or movie OK
             set(handles.ImageB,'String',ImageB)
