@@ -2298,6 +2298,8 @@ if isequal(field,'get_field...')
         end
         set(handles.Coord_x,'String',XName)
         set(handles.Coord_y,'String',YName)
+    else
+        msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
     end
 end
 

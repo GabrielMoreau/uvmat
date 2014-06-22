@@ -217,7 +217,7 @@ switch FileType
     case 'image'
         A=imread(FileName);
     case 'rdvision'
-        [A,timestamps]=binread_rdv(FileName,num);
+        [A,FileInfo,timestamps]=read_rdvision(FileName,num);
     otherwise
         errormsg=[ FileType ': invalid input file type for uvmat'];
 end
