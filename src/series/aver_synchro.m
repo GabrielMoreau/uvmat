@@ -228,13 +228,13 @@ for index=1:nbfield
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
-Data.ListVarName={'X','Y','MeanU','MeanV','cos1_U','cos1_V','a1_U','a1_V','a2_U','a2_V','a3_U','a3_V','asub_U','asub_V',...
+Data.ListVarName={'coord_x','coord_y','MeanU','MeanV','cos1_U','cos1_V','a1_U','a1_V','a2_U','a2_V','a3_U','a3_V','asub_U','asub_V',...
     'phase1_U','phase1_V','phase2_U','phase2_V','phase3_U','phase3_V'};
 %Data.ListVarName=[{'coord_y','coord_x'} Data.ListVarName];
 %Data.VarDimName={'coord_y', 'coord_x'};
-for ilist=1:numel(Data.ListVarName)
-    %Data.VarDimName{ilist+2}={'coord_y','coord_x'};
-    Data.VarDimName{ilist}='nb_vectors';
+for ilist=1:numel(Data.ListVarName)-2
+    Data.VarDimName{ilist+2}={'coord_y','coord_x'};
+ %   Data.VarDimName{ilist}='nb_vectors';
 end
 Data.MeanU=MeanU/nbfield;
 Data.MeanV=MeanV/nbfield;
@@ -274,7 +274,13 @@ Data.phasesub_V=(angle(cossub_V+i*sinsub_V));
 
 %% write the results
 OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','',1);
-errormsg=struct2nc(OutputFile,Data)% write the output file
+errormsg=struct2nc(OutputFile,Data);% write the output file
+if isempty(errormsg)
+    disp_uvmat('CONFIRMATION',[OutputFile ' successfully written'],checkrun)
+else
+    disp_uvmat('ERROR',errormsg,checkrun)
+end
+    
 
 %% open the result file with uvmat (in RUN mode)
 % if checkrun
