@@ -193,30 +193,32 @@ else
                 end
             end
             % update the detected index series
-            ref_i_list(ifile)=ref_i;
-            ref_j_list(ifile)=ref_j;
-            nb_pairs=0;
-            if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
-                if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
-                    nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
+            if ~isempty(ref_i)&&~isempty(ref_j)
+                ref_i_list(ifile)=ref_i;
+                ref_j_list(ifile)=ref_j;
+                nb_pairs=0;
+                if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
+                    if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
+                        nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
+                    end
                 end
-            end
-            if i1==0
-                i1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
-            end
-            if j1==0
-                j1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
-            end
-            i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
-            if ~isempty(i2_input)
-                i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
-            end
-            if ~isempty(j1_input)
-                j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-            end
-            if ~isempty(j2_input)
-                j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-                j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+                if i1==0
+                    i1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+                end
+                if j1==0
+                    j1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+                end
+                i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
+                if ~isempty(i2_input)
+                    i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
+                end
+                if ~isempty(j1_input)
+                    j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+                end
+                if ~isempty(j2_input)
+                    j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+                    j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+                end
             end
         end
     end
@@ -228,9 +230,10 @@ else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
     ind_select=find(ref_ij>0);
+    
     if isempty(ind_select)
-        RootFile='';
-        NomType='';
+%         RootFile='';
+%         NomType='';
     else
         [tild,ifile_min]=min(ref_ij(ind_select));
         [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
@@ -264,7 +267,7 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         i1_input=1;
         NomType='*';
     else  % if there is a file index, j denotes the frame index while i denotes the file index
-        if strcmp(NomType(end-1:end),'ab')% recognized as a pair
+        if ~isempty(regexp(NomType,'ab$', 'once'))% recognized as a pair
             RootFile=fullfile_uvmat('','',RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices       
             i1_series=zeros(FileInfo.NumberOfFrames+1,2);% first column =0
             i1_series(:,2)=(0:FileInfo.NumberOfFrames)'; % second column=frame index -1

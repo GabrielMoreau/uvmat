@@ -219,7 +219,7 @@ if isfield(XmlData,'Time')
 nbfield2=size(XmlData.Time,2);
 end
 filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'*',1);
-OutputDir=[SubDir{1} ParamOut.OutputDirExt];
+OutputDir=[SubDir{1} Param.OutputDirExt];
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
