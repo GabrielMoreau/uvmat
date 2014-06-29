@@ -3528,7 +3528,8 @@ UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_c
 %% usual 1D (x,y) plots
 if UvData.Field.NbDim<=1
     set(handles.Objects,'Visible','off')
-    [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
+    [PlotType,PlotParamOut,haxes]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
+    UvData.PlotAxes=UvData.Field; %store data for further plot modifications
     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
     for list={'Scalar','Vectors'}
         if ~isfield(PlotParamOut,list{1})
@@ -5220,7 +5221,10 @@ function update_plot(handles)
 set(handles.REFRESH,'BackgroundColor',[1 1 0]);% display plot activity by yellow color
 drawnow
 UvData=get(handles.uvmat,'UserData');
+AxeData=[];
+if isfield(UvData,'PlotAxes')
 AxeData=UvData.PlotAxes;% retrieve the current plotted data
+end
 PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.uvmat);

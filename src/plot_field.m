@@ -562,14 +562,14 @@ else
 end
 
 %% determine plot aspect ratio
-% if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
-%     set(haxes,'DataAspectRatioMode','manual')
-%     set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
-% else
-%     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-%     AspectRatio=get(haxes,'DataAspectRatio');
-%     CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
-% end
+if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
+    set(haxes,'DataAspectRatioMode','manual')
+    set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
+else
+    set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+    AspectRatio=get(haxes,'DataAspectRatio');
+    CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
+end
 
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam)
