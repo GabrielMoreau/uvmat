@@ -31,19 +31,9 @@ switch FileExt
         FileInfo.FileType='figure';
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
-    case '.seq'
-        FileInfo=ini2struct(fileinput);
-        if isfield(FileInfo,'sequenceSettings')&& isfield(FileInfo.sequenceSettings,'numberoffiles')
-            FileInfo.NumberOfFrames=str2double(FileInfo.sequenceSettings.numberoffiles);
-            FileInfo.FrameRate=str2double(FileInfo.sequenceSettings.framepersecond);
-            FileInfo.ColorType='grayscale';
-        else
-            FileInfo.FileType='';
-            return
-        end
-        FileInfo.FileType='rdvision'; % file used to store info from image acquisition systems of rdvision
-        nbfield=numel(fieldnames(FileInfo));
-        FileInfo=orderfields(FileInfo,[nbfield nbfield-1 nbfield-2 (1:nbfield-3)]); %reorder the fields of fileInfo for clarity
+    case {'.seq','.sqb'}
+        [A,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
+        
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -118,4 +108,8 @@ switch FileExt
                 end
             end
         end
+end
+switch FileInfo.FileType
+    case {'image','multimage','mmreader','video','netcdf','civdata'}
+        FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 end

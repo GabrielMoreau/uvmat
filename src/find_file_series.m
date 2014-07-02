@@ -47,18 +47,29 @@ function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTy
 
 %% get input root name and nomenclature type
 fullfileinput=fullfile(FilePath,fileinput);% input file name with path
-[RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
-
+[FileInfo,MovieObject]=get_file_info(fullfileinput);
 
 %% check for particular file types: images, movies, civ data
-i1_series=zeros(1,1,1);
-i2_series=zeros(1,1,1);
-j1_series=zeros(1,1,1);
-j2_series=zeros(1,1,1);
-[FileInfo,MovieObject]=get_file_info(fullfileinput);
+checkfileindexing=0;
+if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
+    [RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
+    i1_series=zeros(1,1,1);
+    i2_series=zeros(1,1,1);
+    j1_series=zeros(1,1,1);
+    j2_series=zeros(1,1,1);
+    checkfileindexing=1;
+else % no file indexing
+    [PathDir,RootFile]=fileparts(fullfileinput);
+    [RootPath,SubDir,DirExt]=fileparts(PathDir);
+    SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
+    NomType='*';
+    i1_series=[];i2_series=[];j1_series=[];j2_series=[];
+    i1_input=1;i2_input=[];j1_input=[];j2_input=[];
+end
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
+if checkfileindexing
 NomTypePref='';
 if isempty(NomType)
     if exist(fullfileinput,'file')
@@ -250,14 +261,14 @@ if isequal(i1_series,0), i1_series=[]; end
 if isequal(i2_series,0), i2_series=[]; end
 if isequal(j1_series,0), j1_series=[]; end
 if isequal(j2_series,0), j2_series=[]; end
-
-%% detect rdvision format
-if strcmp(FileExt,'.bin')
-    if exist(fullfile(RootPath,SubDir,[RootFile '.seq']),'file')
-        FileInfo.FileType='rdvision';
-        FileInfo.SeqFile=[RootFile '.seq'];
-    end
 end
+% %% detect rdvision format
+% if strcmp(FileExt,'.bin')
+%     if exist(fullfile(RootPath,SubDir,[RootFile '.seq']),'file')
+%         FileInfo.FileType='rdvision';
+%         FileInfo.SeqFile=[RootFile '.seq'];
+%     end
+% end
 
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1

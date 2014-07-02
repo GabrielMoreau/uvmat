@@ -1,4 +1,4 @@
-function [A,FileInfo,timestamps]=read_rdvision(filename,frame_idx)
+function [A,FileInfo,timestamps,errormsg]=read_rdvision(filename,frame_idx)
 % BINREAD_RDV Permet de lire les fichiers bin générés par Hiris à partir du
 % fichier seq associé.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
@@ -20,14 +20,41 @@ function [A,FileInfo,timestamps]=read_rdvision(filename,frame_idx)
 %   TIMESTAMPS  : Timestaps des images lues.
 %   NB_FRAMES   : Nombres d'images dans la séquence.
 
-
+errormsg='';
 if nargin<2% no frame indices specified
    frame_idx=-1;% all the images in the series are read
 end
 A=[];
 timestamps=[];
-s=ini2struct(filename);
+[PathDir,RootFile,Ext]=fileparts(filename);
+RootPath=fileparts(PathDir);
+switch Ext
+    case '.seq'
+        filename_seq=filename;
+        filename_sqb=fullfile(PathDir,[RootFile '.sqb']);
+    case '.sqb'
+        filename_seq=fullfile(PathDir,[RootFile '.seq']);
+        filename_sqb=filename;
+    otherwise
+        errormsg='input file extension must be .seq or .sqb';
+end
+if ~exist(filename_seq,'file')
+    errormsg=[filename_seq ' does not exist'];
+    return
+end
+s=ini2struct(filename_seq);
 FileInfo=s.sequenceSettings;
+if isfield(s.sequenceSettings,'numberoffiles')
+    FileInfo.NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
+    FileInfo.FrameRate=str2double(s.sequenceSettings.framepersecond);
+    FileInfo.ColorType='grayscale';
+else
+    FileInfo.FileType='';
+    return
+end
+FileInfo.FileType='rdvision'; % file used to store info from image acquisition systems of rdvision
+nbfield=numel(fieldnames(FileInfo));
+FileInfo=orderfields(FileInfo,[nbfield nbfield-1 nbfield-2 (1:nbfield-3)]); %reorder the fields of fileInfo for clarity
 
 % read the images the input frame_idxis not empty
 if ~isempty(frame_idx)
@@ -36,11 +63,7 @@ if ~isempty(frame_idx)
     bpp=str2double(FileInfo.bytesperpixel);
     bin_file=FileInfo.binfile;
     nb_frames=str2double(FileInfo.numberoffiles);
-    
-    [bin_dir,f]=fileparts(filename);
-    
-    sqb_file=fullfile(bin_dir,[f '.sqb']);
-    m = memmapfile(sqb_file,'Format', { 'uint32' [1 1] 'offset'; ...
+    m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
         'uint32' [1 1] 'garbage1';...
         'double' [1 1] 'timestamp';...
         'uint32' [1 1] 'file_idx';...
@@ -60,7 +83,7 @@ if ~isempty(frame_idx)
     
     for i=1:length(frame_idx)
         ii=frame_idx(i);
-        binfile=fullfile(bin_dir,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
+        binfile=fullfile(RootPath,FileInfo.binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);
         A(:,:,i)=reshape(fread(fid,w*h,classname),w,h)';
