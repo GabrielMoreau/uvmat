@@ -51,7 +51,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'off';...%can use a transform function
     ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.ima';%set the output dir extension
+    ParamOut.OutputSubDir=Param.InputTable{1,3};
+    ParamOut.OutputDirExt='';%set the output dir extension
     if size(Param.InputTable,1)>1
         msgbox_uvmat('WARNING', 'this function acts only on the first input file line')
     end
@@ -94,7 +95,7 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 % end
 FileInfo{1}=get_file_info(filecell{1,1});
 if ~strcmp(FileInfo{1}.FileType,'rdvision')
-    msgbox_uvmat('ERROR','the input is not from rdvision: a .seq file must be opened')
+    msgbox_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened')
     return
 end
 
@@ -105,20 +106,12 @@ itime=0;
 NbSlice_calib={};
 
 SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
-filexml=[fullfile(RootPath{1},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+filexml=[fullfile(RootPath{1},RootFile{1}) '.xml'];%new convention: xml at the level of the image folder
 if ~exist(filexml,'file')
-    filexml=[fullfile(RootPath{1},SubDir{1},RootFile{1}) '.xml']; % old convention: xml inside the image folder
-    if ~exist(filexml,'file')
-        filexml=[fullfile(RootPath{1},SubDir{1},RootFile{1}) '.civ']; % very old convention: .civ file
-        if ~exist(filexml,'file')
-            filexml='';
-        end
-    end
+    msgbox_uvmat('ERROR',[filexml ' missing'])
+    return
 end
-XmlData=[];
-if ~isempty(filexml)
-    [XmlData,error]=imadoc2struct_special(filexml);
-end
+[XmlData,error]=imadoc2struct_special(filexml);
 if isfield(XmlData,'Time')
     itime=itime+1;
     timecell{itime}=XmlData.Time;
@@ -208,8 +201,8 @@ if ~isempty(XmlData)
             NomTypeNew='_1';
         end
             SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
-    filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
-        save(t,filexml_new)
+   % filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
+        save(t,filexml)
 end
 
 %% main loop on images
@@ -219,7 +212,7 @@ if isfield(XmlData,'Time')
 nbfield2=size(XmlData.Time,2);
 end
 filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'*',1);
-OutputDir=[SubDir{1} Param.OutputDirExt];
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -240,7 +233,7 @@ for ifile=1:nbfield
     j1=mod(ifile-1+first_label,nbfield2)+1;
     end
     i1=floor((ifile-1+first_label)/nbfield2)+1;
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.png',NomTypeNew,i1,[],j1);
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,'img','.png',NomTypeNew,i1,[],j1);
     try
         imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
     disp([OutputFile ' written']);
