@@ -2145,7 +2145,7 @@ set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
 OutputDirVisible='off';
-if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
+if isfield(ParamOut,'OutputDirExt')%&&~isempty(ParamOut.OutputDirExt)
     OutputSubDirMode='all';%default
     if isfield(ParamOut,'OutputSubDirMode')
         OutputSubDirMode=ParamOut.OutputSubDirMode;
@@ -2163,8 +2163,12 @@ if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
             end
         end
     end
+    if isfield(ParamOut,'OutputSubDir')
+        SubDirOut=ParamOut.OutputSubDir;
+    end
     set(handles.OutputSubDir,'String',SubDirOut)
 end
+
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
