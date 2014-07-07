@@ -75,15 +75,15 @@ WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
-NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'*',1);
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
  
 % numbers of slices and file indices
-
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
@@ -93,8 +93,8 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 %     msgbox_uvmat('ERROR',['the first input file ' filecell{1,1} ' does not exist'])
 %     return
 % end
-FileInfo{1}=get_file_info(filecell{1,1});
-if ~strcmp(FileInfo{1}.FileType,'rdvision')
+FileInfo=get_file_info(filecell{1,1});
+if ~strcmp(FileInfo.FileType,'rdvision')
     msgbox_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened')
     return
 end
@@ -123,6 +123,7 @@ if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord
     end
 end
 
+
 %% check coincidence in time for several input file series
 % not relevant
 
@@ -142,77 +143,103 @@ end
 display('RDvision system')
 first_label=0; %image numbers start from 0
 
-%% copy and adapt the xml file
-NomTypeNew='_1_1';
-if ~isempty(XmlData)
-        t=xmltree(filexml);
-        
-        %update information on the first image name in the series
-        uid_Heading=find(t,'ImaDoc/Heading');
-        if isempty(uid_Heading)
-            [t,uid_Heading]=add(t,1,'element','Heading');
-        end
-        uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
-        j1=[];
-        if ~isempty(j1_series{1})
-            j1=j1_series{1};
-        end
-        ImageName=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'_1_1',i1_series{1}(1),[],j1);
-        [pth,ImageName]=fileparts(ImageName);
-        ImageName=[ImageName '.png'];
-        if isempty(uid_ImageName)
-            [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
-        end
-        uid_value=children(t,uid_ImageName);
-        if isempty(uid_value)
-            t=add(t,uid_ImageName,'chardata',ImageName);%indicate  name of the first image, with ;png extension
-        else
-            t=set(t,uid_value(1),'value',ImageName);%indicate  name of the first image, with ;png extension
-        end
-        
-        %%%% correction RDvision %%%%
-        if isfield(XmlData,'NbDtj')
-            uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-            uid_value=children(t,uid_NbDtj);
-            if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
-            end
-        end
-        if isfield(XmlData,'NbDtk')
-            uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-            uid_value=children(t,uid_NbDtk);
-            if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
-            end
-        end
-        if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
-            uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
-            t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
-            uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-            t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
-            uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-            uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-            t=delete(t,uid_NbDtj);
-            t=delete(t,uid_NbDtk);
-            uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
-            uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
-            t=delete(t,uid_Dtj);
-            t=delete(t,uid_Dtk);
-            NomTypeNew='_1';
-        end
-            SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
-   % filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
-        save(t,filexml)
+%% correction to RDvision xml file 
+t=xmltree(filexml);
+
+% correct Dtj and Dtk
+NomTypeNew='_1_1';% new file nomencalture by default
+ImageName='img_1_1.png';% first image name
+if isfield(XmlData,'NbDtj')
+    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+    uid_value=children(t,uid_NbDtj);
+    if ~isempty(uid_value)
+        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+    end
+end
+if isfield(XmlData,'NbDtk')
+    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+    uid_value=children(t,uid_NbDtk);
+    if ~isempty(uid_value)
+        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+    end
+end
+if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
+    uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
+    t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
+    uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
+    t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
+    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+    t=delete(t,uid_NbDtj);
+    t=delete(t,uid_NbDtk);
+    uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
+    uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
+    t=delete(t,uid_Dtj);
+    t=delete(t,uid_Dtk);
+    NomTypeNew='_1';
+    ImageName='img_1.png';
 end
 
+%update information of 'Heading'
+uid_Heading=find(t,'ImaDoc/Heading');
+if isempty(uid_Heading)
+    [t,uid_Heading]=add(t,1,'element','Heading');
+end
+uid_SubCampaign=find(t,'ImaDoc/Heading/SubCampaign');
+if ~isempty(uid_SubCampaign), t=delete(t,uid_SubCampaign); end
+uid_Experiment=find(t,'ImaDoc/Heading/Experiment');
+if ~isempty(uid_Experiment), t=delete(t,uid_Experiment); end
+uid_Device=find(t,'ImaDoc/Heading/Device');
+if ~isempty(uid_Device), t=delete(t,uid_Device); end
+uid_Record=find(t,'ImaDoc/Heading/Record');
+if ~isempty(uid_Record), t=delete(t,uid_Record); end
+uid_DateExp=find(t,'ImaDoc/Heading/DateExp');
+if ~isempty(uid_DateExp), t=delete(t,uid_DateExp); end
+
+%indicate the name of the first image (as a check that the xml file is not moved)
+uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
+if isempty(uid_ImageName)
+    [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
+end
+uid_value=children(t,uid_ImageName);
+if isempty(uid_value)
+    t=add(t,uid_ImageName,'chardata',ImageName);%indicate  name of the first image, with ;png extension
+else
+    t=set(t,uid_value(1),'value',ImageName);%indicate  name of the first image, with ;png extension
+end
+
+%indicate the date and time of the image acquisition start
+if isfield(FileInfo,'binrepertoire') && isfield(FileInfo,'starttime')
+    sep_pos=regexp(FileInfo.binrepertoire,'T');
+    DateTime=FileInfo.starttime;
+    if ~isempty(sep_pos)
+        DateTime=[FileInfo.binrepertoire(1:sep_pos-1) ' ' DateTime];
+    end
+    uid_DateTime=find(t,'ImaDoc/Heading/DateTime');
+    if isempty(uid_DateTime)
+        [t,uid_DateTime]=add(t,uid_Heading,'element','DateTime');
+    end
+    uid_value=children(t,uid_DateTime);
+    if isempty(uid_value)
+        t=add(t,uid_DateTime,'chardata',DateTime);%indicate  name of the first image, with ;png extension
+    else
+        t=set(t,uid_value(1),'value',DateTime);%indicate  name of the first image, with ;png extension
+    end
+end
+  
+%% backup the previous xml file and save the corrected one
+[success,message]=copyfile(filexml,[filexml '~']);%make backup
+if success~=1
+    dips(['errror in xml file backup: ' message]);
+    return
+end
+save(t,filexml)
+
 %% main loop on images
-%j1=[];%default
 nbfield2=1;
 if isfield(XmlData,'Time')
 nbfield2=size(XmlData.Time,2);
 end
-filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'*',1);
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')

@@ -1484,11 +1484,11 @@ if value
     end
 end
 if testmask
-    if strcmp(parent_tag,'Civ1')
+   % if strcmp(parent_tag,'Civ1')
         set(handles.Mask,'Visible','on')
         set(handles.Mask,'String',filemask)
     set(handles.CheckMask,'Value',1)
-    end
+   % end
 else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
