@@ -83,7 +83,15 @@ if ~isempty(frame_idx)
     
     for i=1:length(frame_idx)
         ii=frame_idx(i);
-        binfile=fullfile(RootPath,FileInfo.binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
+        if ~isempty(FileInfo.binrepertoire)
+            binrepertoire=FileInfo.binrepertoire;
+        else %used when binrepertoire empty, strange feature of rdvision
+            binrepertoire=regexprep(FileInfo.bindirectory,'\\$','');%tranform Windows notation to Linux
+            binrepertoire=regexprep(binrepertoire,'\','/');
+            [tild,binrepertoire,DirExt]=fileparts(binrepertoire);
+            binrepertoire=[binrepertoire DirExt];
+        end 
+        binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);
         A(:,:,i)=reshape(fread(fid,w*h,classname),w,h)';

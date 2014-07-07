@@ -20,6 +20,7 @@ r2=regexp(TimeString,'(?<TimeDat>\S+)','names');% keep the non blank string
 TimeString=regexprep(r2.TimeDat,',','.');% replace ',' by '.'
 Dot_pos=regexp(TimeString,'\.');
 TimeString=TimeString(1:Dot_pos+2); % round to 1/100 s
+r1.DateDat=regexprep(r1.DateDat,'/','-');%replace '/' by '-' (to get standard date representation recognized by Matlab)
 Data.DateTime=[r1.DateDat ' ' TimeString];%insert date to the time string (separated by a blank)
 
 %% remove header text
