@@ -62,8 +62,8 @@ if isfield(Data,'Motor_profile')% Motor_profile signal =0 (no motion), -5 (down)
     Data.VarDimName=[Data.VarDimName {'nb_sample','nb_sample'}];
     Speed=zeros(size(Data.Motor_profile));
     if ~isempty(find(Data.Motor_profile>2.5|Data.Motor_profile<-2.5))
-    Speed(Data.Motor_profile>2.5)=SpeedUp;% threshold at 2.5 to avoid noise effects
-    Speed(Data.Motor_profile<-2.5)=SpeedDown;
+    Speed(Data.Motor_profile>2.5)=SpeeDown;% threshold at 2.5 to avoid noise effects
+    Speed(Data.Motor_profile<-2.5)=SpeedUp;
     Data.Speed=Speed;
     Speed(end)=[];
     Data.Position=[0; cumsum(Speed.*diff(Data.Time))];

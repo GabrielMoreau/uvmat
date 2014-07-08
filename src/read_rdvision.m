@@ -1,24 +1,24 @@
 function [A,FileInfo,timestamps,errormsg]=read_rdvision(filename,frame_idx)
-% BINREAD_RDV Permet de lire les fichiers bin générés par Hiris à partir du
-% fichier seq associé.
+% BINREAD_RDV Permet de lire les fichiers bin gï¿½nï¿½rï¿½s par Hiris ï¿½ partir du
+% fichier seq associï¿½.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
-%   l'image d'indice FRAME_IDX de la séquence FILENAME.
+%   l'image d'indice FRAME_IDX de la sï¿½quence FILENAME.
 %
-%   Entrées
+%   Entrï¿½es
 %   -------
-%   FILENAME  : Nom du fichier séquence (.seq).
-%   FRAME_IDX : Indice de l'image à lire. Si FRAME_IDX vaut -1 alors la
-%   séquence est entièrement lue. Si FRAME_IDX est un tableau d'indices
+%   FILENAME  : Nom du fichier sï¿½quence (.seq).
+%   FRAME_IDX : Indice de l'image ï¿½ lire. Si FRAME_IDX vaut -1 alors la
+%   sï¿½quence est entiï¿½rement lue. Si FRAME_IDX est un tableau d'indices
 %   alors toutes les images d'incides correspondant sont lues. Si FRAME_IDX
 %   est un tableau vide alors aucune image n'est lue mais le nombre
-%   d'images et tous les timestamps sont renvoyés. Les indices commencent à
-%   1 et se termines à NB_FRAMES.
+%   d'images et tous les timestamps sont renvoyï¿½s. Les indices commencent ï¿½
+%   1 et se termines ï¿½ NB_FRAMES.
 %
 %   Sorties
 %   -------
 %   IMGS        : Images de sortie.
 %   TIMESTAMPS  : Timestaps des images lues.
-%   NB_FRAMES   : Nombres d'images dans la séquence.
+%   NB_FRAMES   : Nombres d'images dans la sï¿½quence.
 
 errormsg='';
 if nargin<2% no frame indices specified
@@ -62,7 +62,9 @@ if ~isempty(frame_idx)
     h=str2double(FileInfo.height);
     bpp=str2double(FileInfo.bytesperpixel);
     bin_file=FileInfo.binfile;
+   % bin_file='Dalsa1_';
     nb_frames=str2double(FileInfo.numberoffiles);
+ %%%%%%BRICOLAGE
     m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
         'uint32' [1 1] 'garbage1';...
         'double' [1 1] 'timestamp';...
@@ -70,8 +72,15 @@ if ~isempty(frame_idx)
         'uint32' [1 1] 'garbage2' },'Repeat',nb_frames);
     
     data=m.Data;
+    %%%%%%%BRICOLAGE
+%     ind=[60 63:152];
+%     for ii=1:32*numel(ind)
+%         data(ii).offset=mod(ii-1,32)*4194304+2097152;
+%         data(ii).file_idx=ind(ceil(ii/32));
+%         data(ii).timestamp=[0:0.2:32*numel(ind)-1];
+%     end
     timestamps=[data.timestamp];
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if frame_idx==-1
         frame_idx=1:nb_frames;
     end
@@ -91,6 +100,7 @@ if ~isempty(frame_idx)
             [tild,binrepertoire,DirExt]=fileparts(binrepertoire);
             binrepertoire=[binrepertoire DirExt];
         end 
+      %  binrepertoire='2014-07-04T10.48.46'% case FJORD5a %%%%%%%%%%%%%%%%%%%%%%%%%
         binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);
