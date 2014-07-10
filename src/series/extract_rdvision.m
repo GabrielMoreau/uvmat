@@ -108,7 +108,7 @@ NbSlice_calib={};
 SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
 filexml=[fullfile(RootPath{1},RootFile{1}) '.xml'];%new convention: xml at the level of the image folder
 if ~exist(filexml,'file')
-    msgbox_uvmat('ERROR',[filexml ' missing'])
+    disp_uvmat('ERROR',[filexml ' missing'],checkrun)
     return
 end
 [XmlData,error]=imadoc2struct_special(filexml);
@@ -266,11 +266,11 @@ for ifile=1:nbfield
     disp([OutputFile ' written']);
         [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
         if ~s
-            msgbox_uvmat('ERROR',errormsg);
+            disp_uvmat('ERROR',errormsg,checkrun);
             return
         end
     catch ME
-        msgbox_uvmat('ERROR',ME.message);
+        disp_uvmat('ERROR',ME.message,checkrun);
         return
     end
     
