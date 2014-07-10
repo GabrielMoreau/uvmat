@@ -64,21 +64,23 @@ if ~isempty(frame_idx)
     bin_file=FileInfo.binfile;
    % bin_file='Dalsa1_';
     nb_frames=str2double(FileInfo.numberoffiles);
- %%%%%%BRICOLAGE
+    %%%% reading the .sqb file
     m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
         'uint32' [1 1] 'garbage1';...
         'double' [1 1] 'timestamp';...
         'uint32' [1 1] 'file_idx';...
-        'uint32' [1 1] 'garbage2' },'Repeat',nb_frames);
-    
+        'uint32' [1 1] 'garbage2' },'Repeat',nb_frames);   
     data=m.Data;
-    %%%%%%%BRICOLAGE
-%     ind=[60 63:152];
+       %%%%%%%BRICOLAGE in case of unreadable .sqb file
+%     ind=[60 63:152];%indices of bin files
+%     lengthimage=w*h*bpp;% lengthof an image record on the binary file
 %     for ii=1:32*numel(ind)
-%         data(ii).offset=mod(ii-1,32)*4194304+2097152;
+%         data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+%         %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
 %         data(ii).file_idx=ind(ceil(ii/32));
-%         data(ii).timestamp=[0:0.2:32*numel(ind)-1];
+%         data(ii).timestamp=0.2*(ii-1);
 %     end
+    %%%%%%%
     timestamps=[data.timestamp];
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if frame_idx==-1
