@@ -11,7 +11,7 @@ if ~exist('bin','dir')
         display(errormsg)
     end
 end
-mcc -m -R -nojvm -R -nodisplay civ_matlab.m
+mcc -m -R -nojvm -R -nodisplay -R -singleCompThread civ_matlab.m
 system('mv -f civ_matlab bin/');
 system('sed -e ''s#/civ_matlab#/bin/civ_matlab#'' run_civ_matlab.sh > civ_matlab.sh'); 
 system('rm run_civ_matlab.sh');
