@@ -114,7 +114,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     incr_i=1;%default
     first_i=1;last_i=1;incr_i;%default
     if isfield(Param.IndexRange,'first_i'); last_i=Param.IndexRange.first_i; end   
-    if isfield(Param.IndexRange,'last_i'); last_i=Param.IndexRange.last_j; end
+    if isfield(Param.IndexRange,'last_i'); last_i=Param.IndexRange.last_i; end
     if isfield(Param.IndexRange,'incr_i')&&~isempty(Param.IndexRange.incr_i)
         incr_i=Param.IndexRange.incr_i;
     end
@@ -217,7 +217,7 @@ nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 FileExtOut='.png'; % write result as .png images for image inputs
 if strcmp(lower(NomType{1}(end)),'a')
     NomTypeOut=NomType{1};%case of letter appendix
-elseif isempty(j1_series)
+elseif isempty(j1_series{1})
     NomTypeOut='_1';
 else
     NomTypeOut='_1_1';% caseof purely numerical indexing
@@ -296,6 +296,7 @@ for ifield=1:step*(halfnbaver+1);% nbre of images treated by the first backgroun
     Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
     Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
     ifile=indselect(ifield);
+    j1=1;
     if ~isempty(j1_series{1})
         j1=j1_series{1}(ifile);
     end
@@ -330,7 +331,11 @@ if nbfield_i > nbaver_ima
         %incorporate next burst in the current image series
         for iburst=1:step
             ifile=indselect(ifield+iburst+step*halfnbaver);
-            filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1_series{1}(ifile));
+            j1=1;
+    if ~isempty(j1_series{1})
+        j1=j1_series{1}(ifile);
+    end
+            filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1);
             Aread=read_image(filename,FileType{1},MovieObject{1},i1_series{1}(ifile));
             if ndims(Aread)==3;%color images
                 Aread=sum(double(Aread),3);% take the sum of color components
