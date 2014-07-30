@@ -77,9 +77,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('WARNING','the first input file does not exist') 
     end
     % parameters specific to the function 'particle_tracking'
-%     Par.Nblock=[];%size of image subblocks for background determination, =[]: no sublock
-%     Par.ThreshLum=-2000;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
-%   ParamOut.ActionInput=Par;
+    Par.Nblock=10;%size of image subblocks for background determination, =[]: no sublock
+    Par.ThreshLum=70;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
+  ParamOut.ActionInput=Par;
     return
 end
 
@@ -91,6 +91,9 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% define the directory for result file
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
@@ -136,9 +139,9 @@ end
 
 %%%%%%%%%%%%   SPECIFIC PART (to edit) %%%%%%%%%%%%
 %filter for particle center of mass(luminosity)
-%Nblock=Param.ActionInput.Nblock;
-%ThreshLum=Param.ActionInput.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
-AbsThreshold=30; %threshold below which a pixel is considered belonging to a float
+Nblock=Param.ActionInput.Nblock;
+ThreshLum=Param.ActionInput.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
+%AbsThreshold=30; %threshold below which a pixel is considered belonging to a float
 %
 hh=ones(5,5);
 hh(1,1)=0;
@@ -169,12 +172,13 @@ end
 %%%%%% MAIN LOOP ON FRAMES %%%%%%
 for ifile=1:nbfield
     if checkrun
-        if strcmp(get(Param.RUNHandle,'BusyAction'),'queue')
-            update_waitbar(Param.WaitbarHandle,ifile/nbfield)
-        else
-            break% leave the loop if the STOP button is activated on the GUI series
+        update_waitbar(WaitbarHandle,ifile/nbfield)
+        if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+            disp('program stopped by user')
+            return
         end
     end
+    j1=1;
     if ~isempty(j1_series)&&~isequal(j1_series,{[]})
         j1=j1_series{1}(ifile);
     end
