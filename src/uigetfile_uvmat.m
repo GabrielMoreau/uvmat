@@ -37,7 +37,7 @@ if ischar(InputName)
         if isempty(InputFileName)% if InputName is already the root
             InputFileName=InputDir;
             if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
-                InputDir=[InputDir '\'];% append '\' for a correct action of dir
+%                 InputDir=[InputDir '\'];% append '\' for a correct action of dir
                 InputFileName=[InputFileName '\'];
             end
         end
@@ -45,6 +45,9 @@ if ischar(InputName)
             InputFileName=['+/' InputFileName Ext];
         end
     end
+end
+if  ismember(computer,{'PCWIN','PCWIN64'})%case of Windows systems
+      InputDir=[InputDir '\'];% append '\' for a correct action of dir
 end
 hfig=findobj(allchild(0),'tag',option);
 if isempty(hfig)

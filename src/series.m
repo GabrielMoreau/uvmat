@@ -239,7 +239,7 @@ if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
         set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
 end
 
-%% introduce the input file name(s) if defined from input Param, TODO: avoid the file checking if Param.i1_series defined
+%% introduce the input file name(s) if defined from input Param,
 if isfield(Param,'InputFile')
     
     %% fill the list of file series
@@ -250,12 +250,30 @@ if isfield(Param,'InputFile')
         TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
+    %% determine the selected reference field indices for pair display
     
-    %     display_file_name(handles,Param,'one')%refresh the input table
+    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
+    if isempty(i1)
+        i1=1;
+    end
+    if isempty(i2)
+        i2=i1;
+    end
+    ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
+    % set(handles.num_ref_i,'String',num2str(ref_i));
+    if isempty(j1)
+        j1=1;
+    end
+    if isempty(j2)
+        j2=j1;
+    end
+    ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
+    SeriesData.ref_i=ref_i;
+    SeriesData.ref_j=ref_j;
+    set(handles.series,'UserData',SeriesData)
     update_rootinfo(handles,Param.HiddenData.i1_series{1},Param.HiddenData.i2_series{1},Param.HiddenData.j1_series{1},Param.HiddenData.j2_series{1},...
         Param.HiddenData.FileInfo{1},Param.HiddenData.MovieObject{1},1)
-    if isfield(Param,'FileName_1')
-
+    if isfield(Param,'FileName_1')       
         %         display_file_name(handles,Param,2)
         update_rootinfo(handles,Param.HiddenData.i1_series{2},Param.HiddenData.i2_series{2},Param.HiddenData.j1_series{2},Param.HiddenData.j2_series{2},...
             Param.HiddenData.FileInfo{2},Param.HiddenData.MovieObject{2},2)
@@ -265,15 +283,19 @@ else
 end
 if isfield(Param,'incr_i')
     set(handles.num_incr_i,'String',num2str(Param.incr_i))
+else
+    set(handles.num_incr_i,'String','1')
 end
 if isfield(Param,'incr_j')
     set(handles.num_incr_j,'String',num2str(Param.incr_j))
+else
+    set(handles.num_incr_j,'String','1')
 end
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = series_OutputFcn(hObject, eventdata, handles)
-%------------------------------------------------------------------------ 
+%------------------------------------------------------------------------
 varargout{1} = handles.output;
 
 %------------------------------------------------------------------------
