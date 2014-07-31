@@ -114,7 +114,7 @@ subs = varargin(1:end-1);
 for i = 1:length(varargin)-1
     if (isa(varargin{i}, 'cell'))
         types{i} = '{}';
-    elseif isstr(varargin{i})
+    elseif ischar(varargin{i})
         types{i} = '.';
         subs{i} = varargin{i}; %strrep(varargin{i},' ',''); % deblank field name
     else

@@ -36,7 +36,7 @@ if nargin==1
 %- Output specified
 elseif nargin==2
 	%- Filename provided
-	if isstr(filename)
+	if ischar(filename)
 		[fid, msg] = fopen(filename,'w');
 		if fid==-1, error(msg);end
 		if isempty(tree.filename), tree.filename = filename; end
@@ -53,7 +53,7 @@ end
 fprintf(fid,prolog);
 print_subtree(tree,fid);
 
-if nargin==2 & isstr(filename), fclose(fid); end
+if nargin==2 && ischar(filename), fclose(fid); end
 
 if nargout==1, varargout{1} = tree; end
 
