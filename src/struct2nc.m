@@ -2,7 +2,7 @@
 %---------------------------------------------------------------------
 % errormsg=struct2nc(flname,Data)
 %
-% OUPUT:
+% OUTPUT:
 % errormsg=error message, =[]: default, no error
 %
 % INPUT:

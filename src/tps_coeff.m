@@ -13,18 +13,18 @@
 %------------------------------------------------------------------------
 % [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
-% OUPUT:
-% U_smooth: values of the quantity U at the N centres after smoothing
-% U_tps: tps weights of the centres and columns of the linear
+% OUTPUT:
+%  U_smooth: values of the quantity U at the N centres after smoothing
+%  U_tps: tps weights of the centres and columns of the linear
 
-%INPUT:
-% ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension)
-% U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
-% Smoothing: smoothing parameter: the result is smoother for larger Smoothing.
+% INPUT:
+%  ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension)
+%  U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
+%  Smoothing: smoothing parameter: the result is smoother for larger Smoothing.
 %
-%related functions:
-% tps_eval, tps_eval_dxy
-% tps_coeff_field, set_subdomains, filter_tps, calc_field
+% RELATED FUNCTIONS:
+%  tps_eval, tps_eval_dxy
+%  tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France

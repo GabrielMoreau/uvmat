@@ -1,7 +1,7 @@
 %'fill_GUI': fill a GUI with a set of parameters from a Matlab structure 
 % -----------------------------------------------------------------------
 % function errormsg=fill_GUI(Param,GUI_handle)
-% OUPUT:
+% OUTPUT:
 % errormsg: error message, ='' by default
 %
 % INPUT:

@@ -3,19 +3,19 @@
 %------------------------------------------------------------------------
 % function EM = tps_eval(dsites,ctrs)
 %------------------------------------------------------------------------
-% OUPUT:
-% EM:  Mx(N+s) matrix representing the contributions at the M sites 
+% OUTPUT:
+%  EM:  Mx(N+s) matrix representing the contributions at the M sites 
 %   from unit sources located at each of the N centers, + (s+1) columns
 %   representing the contribution of the linear gradient part.
 %  use : U_interp=EM*U_tps
 %
-%INPUT:
-%dsites:  Mxs matrix representing the postions of the M 'observation' sites, with s the space dimension
-%ctrs: Nxs matrix  representing the postions of the N centers, sources of the tps,
+% INPUT:
+%  dsites:  Mxs matrix representing the postions of the M 'observation' sites, with s the space dimension
+%  ctrs: Nxs matrix  representing the postions of the N centers, sources of the tps,
 %
-% related functions:
-% tps_coeff, tps_eval_dxy
-% tps_coeff_field, set_subdomains, filter_tps, calc_field
+% RELATED FUNCTIONS:
+%  tps_coeff, tps_eval_dxy
+%  tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France

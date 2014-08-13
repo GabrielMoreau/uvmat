@@ -2,11 +2,11 @@
 %---------------------------------------------------------------------
 % errormsg=struct2nc_toolbox(flname,Data)
 %
-%OUPUT:
-%errormsg=error message, =[]: default, no error
+% OUTPUT:
+% errormsg=error message, =[]: default, no error
 %
-%INPUT:
-%flname: name of the netcdf file to create (must end with the extension '.nc')
+% INPUT:
+% flname: name of the netcdf file to create (must end with the extension '.nc')
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
 %           with fields:
 %    .ListGlobalAttribute: cell listing the names of the global attributes (note that a global atribute with the same name as a variable is excluded)

@@ -3,18 +3,18 @@
 % function [DMX,DMY] = tps_eval_dxy(dsites,ctrs)
 %------------------------------------------------------------------------
 % OUTPUT:
-%     DMX: Mx(N+3) matrix representing the contributions to the X
-%     derivatives at the M sites from unit sources located at each of the N
-%     centers, + 3 columns representing the contribution of the linear gradient part.
-%     DMY: idem for Y derivatives
+%  DMX: Mx(N+3) matrix representing the contributions to the X
+%  derivatives at the M sites from unit sources located at each of the N
+%  centers, + 3 columns representing the contribution of the linear gradient part.
+%  DMY: idem for Y derivatives
 %
 % INPUT:
-%   dsites: M x s matrix of interpolation site coordinates (s=space dimension=2 here)
-%   ctrs: N x s matrix of centre coordinates (initial data)
+%  dsites: M x s matrix of interpolation site coordinates (s=space dimension=2 here)
+%  ctrs: N x s matrix of centre coordinates (initial data)
 %
-% related functions:
-% tps_coeff, tps_eval
-% tps_coeff_field, set_subdomains, filter_tps, calc_field
+% RELATED FUNCTIONS:
+%  tps_coeff, tps_eval
+%  tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France

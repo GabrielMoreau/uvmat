@@ -6,14 +6,14 @@
 % examples
 %------------------------------------------------------------------------
 % OUTPUT:
-% filename: string representing the full file name (including path)
-%------------------------------------------------------------------------
+%  filename: string representing the full file name (including path)
+%
 % INPUT:
-%RootPath: path to the base file
-%SubDir: name of the SubDirectory for netcdf files (relevant for NomTypes with index pairs 1-2 or ab )
-%RootFile: FileName without appendix
-%FileExt: file extension
-%NomType: char chain characterizing the file nomenclature, made as
+%  RootPath: path to the base file
+%  SubDir: name of the SubDirectory for netcdf files (relevant for NomTypes with index pairs 1-2 or ab )
+%  RootFile: FileName without appendix
+%  FileExt: file extension
+%  NomType: char chain characterizing the file nomenclature, made as
 %   nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
 %   nom_type='*':constant name for a file representing a series (e.g. avi movie)
 %   nom_type='1','01',or '001'...': series of files with a single index i without separator(e.g. 'aa045.png').
@@ -26,13 +26,13 @@
 %   nom_type='_1-2_1': pairs of i indices (e.g. 'aa_45-46_2.nc')
 %   nom_type='_1_ab','1_ab','01_ab'..., from pairs of '#' images
 %   (e.g.'aa045bc.nc'), ext='.nc'
-%i1: first number i
-%i2: second number i (only for .nc files)
-%j1: first number j
-%j2: second number j (only for .nc files)
-%------------------------------------------------------------------------
-%related functions:
-% fileparts_uvmat, num2stra, stra2num.
+%  i1: first number i
+%  i2: second number i (only for .nc files)
+%  j1: first number j
+%  j2: second number j (only for .nc files)
+%
+% RELATED FUNCTIONS:
+%  fileparts_uvmat, num2stra, stra2num.
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France

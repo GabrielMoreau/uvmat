@@ -13,12 +13,12 @@
 %
 % function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
 %
-% OUPUT:
+% OUTPUT:
 % PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume'
 % PlotParamOut: structure, representing the updated  plotting parameters, in case of automatic scaling
 % haxes: handle of the plotting axis, when a new figure is created.
 %
-%INPUT
+% INPUT:
 %    Data:   structure describing the field to plot 
 %         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
 %                    .Att_1,Att_2... : values of the global attributes

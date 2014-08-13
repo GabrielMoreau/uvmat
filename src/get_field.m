@@ -3,7 +3,7 @@
 % GetFieldData=get_field(FileName,ParamIn)
 % associated with the GUI get_field.fig
 %
-% OUPUT:
+% OUTPUT:
 % GetFieldData: structure containing the information on the selected
 %      fields, obtained by applying the fct red_GUI to the GUI get_field
 %   .FieldOption='vectors': variables are used for vector plot

@@ -8,7 +8,7 @@
 %-----------------------------------------------------------------------
 % function SubData=sub_field(Field,XmlData,Field_1)
 %
-% OUPUT: 
+% OUTPUT: 
 % SubData: structure representing the resulting field
 %
 % INPUT: 

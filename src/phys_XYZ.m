@@ -135,7 +135,7 @@ end
 
 %'px_XYZ': transform phys coordinates to image coordinates (px)
 %
-% OUPUT:
+% OUTPUT:
 % X,Y: array of coordinates in the image cooresponding to the input physical positions 
 %                    (origin at lower leftcorner, unit=pixel)
 
