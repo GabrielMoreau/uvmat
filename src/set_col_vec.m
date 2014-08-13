@@ -9,16 +9,35 @@
 %ColCode1, ColCode2: absolute threshold in vec_C corresponding to colcode.ColCode1 and colcode.ColCode2
 %INPUT
 % colcode: struture setting the colorcode for vectors
-            % colcode.CName: 'ima_cor','black','white',...
-            % colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'
-            % colcode.CheckFixVecColor =0; thresholds scaling relative to min and max, =1 fixed thresholds
-            % colcode.MinVec; min 
-            % colcode.MaxVec; max
-            % colcode.ColCode1: first threshold for rgb, relative to min (0) and max (1)
-            % colcode.ColCode2: second threshold for rgb, relative to min (0) and max (1), 
-            % rmq: we need min <= ColCode1 <= ColCode2 <= max, otherwise
-            % ColCode1 and ColCode2 are adjusted to the bounds
+%    colcode.CName: 'ima_cor','black','white',...
+%    colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'
+%    colcode.CheckFixVecColor =0; thresholds scaling relative to min and max, =1 fixed thresholds
+%    colcode.MinVec; min
+%    colcode.MaxVec; max
+%    colcode.ColCode1: first threshold for rgb, relative to min (0) and max (1)
+%    colcode.ColCode2: second threshold for rgb, relative to min (0) and max (1),
+%    rmq: we need min <= ColCode1 <= ColCode2 <= max, otherwise
+%    ColCode1 and ColCode2 are adjusted to the bounds
 % vec_C: matlab vector representing the scalar setting the color
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)
 col_vec=ones(size(vec_C));%all vectors at color#1 by default
 

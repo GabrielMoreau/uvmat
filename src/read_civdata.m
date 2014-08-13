@@ -38,11 +38,28 @@
 % VelType : character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice, given by vel_type_out{1,2}, is done depending 
 %            if vel_type='filter'; a structured field is sought (filter2 in priority, then filter1)
-
-
+%
 % FUNCTIONS called: 
 % 'varcivx_generator':, sets the names of vaiables to read in the netcdf file 
 % 'nc2struct': reads a netcdf file 
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
 
 function [Field,VelTypeOut,errormsg]=read_civdata(FileName,FieldNames,VelType)
 

@@ -62,22 +62,24 @@
 %    .AX, .AY: positions for the scalar
 %     case of a structured grid: A is a dim 2 matrix and .AX=[first last] (length 2 vector) represents the first and last abscissa of the grid
 %     case of an unstructured scalar: A is a vector, AX and AY the corresponding coordinates 
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
-% 
+%
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published by
-%     the Free Software Foundation; either version 2 of the License, or
-%     (at your option) any later version.
-% 
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (file UVMAT/COPYING.txt) for more details.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
 
 function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 errormsg='';%default
