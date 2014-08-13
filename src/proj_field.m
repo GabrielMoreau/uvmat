@@ -1846,7 +1846,7 @@ for icell=1:length(CellVarIndex)
 %                     eval(['varline=reshape(ProjData.' VarName ',1,length(coord_y_proj)*length(coord_x_proj));'])
 %                     FFlag= isnan(varline); %detect undefined values NaN
 %                     indnan=find(FFlag);
-%                     if~isempty(indnan)
+%                     if ~isempty(indnan)
 %                         varline(indnan)=zeros(size(indnan));
 %                         eval(['ProjData.' VarName '=reshape(varline,length(coord_y_proj),length(coord_x_proj));'])
 %                         FF(indnan)=ones(size(indnan));

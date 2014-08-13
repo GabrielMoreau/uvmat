@@ -1139,7 +1139,7 @@ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
 XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-if~isempty(errormsg)
+if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
