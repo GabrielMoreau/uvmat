@@ -1,6 +1,25 @@
 % vel2vol:interpolate 2D velocity fields to volumes with structured coordinates in phys space 
 % (specific to RDvision system)
 %----------------------------------------------------------------------
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function GUI_input=vel2vol(num_i1,num_i2,num_j1,num_j2,Series)
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('num_i1','var')

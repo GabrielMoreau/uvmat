@@ -1,17 +1,32 @@
 % 'ima_noise_rms': gives the variance of relative noise by difference to the
 % filered image in ppm (part per million) (for grey scale image)
-
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields with a single input and parameters %%%%
 % OUTPUT: 
 % DataOut:   output field structure 
-
+%
 %INPUT:
 % DataIn:  input field structure
 % Param: matlab structure whose field Param.TransformInput contains the filter parameters
-%-----------------------------------
 
-%-------------------------------------
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function DataOut=ima_noise_rms(DataIn,Param)
 
 %% request input parameters

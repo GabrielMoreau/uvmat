@@ -1,11 +1,10 @@
 %'phys_polar': transforms image (Unit='pixel') to polar (phys) coordinates using geometric calibration parameters
-
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields %%%%
 % OUTPUT: 
 % DataOut:   output field structure 
 %      .X=radius, .Y=azimuth angle, .U, .V are radial and azimuthal velocity components
-
+%
 %INPUT:
 % DataIn:  first input field structure
 % XmlData: first input parameter structure,
@@ -25,7 +24,25 @@
 % XmlData= structure containing the field .GeometryCalib with calibration parameters
 % Data_1:  second input field (not mandatory)
 % XmlData_1= calibration parameters for the second field
-%------------------------------------------------------------------------
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function DataOut=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
 %------------------------------------------------------------------------
 Calib{1}=[];

@@ -1,5 +1,24 @@
 % 'avi2png': copy an avi movie to a series of B/W .png images (take the average of green and blue color components)
 %----------------------------------------------------------------------
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function GUI_input=avi2png(num_i1,num_i2,num_j1,num_j2,Series)
 %% INPUT PARAMETERS (to edit)
 increment=4% frame increment: the frequency of the png images will be (initial frequency)/increment.

@@ -10,6 +10,24 @@
 % DataIn: Matlab structure containing the input field from the GUI uvmat, DataIn.Action.RUN=0 to set input parameters. 
 % Param: structure containing processing parameters, created when DataIn.Action.RUN=0 at the first use of the transform fct
 
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function DataOut=signal_spectrum(DataIn,Param)
 
 %% request input parameters

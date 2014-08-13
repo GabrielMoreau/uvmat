@@ -18,19 +18,37 @@
 %       .NbSlice: %number of slices defined on the interface
 %----------------------------------------------------------------------
 % Method: 
-    %calculate the background image by sorting the luminosity of each point
-    % over a sliding sub-sequence of 'nbaver_ima' images. 
-    % The luminosity value of rank 'rank' is selected as the
-    % 'background'. rank=nbimages/2 gives the median value.  Smaller values are appropriate
-    % for a dense set of particles. The extrem value rank=1 gives the true minimum
-    % luminosity, but it can be polluted by noise. 
+%    calculate the background image by sorting the luminosity of each point
+%     over a sliding sub-sequence of 'nbaver_ima' images.
+%     The luminosity value of rank 'rank' is selected as the
+%     'background'. rank=nbimages/2 gives the median value.  Smaller values are appropriate
+%     for a dense set of particles. The extrem value rank=1 gives the true minimum
+%     luminosity, but it can be polluted by noise.
 % Organization of image indices:
-    % The program is working on a series of images, labelled by two indices i and j, given 
-    % by the input matlab vectors num_i1 and num_j1 respectively. In the list, j is the fastest increasing index.
-    % The processing can be done in slices (number nbslice), with bursts of
-    % nbfield2 successive images for a given slice (mode 'multilevel')
-    % In the mode 'volume', nbfield2=1 (1 image at each level)
+%     The program is working on a series of images, labelled by two indices i and j, given
+%     by the input matlab vectors num_i1 and num_j1 respectively. In the list, j is the fastest increasing index.
+%     The processing can be done in slices (number nbslice), with bursts of
+%     nbfield2 successive images for a given slice (mode 'multilevel')
+%     In the mode 'volume', nbfield2=1 (1 image at each level)
+
+%=======================================================================
+% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
 function GUI_input=calc_background (num_i1,num_i2,num_j1,num_j2,Series)
 
 %------------------------------------------------------------------------
