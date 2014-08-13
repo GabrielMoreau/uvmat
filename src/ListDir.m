@@ -4,17 +4,17 @@
 %
 % 
 % OUTPUT:
-% ListDevices: list of Devices 
-% ListRecords: list of records
-% ListXml: list of xml file names
-% List: structure representing the tree structure
+%  ListDevices: list of Devices 
+%  ListRecords: list of records
+%  ListXml: list of xml file names
+%  List: structure representing the tree structure
 %
-%INPUT
-% CurrentPath: full name (including path) to the input campaign (or subcampaign), we assume that
+% INPUT:
+%  CurrentPath: full name (including path) to the input campaign (or subcampaign), we assume that
 %          data are organised as (sub)campaign/Experiment/Device/(Record/)/file .xml
-% ListExperiments: list of experiments to scan (cell of names)
-% ListDevices_in: list of devices to scan (cell of names)
-% ListRecords_in: list of records to scan (cell of names)
+%  ListExperiments: list of experiments to scan (cell of names)
+%  ListDevices_in: list of devices to scan (cell of names)
+%  ListRecords_in: list of records to scan (cell of names)
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France

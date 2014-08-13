@@ -2,14 +2,13 @@
 %------------------------------------------------------------------------
 % function huvmat=uvmat(input)
 %
-%OUTPUT
-% huvmat=current handles of the GUI uvmat.fig
-%%
+% OUTPUT
+%  huvmat=current handles of the GUI uvmat.fig
 %
-%INPUT:
-% input: input file name (if character chain), or input image matrix to
-% visualize, or Matlab structure representing  netcdf fieldname (with fieldname
-% ListVarName....)
+% INPUT:
+%  input: input file name (if character chain), or input image matrix to
+%  visualize, or Matlab structure representing  netcdf fieldname (with fieldname
+%  ListVarName....)
 
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
