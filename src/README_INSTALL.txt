@@ -2,7 +2,7 @@
 Steps for installing uvmat:
 --------------------------------------------------
 - Install Matlab, release R 13 or more recent. 
-- Download the package appropriate to your system from http://coriolis.legi.grenoble-inp.fr/spip.php?article4,
+- Download the package appropriate to your system from http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat,
 or use the SVN server, see below.
 - unzip the package to a convenient location. Path name must not contain blanks.
 - Add this folder /uvmat to your matlab paths (option 'add folder without sub-folders'). Use the Matlab function addpath or the menu bar. 
