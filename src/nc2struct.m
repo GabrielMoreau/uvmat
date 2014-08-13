@@ -1,37 +1,38 @@
-%'nc2struct': transform a netcdf file in a corresponding matlab structure
+%'nc2struct': transform a NetCDF file in a corresponding matlab structure
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted
 %----------------------------------------------------------------------
 % function [Data,var_detect,ichoice,errormsg]=nc2struct(nc,varargin)
 %
 % OUTPUT:
-%  Data: structure containing all the information of the netcdf file (or netcdf object)
+%  Data: structure containing all the information of the NetCDF file (or NetCDF object)
 %           with (optional)fields:
 %                    .ListGlobalAttribute: cell listing the names of the global attributes
 %                    .Att_1,Att_2... : values of the global attributes
-%                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
-%                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
+%                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} )
+%                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)
 %                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
 %                  .ListDimName=list of dimension (added information, not requested for field description)
 %                  .DimValue= vlalues of dimensions (added information, not requested for field description)
-%                  .VarType= integers giving the type of variable as coded by netcdf= 2 for char, =4 for single,=( for double
+%                  .VarType= integers giving the type of variable as coded by netcdf =2 for char, =4 for single,=( for double
 %  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
-%            var_detect=[] in the absence of input cell array 
-%  ichoice: index of the selected line in the case of multiple choice 
-%        (cell array of varible names with multiple lines) , =[] by default 
-%INPUT:
-%  nc:  name of a netcdf file (char string) or netcdf object   
+%            var_detect=[] in the absence of input cell array
+%  ichoice: index of the selected line in the case of multiple choice
+%        (cell array of varible names with multiple lines) , =[] by default
+%
+% INPUT:
+%  nc:  name of a NetCDF file (char string) or NetCDF object
 %  additional arguments:
-%       -no additional arguments: all the variables of the netcdf file are read.
-%       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} ) 
+%       -no additional arguments: all the variables of the NetCDF file are read.
+%       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} )
 %         if ListVarName=[] or {}, no variable value is read (only global attributes and list of variables and dimensions)
-%         if ListVarName is absent, or = '*', ALL the variables of the netcdf file are read. 
+%         if ListVarName is absent, or = '*', ALL the variables of the NetCDF file are read.
 %         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority in the list,
 %            while output names will be set by the first line
 %       - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
-%       - the string 'TimeVarName', a string (the name of the variable considered as time), an integer or vector with integer values 
+%       - the string 'TimeVarName', a string (the name of the variable considered as time), an integer or vector with integer values
 %            representing time indices to select for each variable, the cell of other input variable names.
-%       - the string 'TimeDimName', a string (the name of the dimension considered as time), an integer or vector with integer values 
+%       - the string 'TimeDimName', a string (the name of the dimension considered as time), an integer or vector with integer values
 %            representing time indices to select for each variable, the cell of other input variable names.
 
 %=======================================================================
@@ -51,21 +52,21 @@
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
-   
+
 function [Data,var_detect,ichoice,errormsg]=nc2struct(nc,varargin)
 errormsg='';%default error message
 if isempty(varargin)
     varargin{1}='*';
 end
-hhh=which('netcdf.open');% look for built-in matlab netcdf library
+hhh=which('netcdf.open');% look for built-in matlab NetCDF library
 
 if ~isequal(hhh,'')
     %% default output
     Data=[];%default
     var_detect=[];%default
     ichoice=[];%default
-    
-    %% open the netcdf file for reading
+
+    %% open the NetCDF file for reading
     if ischar(nc)
         if exist(nc,'file')
             try
@@ -82,7 +83,7 @@ if ~isequal(hhh,'')
     else
         testfile=0;
     end
-    
+
     %% short reading option for global attributes only, if the first argument is 'ListGlobalAttribute'
     if isequal(varargin{1},'ListGlobalAttribute')
         for ilist=2:numel(varargin)
@@ -96,7 +97,7 @@ if ~isequal(hhh,'')
         netcdf.close(nc)
         return
     end
-    
+
     %% time variable or dimension
     input_index=1;
     CheckTimeVar=0;
@@ -111,11 +112,11 @@ if ~isequal(hhh,'')
         TimeIndex=varargin{3};
         input_index=4;
     end
-    
+
     %% full reading: get the nbre of dimensions, variables, global attributes
     ListVarName=varargin{input_index};
-    [ndims,nvars,ngatts]=netcdf.inq(nc);%nbre of dimensions, variables, global attributes, in the netcdf file
-    
+    [ndims,nvars,ngatts]=netcdf.inq(nc);%nbre of dimensions, variables, global attributes, in the NetCDF file
+
     %%  -------- read all global attributes (constants)-----------
     Data.ListGlobalAttribute={};%default
     att_key=cell(1,ngatts);%default
@@ -141,11 +142,11 @@ if ~isequal(hhh,'')
         end
     end
     Data.ListGlobalAttribute=att_key;
-    
+
     %%  -------- read dimension names-----------
     ListDimNameNetcdf=cell(1,ndims);
     dim_value=zeros(1,ndims);
-    for idim=1:ndims %loop on the dimensions of the netcdf file
+    for idim=1:ndims %loop on the dimensions of the NetCDF file
         [ListDimNameNetcdf{idim},dim_value(idim)] = netcdf.inqDim(nc,idim-1);%get name and value of each dimension
     end
     if ~isempty(ListDimNameNetcdf)
@@ -161,19 +162,19 @@ if ~isequal(hhh,'')
            errormsg=['requested time index ' num2str(varargin{3}) ' exceeds matrix dimension'];
             return
         end
-    end  
-    
+    end
+
     %%  -------- read names of variables -----------
     ListVarNameNetcdf=cell(1,nvars); %default
     dimids=cell(1,nvars);
     nbatt=zeros(1,nvars);
-    for ncvar=1:nvars %loop on the variables of the netcdf file
+    for ncvar=1:nvars %loop on the variables of the NetCDF file
         %get name, type, dimensions and attribute numbers of each variable
         [ListVarNameNetcdf{ncvar},xtype(ncvar),dimids{ncvar},nbatt(ncvar)] = netcdf.inqVar(nc,ncvar-1);
     end
 %     testmulti=0;
     if isequal(ListVarName,'*')||isempty(ListVarName)
-        var_index=1:nvars; %all the variables are selected in the netcdf file
+        var_index=1:nvars; %all the variables are selected in the NetCDF file
         Data.ListVarName=ListVarNameNetcdf;
     else   %select input variables, if requested by the input ListVarName
         check_keep=ones(1,size(ListVarName,2));
@@ -185,7 +186,7 @@ if ~isequal(hhh,'')
         ListVarName=ListVarName(:,logical(check_keep));
         if size(ListVarName,1)>1 %multiple choice of variable ranked by order of priority
             for iline=1:size(ListVarName,1)
-                search_index=find(strcmp(ListVarName{iline,1},ListVarNameNetcdf),1);%look for the first variable name in the list of netcdf variables
+                search_index=find(strcmp(ListVarName{iline,1},ListVarNameNetcdf),1);%look for the first variable name in the list of NetCDF variables
                 if ~isempty(search_index)
                     break % go to the next line
                 end
@@ -206,17 +207,17 @@ if ~isequal(hhh,'')
         end
         var_index=zeros(1,size(ListVarName,2));%default list of variable indices
         for ivar=1:size(ListVarName,2)
-            search_index=find(strcmp(ListVarName{iline,ivar},ListVarNameNetcdf),1);%look for the variable name in the list of netcdf file
+            search_index=find(strcmp(ListVarName{iline,ivar},ListVarNameNetcdf),1);%look for the variable name in the list of NetCDF file
             if ~isempty(search_index)
                 var_index(ivar)=search_index;%index of the netcdf list corresponding to the input list index ivar
             end
         end
         var_detect=(var_index~=0);%=1 for detected variables
         list_index=find(var_index);% indices in the input list corresponding to a detected variable
-        var_index=var_index(list_index);% netcdf variable indices corresponding to the output list of read variable
+        var_index=var_index(list_index);% NetCDF variable indices corresponding to the output list of read variable
         Data.ListVarName=ListVarName(1,list_index);%the first line of ListVarName sets the output names of the variables
     end
-    
+
     %% get the dimensions and attributes associated to  variables
     var_dim=cell(size(var_index));% initiate list of dimensions for variables
     for ivar=1:length(var_index)
@@ -242,7 +243,7 @@ if ~isequal(hhh,'')
             end
         end
     end
-    
+
     %% select the dimensions used for the set of input variables
     if ~isempty(var_index)
         dim_index=find(flag_used);%list of netcdf dimensions indices corresponding to used dimensions
@@ -252,12 +253,12 @@ if ~isequal(hhh,'')
             Data.DimValue(TimeDimIndex)=numel(TimeIndex);
         end
     end
-    
+
     %% get the values of the input variables
     if  ~isempty(ListVarName)
         for ivar=1:length(var_index)
             VarName=Data.ListVarName{ivar};
-            VarName=regexprep(VarName,'-','_'); %suppress '-' if it exists in the netcdf variable name (leads to errors in matlab)
+            VarName=regexprep(VarName,'-','_'); %suppress '-' if it exists in the NetCDF variable name (leads to errors in matlab)
 %             CheckSub=0;
             if input_index==4% if a dimension is selected as time
                 ind_vec=zeros(1,numel(var_dim{ivar}));% vector with zeros corresponding to al the dimensions of the variable VarName
@@ -271,9 +272,9 @@ if ~isequal(hhh,'')
                     ind_vec(index_time)=TimeIndex-1;% selected index(or indices) to read
                     ind_size(index_time)=numel(TimeIndex);%length of the selected set of time indices
                     if numel(TimeIndex)==1 && ~strcmp(VarName,TimeVarName)
-                        Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself) 
+                        Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself)
                     end
-                end                   
+                end
                 Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size)); %read the variable data
                 Data.(VarName)=squeeze(Data.(VarName));%remove singeton dimension
             else
@@ -285,13 +286,13 @@ if ~isequal(hhh,'')
         end
     end
     Data.VarType=xtype(var_index);
-    
+
     %%  -------- close fle-----------
     if testfile==1
         netcdf.close(nc)
     end
-    
-    %% old netcdf library
+
+    %% old NetCDF library
 else
     [Data,var_detect,ichoice]=nc2struct_toolbox(nc,varargin);
 end
