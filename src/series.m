@@ -12,24 +12,22 @@
 %      .list_field: menu of input fields
 %      .index_fields: chosen index
 %      .civ1=0 or 1, .interp1,  ... : input civ field type
-
-%=======================================================================
-% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
-%
+% 
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation; either version 2 of the License, or
+%     (at your option) any later version.
+% 
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
+%     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -1653,7 +1651,7 @@ else
             Param.IndexRange.first_i= first_i+iprocess-1;
             Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         end
-        
+        Param.InputTable{1}=regexprep(Param.InputTable{1},'\','/');%correct path name for PCWIN system
         % create, fill and save the xml parameter file
         t=struct2xml(Param);
         t=set(t,1,'name','Series');
