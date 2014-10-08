@@ -53,17 +53,26 @@ switch varargin{2}
 	case 'get'
 		error(nargchk(3,4,nargin));
 		if nargin == 4
-			if ~isa(varargin{4},'double') | ...
+			if ischar(varargin{4})
+				for i=1:length(tree.tree{uid}.attributes)
+					if strcmp(varargin{4},tree.tree{uid}.attributes{i}.key)
+						varargout{1} = tree.tree{uid}.attributes{i}.val;
+						return;
+					end
+				end
+				varargout{1} = [];
+			elseif ~isa(varargin{4},'double') | ...
 			   any(varargin{4}>length(tree.tree{uid}.attributes)) | ...
 			   any(varargin{4}<1)
 				error('[XMLTree] Invalid attribute indice.');
-			end
-			if length(varargin{4}) == 1
-				varargout{1} = tree.tree{uid}.attributes{varargin{4}(1)};
 			else
-				varargout{1} = {};
-				for i=1:length(varargin{4})
-					varargout{1}{i} = tree.tree{uid}.attributes{varargin{4}(i)};
+				if length(varargin{4}) == 1
+					varargout{1} = tree.tree{uid}.attributes{varargin{4}(1)};
+				else
+					varargout{1} = {};
+					for i=1:length(varargin{4})
+						varargout{1}{i} = tree.tree{uid}.attributes{varargin{4}(i)};
+					end
 				end
 			end
 		else

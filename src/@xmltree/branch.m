@@ -21,6 +21,8 @@ end
 
 subtree = xmltree;
 subtree = set(subtree,root(subtree),'name',tree.tree{uid}.name);
+%- fix by Piotr Dollar to copy attributes for the root node:
+subtree = set(subtree,root(subtree),'attributes',tree.tree{uid}.attributes); 
 
 child = children(tree,uid);
 

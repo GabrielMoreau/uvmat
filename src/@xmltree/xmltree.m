@@ -2,11 +2,12 @@ function tree = xmltree(varargin)
 % XMLTREE/XMLTREE Constructor of the XMLTree class
 % FORMAT tree = xmltree(varargin)
 % 
-% filename - XML filename
+% varargin - XML filename or XML string
 % tree     - XMLTree Object
 %
-%     tree = xmltree;            % creates a minimal XML tree: <tag/>
-%     tree = xmltree(filename);  % creates a tree from an XML file
+%     tree = xmltree;             % creates a minimal XML tree: '<tag/>'
+%     tree = xmltree('foo.xml');  % creates a tree from XML file 'foo.xml'
+%     tree = xmltree('<tag>content</tag>') % creates a tree from string
 %_______________________________________________________________________
 %
 % This is the constructor of the XMLTree class. 
@@ -31,12 +32,26 @@ switch(nargin)
 		if isa(varargin{1},'xmltree')
 			tree = varargin{1};
 		elseif ischar(varargin{1})
-			tree.tree = xml_parser(varargin{1});
-			tree.filename = varargin{1};
+			% Input argument is an XML string
+			if (exist(varargin{1}) ~= 2 & ...
+				~isempty(xml_findstr(varargin{1},'<',1,1)))
+				tree.tree = xml_parser(varargin{1});
+				tree.filename = '';
+			% Input argument is an XML filename
+			else
+				fid = fopen(varargin{1},'rt');
+				if (fid == -1) 
+					error(['[XMLTree] Cannot open ' varargin{1}]);
+				end
+				xmlstr = fscanf(fid,'%c');
+				fclose(fid);
+				tree.tree = xml_parser(xmlstr);
+				tree.filename = varargin{1};
+			end
 			tree = class(tree,'xmltree');
 		else 
 			error('[XMLTree] Bad input argument');
 		end
 	otherwise
-		error('[XMLTree] Bad number of arguments');
+		error('[XMLTree] Too many input arguments');
 end

@@ -74,8 +74,24 @@ function s = sub_convert(tree,s,uid,arg)
 			if isempty(child)
 				s = sub_setfield(s,arg{:},'');
 			end
+            %- saving attributes : does not work with <a t='q'>b</a>
+            %- but ok with <a t='q'><c>b</c></a>
+%             attrb = attributes(tree,'get',uid);     %-
+%             if ~isempty(attrb)                      %-
+%                 arg2 = {arg{:} 'attributes'};       %-
+%                 s = sub_setfield(s,arg2{:},attrb);  %-
+% 			  end                                     %-
 		case 'chardata'
 			s = sub_setfield(s,arg{:},get(tree,uid,'value'));
+			%- convert strings into their Matlab equivalent when possible
+			%- e.g. string '3.14159' becomes double scalar 3.14159
+%             v = get(tree,uid,'value');              %-
+% 		 	  cv = str2num(v);                        %-
+% 			  if isempty(cv)                          %-
+% 				  s = sub_setfield(s,arg{:},v);       %-
+% 			  else                                    %-
+% 				  s = sub_setfield(s,arg{:},cv);      %-
+%             end                                     %-
 		case 'cdata'
 			s = sub_setfield(s,arg{:},get(tree,uid,'value'));
 		case 'pi'
@@ -94,7 +110,7 @@ function s = sub_convert(tree,s,uid,arg)
 					try,
 						s = sub_setfield(s,arg{:},feval(app,get(tree,uid,'value')));
 					catch,
-						warning('[Xmltree/convert] Unknown target application');
+						warning('[XMLTREE] Unknown target application');
 					end
 			end
 		case 'comment'
@@ -114,7 +130,7 @@ subs = varargin(1:end-1);
 for i = 1:length(varargin)-1
     if (isa(varargin{i}, 'cell'))
         types{i} = '{}';
-    elseif ischar(varargin{i})
+    elseif isstr(varargin{i})
         types{i} = '.';
         subs{i} = varargin{i}; %strrep(varargin{i},' ',''); % deblank field name
     else
