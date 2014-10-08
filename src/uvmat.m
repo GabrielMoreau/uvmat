@@ -2,32 +2,31 @@
 %------------------------------------------------------------------------
 % function huvmat=uvmat(input)
 %
-% OUTPUT
-%  huvmat=current handles of the GUI uvmat.fig
+%OUTPUT
+% huvmat=current handles of the GUI uvmat.fig
+%%
 %
-% INPUT:
-%  input: input file name (if character chain), or input image matrix to
-%  visualize, or Matlab structure representing  netcdf fieldname (with fieldname
-%  ListVarName....)
-
-%=======================================================================
-% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%INPUT:
+% input: input file name (if character chain), or input image matrix to
+% visualize, or Matlab structure representing  netcdf fieldname (with fieldname
+% ListVarName....)
 %
-%     This file is part of the toolbox UVMAT.
-%
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%     This open is part of the toolbox UVMAT.
+% 
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation; either version 2 of the License, or
+%     (at your option) any later version.
+% 
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
-
+%     GNU General Public License (open UVMAT/COPYING.txt) for more details.
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%
 % Information stored on the interface:(use 'Export/field in workspace' in
 % the menu bar of uvmat to retrieve it)
 %          .OpenParam: structure containing parameters defined when uvmat is opened
@@ -291,8 +290,8 @@ else
     date_str=['last modification: ' date_str];
     if ishandle(handles.UVMAT_title)
         set(handles.UVMAT_title,'String',...
-            [{'Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France'};...
-            {'GNU General Public License version 2 or later'};...
+            [{'Copyright  LEGI UMR 5519 /CNRS-UJF-Grenoble INP, 2010'};...
+            {'GNU General Public License'};...
             {path_to_uvmat};...
             {date_str};...
             infomsg]);
@@ -1139,7 +1138,7 @@ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
 XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-if ~isempty(errormsg)
+if~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
