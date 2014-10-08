@@ -1,23 +1,22 @@
-function tree = xml_parser(filename)
+function tree = xml_parser(xmlstr)
 % XML (eXtensible Markup Language) Processor
-% FORMAT tree = xml_parser(filename)
+% FORMAT tree = xml_parser(xmlstr)
 %
-% filename - XML file to parse
-% tree     - tree structure corresponding to the XML file
+% xmlstr  - XML string to parse
+% tree    - tree structure corresponding to the XML file
 %_______________________________________________________________________
 %
 % xml_parser.m is an XML 1.0 (http://www.w3.org/TR/REC-xml) parser
 % written in Matlab. It aims to be fully conforming. It is currently not
 % a validating XML processor.
-% (based on a Javascript parser available at http://www.jeremie.com)
 %
 % A description of the tree structure provided in output is detailed in 
 % the header of this m-file.
 %_______________________________________________________________________
-% @(#)xml_parser.m               Guillaume Flandin           2002/04/04
+% @(#)xml_parser.m              Guillaume Flandin            2002/04/04
 
 % XML Processor for MATLAB (The Mathworks, Inc.).
-% Copyright (C) 2002  Guillaume Flandin
+% Copyright (C) 2002-2003 Guillaume Flandin <Guillaume@artefact.tk>
 %
 % This program is free software; you can redistribute it and/or
 % modify it under the terms of the GNU General Public License
@@ -34,12 +33,15 @@ function tree = xml_parser(filename)
 % Foundation Inc, 59 Temple Pl. - Suite 330, Boston, MA 02111-1307, USA.
 %-----------------------------------------------------------------------
 
-% Please feel free to email the author any comment/suggestion/bug report
-% to improve this XML processor in Matlab.
-% Email: Guillaume.Flandin@sophia.inria.fr
+% Suggestions for improvement and fixes are always welcome, although no
+% guarantee is made whether and when they will be implemented.
+% Send requests to <Guillaume@artefact.tk>
 % Check also the latest developments on the following webpage:
-% http://www-sop.inria.fr/epidaure/personnel/flandin/xml/
+%           <http://www.artefact.tk/software/matlab/xml/>
 %-----------------------------------------------------------------------
+
+% The implementation of this XML parser is much inspired from a 
+% Javascript parser available at <http://www.jeremie.com/>
 
 % A mex-file xml_findstr.c is also required, to encompass some
 % limitations of the built-in findstr Matlab function.
@@ -91,15 +93,15 @@ function tree = xml_parser(filename)
 %-----------------------------------------------------------------------
 
 % TODO/BUG/FEATURES:
-%  - [compile] only a warning if TagStart is empty
+%  - [compile] only a warning if TagStart is empty ?
 %  - [attribution] should look for " and ' rather than only "
 %  - [main] with normalize as a preprocessing, CDATA are modified
 %  - [prolog] look for a DOCTYPE in the whole string even if it occurs
-%    only in a far CDATA tag (for example)...
+%    only in a far CDATA tag, bug even if the doctype is inside a comment
 %  - [tag_element] erode should replace normalize here
 %  - remove globals? uppercase globals  rather persistent (clear mfile)?
-%  - xml_findst is in fact xml_strfind according to Mathworks vocabulary
-%  - problem with entity (don't know if the bug is here or in save fct.)
+%  - xml_findstr is indeed xml_strfind according to Mathworks vocabulary
+%  - problem with entities: do we need to convert them here? (&eacute;)
 %-----------------------------------------------------------------------
 
 %- XML string to parse and number of tags read
@@ -107,25 +109,17 @@ global xmlstring Xparse_count xtree;
 
 %- Check input arguments
 error(nargchk(1,1,nargin));
-if isempty(filename)
-	error('Not enough parameters.')
-elseif ~isstr(filename) | sum(size(filename)>1)>1
-	error('Input must be a string filename.')
+if isempty(xmlstr)
+	error('[XML] Not enough parameters.')
+elseif ~isstr(xmlstr) | sum(size(xmlstr)>1)>1
+	error('[XML] Input must be a string.')
 end
-
-%- Read the entire XML file
-fid = fopen(filename,'rt');
-if (fid==-1) 
-	error(sprintf('Cannot open %s for reading.',filename))
-end
-xmlstring = fscanf(fid,'%c');
-fclose(fid);
 
 %- Initialize number of tags (<=> uid)
 Xparse_count = 0;
 
 %- Remove prolog and white space characters from the XML string
-xmlstring = normalize(prolog(xmlstring));
+xmlstring = normalize(prolog(xmlstr));
 
 %- Initialize the XML tree
 xtree = {};
@@ -156,15 +150,14 @@ function frag = compile(frag)
 		end
 		TagStart = xml_findstr(xmlstring,'<',frag.str,1);
 		if isempty(TagStart)
-			%- Character data (should be an error)
-			warning('[XML] Unknown data at the end of the XML file.');
-			fprintf('Please send me your XML file at gflandin@sophia.inria.fr\n');
-			%thisary = length(frag.ary) + 1;
-			xtree{Xparse_count+1} = chardata;
+			%- Character data
+			error(sprintf(['[XML] Unknown data at the end of the XML file.\n' ...
+			'      Please send me your XML file at Guillaume@artefact.tk']));
+			xtree{Xparse_count} = chardata;
 			xtree{Xparse_count}.value = erode(entity(xmlstring(frag.str:end)));
 			xtree{Xparse_count}.parent = frag.parent;
 			xtree{frag.parent}.contents = [xtree{frag.parent}.contents Xparse_count];
-			%frag.str = '';
+			frag.str = '';
 		elseif TagStart > frag.str
 			if strcmp(xmlstring(frag.str:TagStart-1),' ')
 				%- A single white space before a tag (ignore)
