@@ -20,24 +20,22 @@
 %     .Fix2: 
 %     .Patch2:
 % ncfile: name of a netcdf file to be created for the result (extension .nc)
-
-%=======================================================================
-% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
-%     This file is part of the toolbox UVMAT.
-%
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%  Copyright 2011-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%     This is part of the toolbox UVMAT.
+% 
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation; either version 2 of the License, or
+%     (at your option) any later version.
+% 
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
+%     GNU General Public License (open UVMAT/COPYING.txt) for more details.
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [Data,errormsg,result_conv]= civ_series(Param)
 errormsg='';
@@ -79,6 +77,9 @@ end
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
+    Param.InputTable{1}
+    Param.InputTable{2}
+     Param.InputTable{3}
     checkrun=0;
 end
 if ~isfield(Param,'ActionInput')
@@ -227,8 +228,8 @@ try
             FieldName_A=Param.InputFields.FieldName;
             [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
             par_civ1.ImageA=DataIn.(FieldName_A);
-        else          
-        [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
+        else
+            [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
         end
         ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
         if ~exist(ImageName_B,'file')
@@ -239,10 +240,10 @@ try
         FileType_B=FileInfo_B.FileType;
         if strcmp(FileInfo_B.FileType,'netcdf')
             FieldName_B=Param.InputFields.FieldName;
-             [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
-             par_civ1.ImageB=DataIn.(FieldName_B);
+            [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
+            par_civ1.ImageB=DataIn.(FieldName_B);
         else
-        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
+            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
         end
         NbField=numel(i1_series_Civ1);
     elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
@@ -530,22 +531,35 @@ for ifield=1:NbField
         par_civ2.ImageA=[];
         par_civ2.ImageB=[];
         %         if ~isfield(Param.Civ1,'ImageA')
-        ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(ifield),[],j1_series_Civ2(ifield));
+         i1=i1_series_Civ2(ifield);
+        i2=i1;
+        if ~isempty(i2_series_Civ2)
+            i2=i2_series_Civ2(ifield);
+        end
+        j1=1;
+        if ~isempty(j1_series_Civ2)
+            j1=j1_series_Civ2(ifield);
+        end
+        j2=j1;
+        if ~isempty(j2_series_Civ2)
+            j2=j2_series_Civ2(ifield);
+        end
+        ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
 
         if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
             par_civ2.ImageA=par_civ1.ImageA;
         else
             [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
         end
-        ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
+        ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2,[],j2);
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
             par_civ2.ImageB=par_civ1.ImageB;
         else
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
         end     
         
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ2(ifield),i2_series_Civ2(ifield),...
-            j1_series_Civ2(ifield),j2_series_Civ2(ifield));
+        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,...
+            j1,j2);
         par_civ2.ImageWidth=FileInfo_A.Width;
         par_civ2.ImageHeight=FileInfo_A.Height;
         
@@ -600,19 +614,19 @@ for ifield=1:NbField
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-        i1=i1_series_Civ2(ifield);
-        i2=i1;
-        if ~isempty(i2_series_Civ2)
-            i2=i2_series_Civ2(ifield);
-        end
-        j1=1;
-        if ~isempty(j1_series_Civ2)
-            j1=j1_series_Civ2(ifield);
-        end
-        j2=j1;
-        if ~isempty(j2_series_Civ1)
-            j2=j2_series_Civ2(ifield);
-        end
+%         i1=i1_series_Civ2(ifield);
+%         i2=i1;
+%         if ~isempty(i2_series_Civ2)
+%             i2=i2_series_Civ2(ifield);
+%         end
+%         j1=1;
+%         if ~isempty(j1_series_Civ2)
+%             j1=j1_series_Civ2(ifield);
+%         end
+%         j2=j1;
+%         if ~isempty(j2_series_Civ1)
+%             j2=j2_series_Civ2(ifield);
+%         end
         Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
         par_civ2.SearchBoxShift=(Civ2_Dt/Data.Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
@@ -1087,8 +1101,8 @@ function [i1_series,i2_series,j1_series,j2_series,check_bounds,NomTypeNc]=...
 %------------------------------------------------------------------------
 i1_series=i_series;% set of first image indexes
 i2_series=i_series;
-j1_series=ones(size(i_series));% set of first image numbers
-j2_series=ones(size(i_series));
+j1_series=j_series;%ones(size(i_series));% set of first image numbers
+j2_series=j_series;%ones(size(i_series));
 r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
 if ~isempty(r)
     mode=['D' r.ind];
@@ -1117,28 +1131,29 @@ else
     ind2=stra2num(r.num2);
     end
 end
-if strcmp (mode,'Di')
-    i1_series=i_series-ind1;% set of first image numbers
-    i2_series=i_series+ind2;
-     check_bounds=i1_series<MinIndex_i | i2_series>MaxIndex_i;
-    if isempty(j_series)
-        NomTypeNc='_1-2';
-    else
-        j1_series=j_series;
-        j2_series=j_series;
-        NomTypeNc='_1-2_1';
-    end
-elseif strcmp (mode,'Dj')
-    j1_series=j_series-ind1;
-    j2_series=j_series+ind2;
-    check_bounds=j1_series<MinIndex_j | j2_series>MaxIndex_j;
-    NomTypeNc='_1_1-2';
-else  %bursts
-    i1_series=i_series(1,:);% do not sweep the j index
-    i2_series=i_series(1,:);
-    j1_series=ind1*ones(1,size(i_series,2));% j index is fixed by pair choice
-    j2_series=ind2*ones(1,size(i_series,2));
-    check_bounds=zeros(size(i1_series));% no limitations due to min-max indices
+switch mode
+    case 'Di'
+        i1_series=i_series-ind1;% set of first image numbers
+        i2_series=i_series+ind2;
+        check_bounds=i1_series<MinIndex_i | i2_series>MaxIndex_i;
+        if isempty(j_series)
+            NomTypeNc='_1-2';
+        else
+            j1_series=j_series;
+            j2_series=j_series;
+            NomTypeNc='_1-2_1';
+        end
+    case 'Dj'
+        j1_series=j_series-ind1;
+        j2_series=j_series+ind2;
+        check_bounds=j1_series<MinIndex_j | j2_series>MaxIndex_j;
+        NomTypeNc='_1_1-2';
+    otherwise %bursts
+        i1_series=i_series(1,:);% do not sweep the j index
+        i2_series=i_series(1,:);
+        j1_series=ind1*ones(1,size(i_series,2));% j index is fixed by pair choice
+        j2_series=ind2*ones(1,size(i_series,2));
+        check_bounds=zeros(size(i1_series));% no limitations due to min-max indices
 end
 
 
