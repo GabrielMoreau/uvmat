@@ -42,6 +42,7 @@ end
 if ~exist('num','var')
     num=1;
 end
+A=[];
 ObjectOut=VideoObject;%default
 switch FileType
          case 'video'
