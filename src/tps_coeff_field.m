@@ -5,12 +5,13 @@
 % OUTPUT:
 % DataOut: output field structure, reproducing the input field structure DataIn and adding the fields:
 %         .Coord_tps
-%         .[VarName '_tps'] for each eligible input variable VarName (scalar ofr vector components)
+%         .[VarName '_tps'] for each eligible input variable VarName (scalar or vector components)
 % errormsg: error message, = '' by default
 %
 % INPUT:
 % DataIn: intput field structure
-% checkall:=1 if tps is needed for all fields (a projection mode interp_tps is needed), =0 otherwise 
+% checkall:=1 if tps is needed for all fields (a projection mode interp_tps has been chosen),
+%          =0 otherwise (tps only needed to get spatial derivatives of scattered data)
 %
 % called functions:
 % 'find_field_cells': analyse the input field structure, grouping the variables  into 'fields' with common coordinates
@@ -52,21 +53,20 @@ end
 nbtps=0;% indicate the number of tps coordinate sets in the field structure (in general =1)
 
 for icell=1:numel(CellInfo);
-    if NbDimArray(icell)>=2 && strcmp(CellInfo{icell}.CoordType,'scattered')% %if the coordinates are scattered
+    if NbDimArray(icell)>=2 && strcmp(CellInfo{icell}.CoordType,'scattered') %if the coordinates are scattered
         NbCoord=NbDimArray(icell);% dimension of space
         nbtps=nbtps+1;% indicate the number of tps coordinate sets in the field structure (in general =1)
         X=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end)});% value of x coordinate
-        Y=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end-1)});% value of x coordinate
+        Y=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end-1)});% value of y coordinate
         check_interp_tps=false(numel(DataIn.ListVarName),1);
-        %for ivar=1:numel(CellInfo{icell}.VarIndex)
-        Index_interp=[];
-        if isfield(CellInfo{icell},'VarIndex_scalar')
+        Index_interp=[];% indices of variables to interpolate
+        if isfield(CellInfo{icell},'VarIndex_scalar')%interpolate scalar
             Index_interp=[Index_interp CellInfo{icell}.VarIndex_scalar];
         end
-        if isfield(CellInfo{icell},'VarIndex_vector_x')
+        if isfield(CellInfo{icell},'VarIndex_vector_x')%interpolate vector x component
             Index_interp=[Index_interp CellInfo{icell}.VarIndex_vector_x];
         end
-        if isfield(CellInfo{icell},'VarIndex_vector_y')
+        if isfield(CellInfo{icell},'VarIndex_vector_y')%interpolate vector y component
             Index_interp=[Index_interp CellInfo{icell}.VarIndex_vector_y];
         end
         for iselect=1:numel(Index_interp)
@@ -75,9 +75,6 @@ for icell=1:numel(CellInfo);
                 check_interp_tps(Index_interp(iselect))=1;
             end
         end
-        
-        %VarIndexInterp=CellInfo{icell}.VarIndex(check_interp_tps);% indices of variables to interpolate through tps
-        %         if ~isempty(VarIndexInterp)
         ListVarInterp=DataIn.ListVarName(check_interp_tps);
         VarIndexInterp=find(check_interp_tps);
         if ~isempty(ListVarInterp)
@@ -109,9 +106,6 @@ for icell=1:numel(CellInfo);
                 ind_sel=IndSelSubDomain(1:NbCentre(isub),isub);% array indices selected for the subdomain
                 DataOut.(['Coord_tps' term])(1:NbCentre(isub),1:2,isub)=[X(ind_sel) Y(ind_sel)];
                 DataOut.(['Coord_tps' term])(NbCentre(isub)+1:NbCentre(isub)+3,1:2,isub)=0;%matrix of zeros to complement the matrix Coord_tps (conveninent for file storage)
-                %fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-                %                 fill=zeros(NbCoord+1,NbCoord+1,NbCoord); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-                %                 Coord_tps=cat(1,Coord_tps,fill);
             end
             for ivar=1:numel(ListVarInterp)
                 DataOut.VarDimName{nbvar+3+ivar}={['nb_tps' term],['nb_subdomain' term]};
@@ -131,9 +125,7 @@ for icell=1:numel(CellInfo);
             end
             DataOut.(['SubRange' term])=SubRange;
             DataOut.(['NbCentre' term])=NbCentre;
-            %             DataOut.(['Coord_tps' term])=Coord_tps;
             for ilist=1:numel(VarIndexInterp)
-                %                 Var_tps=zeros(size(IndSelSubDomain)+[NbCoord+1 0]);%default spline
                 for isub=1:size(SubRange,3)
                     ind_sel=IndSelSubDomain(1:NbCentre(isub),isub);% array indices selected for the subdomain
                     [tild,Var_tps(1:NbCentre(isub)+NbCoord+1,isub)]=tps_coeff([X(ind_sel) Y(ind_sel)],DataIn.(ListVarInterp{ilist})(ind_sel),0);%calculate the tps coeff in the subdomain

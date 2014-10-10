@@ -472,6 +472,23 @@ function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
 handles.output.ActionInput=read_GUI(handles.civ_input);
+% correct mask or grid name for Windows system (replace '\' by '/')
+if isfield(handles.output.ActionInput,'Civ1')
+    if isfield(handles.output.ActionInput.Civ1,'Mask')
+        handles.output.ActionInput.Civ1.Mask=regexprep(handles.output.ActionInput.Civ1.Mask,'\','/');
+    end
+    if isfield(handles.output.ActionInput.Civ1,'Grid')
+        handles.output.ActionInput.Civ1.Grid=regexprep(handles.output.ActionInput.Civ1.Grid,'\','/');
+    end
+end
+if isfield(handles.output.ActionInput,'Civ2')
+    if isfield(handles.output.ActionInput.Civ2,'Mask')
+        handles.output.ActionInput.Civ2.Mask=regexprep(handles.output.ActionInput.Civ2.Mask,'\','/');
+    end
+    if isfield(handles.output.ActionInput.Civ2,'Grid')
+        handles.output.ActionInput.Civ2.Grid=regexprep(handles.output.ActionInput.Civ2.Grid,'\','/');
+    end
+end
 guidata(hObject, handles);% Update handles structure
 uiresume(handles.civ_input);
 

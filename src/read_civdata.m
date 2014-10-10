@@ -104,6 +104,7 @@ if isfield(Data,'Txt')
      erromsg=['error in read_civdata: ' Data.Txt];
     return
 end
+% set the list of variables to read and their role
 [varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
 if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];
@@ -124,12 +125,12 @@ switch VelTypeOut
         if isfield(Field,'Patch1_SubDomain')
             Field.SubDomain=Field.Patch1_SubDomain;
             Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
-        end 
+        end
         if isfield(Field,'Civ1_Dt')
-        Field.Dt=Field.Civ1_Dt;
+            Field.Dt=Field.Civ1_Dt;
         end
         if isfield(Field,'Civ1_Time')
-        Field.Time=Field.Civ1_Time;
+            Field.Time=Field.Civ1_Time;
         end
     case{'civ2','filter2'}
         if isfield(Field,'Patch2_SubDomain')
@@ -153,22 +154,18 @@ for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_x_tps')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U_tps=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_y')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_V=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_y_tps')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_V_tps=ivar;
     end
 end

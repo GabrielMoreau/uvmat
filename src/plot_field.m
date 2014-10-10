@@ -13,12 +13,12 @@
 %
 % function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
 %
-% OUTPUT:
+% OUPUT:
 % PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume'
 % PlotParamOut: structure, representing the updated  plotting parameters, in case of automatic scaling
 % haxes: handle of the plotting axis, when a new figure is created.
 %
-% INPUT:
+%INPUT
 %    Data:   structure describing the field to plot 
 %         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
 %                    .Att_1,Att_2... : values of the global attributes
@@ -80,23 +80,21 @@
 %              % if not empty, display a colorbar for B&W images at position PosColorbar
 %                expressed in figure relative unit (ex [0.821 0.471 0.019 0.445])
 
-%=======================================================================
-% Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
-%
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
-%
+% 
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation; either version 2 of the License, or
+%     (at your option) any later version.
+% 
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
+%     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam)
 
@@ -778,7 +776,6 @@ PlotParamOut=PlotParam; % output plot parameters equal to input by default
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 if test_ima
-    
     % distinguish B/W and color images
     np=size(A);%size of image
     siz=numel(np);
@@ -797,7 +794,7 @@ if test_ima
         end
     end
     
-    %set the color map
+    %set for grey scale setting
     if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
         BW=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
     else % BW imposed automatically chosen
@@ -805,152 +802,141 @@ if test_ima
         PlotParamOut.Scalar.CheckBW=BW;
     end
     
-            % determine the plot option 'image' or 'contours' 
+    % determine the plot option 'image' or 'contours'
+    CheckContour=0; %default
     if isfield(PlotParam.Scalar,'ListContour')
         CheckContour=strcmp(PlotParam.Scalar.ListContour,'contours');% =1 for contour plot option
-    else
-        CheckContour=0; %default
     end
     
     %case of grey level images or contour plot
-    if siz==2
-        if ~isfield(PlotParam.Scalar,'CheckFixScalar')
-            PlotParam.Scalar.CheckFixScalar=0;% free scalar threshold value scale (from min to max) by default
-        end
-        if ~isfield(PlotParam.Scalar,'MinA')
-            PlotParam.Scalar.MinA=[];%no min scalar threshold value set
-        end
-        if ~isfield(PlotParam.Scalar,'MaxA')
-            PlotParam.Scalar.MaxA=[];%no max scalar threshold value set 
-        end
-        
-        % determine the min scalar value 
-        if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MinA) && isnumeric(PlotParam.Scalar.MinA)  
-            MinA=double(PlotParam.Scalar.MinA); % min value set as input
-        else
-            MinA=double(min(min(A))); % min value set as min of non NaN scalar values
-        end
-        
-        % error if the input scalar is NaN everywhere
-        if isnan(MinA)
-                errormsg='NaN input scalar or image in plot_field';
-                return
-        end
-        
-        % determine the max scalar value 
-        if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MaxA) && isnumeric(PlotParam.Scalar.MaxA)  
-            MaxA=double(PlotParam.Scalar.MaxA); % max value set as input
-        else
-            MaxA=double(max(max(A))); % max value set as min of non NaN scalar values
-        end 
-        
-        PlotParamOut.Scalar.MinA=MinA;
-        PlotParamOut.Scalar.MaxA=MaxA;
-        PlotParamOut.Scalar.Npx=size(A,2);
-        PlotParamOut.Scalar.Npy=size(A,1);
-        
-        % case of contour plot
-        if CheckContour
-            if ~isempty(hima) && ishandle(hima)
-                delete(hima) % delete existing image
-            end
-            
-            % set the contour values
-            if ~isfield(PlotParam.Scalar,'IncrA')
-                PlotParam.Scalar.IncrA=[];% automatic contour interval 
-            end
-            if ~isempty(PlotParam.Scalar.IncrA) && isnumeric(PlotParam.Scalar.IncrA)
-                interval=PlotParam.Scalar.IncrA;
-            else % automatic contour interval
-                cont=colbartick(MinA,MaxA);
-                interval=cont(2)-cont(1);%default
-                PlotParamOut.Scalar.IncrA=interval;% set the interval as output for display on the GUI
-            end
-            %B=A;
-            abscontmin=interval*floor(MinA/interval);
-            abscontmax=interval*ceil(MaxA/interval);
-            contmin=interval*floor(min(min(A))/interval);
-            contmax=interval*ceil(max(max(A))/interval);
-            cont_pos_plus=0:interval:contmax;% zero and positive contour values (plotted as solid lines)
-            cont_pos_min=double(contmin):interval:-interval;% negative contour values (plotted as dashed lines)
-            cont_pos=[cont_pos_min cont_pos_plus];% set of all contour values
-            
-            sizpx=(Coord_x(end)-Coord_x(1))/(np(2)-1);
-            sizpy=(Coord_y(1)-Coord_y(end))/(np(1)-1);
-            x_cont=Coord_x(1):sizpx:Coord_x(end); % pixel x coordinates for image display
-            y_cont=Coord_y(1):-sizpy:Coord_y(end); % pixel x coordinates for image display
-            
-            %axes(haxes)% set the input axes handle as current axis
-
-           % colormap(map);
-           tag_axes=get(haxes,'Tag');% axes tag
-           Opacity=1;
-           if isfield(PlotParam.Scalar,'Opacity')&&~isempty(PlotParam.Scalar.Opacity)
-               Opacity=PlotParam.Scalar.Opacity;
-           end
-           % fill the space between contours if opacity is undefined or =1
-           if isequal(Opacity,1)
-               [var,hcontour]=contour(haxes,x_cont,y_cont,A,cont_pos);% determine all contours
-               set(hcontour,'Fill','on')% fill the space between contours 
-               set(hcontour,'LineStyle','none')
-               hold on
-           end
-           [var_p,hcontour_p]=contour(haxes,x_cont,y_cont,A,cont_pos_plus,'k-');% draw the contours for positive values as solid lines
-           hold on
-           [var_m,hcontour_m]=contour(haxes,x_cont,y_cont,A,cont_pos_min,'--');% draw the contours for negative values as dashed lines
-           if isequal(Opacity,1)
-               set(hcontour_m,'LineColor',[1 1 1])% draw negative contours in white (better visibility in dark background)
-           end
-           set(haxes,'Tag',tag_axes);% restore axes tag (removed by the matlab fct contour !)
-           hold off
-           
-            %determine the color scale and map
-            caxis([abscontmin abscontmax])
-            if BW
-                vec=linspace(0,1,(abscontmax-abscontmin)/interval);%define a greyscale colormap with steps interval
-                map=[vec' vec' vec'];
-                colormap(map);
-            else
-                colormap('default'); % default matlab colormap ('jet')
-            end
-            
-            if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
-                set(haxes,'DataAspectRatioMode','manual')
-                if isfield(PlotParam.Axes,'AspectRatio')
-                    set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
-                else
-                    set(haxes,'DataAspectRatio',[1 1 1])
-                end
-            end
-        else      
-        % set  colormap for  image display
-            % rescale the grey levels with min and max, put a grey scale colorbar
-%             B=A;
-            if BW
-                vec=linspace(0,1,255);%define a linear greyscale colormap
-                map=[vec' vec' vec'];
-                colormap(map);  %grey scale color map
-            else
-                colormap('default'); % standard false colors for div, vort , scalar fields
-            end
-        end
-        
-        % case of color images
-    else
-        if BW
-            A=uint16(sum(A,3));
-        else
-            A=uint8(A);
-        end
-        MinA=0;
-        MaxA=255;
+    if ~isfield(PlotParam.Scalar,'CheckFixScalar')
+        PlotParam.Scalar.CheckFixScalar=0;% free scalar threshold value scale (from min to max) by default
+    end
+    if ~isfield(PlotParam.Scalar,'MinA')
+        PlotParam.Scalar.MinA=[];%no min scalar threshold value set
+    end
+    if ~isfield(PlotParam.Scalar,'MaxA')
+        PlotParam.Scalar.MaxA=[];%no max scalar threshold value set
     end
     
-    % display usual image
-    if ~CheckContour
+    % determine the min scalar value
+    if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MinA) && isnumeric(PlotParam.Scalar.MinA)
+        MinA=double(PlotParam.Scalar.MinA); % min value set as input
+    else
+        MinA=double(min(min(min(A)))); % min value set as min of non NaN scalar values
+    end
+    
+    % error if the input scalar is NaN everywhere
+    if isnan(MinA)
+        errormsg='NaN input scalar or image in plot_field';
+        return
+    end
+    
+    % determine the max scalar value
+    CheckFixScalar=0;
+    if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MaxA) && isnumeric(PlotParam.Scalar.MaxA)
+        MaxA=double(PlotParam.Scalar.MaxA); % max value set as input
+        CheckFixScalar=1; 
+    else
+        MaxA=double(max(max(max(A)))); % max value set as min of non NaN scalar values
+    end
+    
+    PlotParamOut.Scalar.MinA=MinA;
+    PlotParamOut.Scalar.MaxA=MaxA;
+    PlotParamOut.Scalar.Npx=size(A,2);
+    PlotParamOut.Scalar.Npy=size(A,1);
+    %     if siz==2
+    % case of contour plot
+    if CheckContour
+        if ~isempty(hima) && ishandle(hima)
+            delete(hima) % delete existing image
+        end
+        
+        % set the contour values
+        if ~isfield(PlotParam.Scalar,'IncrA')
+            PlotParam.Scalar.IncrA=[];% automatic contour interval
+        end
+        if ~isempty(PlotParam.Scalar.IncrA) && isnumeric(PlotParam.Scalar.IncrA)
+            interval=PlotParam.Scalar.IncrA;
+        else % automatic contour interval
+            cont=colbartick(MinA,MaxA);
+            interval=cont(2)-cont(1);%default
+            PlotParamOut.Scalar.IncrA=interval;% set the interval as output for display on the GUI
+        end
+        abscontmin=interval*floor(MinA/interval);
+        abscontmax=interval*ceil(MaxA/interval);
+        contmin=interval*floor(min(min(A))/interval);
+        contmax=interval*ceil(max(max(A))/interval);
+        cont_pos_plus=0:interval:contmax;% zero and positive contour values (plotted as solid lines)
+        cont_pos_min=double(contmin):interval:-interval;% negative contour values (plotted as dashed lines)
+        cont_pos=[cont_pos_min cont_pos_plus];% set of all contour values
+        
+        sizpx=(Coord_x(end)-Coord_x(1))/(np(2)-1);
+        sizpy=(Coord_y(1)-Coord_y(end))/(np(1)-1);
+        x_cont=Coord_x(1):sizpx:Coord_x(end); % pixel x coordinates for image display
+        y_cont=Coord_y(1):-sizpy:Coord_y(end); % pixel x coordinates for image display
+        
+        %axes(haxes)% set the input axes handle as current axis
+        
+        % colormap(map);
+        tag_axes=get(haxes,'Tag');% axes tag
+        Opacity=1;
+        if isfield(PlotParam.Scalar,'Opacity')&&~isempty(PlotParam.Scalar.Opacity)
+            Opacity=PlotParam.Scalar.Opacity;
+        end
+        % fill the space between contours if opacity is undefined or =1
+        if isequal(Opacity,1)
+            [var,hcontour]=contour(haxes,x_cont,y_cont,A,cont_pos);% determine all contours
+            set(hcontour,'Fill','on')% fill the space between contours
+            set(hcontour,'LineStyle','none')
+            hold on
+        end
+        [var_p,hcontour_p]=contour(haxes,x_cont,y_cont,A,cont_pos_plus,'k-');% draw the contours for positive values as solid lines
+        hold on
+        [var_m,hcontour_m]=contour(haxes,x_cont,y_cont,A,cont_pos_min,'--');% draw the contours for negative values as dashed lines
+        if isequal(Opacity,1)
+            set(hcontour_m,'LineColor',[1 1 1])% draw negative contours in white (better visibility in dark background)
+        end
+        set(haxes,'Tag',tag_axes);% restore axes tag (removed by the matlab fct contour !)
+        hold off
+        
+        %determine the color scale and map
+        caxis([abscontmin abscontmax])
+        if BW
+            vec=linspace(0,1,(abscontmax-abscontmin)/interval);%define a greyscale colormap with steps interval
+            map=[vec' vec' vec'];
+            colormap(map);
+        else
+            colormap('default'); % default matlab colormap ('jet')
+        end
+        
+        if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
+            set(haxes,'DataAspectRatioMode','manual')
+            if isfield(PlotParam.Axes,'AspectRatio')
+                set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
+            else
+                set(haxes,'DataAspectRatio',[1 1 1])
+            end
+        end
+    else %usual images (no contour)
+        % set  colormap for  image display
+        if BW
+            vec=linspace(0,1,255);%define a linear greyscale colormap
+            map=[vec' vec' vec'];
+            colormap(map);  %grey scale color map
+            if siz==3% true color images visualized in BW
+                A=uint16(sum(A,3));%sum the three color components for color images displayed with BW option
+            end
+        else
+            if siz==3 && CheckFixScalar % true color images rescaled by MaxA
+                  A=uint8(255*double(A)/double(MaxA));
+            end
+            colormap('default'); % standard false colors for div, vort , scalar fields
+        end
+        
         % interpolate field to increase resolution of image display
         test_interp=0;
-        if size(A,3)==1 % scalar of B/W image
+        if size(A,3)==1 % scalar or B/W image
             test_interp=1;
             if max(np) <= 64
                 npxy=8*np;% increase the resolution 8 times
@@ -1013,7 +999,7 @@ if test_ima
     
     %display the colorbar code for B/W images if Poscolorbar not empty
     if ~isempty(PosColorbar)
-        if siz==2 && exist('PosColorbar','var')
+        if size(A,3)==1 && exist('PosColorbar','var')
             if isempty(hcol)||~ishandle(hcol)
                 hcol=colorbar;%create new colorbar
             end

@@ -80,10 +80,10 @@ switch FileType
     case 'civdata'% new format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
-        if ~isempty(strcmp('C',ParamIn.FieldName))% if C image correlation is requested as field (not color visu)
-            ScalarIndex=strcmp('C',Field.ListVarName);
-            Field.VarAttribute{ScalarIndex}.Role='scalar';%put role as 'scalar' instead of ancillary
-        end      
+%         if ~isempty(strcmp('C',ParamIn.FieldName))% if C image correlation is requested as field (not color visu)
+%             ScalarIndex=strcmp('C',Field.ListVarName);
+%             Field.VarAttribute{ScalarIndex}.Role='scalar';%put role as 'scalar' instead of ancillary
+%         end      
         ParamOut.CivStage=Field.CivStage;
     case 'civx'% old (obsolete) format for civ results
         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default

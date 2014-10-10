@@ -77,9 +77,6 @@ end
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    Param.InputTable{1}
-    Param.InputTable{2}
-     Param.InputTable{3}
     checkrun=0;
 end
 if ~isfield(Param,'ActionInput')
@@ -152,7 +149,6 @@ if isfield(Param,'InputTable')
                 if ~isempty(PairCiv2)
                     [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds,NomTypeNc]=...
                         find_pair_indices(PairCiv2,i1_series{2},j1_series{2},MinIndex_i(2),MaxIndex_i(2),MinIndex_j(2),MaxIndex_j(2));
-%                     check_bounds=check_bounds | check_bounds_Civ2;
                 end
             end
 %             i1_series_Civ1=i1_series_Civ1(~check_bounds);
@@ -203,6 +199,8 @@ if isfield(Param,'InputTable')
         if isempty(j1_series_Civ2)
             FrameIndex_A_Civ2=i1_series_Civ2;
             FrameIndex_B_Civ2=i2_series_Civ2;
+            j1_series_Civ2=ones(size(i1_series_Civ2));
+            j2_series_Civ2=ones(size(i1_series_Civ2));
         else
             FrameIndex_A_Civ2=j1_series_Civ2;
             FrameIndex_B_Civ2=j2_series_Civ2;
@@ -252,7 +250,8 @@ try
             disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
             return
         end
-        [FileType_A,FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+        [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+        FileType_A=FileInfo_A.FileType;
         [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
         ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
         if ~exist(ImageName_B,'file')
@@ -263,6 +262,8 @@ try
         FileType_B=FileInfo_B.FileType;
         [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
         NbField=numel(i1_series_Civ2);
+    else
+        NbField=numel(i1_series_Civ1);% no image used (only fix or patch) TO CHECK
     end
 catch ME
     if ~isempty(ME.message)
@@ -279,15 +280,11 @@ Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 Data.CivStage=0;%default
-% ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
-% ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
-% mask='';
 maskname='';%default
 check_civx=0;%default
-% check_civ1=0;%default
-% check_patch1=0;%default
 
 %% get timing from the ImaDoc file or input video
+if iview_A~=0
 XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
 time=[];
 if ~isempty(XmlFileName)
@@ -315,15 +312,20 @@ if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% cas
     ColorType='truecolor';
 end
 if isempty(time)% time = index i +0.001 index j by default
-    time=(MinIndex_i:MaxIndex_i)'*ones(1,MaxIndex_j-MinIndex_j+1);
-    time=time+0.001*ones(MaxIndex_i-MinIndex_i+1,1)*(MinIndex_j:MaxIndex_j);
-    time=[zeros(1,MaxIndex_j-MinIndex_j+1);time];% insert a first line of zeros
-    time=[zeros(MaxIndex_i-MinIndex_i+2,1) time];% insert a first column of zeros
+    %MinIndex_i=min(i1_series_Civ1);
+    MaxIndex_i=max(i2_series_Civ1);
+    %MinIndex_j=min(j1_series_Civ1);
+    MaxIndex_j=max(j2_series_Civ1);
+    time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
+    time=time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
+    time=[zeros(1,MaxIndex_j);time];% insert a first line of zeros
+    time=[zeros(MaxIndex_i+1,1) time];% insert a first column of zeros
 end
     
 if length(FileInfo_A) >1 %case of image with multiple frames
     nbfield=length(FileInfo_A);
     nbfield_j=1;
+end
 end
 
 %%%%% MAIN LOOP %%%%%%
@@ -333,19 +335,23 @@ for ifield=1:NbField
         disp('program stopped by user')
         break
     end
-    if iview_A==1% if Civ1 is performed
-        Civ1Dir=OutputDir;
+    if iview_A==0
+        ncfile=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
+            NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     else
-        Civ1Dir=Param.InputTable{1,2};
+        if iview_A==1% if Civ1 is performed
+            Civ1Dir=OutputDir;
+        else
+            Civ1Dir=Param.InputTable{1,2};
+        end
+        if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+            ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+                j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+        else
+            ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+                j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+        end
     end
-    if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-        ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
-            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-    else
-        ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
-            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-    end
-
     %% Civ1
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
@@ -465,6 +471,13 @@ for ifield=1:NbField
     
     %% Fix1
     if isfield (Param.ActionInput,'Fix1')
+        if ~isfield (Param.ActionInput,'Civ1')% if we use existing Civ1, remove previous data beyond Civ1
+            Fix1_attr=find(strcmp('Fix1',Data.ListGlobalAttribute));
+            Data.ListGlobalAttribute(Fix1_attr)=[];
+            for ilist=1:numel(Fix1_attr)
+                Data=rmfield(Data,Data.ListGlobalAttribute{Fix1_attr(ilist)});
+            end
+        end 
         ListFixParam=fieldnames(Param.ActionInput.Fix1);
         for ilist=1:length(ListFixParam)
             ParamName=ListFixParam{ilist};
@@ -614,19 +627,6 @@ for ifield=1:NbField
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-%         i1=i1_series_Civ2(ifield);
-%         i2=i1;
-%         if ~isempty(i2_series_Civ2)
-%             i2=i2_series_Civ2(ifield);
-%         end
-%         j1=1;
-%         if ~isempty(j1_series_Civ2)
-%             j1=j1_series_Civ2(ifield);
-%         end
-%         j2=j1;
-%         if ~isempty(j2_series_Civ1)
-%             j2=j2_series_Civ2(ifield);
-%         end
         Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
         par_civ2.SearchBoxShift=(Civ2_Dt/Data.Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
@@ -692,7 +692,7 @@ for ifield=1:NbField
             Data.VarDimName=[Data.VarDimName {'nb_vec_2'}];
             nbvar=length(Data.ListVarName);
             Data.VarAttribute{nbvar}.Role='errorflag';
-            Data.Civ2_FF=fix(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
+            Data.Civ2_FF=double(fix(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V));
             Data.CivStage=Data.CivStage+1;
         end
         
