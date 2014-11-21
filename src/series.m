@@ -2827,72 +2827,72 @@ end
 
 
 % --------------------------------------------------------------------
-function MenuImportParam_Callback(hObject, eventdata, handles)
-%% use a starting file name for browserr
-InputTable=get(handles.InputTable,'Data');
-oldfile=InputTable{1,1};
-if isempty(oldfile)
-    % use a file name stored in prefdir
-    dir_perso=prefdir;
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-        h=load (profil_perso);
-        if isfield(h,'RootPath') && ischar(h.RootPath)
-            oldfile=h.RootPath;
-        end
-    end
-end
-filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
-%proceed only if a file has been introduced by the browser
-if ~isempty(filexml)
-    Param=xml2struct(filexml);% read the input xml file as a Matlab structure
-    % ask to stop current Action if button RUN is in action (another process is already running)
-    if isequal(get(handles.RUN,'Value'),1)
-        answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
-        if strcmp(answer,'Yes')
-            STOP_Callback(hObject, eventdata, handles)
-        else
-            return
-        end
-    end
-    Param.Action.RUN=0; %desactivate the input RUN=1
-    if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
-        msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
-        return
-    end
-    Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
-    Param=rmfield(Param,'IndexRange');  
-    fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
-    SeriesData=get(handles.series,'UserData');
-    if isfield(Param,'InputFields')
-        ListField=Param.InputFields.FieldName;
-        set(handles.FieldName,'String',[ListField;{'get-field...'}])
-         set(handles.FieldName,'Value',1:numel(ListField))
-    end       
-    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-        set(handles.ActionInput,'Visible','on')
-        set(handles.ActionInput,'Value',0)
-        Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
-        SeriesData.ActionInput=Param.ActionInput;
-    end
-    if isfield(Param,'ProjObject') %introduce projection object if relevant
-        SeriesData.ProjObject=Param.ProjObject;
-    end
-    set(handles.series,'UserData',SeriesData)
-    if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
-        set(handles.ProjObject,'String',Param.ProjObject.Name)
-        set(handles.ViewObject,'Visible','on')
-        set(handles.EditObject,'Visible','on')
-        set(handles.DeleteObject,'Visible','on')
-    else     
-        set(handles.ProjObject,'String','')
-        set(handles.ProjObject,'Visible','off')
-        set(handles.ViewObject,'Visible','off')
-        set(handles.EditObject,'Visible','off')
-        set(handles.DeleteObject,'Visible','off')     
-    end     
-    set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
-end
+% function MenuImportParam_Callback(hObject, eventdata, handles)
+% %% use a starting file name for browserr
+% InputTable=get(handles.InputTable,'Data');
+% oldfile=InputTable{1,1};
+% if isempty(oldfile)
+%     % use a file name stored in prefdir
+%     dir_perso=prefdir;
+%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+%     if exist(profil_perso,'file')
+%         h=load (profil_perso);
+%         if isfield(h,'RootPath') && ischar(h.RootPath)
+%             oldfile=h.RootPath;
+%         end
+%     end
+% end
+% filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
+% %proceed only if a file has been introduced by the browser
+% if ~isempty(filexml)
+%     Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+%     % ask to stop current Action if button RUN is in action (another process is already running)
+%     if isequal(get(handles.RUN,'Value'),1)
+%         answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
+%         if strcmp(answer,'Yes')
+%             STOP_Callback(hObject, eventdata, handles)
+%         else
+%             return
+%         end
+%     end
+%     Param.Action.RUN=0; %desactivate the input RUN=1
+%     if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
+%         msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
+%         return
+%     end
+%     Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
+%     Param=rmfield(Param,'IndexRange');  
+%     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
+%     SeriesData=get(handles.series,'UserData');
+%     if isfield(Param,'InputFields')
+%         ListField=Param.InputFields.FieldName;
+%         set(handles.FieldName,'String',[ListField;{'get-field...'}])
+%          set(handles.FieldName,'Value',1:numel(ListField))
+%     end       
+%     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
+%         set(handles.ActionInput,'Visible','on')
+%         set(handles.ActionInput,'Value',0)
+%         Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
+%         SeriesData.ActionInput=Param.ActionInput;
+%     end
+%     if isfield(Param,'ProjObject') %introduce projection object if relevant
+%         SeriesData.ProjObject=Param.ProjObject;
+%     end
+%     set(handles.series,'UserData',SeriesData)
+%     if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
+%         set(handles.ProjObject,'String',Param.ProjObject.Name)
+%         set(handles.ViewObject,'Visible','on')
+%         set(handles.EditObject,'Visible','on')
+%         set(handles.DeleteObject,'Visible','on')
+%     else     
+%         set(handles.ProjObject,'String','')
+%         set(handles.ProjObject,'Visible','off')
+%         set(handles.ViewObject,'Visible','off')
+%         set(handles.EditObject,'Visible','off')
+%         set(handles.DeleteObject,'Visible','off')     
+%     end     
+%     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
+% end
 
 
 
@@ -3332,5 +3332,3 @@ Mode_Callback([],[])
 function num_ref_j_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
 Mode_Callback([],[])
-
-

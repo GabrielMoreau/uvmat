@@ -116,6 +116,10 @@ if ~strcmp(FileInfo.FileType,'rdvision')
     msgbox_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened')
     return
 end
+if exist(fullfile(RootPath{1},OutputDir),'dir')
+     msgbox_uvmat('ERROR',['output folder ' OutputDir ' already exists, put data in a new folder Experiment']);
+     return
+end
 
 %% calibration data and timing: read the ImaDoc files
 mode=''; %default
@@ -197,7 +201,7 @@ if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
     NomTypeNew='_1';
     ImageName='img_1.png';
 end
-
+ 
 %update information of 'Heading'
 uid_Heading=find(t,'ImaDoc/Heading');
 if isempty(uid_Heading)

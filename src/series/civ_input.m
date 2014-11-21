@@ -2098,3 +2098,78 @@ function [Data,par_civ1]=get_param_civ1(handles)
  
 
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in InportParam.
+function InportParam_Callback(hObject, eventdata, handles)
+hseries=findobj(allchild(0),'Tag','series');
+hhseries=guidata(hseries);
+InputTable=get(hhseries.InputTable,'Data');% read the input file(s) table in the GUI series
+oldfile=InputTable{1,1};
+if isempty(oldfile)
+    % use a file name stored in prefdir
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
+    end
+end
+filexml=uigetfile_uvmat('pick a xml parameter file for civ',oldfile,'.xml');% get the xml file containing processing parameters
+%proceed only if a file has been introduced by the browser
+if ~isempty(filexml)
+    Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+
+   % Param.Action.RUN=0; %desactivate the input RUN=1
+    if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
+        msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
+        return
+    end
+    check_input=0;
+    if isfield(Param,'ActionInput')
+        if isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'civ_series')
+            fill_GUI(Param.ActionInput,handles.civ_input)% fill the elements of the GUI series with the input parameters
+            check_input=1;
+            update_CivOptions(handles,0)
+                
+        end
+    end
+    if ~check_input
+        msgbox_uvmat('ERROR','invalid config file (not for civ_series')
+        return
+    end
+%     Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
+%     Param=rmfield(Param,'IndexRange');  
+%     fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
+% %     SeriesData=get(h,'UserData');
+%     if isfield(Param,'InputFields')
+%         ListField=Param.InputFields.FieldName;
+%         set(handles.FieldName,'String',[ListField;{'get-field...'}])
+%          set(handles.FieldName,'Value',1:numel(ListField))
+%     end       
+%     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
+%         set(handles.ActionInput,'Visible','on')
+%         set(handles.ActionInput,'Value',0)
+%         Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
+%         SeriesData.ActionInput=Param.ActionInput;
+%     end
+%     if isfield(Param,'ProjObject') %introduce projection object if relevant
+%         SeriesData.ProjObject=Param.ProjObject;
+%     end
+%     set(handles.series,'UserData',SeriesData)
+%     if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
+%         set(handles.ProjObject,'String',Param.ProjObject.Name)
+%         set(handles.ViewObject,'Visible','on')
+%         set(handles.EditObject,'Visible','on')
+%         set(handles.DeleteObject,'Visible','on')
+%     else     
+%         set(handles.ProjObject,'String','')
+%         set(handles.ProjObject,'Visible','off')
+%         set(handles.ViewObject,'Visible','off')
+%         set(handles.EditObject,'Visible','off')
+%         set(handles.DeleteObject,'Visible','off')     
+%     end     
+%     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
+end

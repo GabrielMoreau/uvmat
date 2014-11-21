@@ -146,7 +146,9 @@ set(hObject,'backgroundColor',[1 1 0])% indicate button activation
 hfig=get(hObject,'parent');%handle of the fig
 htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
 DirName=get(htitlebox,'String');
-
+if isempty(regexp(DirName,'^http://'))% if the input dir is not a web site (begins by http://)
+%     FullSelectName=DirName;
+% else
 if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     hlist=findobj(hfig,'Tag','list');
     list=get(hlist,'String');
@@ -161,6 +163,8 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
         SelectName=SelectName(1:ind_dot-1);
     end
     FullSelectName=fullfile(DirName,SelectName);
+    % if regexp(DirName,'^http://')% if the input dir is a web site (begins by http://)
+
     if exist(FullSelectName,'file')
         switch option
             case 'browser'
@@ -179,6 +183,7 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
                 end
         end
     end
+end
 end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activation
 uiresume(get(hObject,'parent'))
@@ -312,8 +317,12 @@ function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option,filter_e
 ListStruct=dir(DirName);% get structure of the current directory
 NumFiles=0; %default
 if numel(ListStruct)<1  % case of empty dir
+%     if regexp(DirName,'^http://')% if the input dir is a web site (begins by http://)
+%         web(DirName)
+%     else
     ListFiles={};
     return
+%     end
 end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names

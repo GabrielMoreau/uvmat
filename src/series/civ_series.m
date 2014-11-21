@@ -130,7 +130,7 @@ if isfield(Param,'InputTable')
         case 'PIV'
             PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
             if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
-                PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
+                PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;%string which determines the civ2 pair
             end
             if iview_A==1% if Civ1 is performed
                 [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
@@ -156,11 +156,11 @@ if isfield(Param,'InputTable')
 %             j1_series_Civ1=j1_series_Civ1(~check_bounds);
 %             j2_series_Civ1=j2_series_Civ1(~check_bounds);
         case 'displacement'
-            i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i_series{1}));
-            i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
-            j1_series_Civ1=ones(size(i_series{1}));% first j index is 1
+            i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i1_series{1}));
+            i2_series_Civ1=i1_series{1};i2_series_Civ2=i1_series{1};
+            j1_series_Civ1=ones(size(i1_series{1}));% first j index is 1
             if isempty(j1_series_Civ1)
-                j2_series_Civ1=ones(size(i_series{1}));
+                j2_series_Civ1=ones(size(i1_series{1}));
             else
                 j2_series_Civ1=j1_series_Civ1;
             end
@@ -169,14 +169,14 @@ if isfield(Param,'InputTable')
             j2_series_Civ2=j2_series_Civ1;
             NomTypeNc=NomType;
         case 'shift'
-            i1_series_Civ1=i_series{1};i1_series_Civ2=i_series{1};
-            i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
-            if isempty(j_series{1})
-                j1_series_Civ1=ones(size(i_series{1}));
-                j2_series_Civ1=ones(size(i_series{1}));
+            i1_series_Civ1=i1_series{1};i1_series_Civ2=i1_series{1};
+            i2_series_Civ1=i1_series{2};i2_series_Civ2=i1_series{2};
+            if isempty(j1_series{1})
+                j1_series_Civ1=ones(size(i1_series{1}));
+                j2_series_Civ1=ones(size(i1_series{2}));
             else
-                j1_series_Civ1=j_series{1};
-                j2_series_Civ1=j_series{1};
+                j1_series_Civ1=j1_series{1};
+                j2_series_Civ1=j1_series{2};
             end
             j1_series_Civ2=j1_series_Civ1;
             j2_series_Civ2=j2_series_Civ1;
@@ -191,11 +191,10 @@ if isfield(Param,'InputTable')
         FrameIndex_A_Civ1=j1_series_Civ1;
         FrameIndex_B_Civ1=j2_series_Civ1;
     end
-    if ~isempty(PairCiv2)
-%         i1_series_Civ2=i1_series_Civ2(~check_bounds);
-%         i2_series_Civ2=i2_series_Civ2(~check_bounds);
-%         j1_series_Civ2=j1_series_Civ2(~check_bounds);
-%         j2_series_Civ2=j2_series_Civ2(~check_bounds);
+    if isempty(PairCiv2)
+            FrameIndex_A_Civ2=FrameIndex_A_Civ1;
+            FrameIndex_B_Civ2=FrameIndex_B_Civ1;
+    else
         if isempty(j1_series_Civ2)
             FrameIndex_A_Civ2=i1_series_Civ2;
             FrameIndex_B_Civ2=i2_series_Civ2;

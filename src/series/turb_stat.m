@@ -220,7 +220,11 @@ for index=1:NbField
         DataOut.coord_x=Field.coord_x;
         Uprev=Field.U;
         Vprev=Field.V;
+        if isfield(Field,'FF')
         FFprev=Field.FF;
+        else
+            FFprev=true(size(Field.U));
+        end
     end
     FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
     DataOut.Counter=DataOut.Counter+ (~FF);% add 1 to the couter for non NaN point
