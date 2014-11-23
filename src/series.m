@@ -527,6 +527,7 @@ set(handles.InputTable,'UserData',iline);
 function InputTable_KeyPressFcn(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
+if ~isempty(xx)
 switch xx
     case 31 %downward arrow
         InputTable=get(handles.InputTable,'Data');
@@ -543,7 +544,7 @@ switch xx
             set(handles.InputTable,'Data',InputTable);
         end
 end
-
+end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in REFRESH.
@@ -1450,6 +1451,7 @@ else
 end
 
 %% create the output data directory if needed
+OutpuDir='';
 if isfield(Param,'OutputSubDir')
     SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
     SubDirOutNew=SubDirOut;
@@ -1490,21 +1492,24 @@ if isfield(Param,'OutputSubDir')
             return
         end
     end
-    OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
-    DirXml=fullfile(OutputDir,'0_XML');
-    if ~exist(DirXml,'dir')
-        [tild,msg1]=mkdir(DirXml);
-        if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
-            return
-        end
-        [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-        if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
-        end
+    
+elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
+    OutputDir=Param.ActionInput.LogPath;   
+end
+DirXml=fullfile(OutputDir,'0_XML');
+if ~exist(DirXml,'dir')
+    [tild,msg1]=mkdir(DirXml);
+    if ~strcmp(msg1,'')
+        msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
+        return
+    end
+    [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    if success==0
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
     end
 end
-        
+OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
+
 %% get the set of reference field indices
 first_i=1;
 last_i=1;
@@ -1609,9 +1614,9 @@ if strcmp (RunMode,'local')
                 end
         end
     end
-elseif strcmp(get(handles.OutputDirExt,'Visible'),'off')
-    msgbox_uvmat('ERROR',['no output file for Action ' ActionName ', use run mode = local']);% a output dir is needed for background option
-    return
+% elseif strcmp(get(handles.OutputDirExt,'Visible'),'off')
+%     msgbox_uvmat('ERROR',['no output file for Action ' ActionName ', use run mode = local']);% a output dir is needed for background option
+%     return
 else
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
@@ -2167,38 +2172,49 @@ end
 set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
+SubDirOut='';%default
+OutputDirExt='series'; %default
+if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
+    OutputDirExt=ParamOut.OutputDirExt;
+end
+set(handles.OutputDirExt,'String',OutputDirExt)
 OutputDirVisible='off';
-if isfield(ParamOut,'OutputDirExt')&&  ~isequal(ActionIndex,1)%&&~isempty(ParamOut.OutputDirExt)
-    OutputSubDirMode='all';%default
-    if isfield(ParamOut,'OutputSubDirMode')
-        OutputSubDirMode=ParamOut.OutputSubDirMode;
-    end
-    set(handles.OutputDirExt,'String',ParamOut.OutputDirExt)
-    OutputDirVisible='on';
-    SubDir=InputTable(1:end,2); %set of subdirectories sorted in alphabetical order
-    if strcmp(OutputSubDirMode,'last')
-        SubDirOut=SubDir{end};
-    else
+OutputSubDirMode='auto';%default
+if isfield(ParamOut,'OutputSubDirMode')
+    OutputSubDirMode=ParamOut.OutputSubDirMode;
+end
+switch OutputSubDirMode
+    case 'auto';%default
+        OutputDirVisible='on';
+        SubDir=InputTable(1:end,2); %set of subdirectories sorted in alphabetical order
         SubDirOut=SubDir{1};
-        if ~strcmp(OutputSubDirMode,'first')  && numel(SubDir)>1
+        if numel(SubDir)>1
             for ilist=2:numel(SubDir)
                 SubDirOut=[SubDirOut '-' SubDir{ilist}];
             end
         end
-    end
-    if isfield(ParamOut,'OutputSubDir')
-        SubDirOut=ParamOut.OutputSubDir;
-    end
-    set(handles.OutputSubDir,'String',SubDirOut)
+    case 'first'
+        OutputDirVisible='on';
+        SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
+    case 'last'
+        OutputDirVisible='on';
+        SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
 end
-
+set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
-set(handles.RunMode,'Visible',OutputDirVisible)
-set(handles.ActionExt,'Visible',OutputDirVisible)
-set(handles.RunMode_title,'Visible',OutputDirVisible)
-set(handles.ActionExt_title,'Visible',OutputDirVisible)
+
+%% visibility of the run mode (local or background or cluster)
+if strcmp(OutputSubDirMode,'none')
+    RunModeVisible='off';% only local mode available if no output file is produced
+else
+     RunModeVisible='on';
+end
+set(handles.RunMode,'Visible',RunModeVisible)
+set(handles.ActionExt,'Visible',RunModeVisible)
+set(handles.RunMode_title,'Visible',RunModeVisible)
+set(handles.ActionExt_title,'Visible',RunModeVisible)
 
 
 %% Expected nbre of output files
@@ -2951,7 +2967,7 @@ if get(handles.status,'Value')
     Param=read_GUI(handles.series);
     RootPath=Param.InputTable{1,1};
     if ~isfield(Param,'OutputSubDir')   
-        msgbox_uvmat('ERROR','no directory defined for output files')
+        msgbox_uvmat('ERROR','no standard sub-directory definition for output files, use a browser to check the output')
         return
     end
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
