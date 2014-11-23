@@ -61,7 +61,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'off';%can use a transform function
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='';%set the output dir extension (blank=no output dir)
+    ParamOut.OutputSubDirMode='none'; %(options 'none'/'custom'/'auto'/'first'/'last','auto' by default)
+    %                      'none' =no output files
     return
 end
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%

@@ -69,11 +69,35 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'off';...%can use a transform function
     ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputSubDir=Param.InputTable{1,3};
-    ParamOut.OutputDirExt='';%set the output dir extension
-    if size(Param.InputTable,1)>1
-        msgbox_uvmat('WARNING', 'this function acts only on the first input file line')
+    ParamOut.OutputSubDirMode='custom'; %output folder given by the program, not by the GUI series
+     % detect the set of image folder
+    RootPath=Param.InputTable{1,1};
+    ListStruct=dir(RootPath);   
+    ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+    check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
+    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+    ListDir=ListCells(1,find(check_dir & ~check_bad));
+    InputTable=cell(numel(ListDir),5);
+    InputTable(:,2)=ListDir';
+    for ilist=1:numel(ListDir)
+        InputTable{ilist,1}=RootPath;
+        ListStructSub=dir(fullfile(RootPath,ListDir{ilist}));
+        ListCellSub=struct2cell(ListStructSub);% transform dir struct to a cell arrray
+        detect_seq=regexp(ListCellSub(1,:),'.seq$');
+        seq_index=find(~cellfun('isempty',detect_seq),1);
+        if isempty(seq_index)
+            msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
+        else
+            RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
+            InputTable{ilist,3}=RootFile;
+        end
+        InputTable{ilist,4}='*';
+        InputTable{ilist,5}='.seq';
     end
+    hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
+    hhseries=guidata(hseries); %handles of the elements in 'series'
+    set(hhseries.InputTable,'Data',InputTable)
+    ParamOut.ActionInput.LogPath=RootPath;% indicate the path for the output info: 0_LOG ....
 return
 end
 
@@ -90,16 +114,17 @@ RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% root input file(s) and type
-RootPath=Param.InputTable(:,1);
-RootFile=Param.InputTable(:,3);
-SubDir=Param.InputTable(:,2);
-FileExt=Param.InputTable(:,5);
+RootPath=Param.InputTable{1,1};
+if ~isempty(find(~strcmp(RootPath,Param.InputTable(:,1))))% if the Rootpath for each camera are not identical
+    disp_uvmat('ERROR','Rootpath for all cameras must be identical',checkrun)
+    return
+end
 
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'*',1);
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+
+%OutputDir=[Param.OutputSubDir Param.OutputDirExt];
  
 % numbers of slices and file indices
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
@@ -107,19 +132,22 @@ nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
 
 %determine the file type on each line from the first input file 
-% if ~exist(filecell{1,1}','file')
-%     msgbox_uvmat('ERROR',['the first input file ' filecell{1,1} ' does not exist'])
-%     return
-% end
+
 FileInfo=get_file_info(filecell{1,1});
-if ~strcmp(FileInfo.FileType,'rdvision')
+if strcmp(FileInfo.FileType,'rdvision')
+    if ~isequal(FileInfo.NumberOfFrames,nbfield)
+        msgbox_uvmat('ERROR',['the whole series of ' num2str(FileInfo.NumberOfFrames) ' images must be extracted at once'])
+        %rmfield(OutputDir)
+        return
+    end
+    %% interactive input of specific parameters (for RDvision system)
+    display('converting images from RDvision system...')
+else
     msgbox_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened')
     return
 end
-if exist(fullfile(RootPath{1},OutputDir),'dir')
-     msgbox_uvmat('ERROR',['output folder ' OutputDir ' already exists, put data in a new folder Experiment']);
-     return
-end
+t=xmltree;
+save(t,fullfile(RootPath,'Running.xml'))%create an xml file to indicate that processing takes place
 
 %% calibration data and timing: read the ImaDoc files
 mode=''; %default
@@ -127,176 +155,299 @@ timecell={};
 itime=0;
 NbSlice_calib={};
 
-SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
-filexml=[fullfile(RootPath{1},RootFile{1}) '.xml'];%new convention: xml at the level of the image folder
-if ~exist(filexml,'file')
-    disp_uvmat('ERROR',[filexml ' missing'],checkrun)
-    return
-end
-[XmlData,error]=imadoc2struct_special(filexml);
-if isfield(XmlData,'Time')
-    itime=itime+1;
-    timecell{itime}=XmlData.Time;
-end
-if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
-    NbSlice_calib{1}=size(XmlData.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-    if ~isequal(NbSlice_calib{1},NbSlice_calib{1})
-        msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+%SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  loop on the cameras ( #iview)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for iview=1:size(Param.InputTable,1)
+    filexml=[fullfile(RootPath,Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
+    if ~exist(filexml,'file')
+        disp_uvmat('ERROR',[filexml ' missing'],checkrun)
+        return
     end
-end
-
-
-%% check coincidence in time for several input file series
-% not relevant
-
-%% coordinate transform or other user defined transform
-%not relevant
-%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
- % EDIT FROM HERE
-
-
-%% Set field names and velocity types
-% not relevant here
-
-%% Initiate output fields
-% not relevant here
-
-%% interactive input of specific parameters (for RDvision system)
-display('RDvision system')
-first_label=0; %image numbers start from 0
-
-%% correction to RDvision xml file 
-t=xmltree(filexml);
-
-% correct Dtj and Dtk
-NomTypeNew='_1_1';% new file nomencalture by default
-ImageName='img_1_1.png';% first image name
-if isfield(XmlData,'NbDtj')
-    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-    uid_value=children(t,uid_NbDtj);
-    if ~isempty(uid_value)
-        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+    [XmlData,error]=imadoc2struct_special(filexml);
+    if isfield(XmlData,'Time')
+        itime=itime+1;
+        timecell{itime}=XmlData.Time;
     end
-end
-if isfield(XmlData,'NbDtk')
-    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-    uid_value=children(t,uid_NbDtk);
-    if ~isempty(uid_value)
-        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+    if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
+        NbSlice_calib{1}=size(XmlData.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+        if ~isequal(NbSlice_calib{1},NbSlice_calib{1})
+            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+        end
     end
-end
-if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
-    uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
-    t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
-    uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-    t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
-    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-    t=delete(t,uid_NbDtj);
-    t=delete(t,uid_NbDtk);
-    uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
-    uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
-    t=delete(t,uid_Dtj);
-    t=delete(t,uid_Dtk);
-    NomTypeNew='_1';
-    ImageName='img_1.png';
-end
- 
-%update information of 'Heading'
-uid_Heading=find(t,'ImaDoc/Heading');
-if isempty(uid_Heading)
-    [t,uid_Heading]=add(t,1,'element','Heading');
-end
-uid_SubCampaign=find(t,'ImaDoc/Heading/SubCampaign');
-if ~isempty(uid_SubCampaign), t=delete(t,uid_SubCampaign); end
-uid_Experiment=find(t,'ImaDoc/Heading/Experiment');
-if ~isempty(uid_Experiment), t=delete(t,uid_Experiment); end
-uid_Device=find(t,'ImaDoc/Heading/Device');
-if ~isempty(uid_Device), t=delete(t,uid_Device); end
-uid_Record=find(t,'ImaDoc/Heading/Record');
-if ~isempty(uid_Record), t=delete(t,uid_Record); end
-uid_DateExp=find(t,'ImaDoc/Heading/DateExp');
-if ~isempty(uid_DateExp), t=delete(t,uid_DateExp); end
-
-%indicate the name of the first image (as a check that the xml file is not moved)
-uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
-if isempty(uid_ImageName)
-    [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
-end
-uid_value=children(t,uid_ImageName);
-if isempty(uid_value)
-    t=add(t,uid_ImageName,'chardata',ImageName);%indicate  name of the first image, with ;png extension
-else
-    t=set(t,uid_value(1),'value',ImageName);%indicate  name of the first image, with ;png extension
-end
-
-%indicate the date and time of the image acquisition start
-if isfield(FileInfo,'binrepertoire') && isfield(FileInfo,'starttime')
-    sep_pos=regexp(FileInfo.binrepertoire,'T');
-    DateTime=FileInfo.starttime;
-    if ~isempty(sep_pos)
-        DateTime=[FileInfo.binrepertoire(1:sep_pos-1) ' ' DateTime];
+    
+    
+    % correction to RDvision xml file
+    t=xmltree(filexml);
+    
+    % correct Dtj and Dtk
+    NomTypeNew='_1_1';% new file nomencalture by default
+    ImageName='img_1_1.png';% first image name
+    if isfield(XmlData,'NbDtj')
+        uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+        uid_value=children(t,uid_NbDtj);
+        if ~isempty(uid_value)
+            t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+        end
     end
-    uid_DateTime=find(t,'ImaDoc/Heading/DateTime');
-    if isempty(uid_DateTime)
-        [t,uid_DateTime]=add(t,uid_Heading,'element','DateTime');
+    if isfield(XmlData,'NbDtk')
+        uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+        uid_value=children(t,uid_NbDtk);
+        if ~isempty(uid_value)
+            t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+        end
     end
-    uid_value=children(t,uid_DateTime);
+    if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
+        uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
+        t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
+        uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
+        t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
+        uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+        uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+        t=delete(t,uid_NbDtj);
+        t=delete(t,uid_NbDtk);
+        uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
+        uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
+        t=delete(t,uid_Dtj);
+        t=delete(t,uid_Dtk);
+        NomTypeNew='_1';
+        ImageName='img_1.png';
+    end
+    
+    %update information of 'Heading'
+    uid_Heading=find(t,'ImaDoc/Heading');
+    if isempty(uid_Heading)
+        [t,uid_Heading]=add(t,1,'element','Heading');
+    end
+    uid_SubCampaign=find(t,'ImaDoc/Heading/SubCampaign');
+    if ~isempty(uid_SubCampaign), t=delete(t,uid_SubCampaign); end
+    uid_Experiment=find(t,'ImaDoc/Heading/Experiment');
+    if ~isempty(uid_Experiment), t=delete(t,uid_Experiment); end
+    uid_Device=find(t,'ImaDoc/Heading/Device');
+    if ~isempty(uid_Device), t=delete(t,uid_Device); end
+    uid_Record=find(t,'ImaDoc/Heading/Record');
+    if ~isempty(uid_Record), t=delete(t,uid_Record); end
+    uid_DateExp=find(t,'ImaDoc/Heading/DateExp');
+    if ~isempty(uid_DateExp), t=delete(t,uid_DateExp); end
+    
+    %indicate the name of the first image (as a check that the xml file is not moved)
+    uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
+    if isempty(uid_ImageName)
+        [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
+    end
+    uid_value=children(t,uid_ImageName);
     if isempty(uid_value)
-        t=add(t,uid_DateTime,'chardata',DateTime);%indicate  name of the first image, with ;png extension
+        t=add(t,uid_ImageName,'chardata',ImageName);%indicate  name of the first image, with ;png extension
     else
-        t=set(t,uid_value(1),'value',DateTime);%indicate  name of the first image, with ;png extension
+        t=set(t,uid_value(1),'value',ImageName);%indicate  name of the first image, with ;png extension
     end
-end
-  
-%% backup the previous xml file and save the corrected one
-[success,message]=copyfile(filexml,[filexml '~']);%make backup
-if success~=1
-    dips(['errror in xml file backup: ' message]);
-    return
-end
-save(t,filexml)
-
-%% main loop on images
-nbfield2=1;
-if isfield(XmlData,'Time')
-nbfield2=size(XmlData.Time,2);
-end
-for ifile=1:nbfield
-            update_waitbar(WaitbarHandle,ifile/nbfield)
-    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        break
+    
+    %indicate the date and time of the image acquisition start
+    % if isfield(FileInfo,'binrepertoire') && isfield(FileInfo,'starttime')
+    %     sep_pos=regexp(FileInfo.binrepertoire,'T');
+    %     DateTime=FileInfo.starttime;
+    %     if ~isempty(sep_pos)
+    %         DateTime=[FileInfo.binrepertoire(1:sep_pos-1) ' ' DateTime];
+    %     end
+    %     uid_DateTime=find(t,'ImaDoc/Heading/DateTime');
+    %     if isempty(uid_DateTime)
+    %         [t,uid_DateTime]=add(t,uid_Heading,'element','DateTime');
+    %     end
+    %     uid_value=children(t,uid_DateTime);
+    %     if isempty(uid_value)
+    %         t=add(t,uid_DateTime,'chardata',DateTime);%indicate  name of the first image, with ;png extension
+    %     else
+    %         t=set(t,uid_value(1),'value',DateTime);%indicate  name of the first image, with ;png extension
+    %     end
+    % end
+    
+    %% backup the previous xml file and save the corrected one
+    [success,message]=copyfile(filexml,[filexml '~']);%make backup
+    if success~=1
+        dips(['errror in xml file backup: ' message]);
+        return
     end
-    [A,FileInfo,timestamps]=read_rdvision(filename,ifile);
-    if ifile==1
-        classA=class(A);
-        if strcmp(classA,'uint8')
-            BitDepth=8;
-        else
-        BitDepth=16;
-        end
+    save(t,filexml)
+    nbfield2=1;
+    if isfield(XmlData,'Time')
+        nbfield2=size(XmlData.Time,2);
     end
-    j1=[];
-    if ~isequal(nbfield2,1)
-    j1=mod(ifile-1+first_label,nbfield2)+1;
+    
+    %% get the names of .seq and .sqb files
+    switch Param.InputTable{iview,5}
+        case {'.seq','.sqb'}
+            filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
+            filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
+        otherwise
+            errormsg='input file extension must be .seq or .sqb';
     end
-    i1=floor((ifile-1+first_label)/nbfield2)+1;
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,'img','.png',NomTypeNew,i1,[],j1);
-    try
-        imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
-    disp([OutputFile ' written']);
-        [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
-        if ~s
-            disp_uvmat('ERROR',errormsg,checkrun);
-            return
-        end
-    catch ME
-        disp_uvmat('ERROR',ME.message,checkrun);
+    if ~exist(filename_seq,'file')
+        errormsg=[filename_seq ' does not exist'];
         return
     end
     
+    %% get data from .seq file
+    s=ini2struct(filename_seq);
+    SeqData=s.sequenceSettings;
+    SeqData.width=str2double(SeqData.width);
+    SeqData.height=str2double(SeqData.height);
+    SeqData.bytesperpixel=str2double(SeqData.bytesperpixel);
+    SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
+    if isempty(SeqData.binrepertoire)%used when binrepertoire empty, strange feature of rdvision
+        SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
+        SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
+        [tild,binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
+        SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
+    end
+%     PathDir=fileparts(PathDir);
+    
+    %% reading the .sqb file
+    m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
+        'uint32' [1 1] 'garbage1';...
+        'double' [1 1] 'timestamp';...
+        'uint32' [1 1] 'file_idx';...
+        'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
+    %%%%%%%BRICOLAGE in case of unreadable .sqb file
+    %     ind=[60 63:152];%indices of bin files
+    %     lengthimage=w*h*bpp;% lengthof an image record on the binary file
+    %     for ii=1:32*numel(ind)
+    %         data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+    %         %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
+    %         data(ii).file_idx=ind(ceil(ii/32));
+    %         data(ii).timestamp=0.2*(ii-1);
+    %     end
+    %%%%%%%
+    for ii=1: numel(m.Data)
+        timestamp(ii)=m.Data(ii).timestamp;
+    end
+    timestamp %todo: check withDt from the xml file
+    [BinSize,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew)
+    if ~isempty(errormsg)
+        disp_uvmat('ERROR',errormsg,checkrun)
+        return
+    end
 end
+delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------- reads a series of bin files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [BinSize,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew)
+% BINREAD_RDV Permet de lire les fichiers bin générés par Hiris à partir du
+% fichier seq associé.
+%   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
+%   l'image d'indice FRAME_IDX de la séquence FILENAME.
+%
+%   Entrées
+%   -------
+%   FILENAME  : Nom du fichier séquence (.seq).
+%   FRAME_IDX : Indice de l'image à lire. Si FRAME_IDX vaut -1 alors la
+%   séquence est entièrement lue. Si FRAME_IDX est un tableau d'indices
+%   alors toutes les images d'incides correspondant sont lues. Si FRAME_IDX
+%   est un tableau vide alors aucune image n'est lue mais le nombre
+%   d'images et tous les timestamps sont renvoyés. Les indices commencent à
+%   1 et se termines à NB_FRAMES.
+%
+%   Sorties
+%   -------
+%   IMGS        : Images de sortie.
+%   TIMESTAMPS  : Timestaps des images lues.
+%   NB_FRAMES   : Nombres d'images dans la séquence.
+NbBinFile=0;
+BinSize=0;
+errormsg='';
+classname=sprintf('uint%d',SeqData.bytesperpixel*8);
+
+classname=['*' classname];
+BitDepth=8*SeqData.bytesperpixel;%needed to write images (8 or 16 bits)
+binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
+tic
+OutputDir=fullfile(PathDir,SeqData.sequencename)
+if exist(OutputDir,'dir')
+    errormsg=[OutpuDir ' already exist, delete it first'];
+    return
+end
+[s,errormsg]=mkdir(OutputDir);
+if s==0
+    return%not able to create new image dir
+end
+for ii=1:SeqData.nb_frames
+    fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
+    if ii==1 || ~strcmp(fname,fname_prev) % open the bin file if not in use
+        fid=fopen(fname,'rb');
+        fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
+        NbBinFile=NbBinFile+1;%counter of binary files (for checking purpose)
+        BinSize(NbBinFile)=0;% strat counter for new bin file
+    else
+        fclose(fid);%close the previous bin file
+        fid=fopen(fname,'rb');% open the new bin file
+        fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
+    end
+    fname_prev=fname;
+    A=reshape(fread(fid,SeqData.width*SeqData.height,classname),SeqData.width,SeqData.height);%read the current image
+    A=A';
+    BinSize(NbBinFile)=BinSize(NbBinFile)+SeqData.width*SeqData.height*SeqData.bytesperpixel*8; %record bits read
+    j1=[];
+    if ~isequal(nbfield2,1)
+        j1=mod(ii-1,nbfield2)+1;
+    end
+    i1=floor((ii-1)/nbfield2)+1;
+    OutputFile=fullfile_uvmat(PathDir,SeqData.sequencename,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode 
+    try
+        imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
+        disp([OutputFile ' written']);
+        [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
+        if ~s
+%             disp_uvmat('ERROR',errormsg,checkrun);
+            return
+        end
+    catch ME
+        errormsg=ME.message;
+        return
+    end
+end
+fclose(fid)
+toc
+
+
+
+% for ifile=1:nbfield
+%             update_waitbar(WaitbarHandle,ifile/nbfield)
+%     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+%         disp('program stopped by user')
+%         break
+%     end
+%     [A,FileInfo,timestamps]=read_rdvision(filename,ifile);
+%     if ifile==1
+%         classA=class(A);
+%         if strcmp(classA,'uint8')
+%             BitDepth=8;
+%         else
+%         BitDepth=16;
+%         end
+%     end
+%     j1=[];
+%     if ~isequal(nbfield2,1)
+%     j1=mod(ifile-1+first_label,nbfield2)+1;
+%     end
+%     i1=floor((ifile-1+first_label)/nbfield2)+1;
+%     OutputFile=fullfile_uvmat(RootPath{1},OutputDir,'img','.png',NomTypeNew,i1,[],j1);
+%     try
+%         imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
+%     disp([OutputFile ' written']);
+%         [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
+%         if ~s
+%             disp_uvmat('ERROR',errormsg,checkrun);
+%             return
+%         end
+%     catch ME
+%         disp_uvmat('ERROR',ME.message,checkrun);
+%         return
+%     end
+%     
+% end
 
 %'imadoc2struct_special': reads the xml file for image documentation 
 %------------------------------------------------------------------------
@@ -610,3 +761,7 @@ if ~isempty(uid) %if the element named label exists
        end
    end
 end
+
+
+
+
