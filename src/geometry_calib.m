@@ -238,11 +238,12 @@ CalibData=get(handles.geometry_calib,'UserData');%read the calibration image sou
 if isfield(CalibData,'XmlInputFile')
     InputDir=fileparts(fileparts(CalibData.XmlInputFile));
 end
-answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate?',InputDir); 
-if strcmp(answer,'Cancel')
-    return
-end
-OutPut=browse_data(answer);
+SubProject=uigetfile_uvmat('open folder of subproject to calibrate',InputDir,'uigetdir');
+% answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate?',InputDir); 
+% if strcmp(answer,'Cancel')
+%     return
+% end
+OutPut=browse_data(SubProject);
 nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
     SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');

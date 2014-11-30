@@ -496,7 +496,7 @@ DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,
 if isempty(DirFull)
     return
 end
-OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(DirFull,'on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
@@ -538,7 +538,7 @@ set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 function MenuCampaign_Callback(hObject, eventdata, handles)
 
 set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
-OutPut=browse_data(get(hObject,'Label'));% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(get(hObject,'Label'),'on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if isfield(OutPut,'Campaign')
     fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
     hh=dir(fileinput);

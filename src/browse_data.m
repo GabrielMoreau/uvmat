@@ -46,7 +46,7 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
-function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign)
+function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign,EnableMirror)
 %------------------------------------------------------------------------
 
 %% Choose default command line output for browse_data
@@ -102,6 +102,9 @@ if exist('Campaign','var')
     drawnow
     % UIWAIT makes GUI wait for user response (see UIRESUME)
     uiwait(handles.browse_data);
+end
+if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
+    set(handles.CreateMirror,'Visible','on')
 end
 
 %------------------------------------------------------------------------
