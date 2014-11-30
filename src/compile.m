@@ -24,6 +24,7 @@
 %=======================================================================
 
 function compile (FctName,SubfctPath)
+hh=[];% handles of message display window
 if isempty(which('mcc'))
     msgbox_uvmat('ERROR','no Matlab compiler toolbox mcc installed')
     return
@@ -41,18 +42,20 @@ end
 if ~isempty(SubfctPath)
     SubfctPath=['-I ' SubfctPath];%string indicating the option of including the path SubfctPath
 end
-disp(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])
+
 try
+    disp(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])
     eval(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])% compile the source file [FctName .m], which produces a binary file FctName and a cmd file [run_' FctName '.sh]
     system(['mv -f ' FctName ' bin/']);%move the binary file FctName to the subdir /bin
     system(['sed -e ''''s#/' FctName '#/bin/' FctName '#'''' run_' FctName '.sh > ' FctName '.sh']);%modify the cmd file and copy it to [FctName '.sh']
     system(['rm run_' FctName '.sh']);% remove the initial cmd file [run_' FctName '.sh]
     system(['chmod +x ' FctName '.sh']); % set the cmd file to 'executable'
 catch ME
-    msgbox_uvmat('ERROR',ME.message);
+    hh=msgbox_uvmat('ERROR',ME.message);
 end
 display('** END **')
+if ~isempty(hh)
 delete(hh)
-
+end
 
 
