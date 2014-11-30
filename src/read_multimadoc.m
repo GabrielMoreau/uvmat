@@ -69,7 +69,7 @@ if nbview>1
             time_line=get_time(timecell{icell},i1_series{icell},i2_series{icell},j1_series{icell},j2_series{icell});
             Time=cat(1,Time,shiftdim(time_line,-1));
         else
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
+            warnmsg='inconsistent time array dimensions in ImaDoc fields, the time for the first series is used';
             Time=cat(1,Time,Time(1,:,:));% copy times of the first line
             break
         end

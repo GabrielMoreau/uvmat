@@ -64,8 +64,8 @@ list_fct={...
     'geometry_calib.fig';...% interface for geometry_calib
     'get_field';...% choose and plot a field from a Netcdf file
     'get_field.fig';...%interface for get_field
+    'get_file_info';...% determine info about a file (image, multimage, civdata,...) .
     'get_file_series';...% determine the list of file names and file indices for functions called by 'series'.
-    'get_file_type';...% determine info about a file (image, multimage, civdata,...) .
     'hist_update';...%  update of a current global histogram by inclusion of a new field
     'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
     'interp2_uvmat';...% linearly interpolate an image or scalar defined on a regular grid
