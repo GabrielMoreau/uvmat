@@ -651,7 +651,7 @@ if ~isempty(figure_movie)
     delete(figure_movie)%delete existing figure_movie
 end
 figure_movie=figure;
-nbpix=[512 384];% resolution XVGA
+nbpix=[640 480];% resolution VGA
 set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
 newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
 set(newaxes,'Tag','movieaxes')
@@ -659,11 +659,7 @@ set(newaxes,'Tag','movieaxes')
 %% display time if defined in uvmat
 time_str=get(handles.TimeValue,'String');
 if ~isempty(time_str)
-    htitle=get(newaxes,'Title');
-%     xlim=get(newaxes,'XLim');
-%     ylim=get(newaxes,'YLim');
-%     set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
-    
+    htitle=get(newaxes,'Title');  
     set(htitle,'String',['t=' time_str])
 end
 map=colormap(handles.PlotAxes);
@@ -688,14 +684,22 @@ uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-hh/2 0.9 h
     'String','movie name:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-1.5*hh 0.9 hh],'tag','MovieName','BackgroundColor',[1 1 1],...
     'String',fullfile(RootPath,[SubDir '.movie'], [RootFile '.avi']),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''MovieName'': name (with path) of the movie to create');%edit box
-uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.95-2.5*hh 0.33 hh/2],'BackgroundColor',BackgroundColor,...
     'String','frames per second:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [0.55 0.95-2.5*hh 0.45 hh/2],'BackgroundColor',BackgroundColor,...
+uicontrol('Style','text','Units','normalized', 'Position', [0.3 0.95-2.5*hh 0.33 hh/2],'BackgroundColor',BackgroundColor,...
+    'String','resolution:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [0.55 0.95-2.5*hh 0.33 hh/2],'BackgroundColor',BackgroundColor,...
     'String','total nbre of frames:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.95-3.5*hh 0.3 hh],'tag','num_FramePerSecond','BackgroundColor',[1 1 1],...
     'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FramePerSecond'': nbre of frames per second');%edit box
+
+uicontrol('Style','listbox','Units','normalized', 'Position', [0.35 0.15 0.3 3*hh],'tag','MovieSize','BackgroundColor',[1 1 1],...
+    'Callback',@(hObject,eventdata)set_movie_size_Callback(hObject,eventdata),'String',{'640x480(VGA)';'720x480(mpeg2 16/9)';'1280x720(HD)'},...
+    'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''MovieSize'': resolution of the movie');%menu
+
 uicontrol('Style','edit','Units','normalized', 'Position', [0.65 0.95-3.5*hh 0.3 hh],'tag','num_FrameNumber','BackgroundColor',[1 1 1],...
     'String','10','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_FrameNumber'': total nbre of frames');%edit box
+
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.05 0.15 0.25 hh],'BackgroundColor',[1 0 0],'String','START','Callback',@(hObject,eventdata)set_movie_START_Callback(hObject,eventdata),...
     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.15 0.25 hh],'Callback',@(hObject,eventdata)set_movie_Cancel_Callback(hObject,eventdata),...
@@ -705,7 +709,41 @@ uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.05 0.9 hh/2],
 drawnow
 
 %------------------------------------------------------------------------
-% function called by pressing APPLY in the GUI  set_slices
+% function called by selecting movie size in the GUI  set_movie
+function set_movie_size_Callback(hObject,eventdata)
+hset_movie=get(hObject,'parent');
+hMovieSize=findobj(hset_movie,'Tag','MovieSize');
+nbpix=[640 480; 720 480; 1280 720];
+SizeOption=get(hMovieSize,'Value');    
+nbpix=nbpix(SizeOption,:);  
+    
+%% look for movie fig 
+figure_movie=findobj(allchild(0),'name','figure_movie');
+if isempty(figure_movie)
+    figure_movie=figure;
+    set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
+    huvmat=findobj(allchild(0),'tag','uvmat');
+    hhuvmat=guidata(huvmat);
+    newaxes=copyobj(hhuvmat.PlotAxes,figure_movie);%new plotting axes in the new figure
+    set(newaxes,'Tag','movieaxes')
+    
+    %% display time if defined in uvmat
+    time_str=get(hhuvmat.TimeValue,'String');
+    if ~isempty(time_str)
+        htitle=get(newaxes,'Title');
+        set(htitle,'String',['t=' time_str])
+    end
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
+else
+    Pos=get(figure_movie,'Position');
+    set(figure_movie,'Position',[Pos(1) Pos(2) nbpix])
+end
+
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_movie
 function set_movie_START_Callback(hObject,eventdata)
 %------------------------------------------------------------------------    
 %% read info from the GUI set_movie
