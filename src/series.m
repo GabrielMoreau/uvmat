@@ -2173,7 +2173,7 @@ set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
 SubDirOut='';%default
-OutputDirExt='series'; %default
+OutputDirExt='.series'; %default
 if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
     OutputDirExt=ParamOut.OutputDirExt;
 end
@@ -2186,7 +2186,7 @@ end
 switch OutputSubDirMode
     case 'auto';%default
         OutputDirVisible='on';
-        SubDir=InputTable(1:end,2); %set of subdirectories sorted in alphabetical order
+        SubDir=InputTable(1:end,2); %set of subdirectories 
         SubDirOut=SubDir{1};
         if numel(SubDir)>1
             for ilist=2:numel(SubDir)
@@ -2812,8 +2812,10 @@ if ~isempty(filexml)
     SeriesData=get(handles.series,'UserData');
     if isfield(Param,'InputFields')
         ListField=Param.InputFields.FieldName;
+        if ischar(ListField),ListField={ListField}; end
         set(handles.FieldName,'String',[ListField;{'get-field...'}])
          set(handles.FieldName,'Value',1:numel(ListField))
+         set(handles.FieldName,'Visible','on')
     end       
     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
         set(handles.ActionInput,'Visible','on')
