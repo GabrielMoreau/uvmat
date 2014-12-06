@@ -143,7 +143,7 @@ end
 
 %% transform the scalar(s) or image(s)
 if iscalar~=0
-    [A,Coord_x,Coord_y]=phys_Ima(A,Calib,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
+    [A,Coord_x,Coord_y]=phys_ima(A,XmlData,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
     if iscalar==1 && ~isempty(DataOut_1) % case for which only the second field is a scalar
          DataOut_1.A=A{1};
          DataOut_1.Coord_x=Coord_x; 
@@ -237,107 +237,4 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%
-function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex)
-xcorner=[];
-ycorner=[];
-npx=[];
-npy=[];
-dx=ones(1,numel(A));
-dy=ones(1,numel(A));
-for icell=1:numel(A)
-    siz=size(A{icell});
-    npx=[npx siz(2)];
-    npy=[npy siz(1)];
-    Calib=CalibIn{icell};
-    xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
-    yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
-    [xcorner_new,ycorner_new]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
-    dx(icell)=(max(xcorner_new)-min(xcorner_new))/(siz(2)-1);
-    dy(icell)=(max(ycorner_new)-min(ycorner_new))/(siz(1)-1);
-    xcorner=[xcorner xcorner_new];
-    ycorner=[ycorner ycorner_new];
-end
-Rangx(1)=min(xcorner);
-Rangx(2)=max(xcorner);
-Rangy(2)=min(ycorner);
-Rangy(1)=max(ycorner);
-test_multi=(max(npx)~=min(npx)) || (max(npy)~=min(npy)); %different image lengths
-npX=1+round((Rangx(2)-Rangx(1))/min(dx));% nbre of pixels in the new image (use the finest resolution min(dx) in the set of images)
-npY=1+round((Rangy(1)-Rangy(2))/min(dy));
-x=linspace(Rangx(1),Rangx(2),npX);
-y=linspace(Rangy(1),Rangy(2),npY);
-[X,Y]=meshgrid(x,y);%grid in physical coordiantes
-%vec_B=[];
-A_out=cell(1,numel(A));
-for icell=1:length(A) 
-    Calib=CalibIn{icell};
-    % rescaling of the image coordinates without change of the image array
-    if strcmp(Calib.CalibrationType,'rescale') && isequal(Calib,CalibIn{1})
-        A_out{icell}=A{icell};%no transform
-        Rangx=[0.5 npx-0.5];%image coordiantes of corners
-        Rangy=[npy-0.5 0.5];
-        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
-        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,ZIndex);
-    else         
-        % the image needs to be interpolated to the new coordinates
-        zphys=0; %default
-        if isfield(Calib,'SliceCoord') %.Z= index of plane
-           SliceCoord=Calib.SliceCoord(ZIndex,:);
-           zphys=SliceCoord(3); %to generalize for non-parallel planes
-           if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
-                H=Calib.InterfaceCoord(3);
-                if H>zphys
-                    zphys=H-(H-zphys)/Calib.RefractionIndex; %corrected z (virtual object)
-                end
-           end
-        end
-        xima=0.5:npx-0.5;%image coordinates of corners
-        yima=npy-0.5:-1:0.5;
-        [XIMA_init,YIMA_init]=meshgrid(xima,yima);%grid of initial image in px coordinates
-        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real
-        %[XPHYS_init,YPHYS_init]=phys_XYZ(Calib,XIMA_init,YIMA_init,ZIndex);
-        testuint8=isa(A{icell},'uint8');
-        testuint16=isa(A{icell},'uint16');
-        if ndims(A{icell})==2 %(B/W images)
-        A_out{icell}=interp2(XIMA_init,YIMA_init,double(A{icell}),XIMA,YIMA);
-%         [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
-%         [XIMA_init,YIMA_init]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real space grid
-%         
-%         XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
-%         YIMA=reshape(round(YIMA),1,npX*npY);
-%         flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
-
-%         if numel(siz)==2 %(B/W images)
-%             vec_A=reshape(A{icell},1,npx(icell)*npy(icell));%put the original image in line
-%             %ind_in=find(flagin);
-%             ind_out=find(~flagin);
-%             ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
-%             ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-%             %vec_B(ind_in)=vec_A(ICOMB);
-%             vec_B(flagin)=vec_A(ICOMB);
-%             vec_B(~flagin)=zeros(size(ind_out));
-% %             vec_B(ind_out)=zeros(size(ind_out));
-%             A_out{icell}=reshape(vec_B,npY,npX);%new image in real coordinates
-         elseif ndims(A{icell})==3     
-             for icolor=1:size(A{icell},3)
-                 A{icell}=double(A{icell});
-                 A_out{icell}(:,:,icolor)=interp2(XIMA_init,YIMA_init,A{icell}(:,:,icolor),XIMA,YIMA);
-%                 vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
-%                % ind_in=find(flagin);
-%                 ind_out=find(~flagin);
-%                 ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-%                 ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-%                 vec_B(flagin)=vec_A(ICOMB);
-%                 vec_B(~flagin)=zeros(size(ind_out));
-%                 A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
-             end
-         end
-        if testuint8
-            A_out{icell}=uint8(A_out{icell});
-        end
-        if testuint16
-            A_out{icell}=uint16(A_out{icell});
-        end      
-    end
-end
 
