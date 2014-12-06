@@ -366,7 +366,7 @@ binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
 tic
 OutputDir=fullfile(PathDir,SeqData.sequencename)
 if exist(OutputDir,'dir')
-    errormsg=[OutpuDir ' already exist, delete it first'];
+    errormsg=[OutputDir ' already exist, delete it first'];
     return
 end
 [s,errormsg]=mkdir(OutputDir);

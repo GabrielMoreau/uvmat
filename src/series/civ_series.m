@@ -284,10 +284,10 @@ check_civx=0;%default
 
 %% get timing from the ImaDoc file or input video
 if iview_A~=0
-XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
-time=[];
-if ~isempty(XmlFileName)
-    XmlData=imadoc2struct(XmlFileName);
+    XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
+    time=[];
+    if ~isempty(XmlFileName)
+        XmlData=imadoc2struct(XmlFileName);
         if isfield(XmlData,'Time')
             time=XmlData.Time;
             TimeSource='xml';
@@ -303,28 +303,28 @@ if ~isempty(XmlFileName)
                 TimeUnit=XmlData.Camera.TimeUnit;
             end
         end
-end
-if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
-    time=zeros(FileInfo_A.NumberOfFrames+1,2);
-    time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
-    TimeSource='video';
-    ColorType='truecolor';
-end
-if isempty(time)% time = index i +0.001 index j by default
-    %MinIndex_i=min(i1_series_Civ1);
-    MaxIndex_i=max(i2_series_Civ1);
-    %MinIndex_j=min(j1_series_Civ1);
-    MaxIndex_j=max(j2_series_Civ1);
-    time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
-    time=time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
-    time=[zeros(1,MaxIndex_j);time];% insert a first line of zeros
-    time=[zeros(MaxIndex_i+1,1) time];% insert a first column of zeros
-end
+    end
+    if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
+        time=zeros(FileInfo_A.NumberOfFrames+1,2);
+        time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+        TimeSource='video';
+        ColorType='truecolor';
+    end
+    if isempty(time)% time = index i +0.001 index j by default
+        %MinIndex_i=min(i1_series_Civ1);
+        MaxIndex_i=max(i2_series_Civ1);
+        %MinIndex_j=min(j1_series_Civ1);
+        MaxIndex_j=max(j2_series_Civ1);
+        time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
+        time=time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
+        time=[zeros(1,MaxIndex_j);time];% insert a first line of zeros
+        time=[zeros(MaxIndex_i+1,1) time];% insert a first column of zeros
+    end
     
-if length(FileInfo_A) >1 %case of image with multiple frames
-    nbfield=length(FileInfo_A);
-    nbfield_j=1;
-end
+    if length(FileInfo_A) >1 %case of image with multiple frames
+        nbfield=length(FileInfo_A);
+        nbfield_j=1;
+    end
 end
 
 %%%%% MAIN LOOP %%%%%%

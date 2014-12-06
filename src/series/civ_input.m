@@ -65,10 +65,9 @@ hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
 hhseries=guidata(hseries); %handles of the elements in 'series'
 SeriesData=get(hseries,'UserData');% info stored in the GUI series 
 
-%% set visibility options: 
-if strcmp(Param.Action.ActionName,'civ_series')
-    %  set(handles.Program,'String','civ_series')
-    set(handles.num_MaxDiff,'Visible','on')
+%% set visibility options depending on the calling function (Param.Action.ActionName): 
+if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,'stereo_civ')
+     set(handles.num_MaxDiff,'Visible','on')
     set(handles.num_MaxVel,'Visible','on')
     set(handles.title_MaxVel,'Visible','on')
     set(handles.title_MaxDiff,'Visible','on')
@@ -82,6 +81,14 @@ if strcmp(Param.Action.ActionName,'civ_series')
     set(handles.CheckThreshold,'Visible','on')
     set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
     set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
+end
+switch Param.Action.ActionName
+    case 'stereo_civ'
+        set(handles.ListCompareMode,'Visible','off')
+        set(handles.PairIndices,'Visible','off')
+    case 'civ_series'
+        set(handles.ListCompareMode,'Visible','on')
+        set(handles.PairIndices,'Visible','on')
 end
 
 %% input file info
@@ -139,10 +146,10 @@ switch FileType
         msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
         return
 end
-if isfield(SeriesData,'FileType') && numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
-    set(handles.ListCompareMode,'Value',3)% we compare two image series term to term ('shift')
-    set(handles.PairIndices,'Visible','off')
-end
+% if isfield(SeriesData,'FileType') && numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
+%     set(handles.ListCompareMode,'Value',3)% we compare two image series term to term ('shift')
+%     set(handles.PairIndices,'Visible','off')
+% end
 
 %% reinitialise menus
 set(handles.ListPairMode,'Value',1)
@@ -153,7 +160,7 @@ set(handles.ListPairCiv2,'Value',1)
 set(handles.ListPairCiv2,'String',{''}) 
         
 %% prepare the GUI with input parameters 
-set(handles.ListCompareMode,'Visible','on')
+% 
 set(handles.ref_i,'String',num2str(Param.IndexRange.first_i))
 if isfield(Param.IndexRange,'first_j')
     set(handles.ref_j,'String',num2str(Param.IndexRange.first_j))
@@ -257,7 +264,7 @@ set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
 
 %% introduce the stored Civ parameters  if available (from previous input or ImportConfig in series)
-if isfield(Param,'ActionInput')
+if isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Program,Param.Action.ActionName)% the program fits with the stored data
     fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
     hcheckgrid=findobj(handles.civ_input,'Tag','CheckGrid');
     for ilist=1:numel(hcheckgrid)
@@ -438,7 +445,7 @@ checkbox(4)=get(handles.CheckCiv2,'Value');
 checkbox(5)=get(handles.CheckFix2,'Value');
 checkbox(6)=get(handles.CheckPatch2,'Value');
 % ind_selected=find(checkbox,1);
-set(handles.PairIndices,'Visible','on')% make the frame PaiIndices visible, choice of the index pairs fo civ
+%set(handles.PairIndices,'Visible','on')% make the frame PaiIndices visible, choice of the index pairs fo civ
 if opening==0
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
     if ~isempty(errormsg)
@@ -621,15 +628,15 @@ switch option
         ListPairMode_Callback(hObject, eventdata, handles)
     case 'displacement'
         OriginIndex='on';%define a frame origin for displacement
-    case 'shift'
-        if numel(ImageType)==1
-            fileinput=uigetfile_uvmat('pick a second file series for synchronous shift',InputTable{check_nc+1});
-            if ~isempty(fileinput)
-                series( 'display_file_name',hhseries,fileinput,'append')
-            end
-            
-            
-        end
+%     case 'shift'
+%         if numel(ImageType)==1
+%             fileinput=uigetfile_uvmat('pick a second file series for synchronous shift',InputTable{check_nc+1});
+%             if ~isempty(fileinput)
+%                 series( 'display_file_name',hhseries,fileinput,'append')
+%             end
+%             
+%             
+%         end
 end
 set(handles.num_OriginIndex,'Visible',OriginIndex)
 set(handles.OriginIndex_title,'Visible',OriginIndex)
