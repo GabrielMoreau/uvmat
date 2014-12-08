@@ -79,20 +79,22 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ListDir=ListCells(1,find(check_dir & ~check_bad));
     InputTable=cell(numel(ListDir),5);
     InputTable(:,2)=ListDir';
+    isel=0;
     for ilist=1:numel(ListDir)
-        InputTable{ilist,1}=RootPath;
         ListStructSub=dir(fullfile(RootPath,ListDir{ilist}));
         ListCellSub=struct2cell(ListStructSub);% transform dir struct to a cell arrray
         detect_seq=regexp(ListCellSub(1,:),'.seq$');
         seq_index=find(~cellfun('isempty',detect_seq),1);
-        if isempty(seq_index)
-            msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
-        else
+        if ~isempty(seq_index)
+%             msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
+%         else
+           isel=isel+1;
+           InputTable{isel,1}=RootPath;
             RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
-            InputTable{ilist,3}=RootFile;
+            InputTable{isel,3}=RootFile;
         end
-        InputTable{ilist,4}='*';
-        InputTable{ilist,5}='.seq';
+        InputTable{isel,4}='*';
+        InputTable{isel,5}='.seq';
     end
     hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
     hhseries=guidata(hseries); %handles of the elements in 'series'
