@@ -768,7 +768,7 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     end
     set(handles.ListCoordFiles,'string',listfile);
 end
-CLEAR_PTS_Callback(hObject, eventdata, handles)% clear the current list and point plots
+ClearAll_Callback(hObject, eventdata, handles)% clear the current list and point plots
 
 % --------------------------------------------------------------------
 % --- Executes on button press in ClearAll: clear the list of calibration points
