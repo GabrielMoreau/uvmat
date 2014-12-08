@@ -51,7 +51,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 11-Apr-2014 23:10:57
+% Last Modified by GUIDE v2.5 07-Dec-2014 15:50:44
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -111,12 +111,12 @@ set(handles.REPLICATE,'Position',[309 Height-40 110 30])%  rank 1
 set(handles.Intrinsic,'Position',[1 Height-40-2-92 418 92])%  rank 2
 set(handles.Extrinsic,'Position',[1 Height-40-4-92-75 418 75])%  rank 3
 set(handles.PointLists,'Position',[1 Height-40-6-92-75-117 418 117]) %  rank 4
-set(handles.CheckEnableMouse,'Position',[3 Height-40-8-92-75-117-30 180 30])%  rank 5
+set(handles.CheckEnableMouse,'Position',[3 Height-362 208 30])%  rank 5
 set(handles.PLOT,'Position',[3 Height-394 120 30])%  rank 6
 set(handles.Copy,'Position',[151 Height-394 120 30])%  rank 6
-set(handles.CLEAR_PTS,'Position',[297 Height-394 120 30])%  rank 6
-set(handles.ClearLine,'Position',[297 Height-364 120 30])%  rank 6
-set(handles.CoordLine,'Position',[177 Height-364 120 30])%  rank 6
+set(handles.ClearAll,'Position',[297 Height-394 120 30])%  rank 6
+set(handles.ClearPoint,'Position',[297 Height-362 120 30])%  rank 6
+set(handles.CoordLine,'Position',[211 Height-362 86 30])%  rank 6
 set(handles.phys_title,'Position',[38 Height-426 125 20])%  rank 7
 set(handles.CoordUnit,'Position',[151 Height-426 120 30])%  rank 7
 set(handles.px_title,'Position',[272 Height-426 125 20])%  rank 7
@@ -771,8 +771,8 @@ end
 CLEAR_PTS_Callback(hObject, eventdata, handles)% clear the current list and point plots
 
 % --------------------------------------------------------------------
-% --- Executes on button press in CLEAR_PTS: clear the list of calibration points
-function CLEAR_PTS_Callback(hObject, eventdata, handles)
+% --- Executes on button press in ClearAll: clear the list of calibration points
+function ClearAll_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.ListCoord,'Data',[])
 PLOT_Callback(hObject, eventdata, handles)
@@ -1398,9 +1398,9 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ClearLine: remove the selected line in the table Coord
+% --- Executes on button press in ClearPoint: remove the selected line in the table Coord
 %------------------------------------------------------------------------
-function ClearLine_Callback(hObject, eventdata, handles)
+function ClearPoint_Callback(hObject, eventdata, handles)
 
 Coord=get(handles.ListCoord,'Data');
 iline=str2num(get(handles.CoordLine,'String'));
@@ -1417,4 +1417,3 @@ else
         update_calib_marker([]);%remove circle marker
     end
 end
-

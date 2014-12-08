@@ -440,6 +440,7 @@ if strcmp(htype,'axes') && ~CheckZoom && ~isempty(h_geometry_calib)
                     if ~isempty(hhh)
                         set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])
                     else
+                        axes(hchild)
                         rectangle('Curvature',[1 1],...
                             'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
                             'LineStyle','-','Tag','calib_marker');

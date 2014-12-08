@@ -1119,7 +1119,7 @@ uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25
 uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
     'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','surface','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+    'String','surface','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 %  raw 2 of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
     'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
@@ -1128,12 +1128,15 @@ uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
     'String',num2str(SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
-    'String',num2str(InterfaceCoord),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
+    'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
 %  raw 3 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-1.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
-    'String','refraction index','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
+    'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
+    'String','refraction','Value',0,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.75*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
+    'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
-    'String',num2str(RefractionIndex),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
+    'String',num2str(RefractionIndex),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
 %  raw 4 of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.25*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
     'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
@@ -1142,17 +1145,26 @@ uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-3*
 uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-3*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
     'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
 %  raw 5 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
-    'String','x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
-    'String','y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-3.5*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-3*ii-3.5*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
+    'String','tild angle x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
+    'String','tild angle y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 %  raw 6 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-    'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the x axis');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the y axis');%edit box
+% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+%     'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination around the x axis');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination around the x axis');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination around the y axis');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination around the y axis');%edit box
+
 %  raw 7 of the GUI: pushbuttons
 wwp=(1-4*ii)/3; %width of the push buttons
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
@@ -1164,6 +1176,21 @@ uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii 
 drawnow
 
 %------------------------------------------------------------------------
+% function called by selecting CheckRefraction in the GUI set_slices
+function set_slice_CheckRefraction_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+hset_slice=get(hObject,'parent');
+h_refraction(1)=findobj(hset_slice,'String','surface');
+h_refraction(2)=findobj(hset_slice,'Tag','num_H');
+h_refraction(3)=findobj(hset_slice,'String','index');
+h_refraction(4)=findobj(hset_slice,'Tag','num_RefractionIndex');
+if isequal(get(hObject,'Value'),1)
+    set(h_refraction,'Visible','on')
+else
+    set(h_refraction,'Visible','off')
+end
+
+%------------------------------------------------------------------------
 % function called by pressing APPLY in the GUI  set_slices
 function set_slice_APPLY_Callback(hObject,eventdata)
 %------------------------------------------------------------------------    
@@ -1172,15 +1199,15 @@ function set_slice_APPLY_Callback(hObject,eventdata)
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml file for calibration
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
-XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
-[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);%find name of the relevant xml file
+[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');%read the xml file
 if~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-GeometryCalib=s.GeometryCalib;
+GeometryCalib=s.GeometryCalib;% get thegeometric calibration data
 
 %% read the content of the GUI set_slice
 SliceData=read_GUI(get(hObject,'parent'));
@@ -1192,8 +1219,10 @@ GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
 GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
 GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
 GeometryCalib.SliceAngle(:,3)=0;
-GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+if SliceData.CheckRefraction
+    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+end
 
 %% store the result in the xml file used for calibration
 errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
@@ -1221,11 +1250,12 @@ hhuvmat=guidata(huvmat);
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
 
 %% open the GUI browse_data
-answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
-if strcmp(answer,'Cancel')
-    return
-end
-OutPut=browse_data(answer);
+% answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
+% if strcmp(answer,'Cancel')
+%     return
+% end
+OutPutDir=uigetfile_uvmat('Campaign to calibrate with slice position?',fileparts(RootPath),'uigetdir');
+OutPut=browse_data(OutPutDir);
 nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
     SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
@@ -1246,8 +1276,10 @@ for ilist=1:numel(OutPut.Experiment)
     GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
     GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
     GeometryCalib.SliceAngle(:,3)=0;
-    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+    if SliceData.CheckRefraction
+        GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+        GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+    end
     
     % update the current xml file
     errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
@@ -4871,15 +4903,18 @@ if ~isempty(list_path{ichoice})
 end
 
 %% delete drawn objects if the output CooordUnit is different from the previous one
-if  ~isempty(CoordUnit) && ~isempty(CoordUnitPrev) && ~strcmp(CoordUnit,CoordUnitPrev)
+if  ~strcmp(CoordUnit,CoordUnitPrev)
+%     for iobj=1:numel(UvData.ProjObject)
+%         delete_object(iobj)
+%     end
     set(handles.CheckFixLimits,'Value',0)
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
-        delete_object(hother(iobj))
+        delete(hother(iobj))
     end
     hother=findobj('Tag','DeformPoint');%find all the proj objects
     for iobj=1:length(hother)
-        delete_object(hother(iobj))
+        delete(hother(iobj))
     end
     hh=findobj('Tag','calib_points');
     if ~isempty(hh)

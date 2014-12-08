@@ -72,11 +72,18 @@ FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
+if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
+    set(handles.CreateMirror,'Visible','on')
+    set(handles.mirror_txt,'Visible','on')
+else
+    set(handles.CreateMirror,'Visible','off')
+    set(handles.mirror_txt,'Visible','off')
+end
 if exist('Campaign','var')
     [tild,CampaignName]=fileparts(Campaign);
     RootXml=fullfile(Campaign,[CampaignName '.xml']);
     s=[];
-    if exist(RootXml,'file')
+    if exist(RootXml,'file') 
         [s,Heading]=xml2struct(RootXml);%read the xml file
         if isfield(s,'SourceDir')
             set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
@@ -103,9 +110,7 @@ if exist('Campaign','var')
     % UIWAIT makes GUI wait for user response (see UIRESUME)
     uiwait(handles.browse_data);
 end
-if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
-    set(handles.CreateMirror,'Visible','on')
-end
+
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
