@@ -77,8 +77,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
     check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
     ListDir=ListCells(1,find(check_dir & ~check_bad));
-    InputTable=cell(1,5);
-%    InputTable(:,2)=ListDir';
+    InputTable=cell(numel(ListDir),5);
+    InputTable(:,2)=ListDir';
     isel=0;
     for ilist=1:numel(ListDir)
         ListStructSub=dir(fullfile(RootPath,ListDir{ilist}));
@@ -90,13 +90,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 %         else
            isel=isel+1;
            InputTable{isel,1}=RootPath;
-           InputTable{isel,2}=ListDir{ilist};
             RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
             InputTable{isel,3}=RootFile;
-                    InputTable{isel,4}='*';
-        InputTable{isel,5}='.seq';
         end
-
+        InputTable{isel,4}='*';
+        InputTable{isel,5}='.seq';
     end
     hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
     hhseries=guidata(hseries); %handles of the elements in 'series'
@@ -270,7 +268,7 @@ for iview=1:size(Param.InputTable,1)
     %% backup the previous xml file and save the corrected one
     [success,message]=copyfile(filexml,[filexml '~']);%make backup
     if success~=1
-        displ(['errror in xml file backup: ' message]);
+        dips(['errror in xml file backup: ' message]);
         return
     end
     save(t,filexml)
@@ -367,7 +365,8 @@ classname=sprintf('uint%d',SeqData.bytesperpixel*8);
 classname=['*' classname];
 BitDepth=8*SeqData.bytesperpixel;%needed to write images (8 or 16 bits)
 binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
-OutputDir=fullfile(PathDir,SeqData.sequencename);
+tic
+OutputDir=fullfile(PathDir,SeqData.sequencename)
 if exist(OutputDir,'dir')
     errormsg=[OutputDir ' already exist, delete it first'];
     return
@@ -376,51 +375,44 @@ end
 if s==0
     return%not able to create new image dir
 end
-fid=0;
 for ii=1:SeqData.nb_frames
-    OutputFile=fullfile_uvmat(PathDir,SeqData.sequencename,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
-    if ~exist(OutputFile,'file')
-        fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
-        if fid==0 || ~strcmp(fname,fname_prev) % open the bin file if not in use
-            if fid~=0
-                fclose(fid);%close the previous bin file
-            end
-            fid=fopen(fname,'rb');
-            fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
-            NbBinFile=NbBinFile+1;%counter of binary files (for checking purpose)
-            BinSize(NbBinFile)=0;% strat counter for new bin file
-        else
-            %
-            %         fid=fopen(fname,'rb');% open the new bin file
-%             fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
-        end
+    OutputFile=fullfile_uvmat(PathDir,SeqData.sequencename,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode 
+    fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
+    if ii==1 || ~strcmp(fname,fname_prev) % open the bin file if not in use
+        fid=fopen(fname,'rb');
         fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
-        fname_prev=fname;
-        A=reshape(fread(fid,SeqData.width*SeqData.height,classname),SeqData.width,SeqData.height);%read the current image
-        A=A';
-        BinSize(NbBinFile)=BinSize(NbBinFile)+SeqData.width*SeqData.height*SeqData.bytesperpixel*8; %record bits read
-        j1=[];
-        if ~isequal(nbfield2,1)
-            j1=mod(ii-1,nbfield2)+1;
-        end
-        i1=floor((ii-1)/nbfield2)+1;
+        NbBinFile=NbBinFile+1;%counter of binary files (for checking purpose)
         
-        try
-            imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
-            disp([OutputFile ' written']);
-            % [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
-            %         if ~s
-            % %             disp_uvmat('ERROR',errormsg,checkrun);
-            %             return
-            %         end
-        catch ME
-            errormsg=ME.message;
-            return
-        end
+        BinSize(NbBinFile)=0;% strat counter for new bin file
+    else
+        fclose(fid);%close the previous bin file
+        fid=fopen(fname,'rb');% open the new bin file
+        fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
+    end
+    fname_prev=fname;
+    A=reshape(fread(fid,SeqData.width*SeqData.height,classname),SeqData.width,SeqData.height);%read the current image
+    A=A';
+    BinSize(NbBinFile)=BinSize(NbBinFile)+SeqData.width*SeqData.height*SeqData.bytesperpixel*8; %record bits read
+    j1=[];
+    if ~isequal(nbfield2,1)
+        j1=mod(ii-1,nbfield2)+1;
+    end
+    i1=floor((ii-1)/nbfield2)+1;
+    try
+        imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
+        disp([OutputFile ' written']);
+       % [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
+%         if ~s
+% %             disp_uvmat('ERROR',errormsg,checkrun);
+%             return
+%         end
+    catch ME
+        errormsg=ME.message;
+        return
     end
 end
 fclose(fid)
-
+toc
 
 
 
