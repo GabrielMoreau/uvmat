@@ -126,6 +126,29 @@ if isfield(XmlData{1},'GeometryCalib')
  end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
+%% grid of physical positions
+[x,y]=meshgrid(ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2),ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2));
+%camera coordinates:initialisation 2 cameras
+NbCamera=2;
+X=zeros(NbCamera,size(x,1),size(y,1));
+Y=zeros(NbCamera,size(x,1),size(y,1));
+for icamera=1:NbCamera
+%camera coordinates
+Calib=XmlData{1}.GeometryCalib;
+    xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
+    yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
+    zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);
+    
+    %undistorted image coordinates
+    X(icamera,:,:)=xc./zc;
+    Y(icamera,:,:)=yc./zc;
+end
+
+%% case of fixed planes (for moving interface, coeff need to be calculated for each field
+if isequal(size(InputTable),2)
+[S,D]=get_coeff(XmlData,X,Y);
+end
+
  %% MAIN LOOP ON FIELDS
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
@@ -153,6 +176,14 @@ for index=1:NbField
         end
         
         %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
+            %camera coordinates
+        xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
+        yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
+        zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);
+
+        %undistorted image coordinates
+        Xu=xc./zc;
+        Yu=yc./zc;
         Data{iview}=phys(Data{iview},XmlData{iview});
         
         %% projection on object (gridded plane)
@@ -345,7 +376,15 @@ Result.vec_E=error;
 error=struct2nc(file_st,Result);
 display([file_st ' written'])
 
-
+function [S,D]=get_coeff(XmlData,X,Y);
+Calib_a=XmlData{1}.GeometryCalib;
+R=(Calib_a.R)';%rotation matrix
+A(1,1)=R(1)-R(7)*X;
+A(1,2)=R(2)-R(8)*X;
+A(1,3)=R(3)-R(9)*X;
+A(2,1)=R(4)-R(7)*Y;
+A(2,2)=R(5)-R(8)*Y;
+A(2,3)=R(6)-R(9)*Y;
 
 %'pxcm_tsai': find differentials of the Tsai calibration
 function [A11,A12,A13,A21,A22,A23]=pxcm_tsai(a,var_phys)

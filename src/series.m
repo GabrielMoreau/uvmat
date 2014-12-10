@@ -1656,7 +1656,9 @@ else
             Param.IndexRange.first_i= first_i+iprocess-1;
             Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         end
-        Param.InputTable{1}=regexprep(Param.InputTable{1},'\','/');%correct path name for PCWIN system
+        for ilist=1:size(Param.InputTable,1)
+        Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/');%correct path name for PCWIN system
+        end
         % create, fill and save the xml parameter file
         t=struct2xml(Param);
         t=set(t,1,'name','Series');

@@ -48,7 +48,7 @@ A_out=cell(1,numel(A));
 for icell=1:length(A) 
     Calib=XmlData{icell}.GeometryCalib;
     % rescaling of the image coordinates without change of the image array
-    if strcmp(Calib.CalibrationType,'rescale') && isequal(Calib,CalibIn{1})
+    if strcmp(Calib.CalibrationType,'rescale') && isequal(Calib,XmlData{1}.GeometryCalib)
         A_out{icell}=A{icell};%no transform
         Rangx=[0.5 npx-0.5];%image coordiantes of corners
         Rangy=[npy-0.5 0.5];
