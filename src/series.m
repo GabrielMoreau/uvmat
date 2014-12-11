@@ -3352,3 +3352,14 @@ Mode_Callback([],[])
 function num_ref_j_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
 Mode_Callback([],[])
+
+
+% --- Executes on button press in ClearLine.
+function ClearLine_Callback(hObject, eventdata, handles)
+% hObject    handle to ClearLine (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+iline=get(handles.InputTable,'UserData');
+InputTable=get(handles.InputTable,'Data');
+InputTable(iline,:)=[];
+set(handles.InputTable,'Data',InputTable);
