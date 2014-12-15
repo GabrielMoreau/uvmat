@@ -1216,8 +1216,10 @@ GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
 Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
 GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
 GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
+Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
+GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
+GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
 GeometryCalib.SliceAngle(:,3)=0;
 if SliceData.CheckRefraction
     GeometryCalib.InterfaceCoord=[0 0 SliceData.H];

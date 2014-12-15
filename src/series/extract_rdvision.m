@@ -360,6 +360,7 @@ function [BinSize,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,
 %   NB_FRAMES   : Nombres d'images dans la s�quence.
 NbBinFile=0;
 BinSize=0;
+fid=0;
 errormsg='';
 classname=sprintf('uint%d',SeqData.bytesperpixel*8);
 

@@ -278,6 +278,12 @@ if isfield(Param,'InputFile')
         update_rootinfo(handles,Param.HiddenData.i1_series{2},Param.HiddenData.i2_series{2},Param.HiddenData.j1_series{2},Param.HiddenData.j2_series{2},...
             Param.HiddenData.FileInfo{2},Param.HiddenData.MovieObject{2},2)
     end
+    %% enable field and veltype menus, in accordance with the current action
+ActionName_Callback([],[], handles)
+
+%% set length of waitbar
+displ_time(handles)
+
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 end
@@ -591,6 +597,12 @@ for iview=1:size(InputTable,1)
        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview)
     end
 end
+%% enable field and veltype menus, in accordance with the current action
+ActionName_Callback([],[], handles)
+
+%% set length of waitbar
+displ_time(handles)
+
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
@@ -763,6 +775,12 @@ set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:     
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview);
+%% enable field and veltype menus, in accordance with the current action
+ActionName_Callback([],[], handles)
+
+%% set length of waitbar
+displ_time(handles)
+
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
 
 %------------------------------------------------------------------------
@@ -1041,13 +1059,6 @@ for iline=1:nbview
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));%make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
-
-%% enable field and veltype menus, in accordance with the current action
-ActionName_Callback([],[], handles)
-
-%% set length of waitbar
-displ_time(handles)
-
 
 %-----------------------------------------------------------guide -------------
 %------------------------------------------------------------------------
@@ -2174,50 +2185,53 @@ end
 set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
-SubDirOut='';%default
-OutputDirExt='.series'; %default
-if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
-    OutputDirExt=ParamOut.OutputDirExt;
-end
-set(handles.OutputDirExt,'String',OutputDirExt)
-OutputDirVisible='off';
-OutputSubDirMode='auto';%default
-if isfield(ParamOut,'OutputSubDirMode')
-    OutputSubDirMode=ParamOut.OutputSubDirMode;
-end
-switch OutputSubDirMode
-    case 'auto';%default
-        OutputDirVisible='on';
-        SubDir=InputTable(1:end,2); %set of subdirectories 
-        SubDirOut=SubDir{1};
-        if numel(SubDir)>1
-            for ilist=2:numel(SubDir)
-                SubDirOut=[SubDirOut '-' SubDir{ilist}];
+if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))
+    OutputDirExt='.series'; %default
+    if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
+        OutputDirExt=ParamOut.OutputDirExt;
+    end
+    set(handles.OutputDirExt,'String',OutputDirExt)
+    OutputDirVisible='off';
+    OutputSubDirMode='auto';%default
+    SubDirOut='';
+    if isfield(ParamOut,'OutputSubDirMode')
+        OutputSubDirMode=ParamOut.OutputSubDirMode;
+    end
+    switch OutputSubDirMode
+        case 'auto';%default
+            OutputDirVisible='on';
+            SubDir=InputTable(1:end,2); %set of subdirectories
+            SubDirOut=SubDir{1};
+            if numel(SubDir)>1
+                for ilist=2:numel(SubDir)
+                    SubDirOut=[SubDirOut '-' SubDir{ilist}];
+                end
             end
-        end
-    case 'first'
-        OutputDirVisible='on';
-        SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
-    case 'last'
-        OutputDirVisible='on';
-        SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
+        case 'first'
+            OutputDirVisible='on';
+            SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
+        case 'last'
+            OutputDirVisible='on';
+            SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
+    end
+    set(handles.OutputSubDir,'String',SubDirOut)
+    set(handles.OutputDirExt,'Visible',OutputDirVisible)
+    set(handles.OutputSubDir,'Visible',OutputDirVisible)
+    set(handles.OutputDir_title,'Visible',OutputDirVisible)
+    SeriesData.ActionName=ActionName;%record ActionName for next use
+    
+    
+    %% visibility of the run mode (local or background or cluster)
+    if strcmp(OutputSubDirMode,'none')
+        RunModeVisible='off';% only local mode available if no output file is produced
+    else
+        RunModeVisible='on';
+    end
+    set(handles.RunMode,'Visible',RunModeVisible)
+    set(handles.ActionExt,'Visible',RunModeVisible)
+    set(handles.RunMode_title,'Visible',RunModeVisible)
+    set(handles.ActionExt_title,'Visible',RunModeVisible)
 end
-set(handles.OutputSubDir,'String',SubDirOut)
-set(handles.OutputDirExt,'Visible',OutputDirVisible)
-set(handles.OutputSubDir,'Visible',OutputDirVisible)
-set(handles.OutputDir_title,'Visible',OutputDirVisible)
-
-%% visibility of the run mode (local or background or cluster)
-if strcmp(OutputSubDirMode,'none')
-    RunModeVisible='off';% only local mode available if no output file is produced
-else
-     RunModeVisible='on';
-end
-set(handles.RunMode,'Visible',RunModeVisible)
-set(handles.ActionExt,'Visible',RunModeVisible)
-set(handles.RunMode_title,'Visible',RunModeVisible)
-set(handles.ActionExt_title,'Visible',RunModeVisible)
-
 
 %% Expected nbre of output files
 if isfield(ParamOut,'OutputFileMode')
