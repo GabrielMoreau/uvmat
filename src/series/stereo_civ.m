@@ -236,7 +236,7 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
 Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-Data.Program='civ_series';
+Data.Program=mfilename;%gives the name of the current function;
 Data.CivStage=0;%default
 maskname='';%default
 check_civx=0;%default
