@@ -1307,25 +1307,43 @@ set(handles.MaxIndex_j,'Visible',state)
 %------------------------------------------------------------------------
 function RUN_Callback(hObject, eventdata, handles)
 
-%% read the data on the GUI series
-Param=read_GUI_series(handles);%displayed parameters
-SeriesData=get(handles.series,'UserData');%hidden parameters
-if ~isfield(SeriesData,'i1_series')
-    msgbox_uvmat('ERROR','The input field series needs to be refreshed: press REFRESH')
-    return
-end
-if isfield(Param,'InputFields')&& isequal(Param.InputFields.FieldName,'get_field...')
-    msgbox_uvmat('ERROR','input field name(s) not defined, select get_field...')
-    return
-end
-
 %% settings of the button RUN
 set(handles.RUN,'BusyAction','queue');% activation of STOP button will set BusyAction to 'cancel'
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
 set(handles.RUN,'BackgroundColor',[1 1 0])%show activation of RUN by yellow color
 drawnow
 set(handles.status,'Value',0)% desable status display if relevant
-status_Callback(hObject, eventdata, handles)
+status_Callback([], eventdata, handles)
+
+%% launch action
+errormsg=launch_action(handles);
+if ~isempty(errormsg)
+     msgbox_uvmat('ERROR',errormsg)
+end
+
+%% reset the GUI series
+update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
+set(handles.RUN, 'Enable','On')
+set(handles.RUN,'BackgroundColor',[1 0 0])
+set(handles.RUN, 'Value',0)
+
+%------------------------------------------------------------------------
+% --- called by RUN_Callback
+%------------------------------------------------------------------------
+function errormsg=launch_action(handles)
+errormsg='';%default
+
+%% read the data on the GUI series
+Param=read_GUI_series(handles);%displayed parameters
+SeriesData=get(handles.series,'UserData');%hidden parameters
+if ~isfield(SeriesData,'i1_series')
+    errormsg='The input field series needs to be refreshed: press REFRESH';
+    return
+end
+if isfield(Param,'InputFields')&& isequal(Param.InputFields.FieldName,'get_field...')
+    errormsg='input field name(s) not defined, select get_field...';
+    return
+end
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local';%default (needed for first opening of the GUI series)
@@ -1340,7 +1358,6 @@ if isfield(Param.Action,'ActionExt')
 end
 ActionName=Param.Action.ActionName;
 ActionPath=Param.Action.ActionPath;
-
 path_series=fileparts(which('series'));
 
 %% create the Action fct handle if RunMode option = 'local'
@@ -1348,7 +1365,7 @@ if strcmp(RunMode,'local')
     if ~isequal(ActionPath,path_series)
         eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
         if ~exist(ActionPath,'dir')
-            msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
+            errormsg=['The prescribed function path ' ActionPath ' does not exist'];
             return
         end
         if ~isequal(spath,ActionPath)
@@ -1389,7 +1406,7 @@ if strcmp(ActionExt,'.sh')
         end
     end
     if isempty(RunTime) && strcmp(RunMode,'cluster_oar')
-        msgbox_uvmat('ERROR','RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster')
+       errormsg='RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster';
         return
     end
 end
@@ -1462,7 +1479,7 @@ else
 end
 
 %% create the output data directory if needed
-OutpuDir='';
+OutputDir='';
 if isfield(Param,'OutputSubDir')
     SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
     SubDirOutNew=SubDirOut;
@@ -1471,7 +1488,7 @@ if isfield(Param,'OutputSubDir')
     while detect
         answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
         if strcmp(answer,'Cancel')
-            errormsg='Cancel';
+            set(handles.RUN,'backgroundcolor',[1 0 0])
             return
         elseif strcmp(answer,'Yes')
             detect=0;
@@ -1494,13 +1511,12 @@ if isfield(Param,'OutputSubDir')
     if check_create    % create output directory if it does not exist
         [tild,msg1]=mkdir(OutputDir);
         if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' OutputDir ': ' msg1]);%error message for directory creation
+            errormsg=['cannot create ' OutputDir ': ' msg1];%error message for directory creation
             return
         end
         [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
         if success==0
             msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
-            return
         end
     end
     
@@ -1511,7 +1527,7 @@ DirXml=fullfile(OutputDir,'0_XML');
 if ~exist(DirXml,'dir')
     [tild,msg1]=mkdir(DirXml);
     if ~strcmp(msg1,'')
-        msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
+        errormsg=['cannot create ' DirXml ': ' msg1];%error message for directory creation
         return
     end
     [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
@@ -1539,9 +1555,7 @@ if isfield(Param.IndexRange,'first_j')
     incr_j=Param.IndexRange.incr_j;
 end
 if last_i < first_i || last_j < first_j 
-    msgbox_uvmat('ERROR', 'series/Run_Callback:last field index must be larger or equal to the first one')
-    set(handles.RUN, 'Enable','On'),
-    set(handles.RUN,'BackgroundColor',[1 0 0])
+    errormsg= 'series/Run_Callback:last field index must be larger or equal to the first one';
     return
 end
 %incr_i must be defined, =1 by default, if NbSlice is active
@@ -1625,9 +1639,6 @@ if strcmp (RunMode,'local')
                 end
         end
     end
-% elseif strcmp(get(handles.OutputDirExt,'Visible'),'off')
-%     msgbox_uvmat('ERROR',['no output file for Action ' ActionName ', use run mode = local']);% a output dir is needed for background option
-%     return
 else
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
@@ -1642,7 +1653,7 @@ else
     if ~exist(DirBat,'dir')
         [tild,msg1]=mkdir(DirBat);
         if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' DirBat ': ' msg1]);%error message for directory creation
+            errormsg=['cannot create ' DirBat ': ' msg1];%error message for directory creation
             return
         end
     end
@@ -1651,7 +1662,7 @@ else
     if ~exist(DirLog,'dir')
         [tild,msg1]=mkdir(DirLog);
         if ~strcmp(msg1,'')
-            msgbox_uvmat('ERROR',['cannot create ' DirLog ': ' msg1]);%error message for directory creation
+            errormsg=['cannot create ' DirLog ': ' msg1];%error message for directory creation
             return
         end
     end
@@ -1683,7 +1694,7 @@ else
         batch_file_list{iprocess}=filebat;
         [fid,message]=fopen(filebat,'w');% create the executable file
         if isequal(fid,-1)
-            msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
+            errormsg=['creation of .bat file: ' message];
             return
         end
         
@@ -1741,7 +1752,7 @@ switch RunMode
     case 'background'
         for iprocess=1:NbProcess
             system([batch_file_list{iprocess} ' &'])% directly execute the command file for each process
-            msgbox_uvmat('CONFIRMATION',[ActionName 'launched in background: press STATUS to see results'])
+            msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
         end
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
@@ -1754,7 +1765,7 @@ switch RunMode
         else
             [tild,msg1]=mkdir(DirOAR);
             if ~strcmp(msg1,'')
-                msgbox_uvmat('ERROR',['cannot create ' DirOAR ': ' msg1]);%error message for directory creation
+                errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
                 return
             end
         end
@@ -1784,12 +1795,6 @@ switch RunMode
         system(oar_command);  
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched in cluster: press STATUS to see results'])
 end
-
-%% reset the GUI series
-update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
-set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])
-set(handles.RUN, 'Value',0)
 
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
@@ -2191,47 +2196,48 @@ if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionNam
         OutputDirExt=ParamOut.OutputDirExt;
     end
     set(handles.OutputDirExt,'String',OutputDirExt)
-    OutputDirVisible='off';
-    OutputSubDirMode='auto';%default
-    SubDirOut='';
-    if isfield(ParamOut,'OutputSubDirMode')
-        OutputSubDirMode=ParamOut.OutputSubDirMode;
-    end
-    switch OutputSubDirMode
-        case 'auto';%default
-            OutputDirVisible='on';
-            SubDir=InputTable(1:end,2); %set of subdirectories
-            SubDirOut=SubDir{1};
-            if numel(SubDir)>1
-                for ilist=2:numel(SubDir)
-                    SubDirOut=[SubDirOut '-' SubDir{ilist}];
-                end
-            end
-        case 'first'
-            OutputDirVisible='on';
-            SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
-        case 'last'
-            OutputDirVisible='on';
-            SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
-    end
-    set(handles.OutputSubDir,'String',SubDirOut)
-    set(handles.OutputDirExt,'Visible',OutputDirVisible)
-    set(handles.OutputSubDir,'Visible',OutputDirVisible)
-    set(handles.OutputDir_title,'Visible',OutputDirVisible)
-    SeriesData.ActionName=ActionName;%record ActionName for next use
-    
-    
-    %% visibility of the run mode (local or background or cluster)
-    if strcmp(OutputSubDirMode,'none')
-        RunModeVisible='off';% only local mode available if no output file is produced
-    else
-        RunModeVisible='on';
-    end
-    set(handles.RunMode,'Visible',RunModeVisible)
-    set(handles.ActionExt,'Visible',RunModeVisible)
-    set(handles.RunMode_title,'Visible',RunModeVisible)
-    set(handles.ActionExt_title,'Visible',RunModeVisible)
 end
+OutputDirVisible='off';
+OutputSubDirMode='auto';%default
+SubDirOut='';
+if isfield(ParamOut,'OutputSubDirMode')
+    OutputSubDirMode=ParamOut.OutputSubDirMode;
+end
+switch OutputSubDirMode
+    case 'auto';%default
+        OutputDirVisible='on';
+        SubDir=InputTable(1:end,2); %set of subdirectories
+        SubDirOut=SubDir{1};
+        if numel(SubDir)>1
+            for ilist=2:numel(SubDir)
+                SubDirOut=[SubDirOut '-' SubDir{ilist}];
+            end
+        end
+    case 'first'
+        OutputDirVisible='on';
+        SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
+    case 'last'
+        OutputDirVisible='on';
+        SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
+end
+set(handles.OutputSubDir,'String',SubDirOut)
+set(handles.OutputDirExt,'Visible',OutputDirVisible)
+set(handles.OutputSubDir,'Visible',OutputDirVisible)
+set(handles.OutputDir_title,'Visible',OutputDirVisible)
+SeriesData.ActionName=ActionName;%record ActionName for next use
+
+
+%% visibility of the run mode (local or background or cluster)
+if strcmp(OutputSubDirMode,'none')
+    RunModeVisible='off';% only local mode available if no output file is produced
+else
+    RunModeVisible='on';
+end
+set(handles.RunMode,'Visible',RunModeVisible)
+set(handles.ActionExt,'Visible',RunModeVisible)
+set(handles.RunMode_title,'Visible',RunModeVisible)
+set(handles.ActionExt_title,'Visible',RunModeVisible)
+
 
 %% Expected nbre of output files
 if isfield(ParamOut,'OutputFileMode')
@@ -2986,6 +2992,7 @@ if get(handles.status,'Value')
     RootPath=Param.InputTable{1,1};
     if ~isfield(Param,'OutputSubDir')   
         msgbox_uvmat('ERROR','no standard sub-directory definition for output files, use a browser to check the output')
+        set(handles.status,'BackgroundColor',[0 1 0])
         return
     end
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files

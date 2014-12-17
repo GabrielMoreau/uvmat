@@ -38,10 +38,15 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [Data,errormsg,result_conv]= stereo_civ(Param)
+Data=[];
 errormsg='';
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN 
+    if size(Param.InputTable,1)<2
+        msgbox_uvmat('WARNING','two input file series must be entered')
+        return
+    end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
@@ -284,8 +289,7 @@ for ifield=1:NbField
             end
         end
         [A,Rangx,Rangy]=phys_ima(A,XmlData,1);
-        
-
+        [Npy,Npx]=size(A{1});
         PhysImageA=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],1);
         PhysImageB=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],2);
         imwrite(A{1},PhysImageA)
@@ -322,8 +326,8 @@ for ifield=1:NbField
         Data.CivStage=1;
         
         % set the list of variables
-        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record
-        Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
+        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C','Xphys','Yphys','Zphys','Civ1_E'};%  cell array containing the names of the fields to record
+        Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
         Data.VarAttribute{1}.Role='coord_x';
         Data.VarAttribute{2}.Role='coord_y';
         Data.VarAttribute{3}.Role='vector_x';
@@ -333,18 +337,22 @@ for ifield=1:NbField
         
         % calculate velocity data (y and v in indices, reverse to y component)
         [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
-        if ~isempty(errormsg)
-            disp_uvmat('ERROR',errormsg,checkrun)
-            return
-        end
         Data.Civ1_X=reshape(xtable,[],1);
         Data.Civ1_Y=reshape(par_civ1.ImageHeight-ytable+1,[],1);
         % get z from u and v (displacements)
         Data.Civ1_U=reshape(utable,[],1);
-        Data.Civ1_V=reshape(-vtable,[],1);
-        
+        Data.Civ1_V=reshape(-vtable,[],1);      
         Data.Civ1_C=reshape(ctable,[],1);
         Data.Civ1_F=reshape(F,[],1);
+        Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ1_X-0.5)/(Npx-1);
+        Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ1_Y-0.5)/(Npy-1);
+        U=Data.Civ1_U*(Rangx(2)-Rangx(1))/(Npx-1);
+        V=Data.Civ1_V*(Rangy(2)-Rangy(1))/(Npy-1);
+        [Data.Zphys,Data.Civ1_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
+        if ~isempty(errormsg)
+            disp_uvmat('ERROR',errormsg,checkrun)
+            return
+        end
     end
     
     %% Fix1
@@ -1015,6 +1023,53 @@ switch mode
         check_bounds=zeros(size(i1_series));% no limitations due to min-max indices
 end
 
+%INPUT:
+% xmid- u/2: set of apparent phys x coordinates in the ref plane, image A
+% ymid- v/2: set of apparent phys y coordinates in the ref plane, image A
+% xmid+ u/2: set of apparent phys x coordinates in the ref plane, image B
+% ymid+ v/2: set of apparent phys y coordinates in the ref plane, image B
+% XmlData: content of the xml files containing geometric calibration parameters
+function [z,error]=shift2z(xmid, ymid, u, v,XmlData)
+z=0;
+error=0;
 
+%% first image
+Calib_A=XmlData{1}.GeometryCalib;
+R=(Calib_A.R)';
+x_a=xmid- u/2;
+y_a=ymid- v/2;
+z_a=R(7)*x_a+R(8)*y_a+R(9)*Calib_A.SliceCoord(1,3);
+X=(R(1)*x_a+R(2)*y_a+R(3)*Calib_A.SliceCoord(1,3))./z_a;
+Y=(R(4)*x_a+R(5)*y_a+R(6)*Calib_A.SliceCoord(1,3))./z_a;
+A_1_1=R(1)-R(7)*x_a;
+A_1_2=R(2)-R(8)*x_a;
+A_1_3=R(3)-R(9)*x_a;
+A_2_1=R(4)-R(7)*y_a;
+A_2_2=R(5)-R(8)*y_a;
+A_2_3=R(6)-R(9)*y_a;
+Det=A_1_1.*A_2_2-A_1_2.*A_2_1;
+Dxa=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
+Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 
+%% second image
+Calib_A=XmlData{1}.GeometryCalib;
+R=(Calib_A.R)';
+x_a=xmid+ u/2;
+y_a=ymid+ v/2;
+z_a=R(7)*x_a+R(8)*y_a+R(9)*Calib_A.SliceCoord(1,3);
+X=(R(1)*x_a+R(2)*y_a+R(3)*Calib_A.SliceCoord(1,3))./z_a;
+Y=(R(4)*x_a+R(5)*y_a+R(6)*Calib_A.SliceCoord(1,3))./z_a;
+A_1_1=R(1)-R(7)*x_a;
+A_1_2=R(2)-R(8)*x_a;
+A_1_3=R(3)-R(9)*x_a;
+A_2_1=R(4)-R(7)*y_a;
+A_2_2=R(5)-R(8)*y_a;
+A_2_3=R(6)-R(9)*y_a;
+Det=A_1_1.*A_2_2-A_1_2.*A_2_1;
+Dxb=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
+Dyb=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 
+%% result
+Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
+error=((Dyb-Dya).*u-(Dxb-Dxa).*v)./Den;
+z=((Dxb-Dxa).*u-(Dyb-Dya).*v)./Den;
