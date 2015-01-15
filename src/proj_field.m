@@ -1328,22 +1328,6 @@ for icell=1:length(CellInfo)
                         XIndexMax=Coord{NbDim}(end)/DX;
                         XIndexMin=1;
                     end
-%                         YIndexMin=(Coord{NbDim-1}(1)-YMax)/DY+1;
-% %                         YIndexMax=(Coord{NbDim-1}(1)-YMin)/DY+1;
-%                         Ybound(2)=Coord{NbDim-1}(1)-DY*(YIndexMax-1);
-%                         Ybound(1)=Coord{NbDim-1}(1)-DY*(YIndexMin-1);
-%                     end
-%                     if testXMin%test_direct(NbDim)==1
-%                         XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
-%                         XIndexMax=(XMax-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the max x value for the new field
-%                         Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);%  x value corresponding to XIndexMin
-%                         Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);%  x value corresponding to XIndexMax
-%                     else
-%                         XIndexMin=(Coord{NbDim}(1)-XMax)/DX+1;
-%                         XIndexMax=(Coord{NbDim}(1)-XMin)/DX+1;
-%                         Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);
-%                         Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);
-%                     end
                     YIndexRange(1)=ceil(min(YIndexMin,YIndexMax));%first y index to select from the previous field
                     YIndexRange(1)=max(YIndexRange(1),1);% avoid bound lower than the first index
                     YIndexRange(2)=floor(max(YIndexMin,YIndexMax));%last y index to select from the previous field
@@ -1460,12 +1444,17 @@ for icell=1:length(CellInfo)
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
                         if size(FieldData.(VarName),3)==1
-                            ProjData.(VarName)=interp2(X,Y,double(FieldData.(VarName)),XI,YI,'*linear');
+                            ProjData.(VarName)=interp2(X,Y,double(FieldData.(VarName)),XI,YI,'*linear');%interpolation fct
                         else
                             ProjData.(VarName)=interp2(X,Y,double(FieldData.(VarName)(:,:,1)),XI,YI,'*linear');
                             for icolor=2:size(FieldData.(VarName),3)% project 'color' components
-                                ProjData.(VarName)=cat(3,ProjData.(VarName),interp2(X,Y,double(FieldData.(VarName)(:,:,icolor)),XI,YI,'*linear')); %TO TEST
+                                ProjData.(VarName)=cat(3,ProjData.(VarName),interp2(X,Y,double(FieldData.(VarName)(:,:,icolor)),XI,YI,'*linear')); 
                             end
+                        end
+                        if isa(FieldData.(VarName),'uint8')
+                            ProjData.(VarName)=uint8(ProjData.(VarName));%put result to integer 8 bits if the initial field is integer (image)
+                        elseif isa(FieldData.(VarName),'uint16')
+                            ProjData.(VarName)=uint16(ProjData.(VarName));%put result to integer 16 bits if the initial field is integer (image)
                         end
                         ListVarName=[ListVarName VarName];
                         DimCell(1:2)={AYName,AXName};
@@ -1539,10 +1528,6 @@ for icell=1:length(CellInfo)
                     eval(['ProjData.' VName '=ProjData.' VName '+ ProjData.' WName '*sin(Theta);'])%
                     eval(['ProjData.' WName '=NormVec_X*ProjData.' UName '+ NormVec_Y*ProjData.' VName '+ NormVec_Z* ProjData.' WName ';']);
                 end
-                %                 if ~isequal(Psi,0)
-                %                     eval(['ProjData.' UName '=cos(Psi)* ProjData.' UName '- sin(Psi)*ProjData.' VName ';']);
-                %                     eval(['ProjData.' VName '=sin(Psi)* ProjData.' UName '+ cos(Psi)*ProjData.' VName ';']);
-                %                 end
             end
         end
     end

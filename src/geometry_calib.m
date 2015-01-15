@@ -169,13 +169,13 @@ end
 function APPLY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% look for the GUI uvmat and check for an image as input
-set(handles.APPLY,'BackgroundColor',[1 1 0])
-huvmat=findobj(allchild(0),'Name','uvmat');
+set(handles.APPLY,'BackgroundColor',[1 1 0])% paint APPLY button in yellow to show activation
+huvmat=findobj(allchild(0),'Name','uvmat');% look for the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 
 RootPath='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-    RootPath=get(hhuvmat.RootPath,'String');
+    RootPath=get(hhuvmat.RootPath,'String');% path to the currently displayed image
     SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
     outputfile=[fullfile(RootPath,SubDirBase) '.xml'];%xml file associated with the currently displayed image
 else
@@ -325,48 +325,17 @@ set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
 set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
 %% store the calibration data, by default in the xml file of the currently displayed image
-UvData=get(hhuvmat.uvmat,'UserData');
-% NbSlice_j=1;%default
-% ZStart=Z_plane;
-% ZEnd=Z_plane;
-% volume_scan='n';
-% if isfield(UvData,'XmlData')
-%     if isfield(UvData.XmlData,'TranslationMotor')
-%         NbSlice_j=UvData.XmlData.TranslationMotor.Nbslice;
-%         ZStart=UvData.XmlData.TranslationMotor.ZStart/10;
-%         ZEnd=UvData.XmlData.TranslationMotor.ZEnd/10;
-%         volume_scan='y';
-%     end
-% end
-
 answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
-
-%% get plane position(s)
-if ~strcmp(answer,'Yes')
+if strcmp(answer,'Yes') %store the calibration data
+    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
+        msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
+        GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    end
+else
     GeometryCalib=[];
     index=1;
-    return
-end
-if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-    msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
-%     input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
-%     input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
-%     answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
-%     GeometryCalib.NbSlice=str2double(answer{5});
-%     GeometryCalib.VolumeScan=answer{6};
-%     if isempty(answer)
-%         Z_plane=0; %default
-%     else
-%         Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
-%     end
-     GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-%     GeometryCalib.SliceAngle(:,3)=0;
-%     GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
-%     GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-%     GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
-%     GeometryCalib.RefractionIndex=str2double(answer{4});
 end
 
 %------------------------------------------------------------------------

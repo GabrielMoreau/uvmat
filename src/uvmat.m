@@ -4119,7 +4119,7 @@ set(handles.uvmat,'UserData',UvData);
 %------------------------------------------------------------------------
 % --- read the data displayed for the input rootfile windows (new): TODO use read_GUI
 %------------------------------------------------------------------------
-function [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles)
+function [RootPath,SubDir,RootFile,FileIndices,FileExt,NomType]=read_file_boxes(handles)
 
 InputFile=read_GUI(handles.InputFile);
 RootPath=InputFile.RootPath;
@@ -4127,7 +4127,7 @@ SubDir=regexprep(InputFile.SubDir,'/|\','');
 RootFile=regexprep(InputFile.RootFile,'/|\','');
 FileIndices=InputFile.FileIndex;
 FileExt=InputFile.FileExt;
-
+NomType=InputFile.NomType;
 
 %------------------------------------------------------------------------
 % ---- read the data displayed for the second input rootfile windows
@@ -4320,7 +4320,7 @@ switch field
 end
 
 %----------------------------------------------------------------
-% --- Executes on menu selection FieldName
+% --- Executes on menu selection FieldName_1
 function FieldName_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------
 
@@ -4467,14 +4467,14 @@ switch field_1
 %         end
     case 'image'
         %% look for image corresponding to civ data
-        imagename='';
         if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file
             imagename=UvData.Field.Civ2_ImageA;
         elseif isfield(UvData.Field,'Civ1_ImageA')%
             imagename=UvData.Field.Civ1_ImageA;
         else
+            [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
             SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-            imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
+            imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png','_1',i1,[],j1,[]);
         end
         if ~exist(imagename,'file')
             imagename=uigetfile_uvmat('Pick an image file',imagename,'image');

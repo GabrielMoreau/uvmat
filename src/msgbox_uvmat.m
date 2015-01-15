@@ -105,7 +105,7 @@ if exist('title','var')
             icontype='warn';
         case 'INPUT_Y-N'
             icontype='quest';
-            testCancel=1; %no cancel button
+            testCancel=0; %no cancel button
             testNo=1; % button No activated
         case 'RULER'
             icontype='';
