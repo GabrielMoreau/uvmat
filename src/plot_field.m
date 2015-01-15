@@ -957,7 +957,7 @@ if test_ima
             yi=linspace(Coord_y(1),Coord_y(2),npxy(1));
             A = interp2(X,Y,double(A),xi,yi');
         end
-        % create new image if there  no image handle is found
+        % create new image if no image handle is found
         if isempty(hima)
             tag=get(haxes,'Tag');
             if MinA<MaxA
