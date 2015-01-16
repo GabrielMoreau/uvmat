@@ -2102,10 +2102,6 @@ function [Data,par_civ1]=get_param_civ1(handles)
  par_civ1.FrameIndexA=num2str(i1);
  par_civ1.FrameIndexB=num2str(i2);
  par_civ1.ImageName_B=ImageName_B;
- 
-
-% handles    structure with handles and user data (see GUIDATA)
-
 
 % --- Executes on button press in InportParam.
 function InportParam_Callback(hObject, eventdata, handles)
@@ -2147,59 +2143,9 @@ if ~isempty(filexml)
         msgbox_uvmat('ERROR','invalid config file (not for civ_series')
         return
     end
-%     Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
-%     Param=rmfield(Param,'IndexRange');  
-%     fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
-% %     SeriesData=get(h,'UserData');
-%     if isfield(Param,'InputFields')
-%         ListField=Param.InputFields.FieldName;
-%         set(handles.FieldName,'String',[ListField;{'get-field...'}])
-%          set(handles.FieldName,'Value',1:numel(ListField))
-%     end       
-%     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-%         set(handles.ActionInput,'Visible','on')
-%         set(handles.ActionInput,'Value',0)
-%         Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
-%         SeriesData.ActionInput=Param.ActionInput;
-%     end
-%     if isfield(Param,'ProjObject') %introduce projection object if relevant
-%         SeriesData.ProjObject=Param.ProjObject;
-%     end
-%     set(handles.series,'UserData',SeriesData)
-%     if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
-%         set(handles.ProjObject,'String',Param.ProjObject.Name)
-%         set(handles.ViewObject,'Visible','on')
-%         set(handles.EditObject,'Visible','on')
-%         set(handles.DeleteObject,'Visible','on')
-%     else     
-%         set(handles.ProjObject,'String','')
-%         set(handles.ProjObject,'Visible','off')
-%         set(handles.ViewObject,'Visible','off')
-%         set(handles.EditObject,'Visible','off')
-%         set(handles.DeleteObject,'Visible','off')     
-%     end     
-%     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
 end
 
 
-% --- Executes on selection change in popupmenu11.
-function popupmenu11_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu11 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% --- Executes on selection change in iterate.
+function iterate_Callback(hObject, eventdata, handles)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu11 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu11
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu11_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu11 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end

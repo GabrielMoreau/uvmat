@@ -37,7 +37,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 08-May-2014 23:03:29
+% Last Modified by GUIDE v2.5 16-Jan-2015 11:03:00
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -592,7 +592,6 @@ set(hhuvmat.CheckEditObject,'Value',1) % set uvmat to object edit mode to allow 
 set(hhuvmat.CheckViewField,'Value',1)
 
 set(handles.REFRESH,'BackgroundColor',[1 0 0])
-%set(handles.Coord,'BackgroundColor',[1 1 1])
 set(handles.num_RangeY_2,'BackgroundColor',[1 1 1])
 
 % --- Executes on button press in DisplayCoord.
@@ -714,50 +713,14 @@ REFRESH_Callback(hObject, eventdata, handles)
 function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#ProjObject')
-% path_to_uvmat=which ('uvmat');% check the path of uvmat
-% pathelp=fileparts(path_to_uvmat);
-% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-% if ~isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-%     addpath (fullfile(pathelp,'uvmat_doc'))
-%     web([helpfile '#set_object']) 
-% end
-%------------------------------------------------------------------------
 
-function Name_Callback(hObject, eventdata, handles)
-% hObject    handle to Name (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Name as text
-%        str2double(get(hObject,'String')) returns contents of Name as a double
-
-%------------------------------------------------------------------------
-% --- Executes when entered data in editable cell(s) in Coord.
-function Coord_CellEditCallback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%set(handles.Coord,'BackgroundColor',[1 1 0])
-% ListType=get(handles.Type,'String');
-% Type=ListType{get(handles.Type,'Value')};
-% switch Type
-%     % add lines if multi line input needed
-%     case{'points','polyline','polygon'}
-%         Input=str2num(eventdata.EditData);%pasted input
-%         Coord=get(handles.Coord,'Data');
-%         iline=eventdata.Indices(1);% selected line number
-%         if size(Coord,1)<iline+numel(Input)
-%             Coord=[Coord ; zeros(iline+numel(Input)-size(Coord,1),size(Coord,2))];% append zeros to fit the new column
-%         end
-%         Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
-%         set(handles.Coord,'Data',Coord)
-% end
-%------------------------------------------------------------------------
+%------------------------------------------------------------------------ 
 % --- Executes when selected cell(s) is changed in ListCoord.
-%------------------------------------------------------------------------
+%------------------------------------------------------------------------ 
 function Coord_CellSelectionCallback(hObject, eventdata, handles)
-
 if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);% selected line number
-    set(handles.Coord,'UserData',iline)% used possibly for line deletion or table extension, using key_press_fcn
+    set(handles.CoordLine,'String',num2str(iline))
 end
 
 
@@ -784,7 +747,7 @@ set(handles.REFRESH,'BackgroundColor',[1 0 1])
 xx=double(get(handles.set_object,'CurrentCharacter')); %get the keyboard character
 if ismember(xx,[127 31])% delete, or downward
     Coord=get(handles.Coord,'Data');
-    iline=get(handles.Coord,'UserData');
+    iline=str2double(get(handles.CoordLine,'String'));
             if isequal(xx, 31)
                 if isequal(iline,size(Coord,1))% arrow downward
                 Coord=[Coord;zeros(1,size(Coord,2))];
@@ -793,4 +756,21 @@ if ismember(xx,[127 31])% delete, or downward
     Coord(iline,:)=[];% suppress the current line 
             end
     set(handles.Coord,'Data',Coord);
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in clear_line.
+%------------------------------------------------------------------------
+function clear_line_Callback(hObject, eventdata, handles)
+
+Coord=get(handles.Coord,'Data');
+iline=str2double(get(handles.CoordLine,'String'));
+if isempty(iline)
+    msgbox_uvmat('WARNING','no line suppressed, select a line in the table')
+else
+    Coord(iline,:)=[];
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])
+    set(handles.Coord,'Data',Coord);
+    set(handles.CoordLine,'String','')
+    REFRESH_Callback(hObject,eventdata,handles)
 end
