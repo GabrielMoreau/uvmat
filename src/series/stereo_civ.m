@@ -594,6 +594,21 @@ for ifield=1:NbField
         Data.Civ2_V_smooth(ind_good)=Vres;
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
+        
+        
+% %         
+% %          % get z from u and v (displacements)
+% %        
+%         Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ2_X-0.5)/(Npx-1);
+%         Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ2_Y-0.5)/(Npy-1);
+%         U=Data.Civ2_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
+%         V=Data.Civ2_V_smooth*(Rangy(2)-Rangy(1))/(Npy-1);
+%         [Data.Zphys,Data.Civ1_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
+% %         if ~isempty(errormsg)
+% %             disp_uvmat('ERROR',errormsg,checkrun)
+% %             return
+% %         end
+        
     end
     
     %% write result in a netcdf file if requested
@@ -820,8 +835,8 @@ for ivec=1:nbvec
                 end
                 utable(ivec)=vector(1)*mesh+shiftx(ivec);
                 vtable(ivec)=vector(2)*mesh+shifty(ivec);
-                xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+%                 xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+%                 ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
                 iref=round(xtable(ivec));% image index for the middle of the vector
                 jref=round(ytable(ivec));
                 if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
@@ -1033,43 +1048,46 @@ function [z,error]=shift2z(xmid, ymid, u, v,XmlData)
 z=0;
 error=0;
 
+
 %% first image
 Calib_A=XmlData{1}.GeometryCalib;
 R=(Calib_A.R)';
-x_a=xmid- u/2;
-y_a=ymid- v/2;
-z_a=R(7)*x_a+R(8)*y_a+R(9)*Calib_A.SliceCoord(1,3);
-X=(R(1)*x_a+R(2)*y_a+R(3)*Calib_A.SliceCoord(1,3))./z_a;
-Y=(R(4)*x_a+R(5)*y_a+R(6)*Calib_A.SliceCoord(1,3))./z_a;
-A_1_1=R(1)-R(7)*x_a;
-A_1_2=R(2)-R(8)*x_a;
-A_1_3=R(3)-R(9)*x_a;
-A_2_1=R(4)-R(7)*y_a;
-A_2_2=R(5)-R(8)*y_a;
-A_2_3=R(6)-R(9)*y_a;
+x_a=xmid-u/2;
+y_a=ymid-v/2;
+z_a=R(7)*x_a+R(8)*y_a+Calib_A.Tx_Ty_Tz(1,3);
+Xa=(R(1)*x_a+R(2)*y_a+Calib_A.Tx_Ty_Tz(1,1))./z_a;
+Ya=(R(4)*x_a+R(5)*y_a+Calib_A.Tx_Ty_Tz(1,2))./z_a;
+
+A_1_1=R(1)-R(7)*Xa;
+A_1_2=R(2)-R(8)*Xa;
+A_1_3=R(3)-R(9)*Xa;
+A_2_1=R(4)-R(7)*Ya;
+A_2_2=R(5)-R(8)*Ya;
+A_2_3=R(6)-R(9)*Ya;
 Det=A_1_1.*A_2_2-A_1_2.*A_2_1;
 Dxa=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
 Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 
 %% second image
-Calib_A=XmlData{1}.GeometryCalib;
-R=(Calib_A.R)';
-x_a=xmid+ u/2;
-y_a=ymid+ v/2;
-z_a=R(7)*x_a+R(8)*y_a+R(9)*Calib_A.SliceCoord(1,3);
-X=(R(1)*x_a+R(2)*y_a+R(3)*Calib_A.SliceCoord(1,3))./z_a;
-Y=(R(4)*x_a+R(5)*y_a+R(6)*Calib_A.SliceCoord(1,3))./z_a;
-A_1_1=R(1)-R(7)*x_a;
-A_1_2=R(2)-R(8)*x_a;
-A_1_3=R(3)-R(9)*x_a;
-A_2_1=R(4)-R(7)*y_a;
-A_2_2=R(5)-R(8)*y_a;
-A_2_3=R(6)-R(9)*y_a;
-Det=A_1_1.*A_2_2-A_1_2.*A_2_1;
-Dxb=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
-Dyb=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
+Calib_B=XmlData{2}.GeometryCalib;
+R=(Calib_B.R)';
+x_b=xmid+ u/2;
+y_b=ymid+ v/2;
+z_b=R(7)*x_b+R(8)*y_b+Calib_B.Tx_Ty_Tz(1,3);
+Xb=(R(1)*x_b+R(2)*y_b+Calib_B.Tx_Ty_Tz(1,1))./z_b;
+Yb=(R(4)*x_b+R(5)*y_b+Calib_B.Tx_Ty_Tz(1,2))./z_b;
+B_1_1=R(1)-R(7)*Xb;
+B_1_2=R(2)-R(8)*Xb;
+B_1_3=R(3)-R(9)*Xb;
+B_2_1=R(4)-R(7)*Yb;
+B_2_2=R(5)-R(8)*Yb;
+B_2_3=R(6)-R(9)*Yb;
+Det=B_1_1.*B_2_2-B_1_2.*B_2_1;
+Dxb=(B_1_2.*B_2_3-B_2_2.*B_1_3)./Det;
+Dyb=(B_2_1.*B_1_3-B_1_1.*B_2_3)./Det;
 
 %% result
 Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
 error=((Dyb-Dya).*u-(Dxb-Dxa).*v)./Den;
 z=((Dxb-Dxa).*u-(Dyb-Dya).*v)./Den;
+

@@ -208,9 +208,8 @@ elseif strcmp(vel_type,'civ1') && strcmp(ProjModeRequest,'derivatives')
     vel_type='filter1';
 end
 if isempty(vel_type)||strcmp(vel_type,'*')
+    vel_type='filter2';% case CivStage >=6
     switch CivStage
-        case {6} %filter2 available
-            vel_type='filter2';
         case {4,5}% civ2 available but not filter2
             if strcmp(ProjModeRequest,'derivatives')% derivatives needed
                 vel_type='filter1';

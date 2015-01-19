@@ -7,13 +7,13 @@
 % for title='WAITING...', the output is the handle of the figure, to allow deletion by the calling program.
 %
 %INPUT:
-% title: string indicating the type of message box:
-%          title= 'INPUT_TXT','INPUT_Y-N','INPUT_MENU','ERROR', 'WARNING','CONFIMATION','WAITING...',default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
-%          if title='INPUT_TXT', input data is asked in an edit box
-%          if title='CONFIMATION'', 'ERROR', 'WARNING','RULER' the figure remains  opened until a button 'OK' is pressed
-%             title='RULER' is used for display of length and angle from the ruler tool. 
-%          if title='INPUT_Y-N', an answer Yes/No is requested
-%          if title='WAITING...' the figure remains open until the program deletes it
+% title: string indicating the type of message box (the title is displayed in the upper bar of the fig):
+%                ='INPUT_TXT'(default), input data is asked in an edit box
+%                ='CONFIMATION'', 'ERROR', 'WARNING','RULER' the figure remains  opened until a button 'OK' is pressed
+%                ='RULER' is used for display of length and angle from the ruler tool. 
+%                ='INPUT_Y-N', an answer Yes/No is requested
+%                ='INPUT_Y-N-Cancel'
+%                ='WAITING...' the figure remains open until the program deletes it
 % display: displayed text
 % default_answer: default answer in the edit box (only used with title='INPUT_TXT')
 
@@ -106,6 +106,10 @@ if exist('title','var')
         case 'INPUT_Y-N'
             icontype='quest';
             testCancel=0; %no cancel button
+            testNo=1; % button No activated
+        case 'INPUT_Y-N-Cancel'
+            icontype='quest';
+            testCancel=1; % cancel button introduced
             testNo=1; % button No activated
         case 'RULER'
             icontype='';

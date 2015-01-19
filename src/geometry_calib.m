@@ -1272,7 +1272,7 @@ PLOT_Callback(hObject, eventdata, handles)
 function ListCoord_KeyPressFcn(hObject, eventdata, handles)
 iline=str2num(get(handles.CoordLine,'String'));
 xx=double(get(handles.geometry_calib,'CurrentCharacter'));%get the keyboard character
-if ismember(xx,[28 29 30 31])% directional arrow 
+if ismember(xx,[28 29 30 31])% directional arrow
     Coord=get(handles.ListCoord,'Data');
     switch xx
         case 30 % arrow upward
@@ -1286,8 +1286,19 @@ if ismember(xx,[28 29 30 31])% directional arrow
     end
 else
     set(handles.APPLY,'BackgroundColor',[1 0 1])% paint APPLY in magenta to indicate that the table content has be modified
+    if ismember(xx,[127 31])% delete, or downward
+        Coord=get(handles.ListCoord,'Data');
+        iline=str2double(get(handles.CoordLine,'String'));
+        if isequal(xx, 31)
+            if isequal(iline,size(Coord,1))% arrow downward
+                Coord=[Coord;zeros(1,size(Coord,2))];
+            end
+        else
+            Coord(iline,:)=[];% suppress the current line
+        end
+        set(handles.ListCoord,'Data',Coord);
+    end
 end
-
 
 %------------------------------------------------------------------------
 % --- update the plot of calibration points

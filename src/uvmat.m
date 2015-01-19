@@ -4521,6 +4521,7 @@ function menu=set_veltype_display(Civ,FileType)
 if ~exist('FileType','var')
     FileType='civx';
 end
+imin=1;
 switch FileType
     case 'civx'
         menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
@@ -4545,11 +4546,13 @@ switch FileType
             imax=2;
         elseif isequal(Civ,4) || isequal(Civ,5)
             imax=3;
-        elseif isequal(Civ,6) %patch2
+        elseif Civ==6 %patch2
             imax=4;
+        else
+            imax=4;imin=3;
         end
 end
-menu=menu(1:imax);
+menu=menu(imin:imax);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in FixVelType.

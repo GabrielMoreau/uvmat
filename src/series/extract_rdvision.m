@@ -80,6 +80,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 %     InputTable=cell(numel(ListDir),5);
 %     InputTable(:,2)=ListDir';
     isel=0;
+    InputTable=Param.InputTable;
     for ilist=1:numel(ListDir)
         ListStructSub=dir(fullfile(RootPath,ListDir{ilist}));
         ListCellSub=struct2cell(ListStructSub);% transform dir struct to a cell arrray

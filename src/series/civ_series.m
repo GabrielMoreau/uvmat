@@ -63,13 +63,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputDirExt='.civ';%set the output dir extension
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
-        % check the existence of the first file in the series: suppressed
-%     first_j=[];
-%     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-%     last_j=[];
-%     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
-%     PairString='';
-%     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     return
 end
 
@@ -570,8 +563,7 @@ for ifield=1:NbField
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
         end     
         
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,...
-            j1,j2);
+        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
         par_civ2.ImageWidth=FileInfo_A.Width;
         par_civ2.ImageHeight=FileInfo_A.Height;
         
@@ -598,24 +590,48 @@ for ifield=1:NbField
             DVDX=zeros(size(par_civ2.Grid,1),1);
             DVDY=zeros(size(par_civ2.Grid,1),1);
         end
-        NbSubDomain=size(Data.Civ1_SubRange,3);
-        % get the guess from patch1
+        
+         % get the guess from patch1 or patch2 (case 'iterate')
+        if isfield (par_civ2,'iterate') && strcmp(par_civ2.iterate,'iterate')
+           SubRange= Data.Civ2_SubRange;
+           NbCentres=Data.Civ2_NbCentres;
+           Coord_tps=Data.Civ2_Coord_tps;
+           U_tps=Data.Civ2_U_tps;
+           V_tps=Data.Civ2_V_tps;
+           CivStage=Data.CivStage;
+           Civ1_Dt=Data.Civ2_Dt;
+           Data=[];%reinitialise the result structure Data
+           Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
+           Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+           Data.Program='civ_series';
+           Data.CivStage=CivStage;
+           Data.ListVarName={};
+           Data.VarDimName={};
+        else
+           SubRange= Data.Civ1_SubRange;
+           NbCentres=Data.Civ1_NbCentres;
+           Coord_tps=Data.Civ1_Coord_tps;
+           U_tps=Data.Civ1_U_tps;
+           V_tps=Data.Civ1_V_tps;
+           Civ1_Dt=Data.Civ1_Dt;
+        end
+        NbSubDomain=size(SubRange,3);        
         for isub=1:NbSubDomain% for each sub-domain of Patch1
-            nbvec_sub=Data.Civ1_NbCentres(isub);% nbre of Civ1 vectors in the subdomain
-            ind_sel=find(par_civ2.Grid(:,1)>=Data.Civ1_SubRange(1,1,isub) & par_civ2.Grid(:,1)<=Data.Civ1_SubRange(1,2,isub) &...
-                par_civ2.Grid(:,2)>=Data.Civ1_SubRange(2,1,isub) & par_civ2.Grid(:,2)<=Data.Civ1_SubRange(2,2,isub));
+            nbvec_sub=NbCentres(isub);% nbre of Civ vectors in the subdomain
+            ind_sel=find(par_civ2.Grid(:,1)>=SubRange(1,1,isub) & par_civ2.Grid(:,1)<=SubRange(1,2,isub) &...
+                par_civ2.Grid(:,2)>=SubRange(2,1,isub) & par_civ2.Grid(:,2)<=SubRange(2,2,isub));
             epoints = par_civ2.Grid(ind_sel,:);% coordinates of interpolation sites
-            ctrs=Data.Civ1_Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
+            ctrs=Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
             nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
-            EM = tps_eval(epoints,ctrs);
-            Shiftx(ind_sel)=Shiftx(ind_sel)+EM*Data.Civ1_U_tps(1:nbvec_sub+3,isub);
-            Shifty(ind_sel)=Shifty(ind_sel)+EM*Data.Civ1_V_tps(1:nbvec_sub+3,isub);
+            EM = tps_eval(epoints,ctrs);               
+            Shiftx(ind_sel)=Shiftx(ind_sel)+EM*U_tps(1:nbvec_sub+3,isub);
+            Shifty(ind_sel)=Shifty(ind_sel)+EM*V_tps(1:nbvec_sub+3,isub);
             if par_civ2.CheckDeformation
                 [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
-                DUDX(ind_sel)=DUDX(ind_sel)+EMDX*Data.Civ1_U_tps(1:nbvec_sub+3,isub);
-                DUDY(ind_sel)=DUDY(ind_sel)+EMDY*Data.Civ1_U_tps(1:nbvec_sub+3,isub);
-                DVDX(ind_sel)=DVDX(ind_sel)+EMDX*Data.Civ1_V_tps(1:nbvec_sub+3,isub);
-                DVDY(ind_sel)=DVDY(ind_sel)+EMDY*Data.Civ1_V_tps(1:nbvec_sub+3,isub);
+                DUDX(ind_sel)=DUDX(ind_sel)+EMDX*U_tps(1:nbvec_sub+3,isub);
+                DUDY(ind_sel)=DUDY(ind_sel)+EMDY*U_tps(1:nbvec_sub+3,isub);
+                DVDX(ind_sel)=DVDX(ind_sel)+EMDX*V_tps(1:nbvec_sub+3,isub);
+                DVDY(ind_sel)=DVDY(ind_sel)+EMDY*V_tps(1:nbvec_sub+3,isub);
             end
         end
         mask='';
@@ -627,7 +643,7 @@ for ifield=1:NbField
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
         Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
-        par_civ2.SearchBoxShift=(Civ2_Dt/Data.Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
+        par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
             par_civ2.DUDX=DUDX./nbval;
@@ -635,7 +651,7 @@ for ifield=1:NbField
             par_civ2.DVDX=DVDX./nbval;
             par_civ2.DVDY=DVDY./nbval;
         end
-        % caluclate velocity data (y and v in indices, reverse to y component)
+        % calculate velocity data (y and v in indices, reverse to y component)
         [xtable ytable utable vtable ctable F] = civ (par_civ2);
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param

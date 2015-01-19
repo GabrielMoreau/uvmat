@@ -131,10 +131,11 @@ end
 %% list of builtin functions in the mebu ActionName
 ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
+set(handles.Action,'UserData',NbBuiltinAction)
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 ActionExtList={'.m';'.sh'};% default choice of extensions (Matlab fct .m or compiled version .sh
-ActionPathList=cell(NbBuiltinAction,numel(ActionExtList));%initiate the cell matrix of Action fct paths
+ActionPathList=cell(NbBuiltinAction,1);%initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
 RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
 [s,w]=system('oarstat');% look for cluster system 'oar'
@@ -147,7 +148,7 @@ if isequal(s,0)
 end
 set(handles.RunMode,'String',RunModeList)
 
-%% list of builtin transform functions in the mebu TransformName
+%% list of builtin transform functions in the menu TransformName
 TransformList={'';'sub_field';'phys';'phys_polar'};% WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
 NbBuiltinTransform=numel(TransformList);
 path_transform_fct=fullfile(path_series,'transform_field');
@@ -166,7 +167,7 @@ if exist(profil_perso,'file')
             set(handles.(['MenuFile_' num2str(ifile+5)]),'Label',h.MenuFile{ifile});
         end
     end
-    %get the list of previous camapigns in the upper bar menu Open campaign
+    %get the list of previous campaigns in the upper bar menu Open campaign
     if isfield(h,'MenuCampaign')
         for ifile=1:min(length(h.MenuCampaign),5)
             set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
@@ -525,7 +526,8 @@ iline=[];
 if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);
 end
-set(handles.InputTable,'UserData',iline);
+set(handles.InputLine,'String',num2str(iline));
+% set(handles.InputTable,'UserData',iline);
 
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
@@ -534,22 +536,17 @@ function InputTable_KeyPressFcn(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
 if ~isempty(xx)
-switch xx
-    case 31 %downward arrow
-        InputTable=get(handles.InputTable,'Data');
-        iline=get(handles.InputTable,'UserData');
-        if isequal(iline,size(InputTable,1))% arrow downward
-            InputTable=[InputTable;InputTable(iline,:)];% create a new line as a copy of the last one
-            set(handles.InputTable,'Data',InputTable);
-        end
-    case 127  %key 'Suppress'
-         InputTable=get(handles.InputTable,'Data');
-        iline=get(handles.InputTable,'UserData');
-        if iline>1
-            InputTable(iline,:)=[];% suppress the current line if not the first
-            set(handles.InputTable,'Data',InputTable);
-        end
-end
+    switch xx
+        case 31 %downward arrow
+            InputTable=get(handles.InputTable,'Data');
+            iline=str2double(get(handles.InputLine,'String'));
+            if isequal(iline,size(InputTable,1))% arrow downward
+                InputTable=[InputTable;InputTable(iline,:)];% create a new line as a copy of the last one
+                set(handles.InputTable,'Data',InputTable);
+            end
+        case 127  %key 'Suppress'
+            ClearLine_Callback(hObject, eventdata, handles)
+    end
 end
 
 %------------------------------------------------------------------------
@@ -608,15 +605,15 @@ set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
-function errormsg=display_file_name(handles,Param,iview)
-%------------------------------------------------------------------------  
-%
+%------------------------------------------------------------------------
 % INPUT:
 % handles: handles of elements in the GUI
 % Param: structure of input parameters, including  input file name and path
 % iview: line index in the input table
 %       or 'one': refresh the list
 %         'append': add a new line to the input table
+function errormsg=display_file_name(handles,Param,iview)
+  
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 errormsg='';%default
@@ -682,7 +679,6 @@ SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
     iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
-%     SeriesData.ListViewMenu(iview)=zeros(1,nbview)
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
     InputTable={'','','','',''};
@@ -701,6 +697,9 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileType={};
     SeriesData.FileInfo={};
     SeriesData.Time={};
+end
+if iview >1
+    set(handles.InputLine,'String',num2str(iview))
 end
 set(handles.InputTable,'Data',InputTable)
 
@@ -1486,7 +1485,7 @@ if isfield(Param,'OutputSubDir')
     detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
     check_create=1; %need to create the result directory by default
     while detect
-        answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
+        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
         if strcmp(answer,'Cancel')
             set(handles.RUN,'backgroundcolor',[1 0 0])
             return
@@ -1817,6 +1816,7 @@ Param=read_GUI(handles.series);
 if isfield(Param,'Pairs')
     Param=rmfield(Param,'Pairs'); %info Pairs not needed for output
 end
+Param.IndexRange.TimeSource=Param.IndexRange.TimeTable{end,1};
 Param.IndexRange=rmfield(Param.IndexRange,'TimeTable');
 empty_line=false(size(Param.InputTable,1),1);
 for iline=1:size(Param.InputTable,1)
@@ -1845,8 +1845,15 @@ if ~isempty(huigetfile)
 end
 drawnow
 
+%% check whether the input file(s) need to be refreshed
+% SeriesData=get(handles.series,'UserData');%hidden parameters
+% if ~isfield(SeriesData,'i1_series')
+%     msgbox_uvmat('ERROR','The input field series needs to be refreshed: press REFRESH');
+%     return
+% end
+
 %% get Action name and path
-nb_builtin_ACTION=4; %nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
+NbBuiltinAction=get(handles.Action,'UserData'); %nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
 ActionList=get(handles.ActionName,'String');% list menu fields
 ActionIndex=get(handles.ActionName,'Value');
 if ~isequal(ActionIndex,1)% if we are not just opening series 
@@ -1869,14 +1876,18 @@ if isequal(ActionName,'more...')
     if length(FileName)<2
         return
     end
-    [ActionPath,ActionName,ActionExt]=fileparts(FileName);
+    [tild,ActionName,ActionExt]=fileparts(FileName);
     
     % insert the choice in the menu ActionName
     ActionIndex=find(strcmp(ActionName,ActionList),1);% look for the selected function in the menu Action
-    if isempty(ActionIndex)%the input string does not exist in the menu
+    PathName=regexprep(PathName,'/$','');
+    if ~isempty(ActionIndex) && ~strcmp(ActionPathList{ActionIndex},PathName)%compare the path to the existing fct
+        ActionIndex=[]; % the selected path is different than the recorded one
+    end
+    if isempty(ActionIndex)%the qselected fct (with selected path) does not exist in the menu
         ActionIndex= length(ActionList);
         ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)];% the selected function is appended in the menu, before the last item 'more...'
-        set(handles.ActionName,'String',ActionList)
+         ActionPathList=[ActionPathList; PathName];
     end
     
     % record the file extension and extend the path list if it is a new extension
@@ -1884,32 +1895,29 @@ if isequal(ActionName,'more...')
     ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
     if isempty(ActionExtIndex)
         set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
-        ActionExtIndex=numel(ActionExtList)+1;
-        ActionPathNew=cell(size(ActionPathList,1),1);%new column of ActionPath
-        ActionPathList=[ActionPathList ActionPathNew];
     end
-    set(handles.ActionName,'UserData',ActionPathList);
 
     % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
-    if length(ActionList)>nb_builtin_ACTION+5; %nb_builtin=nbre of functions always remaining in the initial menu
-        nbremove=length(ActionList)-nb_builtin_ACTION-5;
-        ActionList(nb_builtin_ACTION+1:end-5)=[];
-        ActionPathList(nb_builtin_ACTION+1:end-4,:)=[];
+    if length(ActionList)>NbBuiltinAction+5; %nb_builtin_ACTION=nbre of functions always remaining in the initial menu
+        nbremove=length(ActionList)-NbBuiltinAction-5;
+        ActionList(NbBuiltinAction+1:end-5)=[];
+        ActionPathList(NbBuiltinAction+1:end-4,:)=[];
         ActionIndex=ActionIndex-nbremove;
     end
     
     % record action menu, choice and path
     set(handles.ActionName,'Value',ActionIndex)
     set(handles.ActionName,'String',ActionList)
+       set(handles.ActionName,'UserData',ActionPathList);
     set(handles.ActionExt,'Value',ActionExtIndex)
-    ActionPathList{ActionIndex,ActionExtIndex}=PathName;
+%     ActionPathList{ActionIndex,ActionExtIndex}=PathName;
         
     %record the user defined menu additions in personal file profil_perso
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if nb_builtin_ACTION+1<=numel(ActionList)-1
-        ActionListUser=ActionList(nb_builtin_ACTION+1:numel(ActionList)-1);
-        ActionPathListUser=ActionPathList(nb_builtin_ACTION+1:numel(ActionList)-1,:);
+    if NbBuiltinAction+1<=numel(ActionList)-1
+        ActionListUser=ActionList(NbBuiltinAction+1:numel(ActionList)-1);
+        ActionPathListUser=ActionPathList(NbBuiltinAction+1:numel(ActionList)-1);
         ActionExtListUser={};
         if numel(ActionExtList)>2
             ActionExtListUser=ActionExtList(3:end);
@@ -2258,14 +2266,6 @@ else
 end
 set(handles.series,'UserData',SeriesData)
 set(handles.ActionName,'BackgroundColor',[1 1 1])
-
-%------------------------------------------------------------------------
-% --- Executes on button press in ActionInput.
-function ActionInput_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-% if get(handles.ActionInput,'Value')
-ActionName_Callback(hObject, eventdata, handles)
-% end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldName.
@@ -2802,9 +2802,9 @@ commandwindow; %brings the Matlab command window to the front
 %------------------------------------------------------------------------
 function MenuImportConfig_Callback(hObject, eventdata, handles)
 
-%% use a starting file name for browserr
+%% use a browser to choose the xml file containing the processing config
 InputTable=get(handles.InputTable,'Data');
-oldfile=InputTable{1,1};
+oldfile=InputTable{1,1};%current path in InputTable
 if isempty(oldfile)
     % use a file name stored in prefdir
     dir_perso=prefdir;
@@ -2817,123 +2817,54 @@ if isempty(oldfile)
     end
 end
 filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
-%proceed only if a file has been introduced by the browser
-if ~isempty(filexml)
-    Param=xml2struct(filexml);% read the input xml file as a Matlab structure
-    % ask to stop current Action if button RUN is in action (another process is already running)
-    if isequal(get(handles.RUN,'Value'),1)
-        answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
-        if strcmp(answer,'Yes')
-            STOP_Callback(hObject, eventdata, handles)
-        else
-            return
-        end
+if isempty(filexml), return, end % quit function if an xml file has not been opened
+
+%% fill the GUI series with the content of the xml file
+Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+
+% ask to stop current Action if button RUN is in action (another process is already running)
+if isequal(get(handles.RUN,'Value'),1)
+    answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
+    if strcmp(answer,'Yes')
+        STOP_Callback(hObject, eventdata, handles)
+    else
+        return
     end
-    Param.Action.RUN=0; %desactivate the input RUN=1
-    fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
-    SeriesData=get(handles.series,'UserData');
-    if isfield(Param,'InputFields')
-        ListField=Param.InputFields.FieldName;
-        if ischar(ListField),ListField={ListField}; end
-        set(handles.FieldName,'String',[ListField;{'get-field...'}])
-         set(handles.FieldName,'Value',1:numel(ListField))
-         set(handles.FieldName,'Visible','on')
-    end       
-    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-        set(handles.ActionInput,'Visible','on')
-        set(handles.ActionInput,'Value',0)
-        Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
-        SeriesData.ActionInput=Param.ActionInput;
-    end
-    if isfield(Param,'ProjObject') %introduce projection object if relevant
-        SeriesData.ProjObject=Param.ProjObject;
-    end
-    set(handles.series,'UserData',SeriesData)
-    if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
-        set(handles.ProjObject,'String',Param.ProjObject.Name)
-        set(handles.ViewObject,'Visible','on')
-        set(handles.EditObject,'Visible','on')
-        set(handles.DeleteObject,'Visible','on')
-    else     
-        set(handles.ProjObject,'String','')
-        set(handles.ProjObject,'Visible','off')
-        set(handles.ViewObject,'Visible','off')
-        set(handles.EditObject,'Visible','off')
-        set(handles.DeleteObject,'Visible','off')     
-    end     
-    set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
 end
+Param.Action.RUN=0; %desactivate the input RUN=1
 
-
-
-% --------------------------------------------------------------------
-% function MenuImportParam_Callback(hObject, eventdata, handles)
-% %% use a starting file name for browserr
-% InputTable=get(handles.InputTable,'Data');
-% oldfile=InputTable{1,1};
-% if isempty(oldfile)
-%     % use a file name stored in prefdir
-%     dir_perso=prefdir;
-%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-%     if exist(profil_perso,'file')
-%         h=load (profil_perso);
-%         if isfield(h,'RootPath') && ischar(h.RootPath)
-%             oldfile=h.RootPath;
-%         end
-%     end
-% end
-% filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
-% %proceed only if a file has been introduced by the browser
-% if ~isempty(filexml)
-%     Param=xml2struct(filexml);% read the input xml file as a Matlab structure
-%     % ask to stop current Action if button RUN is in action (another process is already running)
-%     if isequal(get(handles.RUN,'Value'),1)
-%         answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
-%         if strcmp(answer,'Yes')
-%             STOP_Callback(hObject, eventdata, handles)
-%         else
-%             return
-%         end
-%     end
-%     Param.Action.RUN=0; %desactivate the input RUN=1
-%     if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
-%         msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
-%         return
-%     end
-%     Param=rmfield(Param,'InputTable');% do not refresh Input files and index range
-%     Param=rmfield(Param,'IndexRange');  
-%     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
-%     SeriesData=get(handles.series,'UserData');
-%     if isfield(Param,'InputFields')
-%         ListField=Param.InputFields.FieldName;
-%         set(handles.FieldName,'String',[ListField;{'get-field...'}])
-%          set(handles.FieldName,'Value',1:numel(ListField))
-%     end       
-%     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-%         set(handles.ActionInput,'Visible','on')
-%         set(handles.ActionInput,'Value',0)
-%         Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
-%         SeriesData.ActionInput=Param.ActionInput;
-%     end
-%     if isfield(Param,'ProjObject') %introduce projection object if relevant
-%         SeriesData.ProjObject=Param.ProjObject;
-%     end
-%     set(handles.series,'UserData',SeriesData)
-%     if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
-%         set(handles.ProjObject,'String',Param.ProjObject.Name)
-%         set(handles.ViewObject,'Visible','on')
-%         set(handles.EditObject,'Visible','on')
-%         set(handles.DeleteObject,'Visible','on')
-%     else     
-%         set(handles.ProjObject,'String','')
-%         set(handles.ProjObject,'Visible','off')
-%         set(handles.ViewObject,'Visible','off')
-%         set(handles.EditObject,'Visible','off')
-%         set(handles.DeleteObject,'Visible','off')     
-%     end     
-%     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
-% end
-
+fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
+SeriesData=get(handles.series,'UserData');
+if isfield(Param,'InputFields')
+    ListField=Param.InputFields.FieldName;
+    if ischar(ListField),ListField={ListField}; end
+    set(handles.FieldName,'String',[ListField;{'get-field...'}])
+     set(handles.FieldName,'Value',1:numel(ListField))
+     set(handles.FieldName,'Visible','on')
+end       
+if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
+    set(handles.ActionInput,'Visible','on')
+    set(handles.ActionInput,'Value',0)
+    Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
+    SeriesData.ActionInput=Param.ActionInput;
+end
+if isfield(Param,'ProjObject') %introduce projection object if relevant
+    SeriesData.ProjObject=Param.ProjObject;
+end
+set(handles.series,'UserData',SeriesData)
+if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
+    set(handles.ProjObject,'String',Param.ProjObject.Name)
+    set(handles.ViewObject,'Visible','on')
+    set(handles.EditObject,'Visible','on')
+    set(handles.DeleteObject,'Visible','on')
+else     
+    set(handles.ProjObject,'String','')
+    set(handles.ProjObject,'Visible','off')
+    set(handles.ViewObject,'Visible','off')
+    set(handles.EditObject,'Visible','off')
+    set(handles.DeleteObject,'Visible','off')     
+end     
+set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
 
 
 %------------------------------------------------------------------------
@@ -3126,50 +3057,6 @@ ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 ActionList=get(handles.ActionName,'String');
 ActionName=ActionList{get(handles.ActionName,'Value')};
-% TransformPath='';
-% if ~isempty(get(handles.ActionExt,'UserData'))
-%     TransformPath=get(handles.ActionExt,'UserData');
-% end
-% if strcmp(ActionExt,'.sh')
-%     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
-%     set(handles.ActionExt,'BackgroundColor',[1 1 0])
-%     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
-%     if ~exist(ActionFullName,'file')
-%         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
-%         if strcmp(answer,'Yes')
-%             set(handles.ActionExt,'BackgroundColor',[1 1 0])
-%             path_uvmat=fileparts(which('series'));
-%             currentdir=pwd;
-%             cd(get(handles.ActionPath,'String'))% go to the directory of Action
-%             %  addpath(get(handles.TransformPath,'String'))
-%             addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-%            % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
-%             compile(ActionName,TransformPath)
-%             cd(currentdir)
-%         end       
-%     else
-%         sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
-%         m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
-%         if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
-%             set(handles.ActionExt,'BackgroundColor',[1 1 0])
-%             drawnow
-%             answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
-%             if strcmp(answer,'Yes')
-%                 path_uvmat=fileparts(which('series'));
-%                 currentdir=pwd;
-%                 cd(get(handles.ActionPath,'String'))% go to the directory of Action
-%                 %  addpath(get(handles.TransformPath,'String'))
-%                 addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-%                 addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
-%                 compile(ActionName,TransformPath)
-%                 cd(currentdir)
-%             end
-%         end
-%     end
-%     set(handles.ActionExt,'BackgroundColor',[1 1 1])
-%      set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
-% end
-
 
 function num_NbProcess_Callback(hObject, eventdata, handles)
 
@@ -3256,7 +3143,10 @@ else
     ListViewValue=find(ListViewLines==iview);
 end
 ref_i=str2num(get(handles.num_first_i,'String'));
-ref_j=str2num(get(handles.num_first_j,'String'));
+ref_j=1;%default
+if strcmp(get(handles.num_first_j,'String'),'Visible')
+    ref_j=str2num(get(handles.num_first_j,'String'));
+end
 [ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j2_series{iview});
 displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j1_series{iview},SeriesData.j2_series{iview},ModeMenu{ModeValue},...
                                                      SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo{iview});
@@ -3374,13 +3264,13 @@ function num_ref_j_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
 Mode_Callback([],[])
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in ClearLine.
+%------------------------------------------------------------------------
 function ClearLine_Callback(hObject, eventdata, handles)
-% hObject    handle to ClearLine (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-iline=get(handles.InputTable,'UserData');
 InputTable=get(handles.InputTable,'Data');
-InputTable(iline,:)=[];
-set(handles.InputTable,'Data',InputTable);
+iline=str2double(get(handles.InputLine,'String'));
+if size(InputTable,1)>1
+    InputTable(iline,:)=[];% suppress the current line if not the first
+    set(handles.InputTable,'Data',InputTable);
+end
