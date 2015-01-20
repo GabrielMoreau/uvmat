@@ -75,11 +75,11 @@ end
 
 %% recursive test on FileName starting from the end
 % test whether FileName ends with a number or not
-r=regexp(FileName,'.*\D(?<num1>\d+)$','names');% \D = not a digit, \d =digit
+r=regexp(FileName,'(?<num1>\d+)$','names');% \D = not a digit, \d =digit
 
 if ~isempty(r)% FileName end matches num1
     num1=r.num1;
-    r=regexp(FileName,['.*\D(?<num2>\d+)(?<delim1>[-_])' num1 '$'],'names');
+    r=regexp(FileName,['(?<num2>\d+)(?<delim1>[-_])' num1 '$'],'names');
     if ~isempty(r)% FileName end matches num2+delim1+num1
         delim1=r.delim1;
         num2=r.num2;

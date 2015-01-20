@@ -5329,6 +5329,7 @@ ObjectData=UvData.ProjObject{get(handles.ListObject_1,'Value')};
 %% update the projection plot on uvmat
 ProjData= proj_field(UvData.Field,ObjectData);%project the current input field on object ObjectData
 plot_field(ProjData,handles.PlotAxes,read_GUI(handles.uvmat));% plot the projected field;
+UvData.PlotAxes=ProjData;% store the plotted field for further update
 %replot all the objects within the new projected field
 for IndexObj=1:numel(list_str)
         hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;

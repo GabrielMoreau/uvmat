@@ -518,14 +518,14 @@ ActionInput=read_GUI(handles.civ_input);
 if isfield(ActionInput,'Civ1')
     checkeven=(mod(ActionInput.Civ1.CorrBoxSize,2)==0);
     ActionInput.Civ1.CorrBoxSize(checkeven)=ActionInput.Civ1.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ1.SearchBoxSize=max(ActionInput.Civ1.SearchBoxSize,ActionInput.Civ1.CorrBoxSize+10);% insure that the search box size is large enough
+    ActionInput.Civ1.SearchBoxSize=max(ActionInput.Civ1.SearchBoxSize,ActionInput.Civ1.CorrBoxSize+8);% insure that the search box size is large enough
     checkeven=(mod(ActionInput.Civ1.SearchBoxSize,2)==0);
     ActionInput.Civ1.SearchBoxSize(checkeven)=ActionInput.Civ1.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
 if isfield(ActionInput,'Civ2')
     checkeven=(mod(ActionInput.Civ2.CorrBoxSize,2)==0);
     ActionInput.Civ2.CorrBoxSize(checkeven)=ActionInput.Civ2.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+10);
+    ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+6);
     checkeven=(mod(ActionInput.Civ2.SearchBoxSize,2)==0);
     ActionInput.Civ2.SearchBoxSize(checkeven)=ActionInput.Civ2.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
