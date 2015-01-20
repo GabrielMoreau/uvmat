@@ -179,7 +179,7 @@ if exist(profil_perso,'file')
     end 
     if isfield(h,'ActionListUser') && iscell(h.ActionListUser) && isfield(h,'ActionPathListUser') && iscell(h.ActionPathListUser)
         ActionList=[ActionList;h.ActionListUser];
-        ActionPathList=[ActionPathList;h.ActionPathListUser];
+        ActionPathList=[ActionPathList;h.ActionPathListUser(:,1)];
     end
     %get the menu of transform fct
     if isfield(h,'TransformListUser') && iscell(h.TransformListUser) && isfield(h,'TransformPathListUser') && iscell(h.TransformPathListUser)

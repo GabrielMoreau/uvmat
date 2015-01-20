@@ -374,6 +374,8 @@ for ifield=1:NbField
         par_civ1.ImageWidth=size(par_civ1.ImageA,2);%FileInfo_A.Width;
         par_civ1.ImageHeight=size(par_civ1.ImageA,1);%FileInfo_A.Height;
         list_param=(fieldnames(Param.ActionInput.Civ1))';
+        ind_remove=find(strcmp('TestCiv1',list_param));
+        list_param(ind_remove)=[];
         Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
         Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
         %indicate the values of all the global attributes in the output data 
@@ -470,13 +472,20 @@ for ifield=1:NbField
                 Data=rmfield(Data,Data.ListGlobalAttribute{Fix1_attr(ilist)});
             end
         end 
-        ListFixParam=fieldnames(Param.ActionInput.Fix1);
-        for ilist=1:length(ListFixParam)
-            ParamName=ListFixParam{ilist};
-            ListName=['Fix1_' ParamName];
-            eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
-            eval(['Data.' ListName '=Param.ActionInput.Fix1.' ParamName ';'])
+        list_param=fieldnames(Param.ActionInput.Fix1)';
+        Fix1_param=regexprep(list_param,'^.+','Fix1_$0');% insert 'Fix1_' before  each string in ListFixParam
+        %indicate the values of all the global attributes in the output data 
+        for ilist=1:length(list_param)
+            Data.(Fix1_param{ilist})=Param.ActionInput.Fix1.(list_param{ilist});
         end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix1_param];
+%         
+%         for ilist=1:length(ListFixParam)
+%             ParamName=ListFixParam{ilist};
+%             ListName=['Fix1_' ParamName];
+%             eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
+%             eval(['Data.' ListName '=Param.ActionInput.Fix1.' ParamName ';'])
+%         end
         if check_civx
             if ~isfield(Data,'fix')
                 Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix'];
@@ -501,11 +510,20 @@ for ifield=1:NbField
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
+        list_param=fieldnames(Param.ActionInput.Patch1)';
+                   ind_remove=find(strcmp('TestPatch1',list_param));
+        list_param(ind_remove)=[];
+        Patch1_param=regexprep(list_param,'^.+','Patch1_$0');% insert 'Fix1_' before  each string in ListFixParam
+        %indicate the values of all the global attributes in the output data 
+        for ilist=1:length(list_param)
+            Data.(Patch1_param{ilist})=Param.ActionInput.Patch1.(list_param{ilist});
+        end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch1_param];
         
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
-        Data.Patch1_FieldSmooth=Param.ActionInput.Patch1.FieldSmooth;
-        Data.Patch1_MaxDiff=Param.ActionInput.Patch1.MaxDiff;
-        Data.Patch1_SubDomainSize=Param.ActionInput.Patch1.SubDomainSize;
+%         Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_FieldSmooth','Patch1_MaxDiff','Patch1_SubDomainSize'}];
+%         Data.Patch1_FieldSmooth=Param.ActionInput.Patch1.FieldSmooth;
+%         Data.Patch1_MaxDiff=Param.ActionInput.Patch1.MaxDiff;
+%         Data.Patch1_SubDomainSize=Param.ActionInput.Patch1.SubDomainSize;
         nbvar=length(Data.ListVarName);
         Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
@@ -687,13 +705,21 @@ for ifield=1:NbField
     
     %% Fix2
     if isfield (Param.ActionInput,'Fix2')
-        ListFixParam=fieldnames(Param.ActionInput.Fix2);
-        for ilist=1:length(ListFixParam)
-            ParamName=ListFixParam{ilist};
-            ListName=['Fix2_' ParamName];
-            eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
-            eval(['Data.' ListName '=Param.ActionInput.Fix2.' ParamName ';'])
+                list_param=fieldnames(Param.ActionInput.Fix2)';
+        Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
+        %indicate the values of all the global attributes in the output data 
+        for ilist=1:length(list_param)
+            Data.(Fix2_param{ilist})=Param.ActionInput.Fix2.(list_param{ilist});
         end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix2_param];     
+%         
+%         ListFixParam=fieldnames(Param.ActionInput.Fix2);
+%         for ilist=1:length(ListFixParam)
+%             ParamName=ListFixParam{ilist};
+%             ListName=['Fix2_' ParamName];
+%             eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
+%             eval(['Data.' ListName '=Param.ActionInput.Fix2.' ParamName ';'])
+%         end
         if check_civx
             if ~isfield(Data,'fix2')
                 Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix2'];
@@ -715,10 +741,19 @@ for ifield=1:NbField
     
     %% Patch2
     if isfield (Param.ActionInput,'Patch2')
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch2_Rho','Patch2_Threshold','Patch2_SubDomain'}];
-        Data.Patch2_FieldSmooth=Param.ActionInput.Patch2.FieldSmooth;
-        Data.Patch2_MaxDiff=Param.ActionInput.Patch2.MaxDiff;
-        Data.Patch2_SubDomainSize=Param.ActionInput.Patch2.SubDomainSize;
+                list_param=fieldnames(Param.ActionInput.Patch2)';
+        Patch2_param=regexprep(list_param,'^.+','Patch2_$0');% insert 'Fix1_' before  each string in ListFixParam
+        %indicate the values of all the global attributes in the output data 
+        for ilist=1:length(list_param)
+            Data.(Patch2_param{ilist})=Param.ActionInput.Patch2.(list_param{ilist});
+        end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch2_param];
+        
+        
+%         Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch2_FieldSmooth','Patch2_MaxDiff','Patch2_SubDomainSize'}];
+%         Data.Patch2_FieldSmooth=Param.ActionInput.Patch2.FieldSmooth;
+%         Data.Patch2_MaxDiff=Param.ActionInput.Patch2.MaxDiff;
+%         Data.Patch2_SubDomainSize=Param.ActionInput.Patch2.SubDomainSize;
         nbvar=length(Data.ListVarName);
         Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...

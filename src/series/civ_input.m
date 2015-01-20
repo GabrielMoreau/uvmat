@@ -323,7 +323,7 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
 end
 
 %% set the reference indices from the input file indices
-if ~isfield(Param.ActionInput,'ConfigSource')
+if ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource'))
 update_CivOptions(handles,ind_opening)% fill the menu of possible pairs
 end
 
