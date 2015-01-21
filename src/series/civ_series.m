@@ -610,7 +610,7 @@ for ifield=1:NbField
         end
         
          % get the guess from patch1 or patch2 (case 'iterate')
-        if isfield (par_civ2,'iterate') && strcmp(par_civ2.iterate,'iterate')
+        if isfield (par_civ2,'iterate') && strcmp(par_civ2.iterate,'civ3')
            SubRange= Data.Civ2_SubRange;
            NbCentres=Data.Civ2_NbCentres;
            Coord_tps=Data.Civ2_Coord_tps;
@@ -1001,8 +1001,13 @@ for ivec=1:nbvec
                 elseif par_civ.CorrSmooth==2
                     [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                 end
-                utable(ivec)=vector(1)*mesh+shiftx(ivec);
+%                 if ~isfield(par_civ,'CheckDeformation')
+                utable(ivec)=vector(1)*mesh+shiftx(ivec); 
                 vtable(ivec)=vector(2)*mesh+shifty(ivec);
+%                 else
+%                                 utable(ivec)=shiftx(ivec);% TEST TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+%                 vtable(ivec)=shifty(ivec);
+%                 end
                 xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
                 ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
                 iref=round(xtable(ivec));% image index for the middle of the vector

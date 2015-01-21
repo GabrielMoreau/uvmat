@@ -326,8 +326,8 @@ for ifield=1:NbField
         Data.CivStage=1;
         
         % set the list of variables
-        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C','Xphys','Yphys','Zphys','Civ1_E'};%  cell array containing the names of the fields to record
-        Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
+        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record
+        Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
         Data.VarAttribute{1}.Role='coord_x';
         Data.VarAttribute{2}.Role='coord_y';
         Data.VarAttribute{3}.Role='vector_x';
@@ -344,15 +344,16 @@ for ifield=1:NbField
         Data.Civ1_V=reshape(-vtable,[],1);      
         Data.Civ1_C=reshape(ctable,[],1);
         Data.Civ1_F=reshape(F,[],1);
-        Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ1_X-0.5)/(Npx-1);
-        Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ1_Y-0.5)/(Npy-1);
-        U=Data.Civ1_U*(Rangx(2)-Rangx(1))/(Npx-1);
-        V=Data.Civ1_V*(Rangy(2)-Rangy(1))/(Npy-1);
-        [Data.Zphys,Data.Civ1_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
-        if ~isempty(errormsg)
-            disp_uvmat('ERROR',errormsg,checkrun)
-            return
-        end
+%         Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ1_X-0.5)/(Npx-1);
+%         Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ1_Y-0.5)/(Npy-1);
+%         
+%         U=Data.Civ1_U*(Rangx(2)-Rangx(1))/(Npx-1);
+%         V=Data.Civ1_V*(Rangy(2)-Rangy(1))/(Npy-1);
+%         [Data.Zphys,Data.Civ1_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
+%         if ~isempty(errormsg)
+%             disp_uvmat('ERROR',errormsg,checkrun)
+%             return
+%         end
     end
     
     %% Fix1
@@ -443,9 +444,8 @@ for ifield=1:NbField
         if ~isempty(j2_series_Civ2)
             j2=j2_series_Civ2(ifield);
         end
-        par_civ2.ImageWidth=FileInfo_A.Width;
-        par_civ2.ImageHeight=FileInfo_A.Height;
-        
+        par_civ2.ImageWidth=size(par_civ2.ImageA,2);%FileInfo_A.Width;
+        par_civ2.ImageHeight=size(par_civ2.ImageA,1);%FileInfo_A.Height;
         if isfield(par_civ2,'Grid')% grid points set as input file
             if ischar(par_civ2.Grid)%read the grid file if the input is a file name
                 par_civ2.Grid=dlmread(par_civ2.Grid);
@@ -521,8 +521,8 @@ for ifield=1:NbField
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
         
         nbvar=numel(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
-        Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
+        Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C','Xphys','Yphys','Zphys','Civ2_E'}];%  cell array containing the names of the fields to record
+        Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
         Data.VarAttribute{nbvar+1}.Role='coord_x';
         Data.VarAttribute{nbvar+2}.Role='coord_y';
         Data.VarAttribute{nbvar+3}.Role='vector_x';
@@ -595,19 +595,18 @@ for ifield=1:NbField
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
         
-        
-% %         
-% %          % get z from u and v (displacements)
-% %        
-%         Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ2_X-0.5)/(Npx-1);
-%         Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ2_Y-0.5)/(Npy-1);
-%         U=Data.Civ2_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
-%         V=Data.Civ2_V_smooth*(Rangy(2)-Rangy(1))/(Npy-1);
-%         [Data.Zphys,Data.Civ1_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
-% %         if ~isempty(errormsg)
-% %             disp_uvmat('ERROR',errormsg,checkrun)
-% %             return
-% %         end
+            
+         % get z from u and v (displacements)
+       
+        Data.Xphys=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ2_X-0.5)/(Npx-1);
+        Data.Yphys=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ2_Y-0.5)/(Npy-1);
+        U=Data.Civ2_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
+        V=Data.Civ2_V_smooth*(Rangy(2)-Rangy(1))/(Npy-1);
+        [Data.Zphys,Data.Civ2_E]=shift2z(Data.Xphys,Data.Yphys,U,V,XmlData);
+        if ~isempty(errormsg)
+            disp_uvmat('ERROR',errormsg,checkrun)
+            return
+        end
         
     end
     
@@ -819,7 +818,7 @@ for ivec=1:nbvec
             yi=(1:mesh:size(image2_crop,1))';
             image2_crop=interp2(image2_crop,xi,yi);
         end
-        sum_square=sum(sum(image1_crop.*image1_crop));
+        sum_square=(sum(sum(image1_crop.*image1_crop))+sum(sum(image2_crop.*image2_crop)))/2;
         %reference: Oliver Pust, PIV: Direct Cross-Correlation
         result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
         corrmax= max(max(result_conv));
@@ -833,8 +832,14 @@ for ivec=1:nbvec
                 elseif par_civ.CorrSmooth==2
                     [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                 end
-                utable(ivec)=vector(1)*mesh+shiftx(ivec);
+
+%                 if isfield(par_civ,'CheckDeformation')
+%                  utable(ivec)=shiftx(ivec);
+%                  vtable(ivec)=shifty(ivec);
+%                 else
+                 utable(ivec)=vector(1)*mesh+shiftx(ivec);
                 vtable(ivec)=vector(2)*mesh+shifty(ivec);
+%                 end
 %                 xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
 %                 ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
                 iref=round(xtable(ivec));% image index for the middle of the vector
@@ -1052,8 +1057,8 @@ error=0;
 %% first image
 Calib_A=XmlData{1}.GeometryCalib;
 R=(Calib_A.R)';
-x_a=xmid-u/2;
-y_a=ymid-v/2;
+x_a=xmid;
+y_a=ymid;
 z_a=R(7)*x_a+R(8)*y_a+Calib_A.Tx_Ty_Tz(1,3);
 Xa=(R(1)*x_a+R(2)*y_a+Calib_A.Tx_Ty_Tz(1,1))./z_a;
 Ya=(R(4)*x_a+R(5)*y_a+Calib_A.Tx_Ty_Tz(1,2))./z_a;
@@ -1071,8 +1076,8 @@ Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 %% second image
 Calib_B=XmlData{2}.GeometryCalib;
 R=(Calib_B.R)';
-x_b=xmid+ u/2;
-y_b=ymid+ v/2;
+x_b=xmid+ u;
+y_b=ymid+ v;
 z_b=R(7)*x_b+R(8)*y_b+Calib_B.Tx_Ty_Tz(1,3);
 Xb=(R(1)*x_b+R(2)*y_b+Calib_B.Tx_Ty_Tz(1,1))./z_b;
 Yb=(R(4)*x_b+R(5)*y_b+Calib_B.Tx_Ty_Tz(1,2))./z_b;

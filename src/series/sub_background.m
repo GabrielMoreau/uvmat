@@ -144,7 +144,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts  
     if nbfield_i~=1
         nbaver=floor(nbaver_init/nbfield_j); % number of bursts used for the sliding background,
-        if isequal(floor(nbaver/2),nbaver)
+        if isequal(mod(nbaver,2),0)% if nbaver is even
             nbaver=nbaver+1;%put the number of burst to an odd number (so the middle burst is defined)
         end
         nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
@@ -169,15 +169,15 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     else
         step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
-    nbaver_ima=str2num(answer{2});%number of images for the sliding background
+    nbaver_ima=str2double(answer{2});%number of images for the sliding background
     nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
-    if isequal(floor(nbaver/2),nbaver)
+    if isequal(mod(nbaver,2),0)% if nbaver is even
         nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
     end
     nbaver_ima=nbaver*step;% correct the nbre of images corresponding to nbaver
     ParamOut.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
     ParamOut.ActionInput.SlidingSequenceLength=nbaver_ima;
-    ParamOut.ActionInput.BrightnessRankThreshold=str2num(answer{3});
+    ParamOut.ActionInput.BrightnessRankThreshold=str2double(answer{3});
     
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
@@ -197,7 +197,6 @@ RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% input preparation
-nbaver_ima=Param.ActionInput.SlidingSequenceLength;
 NbSlice=Param.IndexRange.NbSlice;
 if ~isequal(NbSlice,1)
     display(['multi-level splitting into ' num2str(NbSlice) ' slices']);
@@ -250,7 +249,7 @@ else
 end
 nbaver_ima=Param.ActionInput.SlidingSequenceLength;%number of images for the sliding background
 nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
-if isequal(floor(nbaver/2),nbaver)
+if isequal(mod(nbaver,2),0)
     nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
 end
 nbaver_ima=nbaver*step;

@@ -256,7 +256,7 @@ CivInputData.NomTypeIma=NomTypeImaA;
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
-set(handles.CoordUnit,'String',CoordUnit)
+%set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
 
 % indicate the min and max indices i and j on the GUI
@@ -987,9 +987,9 @@ if strcmp(get(handles.num_UMin,'Visible'),'off')
     set(handles.num_UMax,'Visible','on')
     set(handles.num_VMin,'Visible','on')
     set(handles.num_VMax,'Visible','on')
-    set(handles.CoordUnit,'Visible','on')
-    set(handles.TimeUnit,'Visible','on')
-    set(handles.slash_title,'Visible','on')
+    %set(handles.CoordUnit,'Visible','on')
+    %set(handles.TimeUnit,'Visible','on')
+    %set(handles.slash_title,'Visible','on')
     set(handles.min_title,'Visible','on')
     set(handles.max_title,'Visible','on')
     set(handles.unit_title,'Visible','on')
@@ -1022,49 +1022,49 @@ if vmax<=vmin
     set(handles.num_VMax,'String', num2str(vmax))
 end   
 if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
-    list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
-    index=get(handles.ListPairCiv1,'Value');
-    pair_string=list_pair{index};
-    time=get(handles.TimeSource,'UserData'); %get the set of times
-    pxcm=get(handles.SearchRange,'UserData');
-    mode_list=get(handles.ListPairMode,'String');
-    mode_value=get(handles.ListPairMode,'Value');
-    mode=mode_list{mode_value};      
-    if isequal (mode, 'series(Di)' )
-        ref_i=str2double(get(handles.ref_i,'String'));
-        num1=ref_i-floor(index/2);%  first image numbers
-        num2=ref_i+ceil(index/2);
-        num_a=1;
-        num_b=1;
-    elseif isequal (mode, 'series(Dj)')
-        num1=1;
-        num2=1;
-        ref_j=str2double(get(handles.ref_j,'String'));
-        num_a=ref_j-floor(index/2);%  first image numbers
-        num_b=ref_j+ceil(index/2);
-    elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)     
-        ref_i=str2double(get(handles.ref_i,'String'));
-        num1=ref_i;
-        num2=ref_i;
-                r=regexp(pair_string,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
-        if isempty(r)
-            r=regexp(pair_string,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
-        end  
-        num_a=str2num(r.num1);
-        num_b=str2num(r.num2);
-    end
-    dt=time(num2+1,num_b+1)-time(num1+1,num_a+1);
-    ibx=str2double(get(handles.num_CorrBoxSize_1,'String'));
-    iby=str2double(get(handles.num_CorrBoxSize_2,'String'));
-    umin=dt*pxcm*umin;
-    umax=dt*pxcm*umax;
-    vmin=dt*pxcm*vmin;
-    vmax=dt*pxcm*vmax;
+%     list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
+%     index=get(handles.ListPairCiv1,'Value');
+%     pair_string=list_pair{index};
+%     time=get(handles.TimeSource,'UserData'); %get the set of times
+%     pxcm=get(handles.SearchRange,'UserData');
+%     mode_list=get(handles.ListPairMode,'String');
+%     mode_value=get(handles.ListPairMode,'Value');
+%     mode=mode_list{mode_value};      
+%     if isequal (mode, 'series(Di)' )
+%         ref_i=str2double(get(handles.ref_i,'String'));
+%         num1=ref_i-floor(index/2);%  first image numbers
+%         num2=ref_i+ceil(index/2);
+%         num_a=1;
+%         num_b=1;
+%     elseif isequal (mode, 'series(Dj)')
+%         num1=1;
+%         num2=1;
+%         ref_j=str2double(get(handles.ref_j,'String'));
+%         num_a=ref_j-floor(index/2);%  first image numbers
+%         num_b=ref_j+ceil(index/2);
+%     elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)     
+%         ref_i=str2double(get(handles.ref_i,'String'));
+%         num1=ref_i;
+%         num2=ref_i;
+%                 r=regexp(pair_string,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
+%         if isempty(r)
+%             r=regexp(pair_string,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
+%         end  
+%         num_a=str2num(r.num1);
+%         num_b=str2num(r.num2);
+%     end
+%     dt=time(num2+1,num_b+1)-time(num1+1,num_a+1);
+%     ibx=str2double(get(handles.num_CorrBoxSize_1,'String'));
+%     iby=str2double(get(handles.num_CorrBoxSize_2,'String'));
+%     umin=dt*pxcm*umin;
+%     umax=dt*pxcm*umax;
+%     vmin=dt*pxcm*vmin;
+%     vmax=dt*pxcm*vmax;
     shiftx=round((umin+umax)/2);
     shifty=round((vmin+vmax)/2);
-    isx=(umax+2-shiftx)*2+param_civ1.Bx;
+    isx=(umax+2-shiftx)*2+param_civ1.CorrBoxSize(1);
     isx=2*ceil(isx/2)+1;
-    isy=(vmax+2-shifty)*2+param_civ1.Bx;
+    isy=(vmax+2-shifty)*2+param_civ1.CorrBoxSize(2);
     isy=2*ceil(isy/2)+1;
     set(handles.num_SearchBoxShift_1,'String',num2str(shiftx));
     set(handles.num_SearchBoxShift_2,'String',num2str(shifty));
@@ -1075,9 +1075,8 @@ end
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask.
 function num_CorrSmooth_Callback(hObject, eventdata, handles)
-set(hObject,'BackgroundColor',[1 0 1])
 set(handles.configSource,'String','NEW')
-
+set(handles.configSource,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1416,7 +1415,7 @@ if strcmp(PanelName,'Civ1')
 end
 set(hObject,'BackgroundColor',[1 0 1])
 set(handles.configSource,'String','NEW')
-
+set(handles.configSource,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
 function CheckMask_Callback(hObject, eventdata, handles)
@@ -1460,8 +1459,8 @@ else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
 end
-set(hObject,'BackgroundColor',[1 0 1])
 set(handles.configSource,'String','NEW')
+set(handles.configSource,'BackgroundColor',[1 0 1])
 
 % %------------------------------------------------------------------------
 % % --- Executes on button press in get_gridpatch1.
@@ -1677,8 +1676,8 @@ if get(hObject,'Value')
 else
     set(obj,'Visible','off')
 end
-set(hObject,'BackgroundColor',[1 0 1])
 set(handles.configSource,'String','NEW')
+set(handles.configSource,'BackgroundColor',[1 0 1])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%   TEST functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2132,7 +2131,6 @@ function keyboard_callback(hObject,eventdata,handles)
     
 ListExclude={'CheckCiv1','CheckFix1','CheckPatch1','CheckCiv2','CheckFix2','CheckPatch2','ref_i'};
 if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontrol is not in the Exclude list
-    set(gco,'BackgroundColor',[1 0 1])
-    drawnow
     set(handles.ConfigSource,'String','NEW')% indicate that the configuration is new
+    set(handles.ConfigSource,'BackgroundColor',[1 0 1])%
 end
