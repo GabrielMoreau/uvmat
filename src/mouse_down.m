@@ -245,6 +245,27 @@ if isfield(hhCurrentGUI,'CheckZoomFig') && get(hhCurrentGUI.CheckZoomFig,'Value'
     return
 end
 
+%% PIV test
+if test_piv
+    figure
+    newaxes=axes;
+    copyobj(AxeData.CurrentCorrImage,newaxes);
+    set(newaxes,'CLim',[0 1])
+    copyobj(AxeData.CurrentVector,newaxes)
+    copyobj(AxeData.TitleHandle,newaxes)
+    colorbar
+    % export image correlation matrix and local U,V values in the work space
+    global DataCorrImage
+    DataCorrImage.Corr=get(AxeData.CurrentCorrImage,'CData');
+    Uvec=get(AxeData.CurrentVector,'XData');
+    DataCorrImage.U=Uvec(2);
+    Vvec=get(AxeData.CurrentVector,'YData');
+    DataCorrImage.V=Vvec(2);
+    evalin('base','global DataCorrImage')%make CurData global in the workspace
+    evalin('base','DataCorrImage') %display CurData in the workspace
+    commandwindow; %brings the Matlab command window to the front
+end
+
 if isempty(huvmat)%further options require the uvmat GUI
     return 
 end
@@ -258,16 +279,6 @@ if test_ruler && ~isempty(xy)
     return
 end
 
-%% PIV test
-if test_piv
-    figure
-    newaxes=axes;
-    copyobj(AxeData.CurrentCorrImage,newaxes);
-    set(newaxes,'CLim',[0 1])
-    copyobj(AxeData.CurrentVector,newaxes)
-    copyobj(AxeData.TitleHandle,newaxes)
-    colorbar
-end
 
 %% desable  object creation and vector editing if NbDim different from 2
 if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))

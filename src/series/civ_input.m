@@ -82,7 +82,7 @@ if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,
     set(handles.num_CorrSmooth,'String',{'1';'2'})
     set(handles.CheckThreshold,'Visible','on')
     set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
-    set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
+    %set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
 end
 switch Param.Action.ActionName
     case 'stereo_civ'
@@ -168,6 +168,10 @@ end
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 
 %% display the min and max indices for the whole file series
+if isempty(Param.IndexRange.MaxIndex_i)|| isempty(Param.IndexRange.MinIndex_i)
+    msgbox_uvmat('ERROR','REFRESH the input files in the GUI series')
+     return
+end
 MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
 MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
 MaxIndex_j=1;%default
@@ -280,9 +284,10 @@ if ind_opening==0  %case of image opening, start with Civ1
         set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
     end
 else  %case of netcdf file opening, start with the stage read in the file if the input file is being refreshed
-    if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) && ~isfield(Param.ActionInput,'ConfigSource')
-        answer=msgbox_uvmat('INPUT_Y-N',['import the civ parameters from the netcdf file']);
-        if strcmp(answer,'Yes')
+    if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
+            ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource')) 
+%         answer=msgbox_uvmat('INPUT_Y-N',['import the civ parameters from the netcdf file']);
+%         if strcmp(answer,'Yes')
             for index = 1:min(ind_opening,5)
                 set(handles.(ListOptions{index}),'value',0)
                 fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
@@ -293,12 +298,12 @@ else  %case of netcdf file opening, start with the stage read in the file if the
                 set(handles.(ListOptions{index}),'value',0)
             end
             checkrefresh=1;
-        end
+%         end
     end
     if ind_opening>=3
-        set(handles.iterate,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
+        set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
     else
-        set(handles.iterate,'Visible','off')
+        set(handles.CheckCiv3,'Visible','off')
     end
 end
 
@@ -492,9 +497,9 @@ else
     set(handles.ListPairCiv2,'Visible','off')
 end
 if max(checkbox(1:3))==0 && get(handles.CheckCiv2,'UserData')==6,% no operation asked before Civ2 and input file ready for civ3
-    set(handles.iterate,'Visible','on')
+    set(handles.CheckCiv3,'Visible','on')
 else
-    set(handles.iterate,'Visible','off')
+    set(handles.CheckCiv3,'Visible','off')
 end
 
 %% set the visibility of the different panels
@@ -512,9 +517,9 @@ end
 function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-ActionInput=read_GUI(handles.civ_input);
+ActionInput=read_GUI(handles.civ_input);% read the infos on the GUI civ_input
 
-%% correct inpput inconsistencies
+%% correct input inconsistencies
 if isfield(ActionInput,'Civ1')
     checkeven=(mod(ActionInput.Civ1.CorrBoxSize,2)==0);
     ActionInput.Civ1.CorrBoxSize(checkeven)=ActionInput.Civ1.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
@@ -530,24 +535,26 @@ if isfield(ActionInput,'Civ2')
     ActionInput.Civ2.SearchBoxSize(checkeven)=ActionInput.Civ2.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
 
+%% correct mask or grid name for Windows system (replace '\' by '/')
+if isfield(ActionInput,'Civ1')
+    if isfield(ActionInput.Civ1,'Mask')
+        ActionInput.Civ1.Mask=regexprep(ActionInput.Civ1.Mask,'\','/');
+    end
+    if isfield(ActionInput.Civ1,'Grid')
+        ActionInput.Civ1.Grid=regexprep(ActionInput.Civ1.Grid,'\','/');
+    end
+end
+if isfield(ActionInput,'Civ2')
+    if isfield(ActionInput.Civ2,'Mask')
+        ActionInput.Civ2.Mask=regexprep(ActionInput.Civ2.Mask,'\','/');
+    end
+    if isfield(ActionInput.Civ2,'Grid')
+        ActionInput.Civ2.Grid=regexprep(ActionInput.Civ2.Grid,'\','/');
+    end
+end
+
+%% exit the GUI and close it
 handles.output.ActionInput=ActionInput;
-% correct mask or grid name for Windows system (replace '\' by '/')
-if isfield(handles.output.ActionInput,'Civ1')
-    if isfield(handles.output.ActionInput.Civ1,'Mask')
-        handles.output.ActionInput.Civ1.Mask=regexprep(handles.output.ActionInput.Civ1.Mask,'\','/');
-    end
-    if isfield(handles.output.ActionInput.Civ1,'Grid')
-        handles.output.ActionInput.Civ1.Grid=regexprep(handles.output.ActionInput.Civ1.Grid,'\','/');
-    end
-end
-if isfield(handles.output.ActionInput,'Civ2')
-    if isfield(handles.output.ActionInput.Civ2,'Mask')
-        handles.output.ActionInput.Civ2.Mask=regexprep(handles.output.ActionInput.Civ2.Mask,'\','/');
-    end
-    if isfield(handles.output.ActionInput.Civ2,'Grid')
-        handles.output.ActionInput.Civ2.Grid=regexprep(handles.output.ActionInput.Civ2.Grid,'\','/');
-    end
-end
 guidata(hObject, handles);% Update handles structure
 uiresume(handles.civ_input);
 
@@ -1688,26 +1695,44 @@ function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 drawnow
 if get(handles.TestCiv1,'Value')
-    set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
-    [Data,Param.Civ1]=get_param_civ1(handles);
-    Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV
-    hview_field=view_field(Data); %view the image in the GUI view_field
+    set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch  
+    %Param.Action.RUN=1;
+    Param.ActionInput=read_GUI(handles.civ_input);
+    par_civ=Param.ActionInput.Civ1;
+    [Data,ImageName_B]=get_param_civ1(handles);
+
+    %% create the figure view_field for image visualization
+    hview_field=view_field(Data); %view the image in the GUI view_field 
     set(0,'CurrentFigure',hview_field)
     hhview_field=guihandles(hview_field);
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-    ViewData.PlotAxes.B=imread(Param.Civ1.ImageName_B);%store the second image in the UserData of the GUI view_field
-    ViewData.PlotAxes.X=Grid.Civ1_X; %keep the set of points in memeory
-    ViewData.PlotAxes.Y=Grid.Civ1_Y;
-    set(hview_field,'UserData',ViewData)
-    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    ViewData.PlotAxes.B=imread(ImageName_B);%store the second image in the UserData of the GUI view_field
+    
+    %% prepare measurement grid
+    if isfield(par_civ,'Grid')% grid points set as input
+            par_civ.Grid=dlmread(par_civ.Grid);
+            par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
+    else% automatic grid
+        minix=floor(par_civ.Dx/2)-0.5;
+        maxix=minix+par_civ.Dx*floor((size(Data.A,2)-1)/par_civ.Dx);
+        miniy=floor(par_civ.Dy/2)-0.5;
+        maxiy=minix+par_civ.Dy*floor((size(Data.A,1)-1)/par_civ.Dy);
+        [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+        ViewData.PlotAxes.X=reshape(GridX,[],1);
+        ViewData.PlotAxes.Y=reshape(GridY,[],1);
+    end
+
+    set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
+    
+    %% look for a current figure for image correlation display
+    corrfig=findobj(allchild(0),'tag','corrfig');
     if isempty(corrfig)
         corrfig=figure;
         set(corrfig,'tag','corrfig')
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
-        % end
         set(handles.TestCiv1,'BackgroundColor',[1 0 0])
     else
         set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
@@ -1732,53 +1757,33 @@ end
 % --------------------------------------------------------------------
 function TestPatch1_Callback(hObject, eventdata, handles)
 
-if get(handles.TestPatch1,'Value')
-    if get(handles.CheckCiv1,'Value')
-        if ~get(handles.CheckFix1,'Value')
-            msgbox_uvmat('ERROR','perform FIX1 before testing Patch1')
-            return
-        end
-        set(handles.TestPatch1,'BackgroundColor',[1 1 0])
-        drawnow
-        [Data,Param.Civ1]=get_param_civ1(handles);
-        Param.Fix1=read_GUI(handles.Fix1);
-        [Data,errormsg]=civ_matlab(Param);% get the civ1 results
-        errormsg=struct2nc('test_civ1.nc',Data);
-        InputFile='test_civ1.nc';
-        if ~isempty(errormsg)
-            msgbox_uvmat('ERROR',['error in temporary file writing: ' errormsg])
-            return
-        end
-    else
-        hseries=findobj(allchild(0),'Tag','series');
-        hhseries=guidata(hseries);
-        InputTable=get(hhseries.InputTable,'Data');
-        if ~strcmp(InputTable{1,5},'.nc');
-            msgbox_uvmat('ERROR', 'To test patch, first perform Civ1 and Fix1, then open the resulting netcdf file with ''series''')
-            return
-        end
-        set(handles.TestPatch1,'BackgroundColor',[1 1 0])
-        drawnow       
-        ref_i=str2double(get(handles.ref_i,'String'));
-        if strcmp(get(handles.ref_j,'Visible'),'on')
-            ref_j=str2double(get(handles.ref_j,'String'));
-        else
-            ref_j=1;%default
-        end
-        PairString=get(hhseries.PairString,'Data');
-        [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString{1});
-        InputFile=fullfile_uvmat(InputTable{1,1},InputTable{1,2},InputTable{1,3},InputTable{1,5},InputTable{1,4},...
-            i1,i2,j1,j2);
+if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
+     set(handles.TestPatch1,'BackgroundColor',[1 1 0])%paint TestPatch1 button in yellow to induicate activation
+     hseries=findobj(allchild(0),'Tag','series');
+     Param=read_GUI(hseries);
+     Param.Action.RUN=1;
+     Param.ActionInput=read_GUI(handles.civ_input);
+     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+     
+     %% prepare Param for iterative Patch processing without input file reading
+     Param.Civ1_X=Data.Civ1_X;
+     Param.Civ1_Y=Data.Civ1_Y;
+     Param.Civ1_U=Data.Civ1_U;
+     Param.Civ1_V=Data.Civ1_V;
+     Param.Civ1_FF=Data.Civ1_FF;
+     Param=rmfield(Param,'InputTable');%desactivate input file reading
+    if isfield(Param.ActionInput,'Civ1')
+        Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
     end
-    Param=[];
-    Param.Patch1=read_GUI(handles.Patch1);
-    Param.Patch1.CivFile=InputFile;
-    SmoothingParam=(Param.Patch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
-    Data=nc2struct(InputFile);
+    if isfield(Param.ActionInput,'Fix1')
+        Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
+    end
+    SmoothingParam=(Param.ActionInput.Patch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
     NbGood=numel(find(Data.Civ1_FF==0));
     for irho=1:7
-        Param.Patch1.FieldSmooth=SmoothingParam(irho);
-        [Data,errormsg]=civ_matlab(Param);% get the grid of x, y positions set for PIV
+        Param.ActionInput.Patch1.FieldSmooth=SmoothingParam(irho);
+        [Data,errormsg]= civ_series(Param);%apply the processing fct
         if ~isempty(errormsg)
             msgbox_uvmat('ERROR',errormsg)
             return
@@ -1793,8 +1798,8 @@ if get(handles.TestPatch1,'Value')
     semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r')
     grid on
     legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)')
-    XLabel('smoothing parameter')
-    YLabel('smoothing effect')
+    xlabel('smoothing parameter')
+    ylabel('smoothing effect')
     set(handles.TestPatch1,'BackgroundColor',[1 0 0])
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
@@ -2019,7 +2024,7 @@ end
 
 
 %------------------------------------------------------------------------
-function [Data,par_civ1]=get_param_civ1(handles)
+function [Data,ImageName_B]=get_param_civ1(handles)
 
  ref_i=str2double(get(handles.ref_i,'String'));% read reference i index
  if strcmp(get(handles.ref_j,'Visible'),'on')
@@ -2067,15 +2072,15 @@ function [Data,par_civ1]=get_param_civ1(handles)
  Data.ny=[size(Data.A,1) 1];
  Data.nx=[1 size(Data.A,2)];
  Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly
- par_civ1=read_GUI(handles.Civ1);
- FileInfo=get_file_info(ImageName_A);
- par_civ1.FileTypeA=FileInfo.FileType;
- par_civ1.ImageWidth=size(Data.A,2);
- par_civ1.ImageHeight=size(Data.A,1);
- par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
- par_civ1.FrameIndexA=num2str(i1);
- par_civ1.FrameIndexB=num2str(i2);
- par_civ1.ImageName_B=ImageName_B;
+%  par_civ1=read_GUI(handles.Civ1);
+% FileInfo=get_file_info(ImageName_A);
+%  par_civ1.FileTypeA=FileInfo.FileType;
+%  par_civ1.ImageWidth=size(Data.A,2);
+%  par_civ1.ImageHeight=size(Data.A,1);
+%  par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
+%  par_civ1.FrameIndexA=num2str(i1);
+%  par_civ1.FrameIndexB=num2str(i2);
+%  par_civ1.ImageName_B=ImageName_B;
 
 %------------------------------------------------------------------------
 % --- Executes on button press in InportParam.
@@ -2121,8 +2126,8 @@ if ~isempty(filexml)
     end
 end
 
-% --- Executes on selection change in iterate.
-function iterate_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in CheckCiv3.
+function CheckCiv3_Callback(hObject, eventdata, handles)
     
 %------------------------------------------------------------------------
 % --- Executes on key press with selection of a uicontrol

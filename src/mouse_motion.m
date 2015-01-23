@@ -239,14 +239,13 @@ if strcmp(htype,'axes')
                 [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
                 xround=Field.X(ind_pt);
                 yround=Field.Y(ind_pt);
-                %                         par.Grid=[xround size(Field.A,1)-yround+1];
                 par.Grid=[xround yround];
                 % mark the correlation box with a rectangle
                 par.ImageA=Field.A;
                 par.ImageB=Field.B;
                 par.ImageHeight=size(par.ImageA,1);
                 par.ImageWidth=size(par.ImageA,2);
-                Param.Civ1=par;
+                Param.ActionInput.Civ1=par;
                 ibx2=floor((par.CorrBoxSize(1)-1)/2);
                 iby2=floor((par.CorrBoxSize(2)-1)/2);
                 isx2=floor((par.SearchBoxSize(1)-1)/2);
@@ -268,7 +267,9 @@ if strcmp(htype,'axes')
                     set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                     set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                 end
-                [Data,errormsg,result_conv]= civ_matlab(Param);
+                Param.Action.RUN=1;
+                Param.ActionInput.ListCompareMode='PIV';
+                [Data,errormsg,result_conv]= civ_series(Param);
                 if ~isempty(errormsg)
                     text_displ_5=errormsg;
                 else

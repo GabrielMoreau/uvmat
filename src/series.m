@@ -1459,7 +1459,7 @@ switch RunMode
     case 'cluster_oar'
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1;% one core used only (limitation of Matlab licences)
-            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
+            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version .sh for multi-core processing');
             extra_oar='';
         else
             answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
