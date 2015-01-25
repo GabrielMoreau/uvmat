@@ -57,7 +57,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.Program=mfilename;%gives the name of the current function
     Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    if isfield(Data,'ActionInput') && strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices')&& strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
         Data.Desable_j_index='on';% hide the j index in series (set by the pair choice in civ_input)
     end
     Data.NbSlice='off'; %nbre of slices ('off' by default)
@@ -173,7 +173,7 @@ if CheckInputFile
                 i1_series_Civ2=i1_series_Civ1;
                 j1_series_Civ2=j1_series_Civ1;
                 j2_series_Civ2=j2_series_Civ1;
-                NomTypeNc=NomType;
+                NomTypeNc=Param.InputTable{1,4};
             case 'PIV volume'
                 % TODO, TODO
         end
@@ -328,6 +328,7 @@ if iview_A~=0
 end
 
 %%%%% MAIN LOOP %%%%%%
+maskname='';% initiate the mask name
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
@@ -359,7 +360,7 @@ for ifield=1:NbField
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
         par_civ1=Param.ActionInput.Civ1;
-        if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1)
+        if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             try
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
                 if strcmp(FileInfo_A.FileType,'netcdf')% case of input images in format netcdf
@@ -421,14 +422,22 @@ for ifield=1:NbField
         Data.VarAttribute{3}.Role='vector_x';
         Data.VarAttribute{4}.Role='vector_y';
         Data.VarAttribute{5}.Role='warnflag';
-        
+        if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
+            if strcmp(maskname,par_civ1.Mask)% mask exist, not already read in civ1
+                par_civ1.Mask=mask; %use mask already opened
+            else
+                par_civ1.Mask=imread(par_civ1.Mask);%update the mask, an store it for future use
+                mask=par_civ1.Mask;
+                maskname=par_civ1.Mask;
+            end
+        end
         if strcmp(Param.ActionInput.ListCompareMode, 'PIV volume')
             Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
             Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
             Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];Data.Civ1_F=[];
             for ivol=1:NbSlice
                 % caluclate velocity data (y and v in indices, reverse to y component)
-                [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
+                [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
                 if ~isempty(errormsg)
                      disp_uvmat('ERROR',errormsg,checkrun)
                     return
@@ -443,7 +452,7 @@ for ifield=1:NbField
             end
         else %usual PIV
             % caluclate velocity data (y and v in indices, reverse to y component)
-            [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
+            [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
@@ -472,7 +481,7 @@ for ifield=1:NbField
             else
                 [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
             end
-        else
+        elseif isfield(Param,'Civ1_X')
             Data.ListGlobalAttribute={};
             Data.ListVarName={};
             Data.VarDimName={};
@@ -571,56 +580,57 @@ for ifield=1:NbField
     %% Civ2
     if isfield (Param.ActionInput,'Civ2')
         par_civ2=Param.ActionInput.Civ2;
-        par_civ2.ImageA=[];
-        par_civ2.ImageB=[];
-        i1=i1_series_Civ2(ifield);
-        i2=i1;
-        if ~isempty(i2_series_Civ2)
-            i2=i2_series_Civ2(ifield);
-        end
-        j1=1;
-        if ~isempty(j1_series_Civ2)
-            j1=j1_series_Civ2(ifield);
-        end
-        j2=j1;
-        if ~isempty(j2_series_Civ2)
-            j2=j2_series_Civ2(ifield);
-        end
-        ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
-
-        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
-            par_civ2.ImageA=par_civ1.ImageA;
-        else
-            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
-        end
-        ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2,[],j2);
-        if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
-            par_civ2.ImageB=par_civ1.ImageB;
-        else
-            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
-        end     
-        
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
-        par_civ2.ImageWidth=FileInfo_A.Width;
-        par_civ2.ImageHeight=FileInfo_A.Height;
-        
-        if isfield(par_civ2,'Grid')% grid points set as input file
-            if ischar(par_civ2.Grid)%read the grid file if the input is a file name
-                par_civ2.Grid=dlmread(par_civ2.Grid);
-                par_civ2.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
+        if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
+            par_civ2.ImageA=[];
+            par_civ2.ImageB=[];
+            i1=i1_series_Civ2(ifield);
+            i2=i1;
+            if ~isempty(i2_series_Civ2)
+                i2=i2_series_Civ2(ifield);
             end
-        else% automatic grid
-            minix=floor(par_civ2.Dx/2)-0.5;
-            maxix=minix+par_civ2.Dx*floor((par_civ2.ImageWidth-1)/par_civ2.Dx);
-            miniy=floor(par_civ2.Dy/2)-0.5;
-            maxiy=minix+par_civ2.Dy*floor((par_civ2.ImageHeight-1)/par_civ2.Dy);
-            [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
-            par_civ2.Grid(:,1)=reshape(GridX,[],1);
-            par_civ2.Grid(:,2)=reshape(GridY,[],1);
+            j1=1;
+            if ~isempty(j1_series_Civ2)
+                j1=j1_series_Civ2(ifield);
+            end
+            j2=j1;
+            if ~isempty(j2_series_Civ2)
+                j2=j2_series_Civ2(ifield);
+            end
+            ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
+            
+            if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
+                par_civ2.ImageA=par_civ1.ImageA;
+            else
+                [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
+            end
+            ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2,[],j2);
+            if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
+                par_civ2.ImageB=par_civ1.ImageB;
+            else
+                [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
+            end
+            if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+                ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
+            else % displacement
+                ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2,[],j2);
+            end
+            par_civ2.ImageWidth=FileInfo_A.Width;
+            par_civ2.ImageHeight=FileInfo_A.Height;
+            if isfield(par_civ2,'Grid')% grid points set as input file
+                if ischar(par_civ2.Grid)%read the grid file if the input is a file name
+                    par_civ2.Grid=dlmread(par_civ2.Grid);
+                    par_civ2.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
+                end
+            else% automatic grid
+                minix=floor(par_civ2.Dx/2)-0.5;
+                maxix=minix+par_civ2.Dx*floor((par_civ2.ImageWidth-1)/par_civ2.Dx);
+                miniy=floor(par_civ2.Dy/2)-0.5;
+                maxiy=minix+par_civ2.Dy*floor((par_civ2.ImageHeight-1)/par_civ2.Dy);
+                [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
+                par_civ2.Grid(:,1)=reshape(GridX,[],1);
+                par_civ2.Grid(:,2)=reshape(GridY,[],1);
+            end
         end
-        Shiftx=zeros(size(par_civ2.Grid,1),1);% shift expected from civ1 data
-        Shifty=zeros(size(par_civ2.Grid,1),1);
-        nbval=zeros(size(par_civ2.Grid,1),1);
         if par_civ2.CheckDeformation
             DUDX=zeros(size(par_civ2.Grid,1),1);
             DUDY=zeros(size(par_civ2.Grid,1),1);
@@ -628,39 +638,53 @@ for ifield=1:NbField
             DVDY=zeros(size(par_civ2.Grid,1),1);
         end
         
-         % get the guess from patch1 or patch2 (case 'CheckCiv3')
-        if isfield (par_civ2,'CheckCiv3') && par_civ2.CheckCiv3 %get the guess from  patch2
-           SubRange= Data.Civ2_SubRange;
-           NbCentres=Data.Civ2_NbCentres;
-           Coord_tps=Data.Civ2_Coord_tps;
-           U_tps=Data.Civ2_U_tps;
-           V_tps=Data.Civ2_V_tps;
-           CivStage=Data.CivStage;
-           Civ1_Dt=Data.Civ2_Dt;
-           Data=[];%reinitialise the result structure Data
-           Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
-           Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-           Data.Program='civ_series';
-           Data.CivStage=CivStage;
-           Data.ListVarName={};
-           Data.VarDimName={};
-        else % get the guess from patch1
-           SubRange= Data.Civ1_SubRange;
-           NbCentres=Data.Civ1_NbCentres;
-           Coord_tps=Data.Civ1_Coord_tps;
-           U_tps=Data.Civ1_U_tps;
-           V_tps=Data.Civ1_V_tps;
-           Civ1_Dt=Data.Civ1_Dt;
+        % get the guess from patch1 or patch2 (case 'CheckCiv3')
+        if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
+            if isfield (par_civ2,'CheckCiv3') && par_civ2.CheckCiv3 %get the guess from  patch2
+                SubRange= Data.Civ2_SubRange;
+                NbCentres=Data.Civ2_NbCentres;
+                Coord_tps=Data.Civ2_Coord_tps;
+                U_tps=Data.Civ2_U_tps;
+                V_tps=Data.Civ2_V_tps;
+                CivStage=Data.CivStage;
+                Civ1_Dt=Data.Civ2_Dt;
+                Data=[];%reinitialise the result structure Data
+                Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
+                Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+                Data.Program='civ_series';
+                Data.CivStage=CivStage;
+                Data.ListVarName={};
+                Data.VarDimName={};
+            else % get the guess from patch1
+                SubRange= Data.Civ1_SubRange;
+                NbCentres=Data.Civ1_NbCentres;
+                Coord_tps=Data.Civ1_Coord_tps;
+                U_tps=Data.Civ1_U_tps;
+                V_tps=Data.Civ1_V_tps;
+                Civ1_Dt=Data.Civ1_Dt;
+            end
+        else
+            SubRange= par_civ2.Civ1_SubRange;
+            NbCentres=par_civ2.Civ1_NbCentres;
+            Coord_tps=par_civ2.Civ1_Coord_tps;
+            U_tps=par_civ2.Civ1_U_tps;
+            V_tps=par_civ2.Civ1_V_tps;
+            Civ1_Dt=par_civ2.Civ1_Dt;
+                         Data.ListVarName={};
+                Data.VarDimName={};
         end
-        NbSubDomain=size(SubRange,3);        
+        Shiftx=zeros(size(par_civ2.Grid,1),1);% shift expected from civ1 data
+        Shifty=zeros(size(par_civ2.Grid,1),1);
+        nbval=zeros(size(par_civ2.Grid,1),1);% nbre of interpolated values at each grid point (from the different patch subdomains)
+        NbSubDomain=size(SubRange,3);
         for isub=1:NbSubDomain% for each sub-domain of Patch1
             nbvec_sub=NbCentres(isub);% nbre of Civ vectors in the subdomain
             ind_sel=find(par_civ2.Grid(:,1)>=SubRange(1,1,isub) & par_civ2.Grid(:,1)<=SubRange(1,2,isub) &...
                 par_civ2.Grid(:,2)>=SubRange(2,1,isub) & par_civ2.Grid(:,2)<=SubRange(2,2,isub));
             epoints = par_civ2.Grid(ind_sel,:);% coordinates of interpolation sites
             ctrs=Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
-            nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
-            EM = tps_eval(epoints,ctrs);               
+            nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for each interpolation point (in case of subdomain overlap)
+            EM = tps_eval(epoints,ctrs);
             Shiftx(ind_sel)=Shiftx(ind_sel)+EM*U_tps(1:nbvec_sub+3,isub);
             Shifty(ind_sel)=Shifty(ind_sel)+EM*V_tps(1:nbvec_sub+3,isub);
             if par_civ2.CheckDeformation
@@ -671,15 +695,27 @@ for ifield=1:NbField
                 DVDY(ind_sel)=DVDY(ind_sel)+EMDY*V_tps(1:nbvec_sub+3,isub);
             end
         end
-        mask='';
-        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)&& ~strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
-            mask=imread(par_civ2.Mask);
+        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)
+            if strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
+                par_civ2.Mask=mask; %use mask already opened
+            else
+                par_civ2.Mask=imread(par_civ2.Mask);%update the mask, and store it for future use
+                mask=par_civ2.Mask;
+                maskname=par_civ2.Mask;
+            end
         end
         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-        Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+        if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+            Civ1_Dt=1;
+            Civ2_Dt=1;
+        elseif exist('time','var')
+            Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+        else 
+            Civ2_Dt=1;%TO CHECK, TEST
+        end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
@@ -689,17 +725,20 @@ for ifield=1:NbField
             par_civ2.DVDY=DVDY./nbval;
         end
         % calculate velocity data (y and v in indices, reverse to y component)
-        [xtable ytable utable vtable ctable F] = civ (par_civ2);
+        [xtable, ytable, utable, vtable, ctable, F,result_conv,errormsg] = civ (par_civ2);
+        
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
         Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_Time','Civ2_Dt'} Civ2_param]; %insert the names of the two input images
-        %indicate the values of all the global attributes in the output data 
+        %indicate the values of all the global attributes in the output data
+        if exist('ImageName_A','var')
         Data.Civ2_ImageA=ImageName_A;
         Data.Civ2_ImageB=ImageName_B;
         Data.Civ2_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
         Data.Civ2_Dt=Civ2_Dt;
-%         Data.Civ2_Time=1;
-%         Data.Civ2_Dt=1;
+        end
+        %         Data.Civ2_Time=1;
+        %         Data.Civ2_Dt=1;
         for ilist=1:length(list_param)
             Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
@@ -724,7 +763,7 @@ for ifield=1:NbField
     
     %% Fix2
     if isfield (Param.ActionInput,'Fix2')
-                list_param=fieldnames(Param.ActionInput.Fix2)';
+        list_param=fieldnames(Param.ActionInput.Fix2)';
         Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
         %indicate the values of all the global attributes in the output data 
         for ilist=1:length(list_param)
@@ -823,33 +862,33 @@ end
 %
 %INPUT:
 % par_civ: structure of input parameters, with fields:
-%  .CorrBoxSize
-%  .SearchBoxSize
-%  .SearchBoxShift
-%  .ImageHeight
-%  .ImageWidth
-%  .Dx, Dy
-%  .Grid
-%  .Mask
-%  .MinIma
+%  .ImageA: first image for correlation (matrix)
+%  .ImageB: second image for correlation(matrix)
+%  .CorrBoxSize: 1,2 vector giving the size of the correlation box in x and y
+%  .SearchBoxSize:  1,2 vector giving the size of the search box in x and y
+%  .SearchBoxShift: 1,2 vector or 2 column matrix (for civ2) giving the shift of the search box in x and y
+%  .CorrSmooth: =1 or 2 determines the choice of the sub-pixel determination of the correlation max
+%  .ImageWidth: nb of pixels of the image in x
+%  .Dx, Dy: mesh for the PIV calculation
+%  .Grid: grid giving the PIV calculation points (alternative to .Dx .Dy)
+%  .Mask: name of a mask file or mask image matrix itself
+%  .MinIma: thresholds for image luminosity
 %  .MaxIma
-%  .image1:first image (matrix)
-% image2: second image (matrix)
-% ibx2,iby2: half size of the correlation box along x and y, in px (size=(2*iby2+1,2*ibx2+1)
-% isx2,isy2: half size of the search box along x and y, in px (size=(2*isy2+1,2*isx2+1)
-% shiftx, shifty: shift of the search box (in pixel index, yshift reversed)
-% step: mesh of the measurement points (in px)
-% subpixfinder=1 or 2 controls the curve fitting of the image correlation
-% mask: =[] for no mask
-% roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
+%  .CheckDeformation=1 for subpixel interpolation and image deformation (linear transform)
+%  .DUDX: matrix of deformation obtained from patch at each grid point
+%  .DUDY
+%  .DVDX:
+%  .DVDY
+
 function [xtable,ytable,utable,vtable,ctable,F,result_conv,errormsg] = civ (par_civ)
 
 %% prepare measurement grid
 if isfield(par_civ,'Grid')% grid points set as input 
-    if ischar(par_civ.Grid)%read the drid file if the input is a file name
+    if ischar(par_civ.Grid)%read the grid file if the input is a file name
         par_civ.Grid=dlmread(par_civ.Grid);
         par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
     end
+    % else par_civ.Grid is already an array
 else% automatic grid
     minix=floor(par_civ.Dx/2)-0.5;
     maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
@@ -888,7 +927,7 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     if strcmp(par_civ.Mask,'all')
         return    % get the grid only, no civ calculation
     elseif ischar(par_civ.Mask)
-        par_civ.Mask=imread(par_civ.Mask);
+        par_civ.Mask=imread(par_civ.Mask);% read the mask if not allready done
     end
 end
 check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
@@ -947,99 +986,84 @@ end
 corrmax=0;
 sum_square=1;% default
 mesh=1;% default
-CheckDecimal=isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1;
-if CheckDecimal
-    mesh=0.2;%mesh in pixels for subpixel image interpolation
-    CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
+CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
+if CheckDeformation
+    mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
 end
-% vector=[0 0];%default
-for ivec=1:nbvec
-    iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
-    jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);% yindex on the image B for the middle of the correlation box
-    %if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
-    %         if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth||...
-    %               jref+shifty(ivec)-isy2<1||jref+shifty(ivec)+isy2>par_civ.ImageHeight|| iref+shiftx(ivec)-isx2<1 || iref+shiftx(ivec)+isx2>par_civ.ImageWidth  % we are outside the image
-    %             F(ivec)=3;
-    %         else
-    F(ivec)=0;
-    subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
-    subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
-    subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
-    subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
-    image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
-    image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
-    check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
-    check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
-    check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
-    check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
-    
-    image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
-    image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-    image1_mean=mean(mean(image1_crop));
-    image2_mean=mean(mean(image2_crop));
-    %threshold on image minimum
-    if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-        F(ivec)=3;
-    end
-    %threshold on image maximum
-    if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-        F(ivec)=3;
-    end
-    %         end
-    if F(ivec)~=3
-        image1_crop=image1_crop-image1_mean;%substract the mean
-        image2_crop=image2_crop-image2_mean;
-        if CheckDecimal
-            xi=(1:mesh:size(image1_crop,2));
-            yi=(1:mesh:size(image1_crop,1))';
+if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points viven)
+    for ivec=1:nbvec
+        iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
+        jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);% yindex on the image B for the middle of the correlation box
+        F(ivec)=0;
+        subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
+        subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
+        subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
+        subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
+        image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
+        image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
+        check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
+        check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
+        check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
+        check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;      
+        image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
+        image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
+        image1_mean=mean(mean(image1_crop));
+        image2_mean=mean(mean(image2_crop));
+        %threshold on image minimum
+        if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+            F(ivec)=3;
+        end
+        %threshold on image maximum
+        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+            F(ivec)=3;
+        end
+        
+        if F(ivec)~=3
+            image1_crop=image1_crop-image1_mean;%substract the mean
+            image2_crop=image2_crop-image2_mean;
             if CheckDeformation
+                xi=(1:mesh:size(image1_crop,2));
+                yi=(1:mesh:size(image1_crop,1))';
                 [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
                 XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
                 YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
                 image1_crop=interp2(image1_crop,XIant,YIant);
-            else
-                image1_crop=interp2(image1_crop,xi,yi);
+                xi=(1:mesh:size(image2_crop,2));
+                yi=(1:mesh:size(image2_crop,1))';
+                image2_crop=interp2(image2_crop,xi,yi);
             end
-            xi=(1:mesh:size(image2_crop,2));
-            yi=(1:mesh:size(image2_crop,1))';
-            image2_crop=interp2(image2_crop,xi,yi);
-        end
-        sum_square=sum(sum(image1_crop.*image1_crop));
-        %reference: Oliver Pust, PIV: Direct Cross-Correlation
-        result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
-        corrmax= max(max(result_conv));
-        result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-        %Find the correlation max, at 255
-        [y,x] = find(result_conv==255,1);
-        if ~isempty(y) && ~isempty(x)
-            try
-                if par_civ.CorrSmooth==1
-                    [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                elseif par_civ.CorrSmooth==2
-                    [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
-                end
-%                 if ~isfield(par_civ,'CheckDeformation')
-                utable(ivec)=vector(1)*mesh+shiftx(ivec); 
-                vtable(ivec)=vector(2)*mesh+shifty(ivec);
-%                 else
-%                                 utable(ivec)=shiftx(ivec);% TEST TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-%                 vtable(ivec)=shifty(ivec);
-%                 end
-                xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                iref=round(xtable(ivec));% image index for the middle of the vector
-                jref=round(ytable(ivec));
-                if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
-                    utable(ivec)=0;
-                    vtable(ivec)=0;
+            sum_square=sum(sum(image1_crop.*image1_crop));
+            %reference: Oliver Pust, PIV: Direct Cross-Correlation
+            result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+            corrmax= max(max(result_conv));
+            result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+            %Find the correlation max, at 255
+            [y,x] = find(result_conv==255,1);
+            if ~isempty(y) && ~isempty(x)
+                try
+                    if par_civ.CorrSmooth==1
+                        [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                    elseif par_civ.CorrSmooth==2
+                        [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                    end
+                    utable(ivec)=vector(1)*mesh+shiftx(ivec);
+                    vtable(ivec)=vector(2)*mesh+shifty(ivec);
+                    xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                    ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+                    iref=round(xtable(ivec));% image index for the middle of the vector
+                    jref=round(ytable(ivec));
+                    if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
+                        utable(ivec)=0;
+                        vtable(ivec)=0;
+                        F(ivec)=3;
+                    end
+                    ctable(ivec)=corrmax/sum_square;% correlation value
+                catch ME
                     F(ivec)=3;
                 end
-                ctable(ivec)=corrmax/sum_square;% correlation value
-            catch ME
+            else
                 F(ivec)=3;
             end
-        else
-            F(ivec)=3;
         end
     end
 end

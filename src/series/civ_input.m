@@ -164,6 +164,7 @@ set(handles.ref_i,'String',num2str(Param.IndexRange.first_i))
 if isfield(Param.IndexRange,'first_j')
     set(handles.ref_j,'String',num2str(Param.IndexRange.first_j))
 end
+set(handles.ConfigSource,'String','\default')
 
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 
@@ -339,7 +340,7 @@ ListPairCiv1_Callback(hObject, eventdata, handles)
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
 drawnow
-uiwait(handles.civ_input);
+uiwait(handles.civ_input);% wait for OK action to end the function
 
 
 %------------------------------------------------------------------------
@@ -367,15 +368,75 @@ end
 % --- Executes on button press in SetDefaultParam.
 %------------------------------------------------------------------------
 function SetDefaultParam_Callback(hObject, eventdata, handles)
-    
-hseries=findobj(allchild(0),'Name','series');% look for the GUI series
-hhseries=guidata(hseries);%handles of elements in the GUI series
-SeriesData=get(hseries,'UserData');%read parameters on the GUI series
-if isfield (SeriesData,'ActionInput')
-    SeriesData=rmfield(SeriesData,'ActionInput');% remove recorded civ parameters
-end
-set(hseries,'UserData',SeriesData)
-series('ActionName_Callback',hObject,eventdata,hhseries); %
+
+Param.ConfigSource='\default';
+
+%% Civ1 parameters
+Param.Civ1.CorrBoxSize=[25 25];
+Param.Civ1.SearchBoxSize=[55 55];
+Param.Civ1.SearchBoxShift=[0 0];
+Param.Civ1.CorrSmooth=1;
+Param.Civ1.Dx=20;
+Param.Civ1.Dy=20;
+Param.Civ1.CheckGrid=0;
+Param.Civ1.CheckMask=0;
+Param.Civ1.CheckThreshold=0;
+Param.Civ1.TestCiv1=0;
+
+%% Fix1 parameters
+Param.Fix1.CheckFmin2=1;
+Param.Fix1.CheckF3=1;
+Param.Fix1.MinCorr=0.2000;
+
+%% Patch1 parameters
+Param.Patch1.FieldSmooth=10;
+Param.Patch1.MaxDiff=1.5000;
+Param.Patch1.SubDomainSize=1000;
+Param.Patch1.TestPatch1=0;
+
+%% Civ2 parameters
+Param.Civ2.CorrBoxSize=[21 21];
+Param.Civ2.SearchBoxSize=[31 31];
+Param.Civ2.CorrSmooth=1;
+Param.Civ2.Dx=10;
+Param.Civ2.Dy=10;
+Param.Civ2.CheckGrid=0;
+Param.Civ2.CheckMask=0;
+Param.Civ2.CheckThreshold=0;
+Param.Civ2.TestCiv2=0;
+
+%% Fix2 parameters
+Param.Fix2.CheckFmin2=1;
+Param.Fix2.CheckF4=1;
+Param.Fix2.CheckF3=1;
+Param.Fix2.MinCorr=0.2000;
+
+%% Patch2 parameters
+Param.Patch2.FieldSmooth=2;
+Param.Patch2.MaxDiff=1.5000;
+Param.Patch2.SubDomainSize=1000;
+Param.Patch2.TestPatch2=0;
+
+fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
+
+%update_CivOptions(handles,0)
+%set(handles.ConfigSource,'String','\default')
+
+% %Param=read_GUI(handles.civ_input)
+% hseries=findobj(allchild(0),'Name','series');% look for the GUI series
+% hhseries=guidata(hseries);%handles of elements in the GUI series
+% SeriesData=get(hseries,'UserData');%read parameters on the GUI series
+% if isfield (SeriesData,'ActionInput')
+%     SeriesData=rmfield(SeriesData,'ActionInput');% remove recorded civ parameters
+% end
+% set(hseries,'UserData',SeriesData)
+% %% exit the GUI and close it
+% %handles.output.ActionInput=rmfield(ActionInput;
+% guidata(hObject, handles);% Update handles structure
+% uiresume(handles.civ_input);
+% set(hhseries.ActionName,'BusyAction','cancel')
+% series('ActionName_Callback',hObject,eventdata,hhseries); %
+
 
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
@@ -770,6 +831,7 @@ if isequal(mode,'series(Di)') || ...% we do patch2 only
 end
 if isempty(errormsg)
     set(handles.ref_i,'BackgroundColor',[1 1 1])
+    set(handles.ref_j,'BackgroundColor',[1 1 1])
 else
     msgbox_uvmat('ERROR',errormsg)
 end
@@ -826,7 +888,7 @@ end
 nom_type_ima=CivInputData.NomTypeIma;
 
 %% determine nom_type_nc, nomenclature type of the .nc files:
-[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
+%[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
 %SubDirImages=get(handles.Civ1_ImageA,'String');
@@ -919,7 +981,7 @@ if index==1
 end
 
 %% determine the default selection in the pair menu for Civ1
-ichoice=find(select,1);% index of selected pair
+ichoice=find(select,1);% index of first selected pair
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
 initial=get(handles.ListPairCiv1,'Value');%initial choice of pair
 if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
@@ -1080,10 +1142,10 @@ if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in CheckMask.
+% --- Executes on selection in menu CorrSmooth.
 function num_CorrSmooth_Callback(hObject, eventdata, handles)
 set(handles.configSource,'String','NEW')
-set(handles.configSource,'BackgroundColor',[1 0 1])
+set(handles.OK,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1422,7 +1484,7 @@ if strcmp(PanelName,'Civ1')
 end
 set(hObject,'BackgroundColor',[1 0 1])
 set(handles.configSource,'String','NEW')
-set(handles.configSource,'BackgroundColor',[1 0 1])
+set(handles.OK,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
 function CheckMask_Callback(hObject, eventdata, handles)
@@ -1684,7 +1746,7 @@ else
     set(obj,'Visible','off')
 end
 set(handles.configSource,'String','NEW')
-set(handles.configSource,'BackgroundColor',[1 0 1])
+set(handles.OK,'BackgroundColor',[1 0 1])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%   TEST functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1819,26 +1881,60 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 drawnow
 if get(handles.TestCiv2,'Value')
     set(handles.TestCiv2,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
-    % TO UPDATE TO UPDATE TO UPDATE TO UPDATE
-    [Data,Param.Civ2]=get_param_civ2(handles);
-    Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV
-    hview_field=view_field(Data); %view the image in the GUI view_field
+      hseries=findobj(allchild(0),'Tag','series');
+     Param=read_GUI(hseries);
+     Param.Action.RUN=1;
+     Param.ActionInput=read_GUI(handles.civ_input);
+     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     Param.ActionInput.Civ2.SmoothParam=0;% launch Civ2 with no data point (to get the image names for A and B)
+     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+     
+     %% create image data ImageData for display
+     ImageData.ListVarName={'ny','nx','A'};
+     ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
+     ImageData.A=imread(Data.Civ2_ImageA); % read the first image
+     if ndims(ImageData.A)==3 %case of color image
+         ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
+     end
+     ImageData.ny=[size(ImageData.A,1) 1];
+     ImageData.nx=[1 size(ImageData.A,2)];
+     ImageData.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly 
+
+     %% create the figure view_field for image visualization
+    hview_field=view_field(ImageData); %view the image in the GUI view_field 
     set(0,'CurrentFigure',hview_field)
+    RectCentre=squeeze(mean(Data.Civ1_SubRange,2));
+    for isub=1:size(Data.Civ1_SubRange,3);
+        pos_x=Data.Civ1_SubRange(1,1,isub);
+        pos_y=Data.Civ1_SubRange(2,1,isub);
+        width=Data.Civ1_SubRange(1,2,isub)-Data.Civ1_SubRange(1,1,isub);
+        height=Data.Civ1_SubRange(2,2,isub)-Data.Civ1_SubRange(2,1,isub);
+        rectangle('Position',[pos_x pos_y width height],'EdgeColor',[0 0 1])
+    end
     hhview_field=guihandles(hview_field);
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-    ViewData.PlotAxes.B=imread(Param.Civ1.ImageName_B);%store the second image in the UserData of the GUI view_field
-    ViewData.PlotAxes.X=Grid.Civ1_X; %keep the set of points in memeory
-    ViewData.PlotAxes.Y=Grid.Civ1_Y;
-    set(hview_field,'UserData',ViewData)
-    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    ViewData.PlotAxes.B=imread(Data.Civ2_ImageB);%store the second image in the UserData of the GUI view_field
+    ViewData.PlotAxes.X=Data.Civ2_X';
+    ViewData.PlotAxes.Y=Data.Civ2_Y';
+    ViewData.PlotAxes.ShiftX=Data.Civ2_U';
+    ViewData.PlotAxes.ShiftY=Data.Civ2_V';
+    ViewData.PlotAxes.Civ1_SubRange=Data.Civ1_SubRange;
+    ViewData.PlotAxes.Civ1_NbCentres=Data.Civ1_NbCentres;
+    ViewData.PlotAxes.Civ1_Coord_tps=Data.Civ1_Coord_tps;
+    ViewData.PlotAxes.Civ1_U_tps=Data.Civ1_U_tps;
+    ViewData.PlotAxes.Civ1_V_tps=Data.Civ1_V_tps;
+    ViewData.PlotAxes.Civ1_Dt=Data.Civ1_Dt;
+    set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
+    
+    %% look for a current figure for image correlation display
+    corrfig=findobj(allchild(0),'tag','corrfig');
     if isempty(corrfig)
         corrfig=figure;
         set(corrfig,'tag','corrfig')
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
-        % end
         set(handles.TestCiv1,'BackgroundColor',[1 0 0])
     else
         set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
@@ -1850,7 +1946,7 @@ if get(handles.TestCiv2,'Value')
         if ~isempty(hview_field)
             delete(hview_field)
         end
-    end
+    end   
 else
     hview_field=findobj(allchild(0),'Tag','view_field'); %view the image in the GUI view_field
     if ~isempty(hview_field)
@@ -2083,9 +2179,9 @@ function [Data,ImageName_B]=get_param_civ1(handles)
 %  par_civ1.ImageName_B=ImageName_B;
 
 %------------------------------------------------------------------------
-% --- Executes on button press in InportParam.
+% --- Executes on button press in ImportParam.
 %------------------------------------------------------------------------
-function InportParam_Callback(hObject, eventdata, handles)
+function ImportParam_Callback(hObject, eventdata, handles)
 hseries=findobj(allchild(0),'Tag','series');
 hhseries=guidata(hseries);
 InputTable=get(hhseries.InputTable,'Data');% read the input file(s) table in the GUI series
@@ -2115,9 +2211,9 @@ if ~isempty(filexml)
     if isfield(Param,'ActionInput')
         if isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'civ_series')
             fill_GUI(Param.ActionInput,handles.civ_input)% fill the elements of the GUI series with the input parameters
+            set(handles.ConfigSource,'String',filexml)
             check_input=1;
-            update_CivOptions(handles,0)
-                
+            update_CivOptions(handles,0)             
         end
     end
     if ~check_input
@@ -2137,5 +2233,10 @@ function keyboard_callback(hObject,eventdata,handles)
 ListExclude={'CheckCiv1','CheckFix1','CheckPatch1','CheckCiv2','CheckFix2','CheckPatch2','ref_i'};
 if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontrol is not in the Exclude list
     set(handles.ConfigSource,'String','NEW')% indicate that the configuration is new
-    set(handles.ConfigSource,'BackgroundColor',[1 0 1])%
+    set(handles.OK,'BackgroundColor',[1 0 1])%
+    drawnow
 end
+
+
+% --- Executes on button press in TestPatch2.
+function TestPatch2_Callback(hObject, eventdata, handles)

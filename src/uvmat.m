@@ -486,21 +486,30 @@ end
 function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
 drawnow
-RootPath=get(handles.RootPath,'String');
-if isempty(RootPath)
-    RootPath=get(handles.RootPath,'UserData');%use Rootpath recored from the personal file at uvmat opening
+[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+DataSeries=fullfile(RootPath,SubDir);
+if isempty(DataSeries) %loads the previously stored file name and set it as default in the file_input box
+    DataSeries=get(handles.RootPath,'UserData');
 end
-CampaignPath=fileparts(fileparts(RootPath));
-DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
-%DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
-if isempty(DirFull)
-    return
+% RootPath=get(handles.RootPath,'String');
+% if isempty(RootPath)
+%     RootPath=get(handles.RootPath,'UserData');%use Rootpath recored from the personal file at uvmat opening
+% end
+% CampaignPath=fileparts(fileparts(RootPath));
+% DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
+% %DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
+% if isempty(DirFull)
+%     return
+% end
+if isempty(DataSeries)||~ischar(DataSeries)
+    DataSeries=pwd;
 end
-OutPut=browse_data(DirFull,'on');% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(DataSeries,'on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
-fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
+DataSeries=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+fileinput=uigetfile_uvmat('pick an input file',DataSeries);
 hh=dir(fileinput);
 if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
@@ -510,10 +519,10 @@ end
 %% update the list of campaigns in the menubar
 MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
     {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
-check_dir=isempty(find(strcmp(DirFull,MenuCampaign)));
+check_dir=isempty(find(strcmp(DataSeries,MenuCampaign)));
 if check_dir %insert the new campaign in the list if it is not found
     MenuCampaign(end)=[]; %suppress the last item
-    MenuCampaign=[{DirFull};MenuCampaign];%insert the new campaign
+    MenuCampaign=[{DataSeries};MenuCampaign];%insert the new campaign
     for ilist=1:numel(MenuCampaign)
         set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
     end

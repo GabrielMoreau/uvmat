@@ -63,13 +63,13 @@ if ~isempty(huvmat)
     test_transform=~isequal(get(hhuvmat.TransformName,'Value'),1);
 end
 test_piv=0;
-if isfield(FigData,'CivHandle')
+if isfield(FigData,'CivHandle')% look for handle of the civ_input GUI
     if ~ishandle(FigData.CivHandle)
         delete(hObject)
         set(hCurrentFig,'Pointer','arrow');
         return
     end
-    hhciv=guidata(FigData.CivHandle);
+    hhciv=guidata(FigData.CivHandle);% list of handles in the GUI civ_input
     test_piv=1;
 end
 
@@ -235,23 +235,34 @@ if strcmp(htype,'axes')
             %                     end
             % case of PIV correlation display
             if test_piv
-                par=read_GUI(hhciv.Civ1);
-                [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
+               [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
+               if (isfield(hhciv,'TestCiv2')&& get(hhciv.TestCiv2,'Value'))% if TestCiv2 is activated
+                   CivOption='Civ2';
+                   Param.CheckCiv1=0;
+                   par_civ=read_GUI(hhciv.Civ2);%read the Civ2 panel in civ_input
+                   par_civ.Civ1_SubRange=Field.Civ1_SubRange;
+                   par_civ.Civ1_NbCentres=Field.Civ1_NbCentres;
+                   par_civ.Civ1_Coord_tps=Field.Civ1_Coord_tps;
+                   par_civ.Civ1_U_tps=Field.Civ1_U_tps;
+                   par_civ.Civ1_V_tps=Field.Civ1_V_tps;
+                   par_civ.Civ1_Dt=Field.Civ1_Dt;
+                   shiftx=Field.ShiftX(ind_pt);
+                   shifty=Field.ShiftY(ind_pt);
+               else
+                   CivOption='Civ1';
+                   Param.CheckCiv2=0;
+                   par_civ=read_GUI(hhciv.Civ1);%read the Civ1 panel in civ_input
+                   shiftx=par_civ.SearchBoxShift(1);
+                   shifty=par_civ.SearchBoxShift(2);
+               end
                 xround=Field.X(ind_pt);
                 yround=Field.Y(ind_pt);
-                par.Grid=[xround yround];
+                
                 % mark the correlation box with a rectangle
-                par.ImageA=Field.A;
-                par.ImageB=Field.B;
-                par.ImageHeight=size(par.ImageA,1);
-                par.ImageWidth=size(par.ImageA,2);
-                Param.ActionInput.Civ1=par;
-                ibx2=floor((par.CorrBoxSize(1)-1)/2);
-                iby2=floor((par.CorrBoxSize(2)-1)/2);
-                isx2=floor((par.SearchBoxSize(1)-1)/2);
-                isy2=floor((par.SearchBoxSize(2)-1)/2);
-                shiftx=par.SearchBoxShift(1);
-                shifty=par.SearchBoxShift(2);
+                ibx2=floor((par_civ.CorrBoxSize(1)-1)/2);
+                iby2=floor((par_civ.CorrBoxSize(2)-1)/2);
+                isx2=floor((par_civ.SearchBoxSize(1)-1)/2);
+                isy2=floor((par_civ.SearchBoxSize(2)-1)/2);
                 hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
                 hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
                 if isempty(hhh)
@@ -267,8 +278,37 @@ if strcmp(htype,'axes')
                     set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                     set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                 end
+                
+                % perform the PIV calculation as the single point xround yround
+                Param.CheckFix1=0;
+                Param.CheckPatch1=0;%desactivate all calculations except Civ2 or Civ1
                 Param.Action.RUN=1;
                 Param.ActionInput.ListCompareMode='PIV';
+                par_civ.ImageA=Field.A;
+                par_civ.ImageB=Field.B;
+                par_civ.ImageHeight=size(par_civ.ImageA,1);
+                par_civ.ImageWidth=size(par_civ.ImageA,2);
+                par_civ.Grid=[xround yround];% PIV calculation with a single point 
+                Param.ActionInput.(CivOption)=par_civ;
+                
+                %  .ImageA: first image for correlation (matrix)
+%  .ImageB: second image for correlation(matrix)
+%  .CorrBoxSize: 1,2 vector giving the size of the correlation box in x and y
+%  .SearchBoxSize:  1,2 vector giving the size of the search box in x and y
+%  .SearchBoxShift: 1,2 vector or 2 column matrix (for civ2) giving the shift of the search box in x and y
+%  .CorrSmooth: =1 or 2 determines the choice of the sub-pixel determination of the correlation max
+%  .ImageWidth: nb of pixels of the image in x
+%  .Dx, Dy: mesh for the PIV calculation
+%  .Grid: grid giving the PIV calculation points (alternative to .Dx .Dy)
+%  .Mask: name of a mask file or mask image matrix itself
+%  .MinIma: thresholds for image luminosity
+%  .MaxIma
+%  .CheckDeformation=1 for subpixel interpolation and image deformation (linear transform)
+%  .DUDX: matrix of deformation obtained from patch at each grid point
+%  .DUDY
+%  .DVDX:
+%  .DVDY
+                
                 [Data,errormsg,result_conv]= civ_series(Param);
                 if ~isempty(errormsg)
                     text_displ_5=errormsg;

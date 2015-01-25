@@ -23,7 +23,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 11-Mar-2014 22:09:37
+% Last Modified by GUIDE v2.5 24-Jan-2015 16:55:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,7 +46,7 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
-function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign,EnableMirror)
+function browse_data_OpeningFcn(hObject, eventdata, handles, DataSeries,EnableMirror)
 %------------------------------------------------------------------------
 
 %% Choose default command line output for browse_data
@@ -79,37 +79,46 @@ else
     set(handles.CreateMirror,'Visible','off')
     set(handles.mirror_txt,'Visible','off')
 end
-if exist('Campaign','var')
-    [tild,CampaignName]=fileparts(Campaign);
-    RootXml=fullfile(Campaign,[CampaignName '.xml']);
-    s=[];
-    if exist(RootXml,'file') 
-        [s,Heading]=xml2struct(RootXml);%read the xml file
-        if isfield(s,'SourceDir')
-            set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
-            set(handles.MirrorDir,'Visible','on');%  mirror dir display
-            set(handles.MirrorDir,'String',Campaign);%display the opened mirror dir
-            set(handles.CreateMirror,'String','update_mirror')
-        end
-    end
-    if isempty(s) %a source dir has been opened
-        set(handles.SourceDir,'String',Campaign);
-        set(handles.MirrorDir,'Visible','off');% no mirror dir display
-        set(handles.CreateMirror,'String','create_mirror')
-    end
-    errormsg=scan_campaign(handles,Campaign);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',errormsg)
-        return
-    end
-    set(handles.OK,'Visible','on')
-    set(handles.Cancel,'Visible','on')
-    set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal
-    set(hObject,'Visible','on')
-    drawnow
-    % UIWAIT makes GUI wait for user response (see UIRESUME)
-    uiwait(handles.browse_data);
+
+%% initialize the GUI
+if ~(exist('DataSeries','var') && exist(DataSeries,'dir'))
+    DataSeries=pwd;% current dir is the starting data series by default
 end
+[Experiment,DataSeries,Ext]=fileparts(DataSeries);
+DataSeries=[DataSeries Ext];
+[Campaign,Experiment,Ext]=fileparts(Experiment);
+Experiment=[Experiment Ext];
+[tild,CampaignName]=fileparts(Campaign);
+RootXml=fullfile(Campaign,[CampaignName '.xml']);
+s=[];
+if exist(RootXml,'file')
+    [s,Heading]=xml2struct(RootXml);%read the xml file
+    if isfield(s,'SourceDir')
+        set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
+        set(handles.MirrorDir,'Visible','on');%  mirror dir display
+        set(handles.MirrorDir,'String',Campaign);%display the opened mirror dir
+        set(handles.CreateMirror,'String','update_mirror')
+    end
+end
+if isempty(s) %a source dir has been opened
+    set(handles.SourceDir,'String',Campaign);
+    set(handles.MirrorDir,'Visible','off');% no mirror dir display
+    set(handles.CreateMirror,'String','create_mirror')
+end
+errormsg=scan_campaign(handles,Campaign,Experiment,DataSeries);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+set(handles.OK,'Visible','on')
+set(handles.Cancel,'Visible','on')
+
+set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal
+set(hObject,'Visible','on')
+drawnow
+% UIWAIT makes GUI wait for user response (see UIRESUME)
+uiwait(handles.browse_data);
+
 
 
 %------------------------------------------------------------------------
@@ -189,15 +198,11 @@ else
 end
 set(handles.SourceDir,'BackgroundColor',[1 1 1])
 
-
 %------------------------------------------------------------------------
-function errormsg=scan_campaign(handles,Campaign)
+% List the experiments in a campaign, filling the menu ListExperiments
 %------------------------------------------------------------------------
-%set(handles.SourceDir,'BackgroundColor',[1 1 0])
-%drawnow
-%SourceDir=get(handles.SourceDir,'String');
-%MirrorDir=get(handles.MirrorDir,'String');
-% ExpName={''};
+function errormsg=scan_campaign(handles,Campaign,Experiment,DataSeries)
+%------------------------------------------------------------------------
 errormsg='';
 if exist(Campaign,'dir')
     ListStruct=dir(Campaign); %list files and dirs
@@ -212,14 +217,22 @@ if exist(Campaign,'dir')
     cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
     check_keep=cellfun('isempty', cell_remove);
     ListFiles=sort((ListFiles(check_keep))');
+    index=find(strcmp(['+/' Experiment],ListFiles));
+    if isempty(index), index=0; end
     set(handles.ListExperiments,'String',[{'*'};ListFiles])
-    set(handles.ListExperiments,'Value',1)
+    set(handles.ListExperiments,'Value',index+1)% initialise the menu selection with the folder defined by the input
     ListExperiments_Callback([],[], handles)
+    ListDevices=get(handles.ListDevices,'String');
+    index=find(strcmp(['+/' DataSeries],ListDevices));
+    if isempty(index)
+        index=find(strcmp(['~/' DataSeries],ListDevices));
+    end
+    if ~isempty(index)
+          set(handles.ListDevices,'Value',index)
+    end
 else
     msgbox_uvmat('ERROR',['The input ' Campaign ' is not a directory'])
 end
-%set(handles.SourceDir,'BackgroundColor',[1 1 1])
-
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListExperiments.
@@ -667,5 +680,10 @@ if isequal(get(hObject,'CurrentKey'),'return')
 end 
 
 
-% --- Executes during object deletion, before destroying properties.
-function browse_data_DeleteFcn(hObject, eventdata, handles)
+% --- Executes on button press in Browse.
+function Browse_Callback(hObject, eventdata, handles)
+ListDevices=get(handles.ListDevices,'String');
+Device=ListDevices{get(handles.ListDevices,'Value')};
+DataSeries=uigetfile_uvmat('open a data folder',Device,'uigetdir');
+uiresume(handles.browse_data);
+browse_data(DataSeries)

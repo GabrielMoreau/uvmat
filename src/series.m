@@ -428,20 +428,63 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- fct activated by the browser under 'Open campaign'
+% --- fct activated by the browser under 'Open campaign/Browse...'
 %------------------------------------------------------------------------ 
 function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 
+%% look for the previously opened file 'oldfile'
+InputTable=get(handles.InputTable,'Data');
+RootPathCell=InputTable(:,1);
+SubDirCell=InputTable(:,2);
+oldfile=fullfile(RootPathCell{1},SubDirCell{1});
+if isempty(oldfile)
+    % use a file name stored in prefdir
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
+    end
+end
+%% launch the browser
+fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+else
+    if ~isempty(fileinput)
+        display_file_name(handles,fileinput,'one')
+    end
+end
+append='one';
 set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
 drawnow
-InputTable=get(handles.InputTable,'Data');
-RootPath=InputTable{1,1};
-CampaignPath=fileparts(fileparts(RootPath));
-DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
-if ~ischar(DirFull)|| ~exist(DirFull,'dir')
-    return
-end
-OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+browse_campaign(handles,append);
+
+%------------------------------------------------------------------------
+% --- fct activated by the browser under 'Open campaign/Browse...'
+%------------------------------------------------------------------------ 
+function MenuBrowseCampaignAppend_Callback(hObject, eventdata, handles)
+append='append';
+browse_campaign(handles,append);
+
+%------------------------------------------------------------------------
+function browse_campaign(handles,append);
+
+%% look for the previously opened file 'oldfile'
+
+% 
+% 
+% InputTable=get(handles.InputTable,'Data');
+% RootPath=InputTable{1,1};
+% CampaignPath=fileparts(fileparts(RootPath));
+% DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
+% if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+%     return
+% end
+OutPut=browse_data(oldfile);% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
@@ -467,10 +510,10 @@ end
 %% update the list of campaigns in the menubar
 MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
     {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
-check_dir=isempty(find(strcmp(DirFull,MenuCampaign)));
+check_dir=isempty(find(strcmp(DirName,MenuCampaign)));
 if check_dir %insert the new campaign in the list if it is not found
     MenuCampaign(end)=[]; %suppress the last item
-    MenuCampaign=[{DirFull};MenuCampaign];%insert the new campaign
+    MenuCampaign=[{DirName};MenuCampaign];%insert the new campaign
     for ilist=1:numel(MenuCampaign)
         set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
     end
@@ -478,9 +521,9 @@ if check_dir %insert the new campaign in the list if it is not found
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
     if exist(profil_perso,'file')
-        save (profil_perso,'MenuCampaign','RootPath','-append'); %store the file names for future opening of uvmat
+        save (profil_perso,'MenuCampaign','-append'); %store the file names for future opening of uvmat
     else
-        save (profil_perso,'MenuCampaign','RootPath','-V6'); %store the file names for future opening of uvmat
+        save (profil_perso,'MenuCampaign','-V6'); %store the file names for future opening of uvmat
     end
 end
 
@@ -1954,7 +1997,7 @@ if ~isequal(ActionPath,path_series)
         rmpath(ActionPath)% add the prescribed path if not the current one    
 end
 
-%% Activate the Action fct
+%% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles);% read the parameters from the GUI series
 ParamOut=h_fun(Param);%run the selected Action function to get the relevant input
 
