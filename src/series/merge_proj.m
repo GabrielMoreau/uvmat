@@ -248,6 +248,10 @@ for index=1:NbField
             disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
         end
+        ListVar=Data{iview}.ListVarName;
+        for ilist=1:numel(ListVar)
+            Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
+        end
         % get the time defined in the current file if not already defined from the xml file
         if ~isempty(time) && isfield(Data{iview},'Time')
             timeread(iview)=Data{iview}.Time;
@@ -443,7 +447,8 @@ for icell=1:length(CellInfo)
                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
                             return
-                        else                     
+                        else      
+                         
                             MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);%add data
                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
                         end

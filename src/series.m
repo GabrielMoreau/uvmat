@@ -2261,7 +2261,7 @@ switch OutputSubDirMode
         SubDirOut=SubDir{1};
         if numel(SubDir)>1
             for ilist=2:numel(SubDir)
-                SubDirOut=[SubDirOut '-' SubDir{ilist}];
+                SubDirOut=[SubDirOut '-' regexprep(SubDir{ilist},'^/','')];
             end
         end
     case 'first'
