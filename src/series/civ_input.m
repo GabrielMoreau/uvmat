@@ -1887,6 +1887,7 @@ if get(handles.TestCiv2,'Value')
      Param.ActionInput=read_GUI(handles.civ_input);
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
      Param.ActionInput.Civ2.SmoothParam=0;% launch Civ2 with no data point (to get the image names for A and B)
+     set(handles.Civ1,'BackgroundColor',[1 1 0])
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
      
      %% create image data ImageData for display
@@ -1903,6 +1904,7 @@ if get(handles.TestCiv2,'Value')
      %% create the figure view_field for image visualization
     hview_field=view_field(ImageData); %view the image in the GUI view_field 
     set(0,'CurrentFigure',hview_field)
+    % plot the boundaries of the subdomains used for patch
     RectCentre=squeeze(mean(Data.Civ1_SubRange,2));
     for isub=1:size(Data.Civ1_SubRange,3);
         pos_x=Data.Civ1_SubRange(1,1,isub);
@@ -1911,9 +1913,10 @@ if get(handles.TestCiv2,'Value')
         height=Data.Civ1_SubRange(2,2,isub)-Data.Civ1_SubRange(2,1,isub);
         rectangle('Position',[pos_x pos_y width height],'EdgeColor',[0 0 1])
     end
-    hhview_field=guihandles(hview_field);
+    hhview_field=guihandles(hview_field);%
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
-    ViewData=get(hview_field,'UserData');
+    %ViewData=get(hview_field,'UserData'); 
+    % store info in the UserData of view-field
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
     ViewData.PlotAxes.B=imread(Data.Civ2_ImageB);%store the second image in the UserData of the GUI view_field
     ViewData.PlotAxes.X=Data.Civ2_X';
@@ -1926,6 +1929,7 @@ if get(handles.TestCiv2,'Value')
     ViewData.PlotAxes.Civ1_U_tps=Data.Civ1_U_tps;
     ViewData.PlotAxes.Civ1_V_tps=Data.Civ1_V_tps;
     ViewData.PlotAxes.Civ1_Dt=Data.Civ1_Dt;
+    ViewData.PlotAxes.Civ2_Dt=Data.Civ2_Dt;
     set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
     
     %% look for a current figure for image correlation display

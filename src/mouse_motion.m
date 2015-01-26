@@ -246,6 +246,7 @@ if strcmp(htype,'axes')
                    par_civ.Civ1_U_tps=Field.Civ1_U_tps;
                    par_civ.Civ1_V_tps=Field.Civ1_V_tps;
                    par_civ.Civ1_Dt=Field.Civ1_Dt;
+                   par_civ.Civ2_Dt=Field.Civ2_Dt;
                    shiftx=Field.ShiftX(ind_pt);
                    shifty=Field.ShiftY(ind_pt);
                else
@@ -289,26 +290,7 @@ if strcmp(htype,'axes')
                 par_civ.ImageHeight=size(par_civ.ImageA,1);
                 par_civ.ImageWidth=size(par_civ.ImageA,2);
                 par_civ.Grid=[xround yround];% PIV calculation with a single point 
-                Param.ActionInput.(CivOption)=par_civ;
-                
-                %  .ImageA: first image for correlation (matrix)
-%  .ImageB: second image for correlation(matrix)
-%  .CorrBoxSize: 1,2 vector giving the size of the correlation box in x and y
-%  .SearchBoxSize:  1,2 vector giving the size of the search box in x and y
-%  .SearchBoxShift: 1,2 vector or 2 column matrix (for civ2) giving the shift of the search box in x and y
-%  .CorrSmooth: =1 or 2 determines the choice of the sub-pixel determination of the correlation max
-%  .ImageWidth: nb of pixels of the image in x
-%  .Dx, Dy: mesh for the PIV calculation
-%  .Grid: grid giving the PIV calculation points (alternative to .Dx .Dy)
-%  .Mask: name of a mask file or mask image matrix itself
-%  .MinIma: thresholds for image luminosity
-%  .MaxIma
-%  .CheckDeformation=1 for subpixel interpolation and image deformation (linear transform)
-%  .DUDX: matrix of deformation obtained from patch at each grid point
-%  .DUDY
-%  .DVDX:
-%  .DVDY
-                
+                Param.ActionInput.(CivOption)=par_civ;      
                 [Data,errormsg,result_conv]= civ_series(Param);
                 if ~isempty(errormsg)
                     text_displ_5=errormsg;
@@ -329,8 +311,8 @@ if strcmp(htype,'axes')
                         if ~isempty(corrfig)
                             set(0,'CurrentFigure',corrfig(1))
                             AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
-                            AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
-                            AxeData.TitleHandle=title(num2str(par.Grid));
+                            AxeData.CurrentVector=line([0 Data.([CivOption '_U'])],[0 Data.([CivOption '_V'])],'Tag','vector');
+                            AxeData.TitleHandle=title(num2str(par_civ.Grid));
                             colorbar
                             set(CurrentAxes,'UserData',AxeData)
                             set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
@@ -339,8 +321,8 @@ if strcmp(htype,'axes')
                         set(AxeData.CurrentCorrImage,'CData',result_conv)
                         set(AxeData.CurrentCorrImage,'XData',rangx)
                         set(AxeData.CurrentCorrImage,'YData',-rangy)
-                        set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
-                        set(AxeData.TitleHandle,'String',num2str(par.Grid))
+                        set(AxeData.CurrentVector,'XData',[0 Data.([CivOption '_U'])],'YData',[0 Data.([CivOption '_V'])]);
+                        set(AxeData.TitleHandle,'String',num2str(par_civ.Grid))
                     end
                 end
             end

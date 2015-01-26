@@ -670,6 +670,7 @@ for ifield=1:NbField
             U_tps=par_civ2.Civ1_U_tps;
             V_tps=par_civ2.Civ1_V_tps;
             Civ1_Dt=par_civ2.Civ1_Dt;
+            Civ2_Dt=par_civ2.Civ1_Dt;
                          Data.ListVarName={};
                 Data.VarDimName={};
         end
@@ -708,13 +709,13 @@ for ifield=1:NbField
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-        if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Civ1_Dt=1;
-            Civ2_Dt=1;
-        elseif exist('time','var')
-            Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
-        else 
-            Civ2_Dt=1;%TO CHECK, TEST
+        if CheckInputFile % else Dt given by par_civ2
+            if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+                Civ1_Dt=1;
+                Civ2_Dt=1;
+            else
+                Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+            end
         end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
@@ -724,6 +725,7 @@ for ifield=1:NbField
             par_civ2.DVDX=DVDX./nbval;
             par_civ2.DVDY=DVDY./nbval;
         end
+        par_civ2
         % calculate velocity data (y and v in indices, reverse to y component)
         [xtable, ytable, utable, vtable, ctable, F,result_conv,errormsg] = civ (par_civ2);
         
