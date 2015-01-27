@@ -1148,6 +1148,11 @@ set(handles.configSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 
+% --- Executes on button press in CheckDeformation.
+function CheckDeformation_Callback(hObject, eventdata, handles)
+set(handles.configSource,'String','NEW')
+set(handles.OK,'BackgroundColor',[1 0 1])
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Callbacks in the uipanel Fix1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1885,9 +1890,13 @@ if get(handles.TestCiv2,'Value')
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param,'OutputSubDir')
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
-     Param.ActionInput.Civ2.SmoothParam=0;% launch Civ2 with no data point (to get the image names for A and B)
+     end
+     Param.ActionInput.Civ2.CorrSmooth=0;% launch Civ2 with no data point (to get the image names for A and B)
      set(handles.Civ1,'BackgroundColor',[1 1 0])
+     set(handles.Fix1,'BackgroundColor',[1 1 0])
+     set(handles.Patch1,'BackgroundColor',[1 1 0])
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
      
      %% create image data ImageData for display
@@ -1915,13 +1924,13 @@ if get(handles.TestCiv2,'Value')
     end
     hhview_field=guihandles(hview_field);%
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
-    %ViewData=get(hview_field,'UserData'); 
+    ViewData=get(hview_field,'UserData'); % get the currently plotted field (the image A)
     % store info in the UserData of view-field
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
     ViewData.PlotAxes.B=imread(Data.Civ2_ImageB);%store the second image in the UserData of the GUI view_field
     ViewData.PlotAxes.X=Data.Civ2_X';
     ViewData.PlotAxes.Y=Data.Civ2_Y';
-    ViewData.PlotAxes.ShiftX=Data.Civ2_U';
+    ViewData.PlotAxes.ShiftX=Data.Civ2_U';% shift at each point (from patch1) estimated by running civ2 
     ViewData.PlotAxes.ShiftY=Data.Civ2_V';
     ViewData.PlotAxes.Civ1_SubRange=Data.Civ1_SubRange;
     ViewData.PlotAxes.Civ1_NbCentres=Data.Civ1_NbCentres;
@@ -1931,6 +1940,11 @@ if get(handles.TestCiv2,'Value')
     ViewData.PlotAxes.Civ1_Dt=Data.Civ1_Dt;
     ViewData.PlotAxes.Civ2_Dt=Data.Civ2_Dt;
     set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
+    bckcolor=get(handles.civ_input,'Color');
+    set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calmculation is finished
+    set(handles.Fix1,'BackgroundColor',bckcolor)
+    set(handles.Patch1,'BackgroundColor',bckcolor)
+    drawnow
     
     %% look for a current figure for image correlation display
     corrfig=findobj(allchild(0),'tag','corrfig');
@@ -2244,3 +2258,6 @@ end
 
 % --- Executes on button press in TestPatch2.
 function TestPatch2_Callback(hObject, eventdata, handles)
+
+
+

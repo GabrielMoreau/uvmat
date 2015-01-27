@@ -72,7 +72,6 @@ if isfield(FigData,'CivHandle')% look for handle of the civ_input GUI
     hhciv=guidata(FigData.CivHandle);% list of handles in the GUI civ_input
     test_piv=1;
 end
-
 %find the current axe 'CurrentAxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
 text_displ_2='';
@@ -125,10 +124,10 @@ if strcmp(htype,'axes')
         pointershape='fullcross';%set pointer with large cross (default when mouse is over an axis)
         end
     end
-    FigData=get(hCurrentFig,'UserData');
-    tagaxes=get(CurrentAxes,'tag');
+    FigData=get(hCurrentFig,'UserData'); % user data of the current figure
+    tagaxes=get(CurrentAxes,'tag'); % tag name of the current axes, for instance PlotAxes
     if isfield(FigData,tagaxes)
-        Field=FigData.(tagaxes);
+        Field=FigData.(tagaxes); % the current field is sought as substructure of FigData with key tagaxes
         if isfield(Field,'ListVarName')
             [CellInfo,NbDimArray]=find_field_cells(Field);%analyse the physical fields contained in Field
             text_displ_1='';
@@ -226,13 +225,9 @@ if strcmp(htype,'axes')
                     pos=[xy(1,1) xy(1,2) 0];
                     pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
                 end
-               % pos=pos+[Field.ProjObjectCoord 0];
                pos=pos+Field.ProjObjectCoord;
                 text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
             end
-            %                     if ~isempty(z)
-            %                         text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
-            %                     end
             % case of PIV correlation display
             if test_piv
                [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
@@ -259,7 +254,7 @@ if strcmp(htype,'axes')
                 xround=Field.X(ind_pt);
                 yround=Field.Y(ind_pt);
                 
-                % mark the correlation box with a rectangle
+                % mark the correlation box with a rectangle in view_field
                 ibx2=floor((par_civ.CorrBoxSize(1)-1)/2);
                 iby2=floor((par_civ.CorrBoxSize(2)-1)/2);
                 isx2=floor((par_civ.SearchBoxSize(1)-1)/2);
