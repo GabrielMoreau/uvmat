@@ -419,25 +419,6 @@ Param.Patch2.TestPatch2=0;
 
 fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
 
-%update_CivOptions(handles,0)
-%set(handles.ConfigSource,'String','\default')
-
-% %Param=read_GUI(handles.civ_input)
-% hseries=findobj(allchild(0),'Name','series');% look for the GUI series
-% hhseries=guidata(hseries);%handles of elements in the GUI series
-% SeriesData=get(hseries,'UserData');%read parameters on the GUI series
-% if isfield (SeriesData,'ActionInput')
-%     SeriesData=rmfield(SeriesData,'ActionInput');% remove recorded civ parameters
-% end
-% set(hseries,'UserData',SeriesData)
-% %% exit the GUI and close it
-% %handles.output.ActionInput=rmfield(ActionInput;
-% guidata(hObject, handles);% Update handles structure
-% uiresume(handles.civ_input);
-% set(hhseries.ActionName,'BusyAction','cancel')
-% series('ActionName_Callback',hObject,eventdata,hhseries); %
-
-
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
 % --- Open the help html file 
@@ -1764,34 +1745,39 @@ drawnow
 if get(handles.TestCiv1,'Value')
     set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch  
     %Param.Action.RUN=1;
-    Param.ActionInput=read_GUI(handles.civ_input);
-    par_civ=Param.ActionInput.Civ1;
-    [Data,ImageName_B]=get_param_civ1(handles);
-
-    %% create the figure view_field for image visualization
-    hview_field=view_field(Data); %view the image in the GUI view_field 
-    set(0,'CurrentFigure',hview_field)
-    hhview_field=guihandles(hview_field);
-    set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
-    ViewData=get(hview_field,'UserData');
-    ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-    ViewData.PlotAxes.B=imread(ImageName_B);%store the second image in the UserData of the GUI view_field
     
-    %% prepare measurement grid
-    if isfield(par_civ,'Grid')% grid points set as input
-            par_civ.Grid=dlmread(par_civ.Grid);
-            par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
-    else% automatic grid
-        minix=floor(par_civ.Dx/2)-0.5;
-        maxix=minix+par_civ.Dx*floor((size(Data.A,2)-1)/par_civ.Dx);
-        miniy=floor(par_civ.Dy/2)-0.5;
-        maxiy=minix+par_civ.Dy*floor((size(Data.A,1)-1)/par_civ.Dy);
-        [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
-        ViewData.PlotAxes.X=reshape(GridX,[],1);
-        ViewData.PlotAxes.Y=reshape(GridY,[],1);
-    end
+      hseries=findobj(allchild(0),'Tag','series');
+     Param=read_GUI(hseries);
+     Param.Action.RUN=1;
+     Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param,'OutputSubDir')
+     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     end
+     Param.ActionInput.Civ1.CorrSmooth=0;% launch Civ1 with no data point (to get the image names for A and B)
+     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results 
+    
+ %% create image data ImageData for display
+     ImageData.ListVarName={'ny','nx','A'};
+     ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
+     ImageData.A=imread(Data.Civ1_ImageA); % read the first image
+     if ndims(ImageData.A)==3 %case of color image
+         ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
+     end
+     ImageData.ny=[size(ImageData.A,1) 1];
+     ImageData.nx=[1 size(ImageData.A,2)];
+     ImageData.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly 
 
-    set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
+     %% create the figure view_field for image visualization
+     hview_field=view_field(ImageData); %view the image in the GUI view_field 
+     set(0,'CurrentFigure',hview_field)
+     hhview_field=guihandles(hview_field);
+     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
+     ViewData=get(hview_field,'UserData');
+     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
+     ViewData.PlotAxes.X=Data.Civ1_X';
+     ViewData.PlotAxes.Y=Data.Civ1_Y';
+     ViewData.PlotAxes.B=imread(Data.Civ1_ImageB);%store the second image in the UserData of the GUI view_field
+     set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
     
     %% look for a current figure for image correlation display
     corrfig=findobj(allchild(0),'tag','corrfig');
@@ -1825,13 +1811,20 @@ end
 function TestPatch1_Callback(hObject, eventdata, handles)
 
 if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
-     set(handles.TestPatch1,'BackgroundColor',[1 1 0])%paint TestPatch1 button in yellow to induicate activation
+     set(handles.TestPatch1,'BackgroundColor',[1 1 0])%paint TestPatch1 button in yellow to indicate activation
+     set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is performed
      hseries=findobj(allchild(0),'Tag','series');
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param,'OutputSubDir')
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     end
+     ParamPatch1=Param.ActionInput.Patch1; %store the patch1 parameters
+     Param.ActionInput=rmfield(Param.ActionInput,'Patch1');% does not execute Patch
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+     bckcolor=get(handles.civ_input,'Color');
+     set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
      
      %% prepare Param for iterative Patch processing without input file reading
      Param.Civ1_X=Data.Civ1_X;
@@ -1846,8 +1839,11 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
     if isfield(Param.ActionInput,'Fix1')
         Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
     end
-    SmoothingParam=(Param.ActionInput.Patch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
+    SmoothingParam=(ParamPatch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
     NbGood=numel(find(Data.Civ1_FF==0));
+    NbExclude=zeros(1,7);% initialize the set of smoothing parameters
+    DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
+    Param.ActionInput.Patch1=ParamPatch1;% retrieve Patch1 parameters
     for irho=1:7
         Param.ActionInput.Patch1.FieldSmooth=SmoothingParam(irho);
         [Data,errormsg]= civ_series(Param);%apply the processing fct
@@ -1861,13 +1857,14 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
         DiffVel(irho)=sqrt(mean(Civ1_U_Diff.*Civ1_U_Diff+Civ1_V_Diff.*Civ1_V_Diff));
         NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
     end
-    figure
+    figure(1)
+    hold on
     semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r')
     grid on
     legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)')
     xlabel('smoothing parameter')
     ylabel('smoothing effect')
-    set(handles.TestPatch1,'BackgroundColor',[1 0 0])
+    set(handles.TestPatch1,'BackgroundColor',[0 1 0])
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if ~isempty(corrfig)
@@ -1914,7 +1911,6 @@ if get(handles.TestCiv2,'Value')
     hview_field=view_field(ImageData); %view the image in the GUI view_field 
     set(0,'CurrentFigure',hview_field)
     % plot the boundaries of the subdomains used for patch
-    RectCentre=squeeze(mean(Data.Civ1_SubRange,2));
     for isub=1:size(Data.Civ1_SubRange,3);
         pos_x=Data.Civ1_SubRange(1,1,isub);
         pos_y=Data.Civ1_SubRange(2,1,isub);
@@ -1972,6 +1968,92 @@ else
     end      
 end
 
+
+% --- Executes on button press in TestPatch2.
+function TestPatch2_Callback(hObject, eventdata, handles)
+if get(handles.TestPatch2,'Value')% if TestPatch2 is activated
+     set(handles.TestPatch2,'BackgroundColor',[1 1 0])%paint TestPatch2 button in yellow to indicate activation
+     set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is activated
+     set(handles.Fix1,'BackgroundColor',[1 1 0])% indicate fix1 calculation is activated
+     set(handles.Patch1,'BackgroundColor',[1 1 0])% indicate Patch1 calculation is activated
+     set(handles.Civ2,'BackgroundColor',[1 1 0])% indicate civ2 calculation is activated
+     set(handles.Fix2,'BackgroundColor',[1 1 0])% indicate fix2 calculation is activated
+     hseries=findobj(allchild(0),'Tag','series');
+     Param=read_GUI(hseries);
+     Param.Action.RUN=1;
+     Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param,'OutputSubDir')
+     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     end
+     ParamPatch2=Param.ActionInput.Patch2; %store the patch1 parameters
+     Param.ActionInput=rmfield(Param.ActionInput,'Patch2');% does not execute Patch
+     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+     bckcolor=get(handles.civ_input,'Color');
+     set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
+     set(handles.Fix1,'BackgroundColor',bckcolor)% indicate fix1 calculation is finished
+     set(handles.Patch1,'BackgroundColor',bckcolor)% indicate Patch1 calculation is finished
+     set(handles.Civ2,'BackgroundColor',bckcolor)% indicate civ2 calculation is finished
+     set(handles.Fix2,'BackgroundColor',bckcolor)% indicate fix2 calculation is finished
+     
+     %% prepare Param for iterative Patch processing without input file reading
+     Param.Civ2_X=Data.Civ2_X;
+     Param.Civ2_Y=Data.Civ2_Y;
+     Param.Civ2_U=Data.Civ2_U;
+     Param.Civ2_V=Data.Civ2_V;
+     Param.Civ2_FF=Data.Civ2_FF;
+     Param=rmfield(Param,'InputTable');%desactivate input file reading
+    if isfield(Param.ActionInput,'Civ1')
+        Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
+    end
+    if isfield(Param.ActionInput,'Fix1')
+        Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
+    end
+    if isfield(Param.ActionInput,'Patch1')
+        Param.ActionInput=rmfield(Param.ActionInput,'Patch1');%desactivate fix1:remove fix1 input param if relevant
+    end
+    if isfield(Param.ActionInput,'Civ2')
+        Param.ActionInput=rmfield(Param.ActionInput,'Civ2');%desactivate civ2: remove civ2 input param if relevant
+    end
+    if isfield(Param.ActionInput,'Fix2')
+        Param.ActionInput=rmfield(Param.ActionInput,'Fix2');%desactivate fix1:remove fix1 input param if relevant
+    end
+    SmoothingParam=(ParamPatch2.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
+    NbGood=numel(find(Data.Civ2_FF==0));
+    NbExclude=zeros(1,7);% initialize the set of smoothing parameters
+    DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
+    Param.ActionInput.Patch2=ParamPatch2;% retrieve Patch2 parameters
+    for irho=1:7
+        Param.ActionInput.Patch2.FieldSmooth=SmoothingParam(irho);
+        [Data,errormsg]= civ_series(Param);%apply the processing fct
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',errormsg)
+            return
+        end
+        ind_good=find(Data.Civ2_FF==0);
+        Civ2_U_Diff=Data.Civ2_U(ind_good)-Data.Civ2_U_smooth(ind_good);
+        Civ2_V_Diff=Data.Civ2_V(ind_good)-Data.Civ2_V_smooth(ind_good);
+        DiffVel(irho)=sqrt(mean(Civ2_U_Diff.*Civ2_U_Diff+Civ2_V_Diff.*Civ2_V_Diff));
+        NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
+    end
+    figure(1)
+    hold on
+    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r')
+    grid on
+    legend('rms velocity diff. Patch2-Civ2 (pixels)','proportion of excluded vectors (between 0 to 1)')
+    xlabel('smoothing parameter')
+    ylabel('smoothing effect')
+    set(handles.TestPatch2,'BackgroundColor',[0 1 0])
+else
+    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    if ~isempty(corrfig)
+        delete(corrfig)
+    end
+    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
+end
+    
 
 %'nomtype2pair': creates nomencalture for index pairs knowing the image nomenclature
 %---------------------------------------------------------------------
@@ -2136,66 +2218,6 @@ for ilist=1:numel(ListParamString)
     end
 end
 
-
-%------------------------------------------------------------------------
-function [Data,ImageName_B]=get_param_civ1(handles)
-
- ref_i=str2double(get(handles.ref_i,'String'));% read reference i index
- if strcmp(get(handles.ref_j,'Visible'),'on')
-     ref_j=str2double(get(handles.ref_j,'String'));% read reference j index if relevant
- else
-     ref_j=1;%default j index
- end
- Data.ListVarName={'ny','nx','A'};
- Data.VarDimName= {'ny','nx',{'ny','nx'}};
- hseries=findobj(allchild(0),'Tag','series');
- hhseries=guidata(hseries);
- InputTable=get(hhseries.InputTable,'Data');
- ind_A=1;
- if strcmp(InputTable{1,5},'.nc');
-     ind_A=2;
- end
- list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
- PairString=list_pair{get(handles.ListPairCiv1,'Value')};
- [ind1,ind2,mode]=find_pair_indices(PairString,ref_i,ref_j);%,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
- switch mode
-     case 'Di'
-         i1=ref_i-ind1;
-         i2=ref_i+ind2;
-         j1=ref_j;
-         j2=ref_j;
-     case 'Dj'
-         i1=ref_i;
-         i2=ref_i;
-         j1=ref_j-ind1;
-         j2=ref_j+ind2;
-     case 'burst'
-         i1=ref_i;
-         i2=ref_i;
-         j1=ind1;
-         j2=ind2;
- end
- ImageName_A=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
-     i1,[],j1);
- ImageName_B=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
-     i2,[],j2);
- Data.A=imread(ImageName_A); % read the first image
- if ndims(Data.A)==3 %case of color image
-     Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
- end
- Data.ny=[size(Data.A,1) 1];
- Data.nx=[1 size(Data.A,2)];
- Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly
-%  par_civ1=read_GUI(handles.Civ1);
-% FileInfo=get_file_info(ImageName_A);
-%  par_civ1.FileTypeA=FileInfo.FileType;
-%  par_civ1.ImageWidth=size(Data.A,2);
-%  par_civ1.ImageHeight=size(Data.A,1);
-%  par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
-%  par_civ1.FrameIndexA=num2str(i1);
-%  par_civ1.FrameIndexB=num2str(i2);
-%  par_civ1.ImageName_B=ImageName_B;
-
 %------------------------------------------------------------------------
 % --- Executes on button press in ImportParam.
 %------------------------------------------------------------------------
@@ -2242,7 +2264,8 @@ end
 
 % --- Executes on selection change in CheckCiv3.
 function CheckCiv3_Callback(hObject, eventdata, handles)
-    
+
+
 %------------------------------------------------------------------------
 % --- Executes on key press with selection of a uicontrol
 %------------------------------------------------------------------------
@@ -2256,8 +2279,7 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
 end
 
 
-% --- Executes on button press in TestPatch2.
-function TestPatch2_Callback(hObject, eventdata, handles)
+
 
 
 

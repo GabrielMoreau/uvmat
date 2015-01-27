@@ -736,6 +736,24 @@ for ifield=1:NbField
         Data.Civ2_V=reshape(-vtable,[],1);
         Data.Civ2_C=reshape(ctable,[],1);
         Data.Civ2_F=reshape(F,[],1);
+    elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
+        if exist('ncfile','var')
+            CivFile=ncfile;
+            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end         
+        elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
+            Data.ListGlobalAttribute={};
+            Data.ListVarName={};
+            Data.VarDimName={};
+            Data.Civ2_X=Param.Civ2_X;
+            Data.Civ2_Y=Param.Civ2_Y;
+            Data.Civ2_U=Param.Civ2_U;
+            Data.Civ2_V=Param.Civ2_V;
+            Data.Civ2_FF=Param.Civ2_FF;
+        end
     end
     
     %% Fix2
@@ -785,11 +803,6 @@ for ifield=1:NbField
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch2_param];
         
-        
-        %         Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch2_FieldSmooth','Patch2_MaxDiff','Patch2_SubDomainSize'}];
-        %         Data.Patch2_FieldSmooth=Param.ActionInput.Patch2.FieldSmooth;
-        %         Data.Patch2_MaxDiff=Param.ActionInput.Patch2.MaxDiff;
-        %         Data.Patch2_SubDomainSize=Param.ActionInput.Patch2.SubDomainSize;
         nbvar=length(Data.ListVarName);
         Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
@@ -800,8 +813,8 @@ for ifield=1:NbField
         Data.VarAttribute{nbvar+5}.Role='coord_tps';
         Data.VarAttribute{nbvar+6}.Role='vector_x';
         Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ2_U_smooth=zeros(size(Data.Civ2_X));
-        Data.Civ2_V_smooth=zeros(size(Data.Civ2_X));
+        Data.Civ2_U_smooth=Data.Civ2_U; % zeros(size(Data.Civ2_X));
+        Data.Civ2_V_smooth=Data.Civ2_V; %zeros(size(Data.Civ2_X));
         if isfield(Data,'Civ2_FF')
             ind_good=find(Data.Civ2_FF==0);
         else
