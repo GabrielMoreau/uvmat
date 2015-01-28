@@ -400,8 +400,13 @@ for ifield=1:NbField
             if ~isempty(j2_series_Civ1)
                 j2=j2_series_Civ1(ifield);
             end
-            Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
+            if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+                Data.Civ1_Time=time(i2+1,j2+1);% the time is the time of the secodn image
+                Data.Civ1_Dt=1;% time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+            else
+            Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;% the time is the time at the middle of the image pair
             Data.Civ1_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+            end
             for ilist=1:length(list_param)
                 Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
             end
@@ -420,7 +425,15 @@ for ifield=1:NbField
             if strcmp(maskname,par_civ1.Mask)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
-                par_civ1.Mask=imread(par_civ1.Mask);%update the mask, an store it for future use
+                try
+                    par_civ1.Mask=imread(par_civ1.Mask);%update the mask, an store it for future use
+                catch ME
+                    if ~isempty(ME.message)
+                        errormsg=['error reading input image: ' ME.message];
+                        disp_uvmat('ERROR',errormsg,checkrun)
+                        return
+                    end
+                end
                 mask=par_civ1.Mask;
                 maskname=par_civ1.Mask;
             end
@@ -709,8 +722,13 @@ for ifield=1:NbField
         if exist('ImageName_A','var')
             Data.Civ2_ImageA=ImageName_A;
             Data.Civ2_ImageB=ImageName_B;
+             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+                Data.Civ2_Time=time(i2+1,j2+1);% the time is the time of the secodn image
+                Data.Civ2_Dt=1;% time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+             else
             Data.Civ2_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
             Data.Civ2_Dt=Civ2_Dt;
+             end
         end
         %         Data.Civ2_Time=1;
         %         Data.Civ2_Dt=1;

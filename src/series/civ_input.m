@@ -1755,7 +1755,8 @@ if get(handles.TestCiv1,'Value')
      end
      Param.ActionInput.Civ1.CorrSmooth=0;% launch Civ1 with no data point (to get the image names for A and B)
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results 
-    
+     if ~isempty(errormsg), return, end % rmq: error msg displayed in civ_series
+     
  %% create image data ImageData for display
      ImageData.ListVarName={'ny','nx','A'};
      ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
