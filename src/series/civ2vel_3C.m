@@ -1,4 +1,4 @@
-%'civ2vel_3C': combine velocity fields from two camerasto get three velocity components
+%'civ2vel_3C': combine velocity fields from two cameras to get three velocity components
 %------------------------------------------------------------------------
 % function ParamOut=civ2vel_3C(Param)
 %
@@ -115,19 +115,27 @@ time=mean(time,1); %averaged time taken for the merged field
 if isfield(XmlData{1},'GeometryCalib')
      tsaiA=XmlData{1}.GeometryCalib;
  else
-     msgbox_uvmat('ERROR','no geometric calibration available for image A')
+     disp_uvmat('ERROR','no geometric calibration available for image A',checkrun)
      return
  end
  if isfield(XmlData{2},'GeometryCalib')
      tsaiB=XmlData{2}.GeometryCalib;
  else
-     msgbox_uvmat('ERROR','no geometric calibration available for image B')
+     disp_uvmat('ERROR','no geometric calibration available for image B',checkrun)
      return
  end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
-%% grid of physical positions
+%% grid of physical positions (given by projection plane)
+if ~Param.CheckObject
+         disp_uvmat('ERROR','a projection plane with interpolation is needed',checkrun)
+     return
+end
+ObjectData=Param.ProjObject;
+
 [x,y]=meshgrid(ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2),ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2));
+z=zeros(size(x));
+[Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 %camera coordinates:initialisation 2 cameras
 NbCamera=2;
 X=zeros(NbCamera,size(x,1),size(y,1));
@@ -177,13 +185,6 @@ for index=1:NbField
         
         %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
             %camera coordinates
-        xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
-        yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
-        zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);
-
-        %undistorted image coordinates
-        Xu=xc./zc;
-        Yu=yc./zc;
         Data{iview}=phys(Data{iview},XmlData{iview});
         
         %% projection on object (gridded plane)

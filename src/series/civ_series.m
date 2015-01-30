@@ -613,12 +613,6 @@ for ifield=1:NbField
                 par_civ2.Grid(:,2)=reshape(GridY,[],1);
             end
         end
-        if par_civ2.CheckDeformation
-            DUDX=zeros(size(par_civ2.Grid,1),1);
-            DUDY=zeros(size(par_civ2.Grid,1),1);
-            DVDX=zeros(size(par_civ2.Grid,1),1);
-            DVDY=zeros(size(par_civ2.Grid,1),1);
-        end
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
@@ -660,17 +654,23 @@ for ifield=1:NbField
         Shiftx=zeros(size(par_civ2.Grid,1),1);% shift expected from civ1 data
         Shifty=zeros(size(par_civ2.Grid,1),1);
         nbval=zeros(size(par_civ2.Grid,1),1);% nbre of interpolated values at each grid point (from the different patch subdomains)
+        if par_civ2.CheckDeformation
+            DUDX=zeros(size(par_civ2.Grid,1),1);
+            DUDY=zeros(size(par_civ2.Grid,1),1);
+            DVDX=zeros(size(par_civ2.Grid,1),1);
+            DVDY=zeros(size(par_civ2.Grid,1),1);
+        end
         NbSubDomain=size(SubRange,3);
         for isub=1:NbSubDomain% for each sub-domain of Patch1
             nbvec_sub=NbCentres(isub);% nbre of Civ vectors in the subdomain
             ind_sel=find(par_civ2.Grid(:,1)>=SubRange(1,1,isub) & par_civ2.Grid(:,1)<=SubRange(1,2,isub) &...
-                par_civ2.Grid(:,2)>=SubRange(2,1,isub) & par_civ2.Grid(:,2)<=SubRange(2,2,isub));
+                par_civ2.Grid(:,2)>=SubRange(2,1,isub) & par_civ2.Grid(:,2)<=SubRange(2,2,isub));% grid points in the subdomain
             if ~isempty(ind_sel)
-                epoints = par_civ2.Grid(ind_sel,:);% coordinates of interpolation sites
+                epoints = par_civ2.Grid(ind_sel,:);% coordinates of interpolation sites (measurement grids)
                 ctrs=Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
                 nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for each interpolation point (in case of subdomain overlap)
-                EM = tps_eval(epoints,ctrs);
-                Shiftx(ind_sel)=Shiftx(ind_sel)+EM*U_tps(1:nbvec_sub+3,isub);
+                EM = tps_eval(epoints,ctrs);% thin plate spline (tps) coefficient
+                Shiftx(ind_sel)=Shiftx(ind_sel)+EM*U_tps(1:nbvec_sub+3,isub);%velocity shift estimated by tps from civ1
                 Shifty(ind_sel)=Shifty(ind_sel)+EM*V_tps(1:nbvec_sub+3,isub);
                 if par_civ2.CheckDeformation
                     [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
@@ -690,10 +690,10 @@ for ifield=1:NbField
                 maskname=par_civ2.Mask;
             end
         end
-        ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
-        iby2=ceil(par_civ2.CorrBoxSize(2)/2);
-        par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
-        par_civ2.SearchBoxSize(2)=2*iby2+9;
+%         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
+%         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
+       % par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
+        %par_civ2.SearchBoxSize(2)=2*iby2+9;
         if CheckInputFile % else Dt given by par_civ2
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 Civ1_Dt=1;
@@ -703,7 +703,8 @@ for ifield=1:NbField
             end
         end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
-        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
+        % shift the grid points by half the expected shift to provide the correlation box position in image A
+        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(nbval>=1,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(nbval>=1,2)/2];
         if par_civ2.CheckDeformation
             par_civ2.DUDX=DUDX./nbval;
             par_civ2.DUDY=DUDY./nbval;
@@ -711,7 +712,7 @@ for ifield=1:NbField
             par_civ2.DVDY=DVDY./nbval;
         end
         
-        % calculate velocity data (y and v in indices, reverse to y component)
+        % calculate velocity data (y and v in image indices, reverse to y component)
         [xtable, ytable, utable, vtable, ctable, F,result_conv,errormsg] = civ (par_civ2);
         
         list_param=(fieldnames(Param.ActionInput.Civ2))';
@@ -879,7 +880,7 @@ end
 %  .CorrSmooth: =1 or 2 determines the choice of the sub-pixel determination of the correlation max
 %  .ImageWidth: nb of pixels of the image in x
 %  .Dx, Dy: mesh for the PIV calculation
-%  .Grid: grid giving the PIV calculation points (alternative to .Dx .Dy)
+%  .Grid: grid giving the PIV calculation points (alternative to .Dx .Dy): centres of the correlation boxes in Image A
 %  .Mask: name of a mask file or mask image matrix itself
 %  .MinIma: thresholds for image luminosity
 %  .MaxIma
@@ -892,20 +893,20 @@ end
 function [xtable,ytable,utable,vtable,ctable,F,result_conv,errormsg] = civ (par_civ)
 
 %% prepare measurement grid
-if isfield(par_civ,'Grid')% grid points set as input
-    if ischar(par_civ.Grid)%read the grid file if the input is a file name
+if isfield(par_civ,'Grid')% grid points set as input, central positions of the sub-images in image A
+    if ischar(par_civ.Grid)%read the grid file if the input is a file name (grid in x, y image coordinates)
         par_civ.Grid=dlmread(par_civ.Grid);
         par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
     end
-    % else par_civ.Grid is already an array
-else% automatic grid
+    % else par_civ.Grid is already an array, no action here
+else% automatic grid in x, y image coordinates
     minix=floor(par_civ.Dx/2)-0.5;
     maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
-    miniy=floor(par_civ.Dy/2)-0.5;
+    miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
     maxiy=minix+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
     [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
     par_civ.Grid(:,1)=reshape(GridX,[],1);
-    par_civ.Grid(:,2)=reshape(GridY,[],1);
+    par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
 end
 nbvec=size(par_civ.Grid,1);
 
@@ -914,18 +915,18 @@ ibx2=ceil(par_civ.CorrBoxSize(1)/2);
 iby2=ceil(par_civ.CorrBoxSize(2)/2);
 isx2=ceil(par_civ.SearchBoxSize(1)/2);
 isy2=ceil(par_civ.SearchBoxSize(2)/2);
-shiftx=round(par_civ.SearchBoxShift(:,1));
+shiftx=round(par_civ.SearchBoxShift(:,1));%use the input shift estimate, rounded to the next integer value
 shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
 if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
     shiftx=shiftx*ones(nbvec,1);
     shifty=shifty*ones(nbvec,1);
 end
 
-%% Default output
-xtable=par_civ.Grid(:,1);
-ytable=par_civ.Grid(:,2);
-utable=zeros(nbvec,1);
-vtable=zeros(nbvec,1);
+%% Array initialisation and default output  if par_civ.CorrSmooth=0 (just the grid calculated, no civ computation)
+xtable=round(par_civ.Grid(:,1)+0.5)-0.5;
+ytable=round(par_civ.ImageHeight-par_civ.Grid(:,2)+0.5)-0.5;% y index corresponding to the position in image coordiantes
+utable=shiftx;%zeros(nbvec,1);
+vtable=shifty;%zeros(nbvec,1);
 ctable=zeros(nbvec,1);
 F=zeros(nbvec,1);
 result_conv=[];
@@ -942,25 +943,6 @@ end
 check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
 check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 
-% %% prepare images
-% if isfield(par_civ,'reverse_pair')
-%     if par_civ.reverse_pair
-%         if ischar(par_civ.ImageB)
-%             temp=par_civ.ImageA;
-%             par_civ.ImageA=imread(par_civ.ImageB);
-%         end
-%         if ischar(temp)
-%             par_civ.ImageB=imread(temp);
-%         end
-%     end
-% else
-%     if ischar(par_civ.ImageA)
-%         par_civ.ImageA=imread(par_civ.ImageA);
-%     end
-%     if ischar(par_civ.ImageB)
-%         par_civ.ImageB=imread(par_civ.ImageB);
-%     end
-% end
 par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
 par_civ.ImageB=sum(double(par_civ.ImageB),3);
 [npy_ima npx_ima]=size(par_civ.ImageA);
@@ -999,10 +981,11 @@ CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation=
 if CheckDeformation
     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
 end
-if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points viven)
+
+if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec=1:nbvec
         iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
-        jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);% yindex on the image B for the middle of the correlation box
+        jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);%  j index  for the middle of the correlation box in the image A
         F(ivec)=0;
         subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
@@ -1075,7 +1058,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 end
             else
                 F(ivec)=3;
-                [y,x]
             end
         end
     end
@@ -1084,9 +1066,16 @@ result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation mat
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
+% OUPUT:
+% vector = optimum displacement vector with subpixel correction
+% F =flag: =0 OK
+%           =-2 , warning: max too close to the edge of the search box (1 pixel margin)
+% INPUT:
+% x,y: position of the maximum correlation at integer values
+
 function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
-vector=[0 0]; %default
+% vector=[0 0]; %default
 F=0;
 [npy,npx]=size(result_conv);
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
@@ -1116,7 +1105,7 @@ vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 % --- Find the maximum of the correlation function after interpolation
 function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
-vector=[0 0]; %default
+% vector=[0 0]; %default
 F=-2;
 peaky=y;
 peakx=x;

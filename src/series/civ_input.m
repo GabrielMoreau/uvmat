@@ -396,7 +396,7 @@ Param.Patch1.TestPatch1=0;
 
 %% Civ2 parameters
 Param.Civ2.CorrBoxSize=[21 21];
-Param.Civ2.SearchBoxSize=[31 31];
+Param.Civ2.SearchBoxSize=[27 27];
 Param.Civ2.CorrSmooth=1;
 Param.Civ2.Dx=10;
 Param.Civ2.Dy=10;
@@ -538,7 +538,10 @@ if max(checkbox(4:6))>0% case of civ2 pair choice needed
 else
     set(handles.ListPairCiv2,'Visible','off')
 end
-if max(checkbox(1:3))==0 && get(handles.CheckCiv2,'UserData')==6,% no operation asked before Civ2 and input file ready for civ3
+hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
+hhseries=guidata(hseries); %handles of the elements in 'series'
+InputTable=get(hhseries.InputTable,'Data');
+if size(InputTable,1)>=1 && strcmp(InputTable{1,5},'.nc') && max(checkbox(1:3))==0 %&& get(handles.CheckCiv2,'UserData')==6,% no operation asked before Civ2 and input file ready for civ3
     set(handles.CheckCiv3,'Visible','on')
 else
     set(handles.CheckCiv3,'Visible','off')
@@ -572,7 +575,7 @@ end
 if isfield(ActionInput,'Civ2')
     checkeven=(mod(ActionInput.Civ2.CorrBoxSize,2)==0);
     ActionInput.Civ2.CorrBoxSize(checkeven)=ActionInput.Civ2.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+6);
+    ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+4);
     checkeven=(mod(ActionInput.Civ2.SearchBoxSize,2)==0);
     ActionInput.Civ2.SearchBoxSize(checkeven)=ActionInput.Civ2.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
@@ -1131,7 +1134,7 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 
 % --- Executes on button press in CheckDeformation.
 function CheckDeformation_Callback(hObject, eventdata, handles)
-set(handles.configSource,'String','NEW')
+set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1750,6 +1753,21 @@ if get(handles.TestCiv1,'Value')
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param.ActionInput,'Fix1')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix1');
+     end
+     if isfield(Param.ActionInput,'Patch1')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch1');
+     end
+     if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
+         Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
+     end
+     if isfield(Param.ActionInput,'Fix2')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix2');
+     end
+     if isfield(Param.ActionInput,'Patch2')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
+     end
      if isfield(Param,'OutputSubDir')
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
      end
@@ -1818,6 +1836,15 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
+     if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
+         Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
+     end
+     if isfield(Param.ActionInput,'Fix2')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix2');
+     end
+     if isfield(Param.ActionInput,'Patch2')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
+     end
      if isfield(Param,'OutputSubDir')
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
      end
@@ -1927,7 +1954,7 @@ if get(handles.TestCiv2,'Value')
     ViewData.PlotAxes.B=imread(Data.Civ2_ImageB);%store the second image in the UserData of the GUI view_field
     ViewData.PlotAxes.X=Data.Civ2_X';
     ViewData.PlotAxes.Y=Data.Civ2_Y';
-    ViewData.PlotAxes.ShiftX=Data.Civ2_U';% shift at each point (from patch1) estimated by running civ2 
+    ViewData.PlotAxes.ShiftX=Data.Civ2_U';% shift at each point (from patch1) estimated by the preliminary run of civ2 
     ViewData.PlotAxes.ShiftY=Data.Civ2_V';
     ViewData.PlotAxes.Civ1_SubRange=Data.Civ1_SubRange;
     ViewData.PlotAxes.Civ1_NbCentres=Data.Civ1_NbCentres;
@@ -2278,9 +2305,3 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
     set(handles.OK,'BackgroundColor',[1 0 1])%
     drawnow
 end
-
-
-
-
-
-

@@ -49,7 +49,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+   % Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+   Data=stereo_input(Param)
     if isempty(Data)
         Data=Param;% if  civ_input has been cancelled, keep previous parameters
     end

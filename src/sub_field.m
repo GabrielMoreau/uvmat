@@ -149,22 +149,31 @@ Field_1.VarDimName(find(ind_remove))=[];
 Field_1.VarAttribute(find(ind_remove))=[];
 
 %% append the other variables of the second field, modifying their name if needed
-for ilist=1:numel(Field_1.ListVarName)
+ListVarNameNew=Field_1.ListVarName;
+check_rename=zeros(size(ListVarNameNew));
+for ilist=1:numel(ListVarNameNew)
     VarName=Field_1.ListVarName{ilist};
-    ind_prev=find(strcmp(VarName,Field.ListVarName));
-    if isempty(ind_prev)% variable name does not exist in Field
-        VarNameNew=VarName;
-    else  % variable name exists in Field     
-            VarNameNew=[VarName '_1'];   
-            if isfield(Field_1.VarAttribute{ilist},'FieldName')
-                Field_1.VarAttribute{ilist}.FieldName=regexprep_r(Field_1.VarAttribute{ilist}.FieldName,VarName,VarNameNew);
-            end
+    ind_prev=find(strcmp(ListVarNameNew{ilist},Field.ListVarName),1);% look for duplicated variable name
+    if ~isempty(ind_prev)% variable name exists in Field
+        check_rename(ilist)=1;
+        ListVarNameNew{ilist}=[ListVarNameNew{ilist} '_1'];
     end
-        SubData.ListVarName=[SubData.ListVarName {VarNameNew}];
-        SubData.VarDimName=[SubData.VarDimName Field_1.VarDimName(ilist)];
-        SubData.(VarNameNew)=Field_1.(VarName);
-        SubData.VarAttribute=[SubData.VarAttribute Field_1.VarAttribute(ilist)];
-        SubData.VarAttribute{end}.CheckSub=1;% mark that the field needs to be substracted
+    SubData.ListVarName=[SubData.ListVarName ListVarNameNew{ilist}];
+    SubData.VarDimName=[SubData.VarDimName Field_1.VarDimName(ilist)];
+    SubData.(ListVarNameNew{ilist})=Field_1.(VarName);% teke the values of the old variable for the newly named one
+    %SubData.VarAttribute=[SubData.VarAttribute Field_1.VarDimName(ilist)];
+end
+
+%% replace variable name in field expression FieldName, e.g. 'norm(U,V)'-> 'norm(U_1,V_1)'
+for ilist=1:numel(ListVarNameNew)
+    if check_rename(ilist)&&  isfield(Field_1.VarAttribute{ilist},'FieldName')
+        for ivar=1:numel(find(check_rename))
+            Field_1.VarAttribute{ilist}.FieldName=regexprep_r(Field_1.VarAttribute{ilist}.FieldName,...
+                Field_1.ListVarName{ivar},ListVarNameNew{ivar});
+        end
+    end
+    SubData.VarAttribute=[SubData.VarAttribute Field_1.VarAttribute(ilist)];
+    SubData.VarAttribute{end}.CheckSub=1;% mark that the field needs to be substracted as an attribute
 end
 
 %% substrat fields when possible
@@ -197,7 +206,6 @@ end
 SubData.ListVarName(find(ind_remove))=[];
 SubData.VarDimName(find(ind_remove))=[];
 SubData.VarAttribute(find(ind_remove))=[];
-'end'
 
 function OutputCell=regexprep_r(InputCell,search_string,new_string)
 if ischar(InputCell); InputCell={InputCell}; end
