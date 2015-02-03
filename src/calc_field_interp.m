@@ -49,16 +49,18 @@ Operator=cell(size(FieldName));
 for ilist=1:numel(FieldName)
     Operator{ilist}='';%default empty operator (vec, norm,...)
     r=regexp(FieldName{ilist},'(?<Operator>(^vec|^norm|^curl|^div|^strain))\((?<UName>.+),(?<VName>.+)\)$','names');% analyse the field name
-    if isempty(r) % the field name is a variable itself
+    if isempty(r) % no operator: the field name is a variable itself
         ivar=find(strcmp(FieldName{ilist},Data.ListVarName));
-        if isempty(ivar)
+        if isempty(ivar)% the requested variable does not exist
             check_skipped(ilist)=1; %variable not found
-        elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));
+        elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));% the variable exists and has not been already selected
             if isfield(Data.VarAttribute{ivar},'Role') &&...
-                (strcmp(Data.VarAttribute{ivar}.Role,'ancillary')||strcmp(Data.VarAttribute{ivar}.Role,'warnflag')||strcmp(Data.VarAttribute{ivar}.Role,'errorflag'))
-                check_interp(ilist)=0; % ancillary variable, not interpolated     
+                    (strcmp(Data.VarAttribute{ivar}.Role,'ancillary')||strcmp(Data.VarAttribute{ivar}.Role,'warnflag')||strcmp(Data.VarAttribute{ivar}.Role,'errorflag'))
+                check_interp(ilist)=0; % ancillary variable, not interpolated ?????
+                check_skipped(ilist)=1; %variable not used
+            else
+                InputVarList=[InputVarList FieldName{ilist}];% the variable is added to the list of input variables
             end
-            InputVarList=[InputVarList FieldName{ilist}];% the variable is added to the list of input variables if it is not already in the list
         end
     else
         if ~isfield(Data,r.UName)||~isfield(Data,r.VName)%needed input variable not found
@@ -160,12 +162,12 @@ for ilist=1:numel(FieldName)
 end
 
 %% put an error flag to indicate NaN data
-if exist('XI','var')&&~isempty(VarVal)
-    nbvar=numel(VarVal);
-    ListVarName{nbvar+1}='FF';
-    VarVal{nbvar+1}=isnan(VarVal{nbvar});
-    VarAttribute{nbvar+1}.Role='errorflag';
-end
+% if exist('XI','var')&&~isempty(VarVal)
+%     nbvar=numel(VarVal);
+%     ListVarName{nbvar+1}='FF';
+%     VarVal{nbvar+1}=isnan(VarVal{nbvar});
+%     VarAttribute{nbvar+1}.Role='errorflag';
+% end
 
 
 

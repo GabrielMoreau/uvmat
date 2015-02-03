@@ -94,7 +94,6 @@ list_fct={...
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'
     'rotate_points';...%'rotate_points': associated with GUI rotate_points.fig to introduce (2D) rotation parameters
     'rotate_points.fig';...
-    'RUN_STLIN';...% combine 2 displacement fields for stereo PIV
     'series';...% master function for analysis field series, with interface 'series.fig'
     'series.fig';...% interface for 'series'
     'set_col_vec';...% sets the color code for vectors depending on a scalar and input parameters (used for plot_field)

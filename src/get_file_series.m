@@ -59,9 +59,11 @@ for iview=1:NbView
         if ischar(Param.IndexRange.PairString)
             Param.IndexRange.PairString={Param.IndexRange.PairString};
         end
+        if ~isempty(Param.IndexRange.PairString{iview,1})
         r=regexp(Param.IndexRange.PairString{iview,1},'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');%look for mode=Dj or Di
         if isempty(r)
             r=regexp(Param.IndexRange.PairString{iview,1},'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');%look for burst pairs
+        end
         end
         % TODO case of free pairs:
         %r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');

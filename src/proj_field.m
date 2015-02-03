@@ -484,7 +484,6 @@ for icell=1:length(CellInfo)
     end
 end
 
-
 %-----------------------------------------------------------------
 %project on a line
 % AJOUTER flux,circul,error
@@ -695,6 +694,16 @@ for icell=1:length(CellInfo)
                     ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuous lines
                 end
             elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
+                if ~isequal(errorflag,0)
+                    VarName_FF=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
+                    indsel=find(FieldData.(VarName_FF)==0);
+                    coord_x=coord_x(indsel);
+                    coord_y=coord_y(indsel);
+                    for ivar=1:numel(CellInfo{icell}.VarIndex)
+                        VarName=FieldData.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                        FieldData.(VarName)=FieldData.(VarName)(indsel);
+                    end
+                end                    
                 [ProjVar,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_x coord_y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                 ProjData.X=Xproj;
                 ProjData.ListVarName=[ProjData.ListVarName ListFieldProj];

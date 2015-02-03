@@ -2264,9 +2264,16 @@ switch OutputSubDirMode
                 SubDirOut=[SubDirOut '-' regexprep(SubDir{ilist},'^/','')];
             end
         end
-    case 'first'
+    case 'one'
         OutputDirVisible='on';
         SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
+    case 'two'
+        OutputDirVisible='on';   
+        SubDir=InputTable(1:2,2); %set of subdirectories
+        SubDirOut=SubDir{1};
+        if numel(SubDir)>1
+                SubDirOut=[SubDirOut '-' regexprep(SubDir{2},'^/','')];
+        end
     case 'last'
         OutputDirVisible='on';
         SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory

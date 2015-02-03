@@ -54,19 +54,23 @@ function ParamOut=civ2vel_3C(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='on';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%use the phys  transform function without choice
     %ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
-    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
+    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.vel3C';%set the output dir extension
+    ParamOut.OutputSubDirMode='two'; % the two first input lines are used to define the output subfolder
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-      %check the input files
+    %check the input files
     first_j=[];
+    if size(Param.InputTable,1)<2
+        msgbox_uvmat('WARNING',['two or three input file series are needed'])
+    end
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
@@ -93,9 +97,32 @@ hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
+
+%% root input file(s) name, type and index series
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+if ~isempty(hdisp),delete(hdisp),end;
+%%%%%%%%%%%%
+% The cell array filecell is the list of input file names, while
+% filecell{iview,fileindex}:
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series,
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+%%%%%%%%%%%%
+NbView=numel(i1_series);%number of input file series (lines in InputTable)
+NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+NbField_i=size(i1_series{1},2); %nb of fields for the i index
+NbField=NbField_j*NbField_i; %total number of fields
+
 %% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-% 
+%
 % if ~isfield(Param,'InputFields')
 %     Param.InputFields.FieldName='';
 % end
@@ -104,62 +131,45 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output file
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
 if size(time,1)>1
     diff_time=max(max(diff(time)));
-    if diff_time>0 
+    if diff_time>0
         disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time) ': the mean time is chosen in result'],checkrun)
-    end   
+    end
 end
 if ~isempty(errormsg)
     disp_uvmat('WARNING',errormsg,checkrun)
 end
-time=mean(time,1); %averaged time taken for the merged field          
+time=mean(time,1); %averaged time taken for the merged field
 if isfield(XmlData{1},'GeometryCalib')
-     tsaiA=XmlData{1}.GeometryCalib;
- else
-     disp_uvmat('ERROR','no geometric calibration available for image A',checkrun)
-     return
- end
- if isfield(XmlData{2},'GeometryCalib')
-     tsaiB=XmlData{2}.GeometryCalib;
- else
-     disp_uvmat('ERROR','no geometric calibration available for image B',checkrun)
-     return
- end
+    tsaiA=XmlData{1}.GeometryCalib;
+else
+    disp_uvmat('ERROR','no geometric calibration available for image A',checkrun)
+    return
+end
+if isfield(XmlData{2},'GeometryCalib')
+    tsaiB=XmlData{2}.GeometryCalib;
+else
+    disp_uvmat('ERROR','no geometric calibration available for image B',checkrun)
+    return
+end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
 %% grid of physical positions (given by projection plane)
 if ~Param.CheckObject
-         disp_uvmat('ERROR','a projection plane with interpolation is needed',checkrun)
-     return
+    disp_uvmat('ERROR','a projection plane with interpolation is needed',checkrun)
+    return
 end
 ObjectData=Param.ProjObject;
+xI=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
+yI=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
+[XI,YI]=meshgrid(xI,yI);
+U=zeros(size(XI,1),size(XI,2));
+V=zeros(size(XI,1),size(XI,2));
+W=zeros(size(XI,1),size(XI,2));
 
-[x,y]=meshgrid(ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2),ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2));
-z=zeros(size(x));
-[Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
-%camera coordinates:initialisation 2 cameras
-NbCamera=2;
-X=zeros(NbCamera,size(x,1),size(y,1));
-Y=zeros(NbCamera,size(x,1),size(y,1));
-for icamera=1:NbCamera
-%camera coordinates
-Calib=XmlData{1}.GeometryCalib;
-    xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
-    yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
-    zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);
-    
-    %undistorted image coordinates
-    X(icamera,:,:)=xc./zc;
-    Y(icamera,:,:)=yc./zc;
-end
-
-%% case of fixed planes (for moving interface, coeff need to be calculated for each field
-if isequal(size(InputTable),2)
-[S,D]=get_coeff(XmlData,X,Y);
-end
-
- %% MAIN LOOP ON FIELDS
+%% MAIN LOOP ON FIELDS
+warning off
 for index=1:NbField
-        update_waitbar(WaitbarHandle,index/NbField)
+    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
@@ -168,52 +178,70 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
-    for iview=1:NbView
+    [Data{3},tild,errormsg] = nc2struct(filecell{3,index});
+    ZI=griddata(Data{3}.Xphys,Data{3}.Yphys,Data{3}.Zphys,XI,YI);
+    [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view a
+    [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view b
+    
+    %trouver z
+    % trouver les coordonnées px sur chaque image.
+    %A=
+    for iview=1:2
         %% reading input file(s)
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,index},{'vec(U,V)'},'*');
         if ~isempty(errormsg)
             disp_uvmat('ERROR',['ERROR in civ2vel_3C/read_field/' errormsg],checkrun)
             return
         end
         % get the time defined in the current file if not already defined from the xml file
-        if ~isempty(time) && isfield(Data{iview},'Time')
-            timeread(iview)=Data{iview}.Time;
+        if isfield(Data{iview},'Time')&& isequal(Data{iview}.Time,Data{1}.Time)
+            Time=Data{iview}.Time;
+        else
+            disp_uvmat('ERROR','Time undefined or not synchronous',checkrun)
+            return
         end
-        if ~isempty(NbSlice_calib)
-            Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
+        if isfield(Data{iview},'Dt')&& isequal(Data{iview}.Dt,Data{1}.Dt)
+            Dt=Data{iview}.Dt;
+        else
+            disp_uvmat('ERROR','Dt undefined or not synchronous',checkrun)
+            return
         end
-        
-        %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
-            %camera coordinates
-        Data{iview}=phys(Data{iview},XmlData{iview});
-        
-        %% projection on object (gridded plane)
-%         if Param.CheckObject
-            [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
-            if ~isempty(errormsg)
-                disp_uvmat('ERROR',['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
-                return
-            end
-
     end
-    %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
-
-    %% merge the NbView fields
-    [MergeData,errormsg]=merge_field(Data);
-    if ~isempty(errormsg)
-        disp_uvmat('ERROR',errormsg,checkrun);
-        return
-    end
-
-    %% time of the merged field: take the average of the different views
-    if ~isempty(time)
-        timeread=time(index);   
-    elseif ~isempty(find(timeread))% time defined from ImaDoc
-        timeread=mean(timeread(timeread~=0));% take average over times form the files (when defined)
-    else
-        timeread=index;% take time=file index 
-    end
-
+    Ua=griddata(Data{1}.X,Data{1}.Y,Data{1}.U,Xa,Ya);
+    Va=griddata(Data{1}.X,Data{1}.Y,Data{1}.V,Xa,Ya);
+    A=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,YI,YI,ZI);
+    
+    Ub=griddata(Data{2}.X,Data{2}.Y,Data{1}.U,Xb,Yb);
+    Vb=griddata(Data{2}.X,Data{2}.Y,Data{2}.V,Xb,Yb);
+    B=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,YI,YI,ZI);
+    S=ones(size(XI,1),size(XI,2),3);
+    D=ones(size(XI,1),size(XI,2),3,3);
+    S(:,:,1)=A(:,:,1,1).*Ua+A(:,:,2,1).*Va+B(:,:,1,1).*Ub+B(:,:,2,1).*Vb;
+    S(:,:,2)=A(:,:,1,2).*Ua+A(:,:,2,2).*Va+B(:,:,1,2).*Ub+B(:,:,2,2).*Vb;
+    S(:,:,3)=A(:,:,1,3).*Ua+A(:,:,2,3).*Va+B(:,:,1,3).*Ub+B(:,:,2,3).*Vb;
+    D(:,:,1,1)=A(:,:,1,1).*A(:,:,1,1)+A(:,:,2,1).*A(:,:,2,1)+B(:,:,1,1).*B(:,:,1,1)+B(:,:,2,1).*B(:,:,2,1);
+    D(:,:,1,2)=A(:,:,1,1).*A(:,:,1,2)+A(:,:,2,1).*A(:,:,2,2)+B(:,:,1,1).*B(:,:,1,2)+B(:,:,2,1).*B(:,:,2,2);
+    D(:,:,1,3)=A(:,:,1,1).*A(:,:,1,3)+A(:,:,2,1).*A(:,:,2,3)+B(:,:,1,1).*B(:,:,1,3)+B(:,:,2,1).*B(:,:,2,3);
+    D(:,:,2,1)=A(:,:,1,2).*A(:,:,1,1)+A(:,:,2,2).*A(:,:,2,1)+B(:,:,1,2).*B(:,:,1,1)+B(:,:,2,2).*B(:,:,2,1);
+    D(:,:,2,2)=A(:,:,1,2).*A(:,:,1,2)+A(:,:,2,2).*A(:,:,2,2)+B(:,:,1,2).*B(:,:,1,2)+B(:,:,2,2).*B(:,:,2,2);
+    D(:,:,2,3)=A(:,:,1,2).*A(:,:,1,3)+A(:,:,2,2).*A(:,:,2,3)+B(:,:,1,2).*B(:,:,1,3)+B(:,:,2,2).*B(:,:,2,3);
+    D(:,:,3,1)=A(:,:,1,3).*A(:,:,1,1)+A(:,:,2,3).*A(:,:,2,1)+B(:,:,1,3).*B(:,:,1,1)+B(:,:,2,3).*B(:,:,2,1);
+    D(:,:,3,2)=A(:,:,1,3).*A(:,:,1,2)+A(:,:,2,3).*A(:,:,2,2)+B(:,:,1,3).*B(:,:,1,2)+B(:,:,2,3).*B(:,:,2,2);
+    D(:,:,3,3)=A(:,:,1,3).*A(:,:,1,3)+A(:,:,2,3).*A(:,:,2,3)+B(:,:,1,3).*B(:,:,1,3)+B(:,:,2,3).*B(:,:,2,3);
+    for indj=1:size(XI,1)
+        for indi=1:size(XI,2)
+            dxyz=squeeze(S(indj,indi,:))\squeeze(D(indj,indi,:,:));
+            U(indj,indi)=dxyz(1);
+            V(indj,indi)=dxyz(2);
+            W(indj,indi)=dxyz(3);
+        end
+    end   
+    Error=zeros(size(XI,1),size(XI,2),4);
+    Error(:,:,1)=A(:,:,1,1).*U+A(:,:,1,2).*V+A(:,:,1,3).*W-Ua;
+    Error(:,:,2)=A(:,:,2,1).*U+A(:,:,2,2).*V+A(:,:,2,3).*W-Va;
+    Error(:,:,3)=B(:,:,1,1).*U+B(:,:,1,2).*V+B(:,:,1,3).*W-Ub;
+    Error(:,:,4)=B(:,:,2,1).*U+B(:,:,2,2).*V+B(:,:,2,3).*W-Vb;
+    
     %% generating the name of the merged field
     i1=i1_series{1}(index);
     if ~isempty(i2_series{end})
@@ -231,207 +259,44 @@ for index=1:NbField
             j2=j1;
         end
     end
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,FileExtOut,NomType{1},i1,i2,j1,j2);
-
-    %% recording the merged field
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2);
     
-        MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim'};
+    %% recording the merged field
+    if index==1% initiate the structure at first index
+        MergeData.ListGlobalAttribute={'Conventions','Time','Dt'};
         MergeData.Conventions='uvmat';
-        MergeData.nb_coord=2;
-        MergeData.nb_dim=2;
-        dt=[];
-        if isfield(Data{1},'dt')&& isnumeric(Data{1}.dt)
-            dt=Data{1}.dt;
-        end
-        for iview =2:numel(Data)
-            if ~(isfield(Data{iview},'dt')&& isequal(Data{iview}.dt,dt))
-                dt=[];%dt not the same for all fields
-            end
-        end
-        if ~isempty(timeread)
-            MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
-            MergeData.Time=timeread;
-        end
-        if ~isempty(dt)
-            MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'dt'}];
-            MergeData.dt=dt;
-        end
-        error=struct2nc(OutputFile,MergeData);%save result file
-        if isempty(error)
-            disp(['output file ' OutputFile ' written'])
-        else
-            disp(error)
-        end
+        MergeData.Time=Time;
+        MergeData.Dt=Dt;
+        MergeData.ListVarName={'coord_x','coord_y','Z','U','V','W','Error'};
+        MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
+                {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
+        MergeData.coord_x=xI;
+        MergeData.coord_y=yI;
+        MergeData.Z=ZI;
+    end
+    MergeData.U=U/Dt;
+    MergeData.V=V/Dt;
+    MergeData.W=W/Dt;
+    MergeData.Error=sqrt(sum(Error.*Error,3));
+    errormsg=struct2nc(OutputFile,MergeData);%save result file
+    if isempty(errormsg)
+        disp(['output file ' OutputFile ' written'])
+    else
+        disp(errormsg)
+    end
 end
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %read the velocity fields
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%read field A
-[Field,VelTypeOut]=read_civxdata(file_A,[],vel_type);
-%removes false vectors
-if isfield(Field,'FF')
-    Field.X=Field.X(find(Field.FF==0));
-    Field.Y=Field.Y(find(Field.FF==0));
-    Field.U=Field.U(find(Field.FF==0));
-    Field.V=Field.V(find(Field.FF==0));
-end
-%interpolate on the grid common to both images in phys coordinates
-dXa= griddata_uvmat(Field.X,Field.Y,Field.U,XimaA,YimaA);
-dYa= griddata_uvmat(Field.X,Field.Y,Field.V,XimaA,YimaA);
-dt=Field.dt;
-time=Field.Time;
 
-%read field B
-[Field,VelTypeOut]=read_civxdata(file_B,[],vel_type);
-if ~isequal(Field.dt,dt)
-    msgbox_uvmat('ERROR','different time intervals for the two velocity fields ')
-     return
-end
-if ~isequal(Field.Time,time)
-    msgbox_uvmat('ERROR','different times for the two velocity fields ')
-     return
-end
-%removes false vectors
-if isfield(Field,'FF')
-Field.X=Field.X(find(Field.FF==0));
-Field.Y=Field.Y(find(Field.FF==0));
-Field.U=Field.U(find(Field.FF==0));
-Field.V=Field.V(find(Field.FF==0));
-end
-%interpolate on XimaB
-dXb=griddata_uvmat(Field.X,Field.Y,Field.U,XimaB,YimaB);
-dYb=griddata_uvmat(Field.X,Field.Y,Field.V,XimaB,YimaB);
-%eliminate Not-a-Number 
-ind_Nan=find(and(~isnan(dXa),~isnan(dXb)));
-dXa=dXa(ind_Nan);
-dYa=dYa(ind_Nan);
-dXb=dXb(ind_Nan);
-dYb=dYb(ind_Nan); 
-grid_phys1(:,1)=grid_real_x(ind_Nan);
-grid_phys1(:,2)=grid_real_y(ind_Nan);
- 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-%compute the differential coefficients of the geometric calibration
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[A11,A12,A13,A21,A22,A23]=pxcm_tsai(tsaiA,grid_phys1);
-[B11,B12,B13,B21,B22,B23]=pxcm_tsai(tsaiB,grid_phys1);
-
-C1=A11.*A22-A12.*A21;
-C2=A13.*A22-A12.*A23;
-C3=A13.*A21-A11.*A23;
-D1=B11.*B22-B12.*B21;
-D2=B13.*B22-B12.*B23;
-D3=B13.*B21-B11.*B23;
-A1=(A22.*D1.*(C1.*D3-C3.*D1)+A21.*D1.*(C2.*D1-C1.*D2));
-A2=(A12.*D1.*(C3.*D1-C1.*D3)+A11.*D1.*(C1.*D2-C2.*D1));
-B1=(B22.*C1.*(C3.*D1-C1.*D3)+B21.*C1.*(C1.*D2-C2.*D1));
-B2=(B12.*C1.*(C1.*D3-C3.*D1)+B11.*C1.*(C2.*D1-C1.*D2));
-Lambda=(A1.*dXa+A2.*dYa+B1.*dXb+B2.*dYb)./(A1.*A1+A2.*A2+B1.*B1+B2.*B2);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Projection for compatible displacements
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Ua=dXa-Lambda.*A1;
-Va=dYa-Lambda.*A2;
-Ub=dXb-Lambda.*B1;
-Vb=dYb-Lambda.*B2;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Calculations of displacements and error
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-U=(A22.*D2.*Ua-A12.*D2.*Va-B22.*C2.*Ub+B12.*C2.*Vb)./(C1.*D2-C2.*D1);
-V=(A21.*D3.*Ua-A11.*D3.*Va-B21.*C3.*Ub+B11.*C3.*Vb)./(C3.*D1-C1.*D3);
-W=(A22.*D1.*Ua-A12.*D1.*Va-B22.*C1.*Ub+B12.*C1.*Vb)./(C2.*D1-C1.*D2);
-W1=(-A21.*D1.*Ua+A11.*D1.*Va+B21.*C1.*Ub-B11.*C1.*Vb)./(C1.*D3-C3.*D1);
-
-error=sqrt((A1.*dXa+A2.*dYa+B1.*dXb+B2.*dYb).*(A1.*dXa+A2.*dYa+B1.*dXb+B2.*dYb)./(A1.*A1+A2.*A2+B1.*B1+B2.*B2));
-
-ind_error=(find(error<thresh_patch));
-U=U(ind_error);
-V=V(ind_error);
-W=W(ind_error);%correction for water interface
-error=error(ind_error);
-
-%create nc grid file
-Result.ListGlobalAttribute={'nb_coord','nb_dim','constant_pixcm','absolut_time_T0','hart','dt','civ'};
-Result.nb_coord=3;%grid file, no velocity
-Result.nb_dim=2;
-Result.constant_pixcm=0;%no linear correspondance with images
-Result.absolut_time_T0=time;%absolute time of the field
-Result.hart=0;
-Result.dt=dt;%time interval for image correlation (put  by default)
-% cte.title='grid';
-Result.civ=0;%not a civ file (no direct correspondance with an image)
-% Result.ListDimName={'nb_vectors'}
-% Result.DimValue=length(U);
-Result.ListVarName={'vec_X','vec_Y','vec_U','vec_V','vec_W','vec_E'};
-Result.VarDimName={'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'}
-Result.vec_X= grid_phys1(ind_error,1);
-Result.vec_Y= grid_phys1(ind_error,2);
-Result.vec_U=U/dt;
-Result.vec_V=V/dt;
-Result.vec_W=W/dt;
-Result.vec_E=error; 
-% error=write_netcdf(file_st,cte,fieldlabels,grid_phys);
-error=struct2nc(file_st,Result);
-display([file_st ' written'])
-
-function [S,D]=get_coeff(XmlData,X,Y);
-Calib_a=XmlData{1}.GeometryCalib;
-R=(Calib_a.R)';%rotation matrix
-A(1,1)=R(1)-R(7)*X;
-A(1,2)=R(2)-R(8)*X;
-A(1,3)=R(3)-R(9)*X;
-A(2,1)=R(4)-R(7)*Y;
-A(2,2)=R(5)-R(8)*Y;
-A(2,3)=R(6)-R(9)*Y;
-
-%'pxcm_tsai': find differentials of the Tsai calibration
-function [A11,A12,A13,A21,A22,A23]=pxcm_tsai(a,var_phys)
-R=(a.R)';
-
-x=var_phys(:,1);
-y=var_phys(:,2);
-
-if isfield(a,'PlanePos')
-    prompt={'Plane 1 Index','Plane 2 Index'};
-    Rep=inputdlg(prompt,'Target displacement test');
-    Z1=str2double(Rep(1));
-    Z2=str2double(Rep(2));
-    z=(a.PlanePos(Z2,3)+a.PlanePos(Z1,3))/2
-else
-    z=0;
-end
-
-%transform coeff for differentiels
-a.C11=R(1)*R(8)-R(2)*R(7);
-a.C12=R(2)*R(7)-R(1)*R(8);
-a.C21=R(4)*R(8)-R(5)*R(7);
-a.C22=R(5)*R(7)-R(4)*R(8);
-a.C1x=R(3)*R(7)-R(9)*R(1);
-a.C1y=R(3)*R(8)-R(9)*R(2);
-a.C2x=R(6)*R(7)-R(9)*R(4);
-a.C2y=R(6)*R(8)-R(9)*R(5);
-
-% %dependence in x,y
-% denom=(R(7)*x+R(8)*y+R(9)*z+a.Tz).*(R(7)*x+R(8)*y+R(9)*z+a.Tz);
-% A11=(a.f*a.sx*(a.C11*y-a.C1x*z+R(1)*a.Tz-R(7)*a.Tx)./denom)/a.dpx;
-% A12=(a.f*a.sx*(a.C12*x-a.C1y*z+R(2)*a.Tz-R(8)*a.Tx)./denom)/a.dpx;
-% A21=(a.f*a.sx*(a.C21*y-a.C2x*z+R(4)*a.Tz-R(7)*a.Ty)./denom)/a.dpy;
-% A22=(a.f*(a.C22*x-a.C2y*z+R(5)*a.Tz-R(8)*a.Ty)./denom)/a.dpy;
-% A13=(a.f*(a.C1x*x+a.C1y*y+R(3)*a.Tz-R(9)*a.Tx)./denom)/a.dpx;
-% A23=(a.f*(a.C2x*x+a.C2y*y+R(6)*a.Tz-R(9)*a.Ty)./denom)/a.dpy;
-
-%dependence in x,y
-denom=(R(7)*x+R(8)*y+R(9)*z+a.Tx_Ty_Tz(3)).*(R(7)*x+R(8)*y+R(9)*z+a.Tx_Ty_Tz(3));
-A11=(a.fx_fy(1)*(a.C11*y-a.C1x*z+R(1)*a.Tx_Ty_Tz(3)-R(7)*a.Tx_Ty_Tz(1))./denom);
-A12=(a.fx_fy(1)*(a.C12*x-a.C1y*z+R(2)*a.Tx_Ty_Tz(3)-R(8)*a.Tx_Ty_Tz(1))./denom);
-A21=(a.fx_fy(1)*(a.C21*y-a.C2x*z+R(4)*a.Tx_Ty_Tz(3)-R(7)*a.Tx_Ty_Tz(2))./denom);
-A22=(a.fx_fy(2)*(a.C22*x-a.C2y*z+R(5)*a.Tx_Ty_Tz(3)-R(8)*a.Tx_Ty_Tz(2))./denom);
-A13=(a.fx_fy(2)*(a.C1x*x+a.C1y*y+R(3)*a.Tx_Ty_Tz(3)-R(9)*a.Tx_Ty_Tz(1))./denom);
-A23=(a.fx_fy(2)*(a.C2x*x+a.C2y*y+R(6)*a.Tx_Ty_Tz(3)-R(9)*a.Tx_Ty_Tz(2))./denom);
-
+function A=get_coeff(Calib,X,Y,x,y,z)
+R=(Calib.R)';%rotation matrix
+T_z=Calib.Tx_Ty_Tz(3);
+T=R(7)*x+R(8)*y+R(9)*z+T_z;
+A(:,:,1,1)=(R(1)-R(7)*X)./T;
+A(:,:,1,2)=(R(2)-R(8)*X)./T;
+A(:,:,1,3)=(R(3)-R(9)*X)./T;
+A(:,:,2,1)=(R(4)-R(7)*Y)./T;
+A(:,:,2,2)=(R(5)-R(8)*Y)./T;
+A(:,:,2,3)=(R(6)-R(9)*Y)./T;
 
 
 
