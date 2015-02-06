@@ -54,7 +54,7 @@ for ilist=1:numel(FieldName)
         if isempty(ivar)% the requested variable does not exist
             check_skipped(ilist)=1; %variable not found
         elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));% the variable exists and has not been already selected
-            if isfield(Data.VarAttribute{ivar},'Role') &&...
+            if exist('XI','var')&& isfield(Data.VarAttribute{ivar},'Role') &&...
                     (strcmp(Data.VarAttribute{ivar}.Role,'ancillary')||strcmp(Data.VarAttribute{ivar}.Role,'warnflag')||strcmp(Data.VarAttribute{ivar}.Role,'errorflag'))
                 check_interp(ilist)=0; % ancillary variable, not interpolated ?????
                 check_skipped(ilist)=1; %variable not used

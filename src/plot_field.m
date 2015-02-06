@@ -639,6 +639,10 @@ for icell=1:numel(CellInfo)
             errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with mode interp';
             return
         else
+            if numel(CellInfo{icell}.VarIndex_vector_x)>1
+                errormsg='error in plot_field: attempt to plot two vector fields';
+            return
+            end
             test_vec=1;
             if isfield(CellInfo{icell},'VarIndex_errorflag')
                 ivar_FF_vec=CellInfo{icell}.VarIndex_errorflag; %defines index (unique) for error flag variable

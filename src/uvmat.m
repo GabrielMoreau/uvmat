@@ -5527,6 +5527,8 @@ if check_view %activate set_object
     if ~isfield(data,'Type')% default plane
         data.Type='plane';
     end
+    
+    %% initiate the new projection object
     hset_object=set_object(data,[],ZBounds);
     set(hset_object,'name','set_object')
     hhset_object=guidata(hset_object);

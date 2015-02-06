@@ -168,7 +168,11 @@ W=zeros(size(XI,1),size(XI,2));
 
 %% MAIN LOOP ON FIELDS
 warning off
-for index=1:NbField
+if NbField<2 && length(filecell{:,1})>2
+    disp_uvmat('ERROR','you need at least 2 images to compute the mean position for the stereo.',checkrun)
+return
+end
+for index=1:NbField-1
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -178,8 +182,109 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
-    [Data{3},tild,errormsg] = nc2struct(filecell{3,index});
-    ZI=griddata(Data{3}.Xphys,Data{3}.Yphys,Data{3}.Zphys,XI,YI);
+    
+    %get Xphys,Yphys,Zphys from 1 or 2 stereo folders. Positions are taken
+    %at the middle between to time step
+   clear ZItemp
+   ZItemp=zeros(size(XI,1),size(XI,2),2);
+ for indextemp=index:index+1; 
+    if NbView==3 % if there is only 1 stereo folder, extract directly Xphys,Yphys and Zphys
+        
+        [Data{3},tild,errormsg] = nc2struct(filecell{3,indextemp}); 
+       
+        if  exist('Data{3}.Civ3_FF','var') % FF is present, remove wrong vector
+            temp=find(Data{3}.Civ3_FF==0);
+            Zphys=Data{3}.Zphys(temp);
+            Yphys=Data{3}.Yphys(temp);
+            Xphys=Data{3}.Xphys(temp);
+        else 
+            Zphys=Data{3}.Zphys;
+            Yphys=Data{3}.Yphys;
+            Xphys=Data{3}.Xphys;
+        end
+        
+        
+        
+    elseif NbView==4 % is there is 2 stereo folders, get global U and V and compute Zphys
+        
+        
+        %test if the seconde camera is the same for both folder
+        for i=3:4
+        indpt(i)=strfind(Param.InputTable{i,2},'.'); % indice of the "." is the folder name 1
+        indline(i)=strfind(Param.InputTable{i,2},'-'); % indice of the "-" is the folder name1
+        camname{i}=Param.InputTable{i,2}(indline(i)+1:indpt(i)-1);% extract the second camera name 
+        end
+        
+        if strcmp(camname{3},camname{4})==0 
+            disp_uvmat('ERROR','The 2 stereo folders should have the same camera for the second position',checkrun)
+            return
+        end
+        
+        [Data{3},tild,errormsg] = nc2struct(filecell{3,indextemp}); 
+        if exist('Data{3}.Civ3_FF','var') % if FF is present, remove wrong vector
+            temp=find(Data{3}.Civ3_FF==0);
+            Xmid3=Data{3}.Xmid(temp);
+            Ymid3=Data{3}.Ymid(temp);
+            U3=Data{3}.Uphys(temp);
+            V3=Data{3}.Vphys(temp);
+        else 
+            Xmid3=Data{3}.Xmid;
+            Ymid3=Data{3}.Ymid;
+            U3=Data{3}.Uphys;
+            V3=Data{3}.Vphys;
+        end
+        %temporary gridd of merging the 2 stereos datas
+        [xq,yq] = meshgrid(min(Xmid3+(U3)/2):(max(Xmid3+(U3)/2)-min(Xmid3+(U3)/2))/128:max(Xmid3+(U3)/2),min(Ymid3+(V3)/2):(max(Ymid3+(V3)/2)-min(Ymid3+(V3)/2))/128:max(Ymid3+(V3)/2));
+        
+        %1st folder : interpolate the first camera (Dalsa1) points on the second (common) camera
+        %(Dalsa 3)
+        x3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Xmid3-(U3)/2,xq,yq);
+        y3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Ymid3-(V3)/2,xq,yq);
+        
+        
+        [Data{4},tild,errormsg] = nc2struct(filecell{4,indextemp}); 
+        if exist('Data{4}.Civ3_FF','var') % if FF is present, remove wrong vector
+            temp=find(Data{4}.Civ3_FF==0);
+            Xmid4=Data{4}.Xmid(temp);
+            Ymid4=Data{4}.Ymid(temp);
+            U4=Data{4}.Uphys(temp);
+            V4=Data{4}.Vphys(temp);
+        else 
+            Xmid4=Data{4}.Xmid;
+            Ymid4=Data{4}.Ymid;
+            U4=Data{4}.Uphys;
+            V4=Data{4}.Vphys;
+        end
+        
+        %2nd folder :interpolate the first camera (Dalsa2) points on the second (common) camera
+        %(Dalsa 3)
+        x4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Xmid4-(U4)/2,xq,yq);
+        y4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Ymid4-(V4)/2,xq,yq);
+        
+        xmid=reshape((x4Q+x3Q)/2,length(xq(:,1)).*length(xq(1,:)),1);
+        ymid=reshape((y4Q+y3Q)/2,length(yq(:,1)).*length(yq(1,:)),1);
+        u=reshape(x4Q-x3Q,length(xq(:,1)).*length(xq(1,:)),1);
+        v=reshape(y4Q-y3Q,length(yq(:,1)).*length(yq(1,:)),1);
+        
+        
+        [Zphys,Xphys,Yphys,error]=shift2z(xmid, ymid, u, v,XmlData); %get Xphy,Yphy and Zphys
+        %remove NaN 
+        tempNaN=isnan(Zphys);tempind=find(tempNaN==1);
+        Zphys(tempind)=[];
+        Xphys(tempind)=[];
+        Yphys(tempind)=[];
+        error(tempind)=[];
+         
+    end
+    
+    
+   
+    
+       ZItemp(:,:,indextemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen gridd
+    
+end
+    ZI=mean(ZItemp,3); %mean between two the two time step
+    
     [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view a
     [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view b
     
@@ -207,12 +312,25 @@ for index=1:NbField
             return
         end
     end
-    Ua=griddata(Data{1}.X,Data{1}.Y,Data{1}.U,Xa,Ya);
-    Va=griddata(Data{1}.X,Data{1}.Y,Data{1}.V,Xa,Ya);
+    %remove wrong vector
+    temp=find(Data{1}.FF==0);
+    X1=Data{1}.X(temp);
+    Y1=Data{1}.Y(temp);
+    U1=Data{1}.U(temp);
+    V1=Data{1}.V(temp);
+    
+    Ua=griddata(X1,Y1,U1,Xa,Ya);
+    Va=griddata(X1,Y1,V1,Xa,Ya);
     A=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,YI,YI,ZI);
     
-    Ub=griddata(Data{2}.X,Data{2}.Y,Data{1}.U,Xb,Yb);
-    Vb=griddata(Data{2}.X,Data{2}.Y,Data{2}.V,Xb,Yb);
+    
+    temp=find(Data{2}.FF==0);
+    X2=Data{2}.X(temp);
+    Y2=Data{2}.Y(temp);
+    U2=Data{2}.U(temp);
+    V2=Data{2}.V(temp);
+    Ub=griddata(X2,Y2,U2,Xb,Yb);
+    Vb=griddata(X2,Y2,V2,Xb,Yb);
     B=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,YI,YI,ZI);
     S=ones(size(XI,1),size(XI,2),3);
     D=ones(size(XI,1),size(XI,2),3,3);
@@ -301,6 +419,59 @@ A(:,:,2,3)=(R(6)-R(9)*Y)./T;
 
 
 
+function [z,Xphy,Yphy,error]=shift2z(xmid, ymid, u, v,XmlData)
+z=0;
+error=0;
 
+
+%% first image
+Calib_A=XmlData{1}.GeometryCalib;
+R=(Calib_A.R)';
+x_a=xmid- u/2;
+y_a=ymid- u/2;
+z_a=R(7)*x_a+R(8)*y_a+Calib_A.Tx_Ty_Tz(1,3);
+Xa=(R(1)*x_a+R(2)*y_a+Calib_A.Tx_Ty_Tz(1,1))./z_a;
+Ya=(R(4)*x_a+R(5)*y_a+Calib_A.Tx_Ty_Tz(1,2))./z_a;
+
+A_1_1=R(1)-R(7)*Xa;
+A_1_2=R(2)-R(8)*Xa;
+A_1_3=R(3)-R(9)*Xa;
+A_2_1=R(4)-R(7)*Ya;
+A_2_2=R(5)-R(8)*Ya;
+A_2_3=R(6)-R(9)*Ya;
+Det=A_1_1.*A_2_2-A_1_2.*A_2_1;
+Dxa=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
+Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
+
+%% second image
+Calib_B=XmlData{2}.GeometryCalib;
+R=(Calib_B.R)';
+x_b=xmid+ u/2;
+y_b=ymid+ v/2;
+z_b=R(7)*x_b+R(8)*y_b+Calib_B.Tx_Ty_Tz(1,3);
+Xb=(R(1)*x_b+R(2)*y_b+Calib_B.Tx_Ty_Tz(1,1))./z_b;
+Yb=(R(4)*x_b+R(5)*y_b+Calib_B.Tx_Ty_Tz(1,2))./z_b;
+B_1_1=R(1)-R(7)*Xb;
+B_1_2=R(2)-R(8)*Xb;
+B_1_3=R(3)-R(9)*Xb;
+B_2_1=R(4)-R(7)*Yb;
+B_2_2=R(5)-R(8)*Yb;
+B_2_3=R(6)-R(9)*Yb;
+Det=B_1_1.*B_2_2-B_1_2.*B_2_1;
+Dxb=(B_1_2.*B_2_3-B_2_2.*B_1_3)./Det;
+Dyb=(B_2_1.*B_1_3-B_1_1.*B_2_3)./Det;
+
+%% result
+Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
+error=((Dyb-Dya).*u-(Dxb-Dxa).*v)./Den;
+
+xnew(1,:)=Dxa.*z+x_a;
+xnew(2,:)=Dxb.*z+x_b;
+ynew(1,:)=Dya.*z+y_a;
+ynew(2,:)=Dyb.*z+y_b;
+
+Xphy=mean(xnew,1); %on moyenne les 2 valeurs 
+Yphy=mean(ynew,1);
+z=((Dxb-Dxa).*u-(Dyb-Dya).*v)./Den;
 
 

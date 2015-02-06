@@ -325,16 +325,12 @@ switch ObjectStyle
     case {'rectangle','ellipse'}
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
-%         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' Type ' centre'])
-%         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' Type ' centre'])
     case {'plane'}  
         set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
         set(handles.num_RangeY_2,'Visible','on')
-%         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' Type])
-%         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' Type])
         set(handles.num_RangeZ_2,'TooltipString','num_ZMax: range of projection normal to the plane')
         if test3D
             set(handles.num_Angle_2,'Visible','on')
@@ -373,6 +369,26 @@ switch ObjectStyle
             set(handles.num_DZ,'Visible','off')
         end
 end
+% set default values read in the plot of uvmat to initiate the mesh 
+if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
+    if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));     
+        huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
+        UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
+        Field=UvData.Field;
+        if  isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
+            set(handles.num_DX,'String',num2str(UvData.Field.CoordMesh))
+            set(handles.num_DY,'String',num2str(UvData.Field.CoordMesh))
+            set(handles.num_RangeX_1,'String',num2str(UvData.Field.XMin))
+            set(handles.num_RangeX_2,'String',num2str(UvData.Field.XMax))
+            set(handles.num_RangeY_1,'String',num2str(UvData.Field.YMin))
+            set(handles.num_RangeY_2,'String',num2str(UvData.Field.YMax))
+        end
+        if isempty(get(handles.CoordUnit,'String'))
+            set(handles.CoordUnit,'String',Field.CoordUnit)
+        end       
+    end
+end
+
 %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------

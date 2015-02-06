@@ -128,18 +128,20 @@ ind_remove=zeros(size(Field_1.ListVarName));
 % loop on the variables of the second field Field_1
 for ilist=1:numel(Field_1.ListVarName)
     % case of variable with a single dimension
-    OldDimName=Field_1.VarDimName{ilist};
-    if ischar(OldDimName), OldDimName={OldDimName}; end% transform char string to cell if relevant
-    if numel(OldDimName)==1
-        OldDim=Field_1.(Field_1.ListVarName{ilist});% get variable
-        %look for the existence of the variable OldDim in the first field Field
-        for i1=1:numel(Field.ListVarName)
-            if  isequal(Field.(Field.ListVarName{i1}),OldDim) &&...
-                   ((isempty(ProjModeRequest{i1}) && isempty(ProjModeRequest_1{ilist}))  || strcmp(ProjModeRequest{i1},ProjModeRequest_1{ilist}))                
-               ind_remove(ilist)=1;
-               NewDimName=Field.VarDimName{i1};
-               if ischar(NewDimName), NewDimName={NewDimName}; end %transform char chain to cell if needed
-               Field_1.VarDimName=regexprep_r(Field_1.VarDimName,['^' OldDimName{1} '$'],NewDimName{1});% change the var name of Field_1 to the corresponding var name of Field
+    if ~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))
+        OldDimName=Field_1.VarDimName{ilist};
+        if ischar(OldDimName), OldDimName={OldDimName}; end% transform char string to cell if relevant
+        if numel(OldDimName)==1
+            OldDim=Field_1.(Field_1.ListVarName{ilist});% get variable
+            %look for the existence of the variable OldDim in the first field Field
+            for i1=1:numel(Field.ListVarName)
+                if  isequal(Field.(Field.ListVarName{i1}),OldDim) &&...
+                        ((isempty(ProjModeRequest{i1}) && isempty(ProjModeRequest_1{ilist}))  || strcmp(ProjModeRequest{i1},ProjModeRequest_1{ilist}))
+                    ind_remove(ilist)=1;
+                    NewDimName=Field.VarDimName{i1};
+                    if ischar(NewDimName), NewDimName={NewDimName}; end %transform char chain to cell if needed
+                    Field_1.VarDimName=regexprep_r(Field_1.VarDimName,['^' OldDimName{1} '$'],NewDimName{1});% change the var name of Field_1 to the corresponding var name of Field
+                end
             end
         end
     end
@@ -151,15 +153,22 @@ Field_1.VarAttribute(find(ind_remove))=[];
 %% append the other variables of the second field, modifying their name if needed
 ListVarNameNew=Field_1.ListVarName;
 check_rename=zeros(size(ListVarNameNew));
+check_remove=zeros(size(ListVarNameNew));
 for ilist=1:numel(ListVarNameNew)
     VarName=Field_1.ListVarName{ilist};
     ind_prev=find(strcmp(ListVarNameNew{ilist},Field.ListVarName),1);% look for duplicated variable name
     if ~isempty(ind_prev)% variable name exists in Field
-        check_rename(ilist)=1;
-        ListVarNameNew{ilist}=[ListVarNameNew{ilist} '_1'];
+%         check_rename(ilist)=0;
+        check_remove(ilist)=1;
+        if isfield(Field_1.VarAttribute{ilist},'Role')&& ismember(Field_1.VarAttribute{ilist}.Role,{'scalar','vector_x','vector_y'})
+                            ListVarNameNew{ilist}=[ListVarNameNew{ilist} '_1'];
+                            check_rename(ilist)=1;
+        end
     end
     SubData.ListVarName=[SubData.ListVarName ListVarNameNew{ilist}];
     SubData.VarDimName=[SubData.VarDimName Field_1.VarDimName(ilist)];
+    Field_1.VarAttribute{ilist}.CheckSub=1;
+    SubData.VarAttribute=[SubData.VarAttribute Field_1.VarAttribute{ilist}];
     SubData.(ListVarNameNew{ilist})=Field_1.(VarName);% teke the values of the old variable for the newly named one
     %SubData.VarAttribute=[SubData.VarAttribute Field_1.VarDimName(ilist)];
 end

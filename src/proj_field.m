@@ -960,7 +960,7 @@ end
 %% reproduce initial plane position and angle
 if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(ProjData,'ProjObjectCoord')
     if length(ProjData.ProjObjectCoord)==3% if the projection plane has a z coordinate
-        if ~isequal(ProjData.PlaneCoord(3),ProjData.ProjObjectCoord) %check the consistency with the z coordinate of the field plane (set by calibration)
+        if isfield(ProjData,'.PlaneCoord') && ~isequal(ProjData.PlaneCoord(3),ProjData.ProjObjectCoord) %check the consistency with the z coordinate of the field plane (set by calibration)
             errormsg='inconsistent z position for field and projection plane';
             return
         end
