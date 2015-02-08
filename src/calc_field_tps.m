@@ -120,9 +120,9 @@ for isub=1:NbSubDomain
     if check_der
         [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
     end
-%     ListVar={};
     for ilist=1:length(FieldName)
-%         var_count=numel(ListVar);
+        %Operator{ilist}='';%default empty operator (vec, norm,...)
+        %r=regexp(FieldName{ilist},'(?<Operator>(^vec|^norm|^curl|^div|^strain))\((?<UName>.+),(?<VName>.+)\)$','names');% TODO, replace U, V
         switch FieldName{ilist}
             case 'vec(U,V)'
 %                 ListVar=[ListVar {'U', 'V'}];

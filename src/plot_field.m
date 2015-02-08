@@ -14,7 +14,7 @@
 % function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
 %
 % OUPUT:
-% PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume'
+% PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume', or errormsg
 % PlotParamOut: structure, representing the updated  plotting parameters, in case of automatic scaling
 % haxes: handle of the plotting axis, when a new figure is created.
 %
@@ -250,6 +250,7 @@ end
 
 %% display error message
 if ~isempty(errormsg)
+    PlotType=errormsg;
     msgbox_uvmat('ERROR', errormsg)
 end
 
@@ -636,7 +637,7 @@ for icell=1:numel(CellInfo)
     ivar_FF_vec=[];
     if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y') % vector components detected
         if test_vec% a vector field has been already detected
-            errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with mode interp';
+            errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with ProjMode= interp_lin or interp_tps';
             return
         else
             if numel(CellInfo{icell}.VarIndex_vector_x)>1

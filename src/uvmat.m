@@ -3282,13 +3282,16 @@ if ~isempty(FileName_1)
             list_fields=get(handles.FieldName_1,'String');% list menu fields
             if ischar(list_fields),list_fields={list_fields};end
             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
-            if ~strcmp(FieldName,'get_field...')
+            if ~strcmp(FieldName_1,'get_field...')
                 if get(handles.FixVelType,'Value')
                     VelTypeList=get(handles.VelType_1,'String');
                     VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
                 end
             end
-            if strcmp(FieldName_1,'velocity')&& strcmp(get(handles.ColorCode,'Visible'),'on')
+            if isempty(FieldName_1)
+                FieldName_1=FieldName;% if blank reproduce the field name of the first field
+            end
+            if ~isempty(regexp(FieldName_1,'^vel'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
                 list_code=get(handles.ColorCode,'String');% list menu fields
                 index_code=get(handles.ColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
@@ -3758,6 +3761,18 @@ else
                 view_field(ObjectData)
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap});
+                if ~isempty(regexp(PlotType,'^error'))
+                    if ~isempty(regexp(PlotType,'attempt to plot two vector fields'))
+                        set(handles.CheckEditObject,'Value',1)
+                        CheckEditObject_Callback([], [], handles)
+                        hset_object=findobj(allchild(0),'Tag','set_object');%find the GUI set_object
+                        hhset_object=guidata(hset_object);%
+                        set(hhset_object.ProjMode,'Value',2);
+                        set_object('ProjMode_Callback',hset_object,[],hhset_object); 
+                    end
+%                     errormsg=PlotType;
+                    return
+                end
                 if imap==1
                     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
                 else
@@ -4458,22 +4473,6 @@ switch field_1
             set(handles.uvmat,'UserData',UvData)
             REFRESH_Callback(hObject, eventdata, handles)
         end
-          
-%         set_veltype_display(0) % no veltype display
-%         hget_field=findobj(allchild(0),'name','get_field_1');
-%         if ~isempty(hget_field)
-%             delete(hget_field)
-%         end
-%         hget_field=get_field(FileName_1);
-%         set(hget_field,'name','get_field_1')
-%         hhget_field=guidata(hget_field);
-%         set(hhget_field.list_fig,'Value',1)
-%         set(hhget_field.list_fig,'String',{'uvmat'})
-%         if check_new
-%             UvData.FileType{2}=UvData.FileType{1};
-%             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
-%               set(handles.uvmat,'UserData',UvData)
-%         end
     case 'image'
         %% look for image corresponding to civ data
         if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file

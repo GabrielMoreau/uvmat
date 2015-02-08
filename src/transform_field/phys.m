@@ -115,10 +115,11 @@ if ~isempty(DataOut_1)
     if ~isfield(Calib{2},'CalibrationType')||~isfield(Calib{2},'CoordUnit')
         return %bad calib parameter input
     end
-    if ~(isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel'))
-        return % transform only fields in pixel coordinates
-    end
+    if (isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel'))
+%         return % transform only fields in pixel coordinates
+%     end
     DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
+    end
     if isfield(Calib{1},'SliceCoord')
         if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
             DataOut_1.Txt='different plane positions for the two input fields';

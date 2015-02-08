@@ -124,11 +124,11 @@ for ilist=1:numel(Field_1.VarDimName)
 end
 
 %% look for coordinates common to Field in Field_1
-ind_remove=zeros(size(Field_1.ListVarName));
+ind_remove=false(size(Field_1.ListVarName));
 % loop on the variables of the second field Field_1
 for ilist=1:numel(Field_1.ListVarName)
     % case of variable with a single dimension
-    if ~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))
+    if ~isempty(Field_1.VarAttribute{ilist}) && ~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))% if variable with Role coord... is found.
         OldDimName=Field_1.VarDimName{ilist};
         if ischar(OldDimName), OldDimName={OldDimName}; end% transform char string to cell if relevant
         if numel(OldDimName)==1
@@ -146,75 +146,97 @@ for ilist=1:numel(Field_1.ListVarName)
         end
     end
 end
-Field_1.ListVarName(find(ind_remove))=[];%removes the redondent coordinate
-Field_1.VarDimName(find(ind_remove))=[];
-Field_1.VarAttribute(find(ind_remove))=[];
+if ~isempty(find(ind_remove, 1))
+Field_1.ListVarName(ind_remove)=[];%removes the redondent coordinate
+Field_1.VarDimName(ind_remove)=[];
+Field_1.VarAttribute(ind_remove)=[];
+end
 
 %% append the other variables of the second field, modifying their name if needed
-ListVarNameNew=Field_1.ListVarName;
-check_rename=zeros(size(ListVarNameNew));
-check_remove=zeros(size(ListVarNameNew));
-for ilist=1:numel(ListVarNameNew)
-    VarName=Field_1.ListVarName{ilist};
-    ind_prev=find(strcmp(ListVarNameNew{ilist},Field.ListVarName),1);% look for duplicated variable name
+ListVarNameSub=Field_1.ListVarName;
+ListVarNameNew=ListVarNameSub;
+check_rename=zeros(size(ListVarNameSub));
+check_remove=zeros(size(ListVarNameSub));
+for ilist=1:numel(ListVarNameSub)
+    ind_prev=find(strcmp(ListVarNameSub{ilist},Field.ListVarName),1);% look for duplicated variable name
     if ~isempty(ind_prev)% variable name exists in Field
-%         check_rename(ilist)=0;
-        check_remove(ilist)=1;
-        if isfield(Field_1.VarAttribute{ilist},'Role')&& ismember(Field_1.VarAttribute{ilist}.Role,{'scalar','vector_x','vector_y'})
-                            ListVarNameNew{ilist}=[ListVarNameNew{ilist} '_1'];
-                            check_rename(ilist)=1;
+        if isfield(Field_1.VarAttribute{ilist},'Role')&&...
+            ismember(Field_1.VarAttribute{ilist}.Role,{'coord_x','coord_y','scalar','vector_x','vector_y','errorflag'})
+            ListVarNameNew{ilist}=[ListVarNameSub{ilist} '_1'];%modify the name of the second variable
+            check_rename(ilist)=1;
+        else
+            check_remove(ilist)=1;% variable will be removed
         end
     end
-    SubData.ListVarName=[SubData.ListVarName ListVarNameNew{ilist}];
-    SubData.VarDimName=[SubData.VarDimName Field_1.VarDimName(ilist)];
-    Field_1.VarAttribute{ilist}.CheckSub=1;
-    SubData.VarAttribute=[SubData.VarAttribute Field_1.VarAttribute{ilist}];
-    SubData.(ListVarNameNew{ilist})=Field_1.(VarName);% teke the values of the old variable for the newly named one
-    %SubData.VarAttribute=[SubData.VarAttribute Field_1.VarDimName(ilist)];
+end
+ListVarNameSub=ListVarNameSub(~check_remove); %eliminate removed variables from the list of the second field
+ListVarNameNew=ListVarNameNew(~check_remove); % %list of renaimed varaibles corresponding to ListVarNameSub
+VarDimNameSub=Field_1.VarDimName(~check_remove);
+VarAttributeSub=Field_1.VarAttribute(~check_remove);
+check_rename=check_rename(~check_remove); 
+
+% apply the variable renaming and mark the second field variables with the attribute .CheckSub
+for ilist=1:numel(ListVarNameSub)
+     SubData.(ListVarNameNew{ilist})=Field_1.(ListVarNameSub{ilist});% copy the variable content to the new name
+    if check_rename(ilist)   
+          % replace name in field expression FieldName, e.g. 'norm(U,V)'-> 'norm(U_1,V_1)'
+        if  isfield(VarAttributeSub{ilist},'FieldName')
+            for ivar=1:numel(find(check_rename))
+                VarAttributeSub{ilist}.FieldName=regexprep_r(VarAttributeSub{ilist}.FieldName,...
+                    ListVarNameSub{ivar},ListVarNameNew{ivar});
+            end
+        end
+    end
+    VarAttributeSub{ilist}.CheckSub=1;% mark that the field needs to be substracted as an attribute
 end
 
-%% replace variable name in field expression FieldName, e.g. 'norm(U,V)'-> 'norm(U_1,V_1)'
-for ilist=1:numel(ListVarNameNew)
-    if check_rename(ilist)&&  isfield(Field_1.VarAttribute{ilist},'FieldName')
-        for ivar=1:numel(find(check_rename))
-            Field_1.VarAttribute{ilist}.FieldName=regexprep_r(Field_1.VarAttribute{ilist}.FieldName,...
-                Field_1.ListVarName{ivar},ListVarNameNew{ivar});
-        end
-    end
-    SubData.VarAttribute=[SubData.VarAttribute Field_1.VarAttribute(ilist)];
-    SubData.VarAttribute{end}.CheckSub=1;% mark that the field needs to be substracted as an attribute
-end
+SubData.ListVarName=[SubData.ListVarName ListVarNameNew];
+SubData.VarDimName=[SubData.VarDimName VarDimNameSub];
+SubData.VarAttribute=[SubData.VarAttribute VarAttributeSub];
 
 %% substrat fields when possible
 [CellInfo,NbDim,errormsg]=find_field_cells(SubData);
-ind_remove=zeros(size(SubData.ListVarName));
+ind_remove=false(size(SubData.ListVarName));
 ivar=[];
 ivar_1=[];
 for icell=1:numel(CellInfo)
     if ~isempty(CellInfo{icell})
+        % if two scalar are in the same cell
         if isfield(CellInfo{icell},'VarIndex_scalar') && numel(CellInfo{icell}.VarIndex_scalar)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_scalar(2)}.CheckSub;
             ivar=[ivar CellInfo{icell}.VarIndex_scalar(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_scalar(2)];
         end
+        % if two vector u components are in the same cell
         if isfield(CellInfo{icell},'VarIndex_vector_x') && numel(CellInfo{icell}.VarIndex_vector_x)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_x(2)}.CheckSub;
             ivar=[ivar CellInfo{icell}.VarIndex_vector_x(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_x(2)];
         end
+         % if two vector v components are in the same cell
         if isfield(CellInfo{icell},'VarIndex_vector_y') && numel(CellInfo{icell}.VarIndex_vector_y)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
             ivar=[ivar CellInfo{icell}.VarIndex_vector_y(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_y(2)];
         end
+        % merge the error flags if needed
+        if isfield(CellInfo{icell},'VarIndex_errorflag') && numel(CellInfo{icell}.VarIndex_errorflag)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
+            ivar_flag=CellInfo{icell}.VarIndex_errorflag(1);
+            ivar_flag_1=CellInfo{icell}.VarIndex_errorflag(2);
+            VarName=SubData.ListVarName{ivar_flag};
+            VarName_1=SubData.ListVarName{ivar_flag_1};
+            SubData.(VarName)=SubData.(VarName)~=0 | SubData.(VarName_1)~=0;% combine the error flags of the two fields
+            ind_remove(ivar_flag_1)=1;
+        end
     end
 end
+% subtract fields if relevant
 for imod=1:numel(ivar)
         VarName=SubData.ListVarName{ivar(imod)};
         VarName_1=SubData.ListVarName{ivar_1(imod)};
         SubData.(VarName)=double(SubData.(VarName))-double(SubData.(VarName_1));
         ind_remove(ivar_1(imod))=1;
 end
-SubData.ListVarName(find(ind_remove))=[];
-SubData.VarDimName(find(ind_remove))=[];
-SubData.VarAttribute(find(ind_remove))=[];
+SubData.ListVarName(ind_remove)=[];
+SubData.VarDimName(ind_remove)=[];
+SubData.VarAttribute(ind_remove)=[];
 
 function OutputCell=regexprep_r(InputCell,search_string,new_string)
 if ischar(InputCell); InputCell={InputCell}; end
