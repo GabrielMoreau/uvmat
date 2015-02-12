@@ -67,13 +67,17 @@ else % no file indexing
     NomType='*';
     i1_series=[];i2_series=[];j1_series=[];j2_series=[];
     i1_input=1;i2_input=[];j1_input=[];j2_input=[];
+    if ~exist(fullfileinput,'file')
+        RootFile='';
+        return
+    end
 end
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
 if checkfileindexing
 NomTypePref='';
-if isempty(NomType)
+if isempty(NomType)||strcmp(NomType,'*')
     if exist(fullfileinput,'file')
         [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
     else

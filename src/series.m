@@ -134,7 +134,7 @@ NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
-ActionExtList={'.m';'.sh'};% default choice of extensions (Matlab fct .m or compiled version .sh
+ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
 ActionPathList=cell(NbBuiltinAction,1);%initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
 RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
@@ -619,13 +619,14 @@ for iview=1:size(InputTable,1)
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
         i1_series=[];
-        RootPath=fileparts(RootPath); %will try the upper folder
+        %RootPath=fileparts(RootPath); %will try the upper folder
+        RootFile='';
     else %scan the input folder
         [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
     % if no file is found, open a browser
-    if isempty(i1_series)
+    if isempty(RootFile)&& isempty(i1_series)
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
         if isempty(fileinput)
             set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
@@ -721,11 +722,11 @@ InputTable=get(handles.InputTable,'Data');
 SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
     iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
-    InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
+%     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
     InputTable={'','','','',''};
-    InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
+%     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{''},{[]},{[]},{[]},{[]}])
     set(handles.MinIndex_i,'Data',[])
     set(handles.MaxIndex_i,'Data',[])
@@ -741,6 +742,14 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
+   SeriesData.i1_series(iview+1:end)=[];
+    SeriesData.i2_series(iview+1:end)=[];
+    SeriesData.j1_series(iview+1:end)=[];
+    SeriesData.j2_series(iview+1:end)=[];
+    SeriesData.FileType(iview+1:end)=[];
+    SeriesData.FileInfo(iview+1:end)=[];
+    SeriesData.Time(iview+1:end)=[];
+ InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 if iview >1
     set(handles.InputLine,'String',num2str(iview))
 end
@@ -1395,7 +1404,7 @@ if isfield(Param.Action,'RunMode')
 end
 ActionExt='.m';%default
 if isfield(Param.Action,'ActionExt')
-    ActionExt=Param.Action.ActionExt;% '.m' or '.sh' (compiled)
+    ActionExt=Param.Action.ActionExt;% '.m', '.sh' (compiled)  or '.py' (Python)
     Param.Action=rmfield(Param.Action,'ActionExt');%remove from the recorded xml file to avoid interference during ImportConfig
 end
 ActionName=Param.Action.ActionName;
@@ -1646,6 +1655,24 @@ end
 StatusData.TimeStart=now;
 set(handles.status,'UserData',StatusData)
 
+
+if strcmp(ActionExt, '.py (in dev.)')
+    fprintf([
+        '\n' ...
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n' ...
+        'The option .py is used. It is still in development.\n' ...
+        'Do not use it unless you really know what you do!\n' ...
+        'To try it, first install Pyp and the most recent version of FluidDyn.\n' ...
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
+    RunMode = 'python';
+    t = struct2xml(Param);
+    t = set(t, 1, 'name', 'Series');
+    filexml = fullfile_uvmat(DirXml, '', Param.InputTable{1,3}, '.xml', OutputNomType,...
+         Param.IndexRange.first_i, Param.IndexRange.last_i, first_j, last_j);
+    save(t, filexml);
+end
+
+
 %% direct processing on the current Matlab session
 if strcmp (RunMode,'local')
     for iprocess=1:NbProcess
@@ -1681,7 +1708,7 @@ if strcmp (RunMode,'local')
                 end
         end
     end
-else
+elseif ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
     DirBat=fullfile(OutputDir,'0_EXE');
@@ -1836,6 +1863,12 @@ switch RunMode
         fprintf(oar_command);% display in command line
         system(oar_command);  
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched in cluster: press STATUS to see results'])
+    case 'python'
+        command = [
+            'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
+            'python -m fluiddyn.postproc.uvmat ' filexml];
+        % fprintf(['command:\n' command '\n\n'])
+        system(command, '-echo');
 end
 
 %------------------------------------------------------------------------
@@ -1858,6 +1891,12 @@ Param=read_GUI(handles.series);
 %% clean the output structure by removing unused information 
 if isfield(Param,'Pairs')
     Param=rmfield(Param,'Pairs'); %info Pairs not needed for output
+end
+if isfield(Param,'InputLine')
+    Param=rmfield(Param,'InputLine');
+end
+if isfield(Param,'EditObject')
+    Param=rmfield(Param,'EditObject');
 end
 Param.IndexRange.TimeSource=Param.IndexRange.TimeTable{end,1};
 Param.IndexRange=rmfield(Param.IndexRange,'TimeTable');
@@ -2327,7 +2366,7 @@ field=field_str{field_index(1)};
 if isequal(field,'get_field...')
     SeriesData=get(handles.series,'UserData');
     % input line for which the field choice is relevant
-    iview=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));% all nc files, icluding civ
+    iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'}));% all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
@@ -2336,7 +2375,7 @@ if isequal(field,'get_field...')
     InputTable=Param.InputTable(iview,:);
     % check the existence of the first file in the series
     first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1;%default setting for index j
-    if isfield(Param.IndexRange,'first_j');% if index j is used
+    if isfield(Param.IndexRange,'first_j');% if index j is used     
         first_j=Param.IndexRange.first_j;
         last_j=Param.IndexRange.last_j;
         MinIndex_j=Param.IndexRange.MinIndex_j(iview);
@@ -2345,8 +2384,17 @@ if isequal(field,'get_field...')
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString{iview}; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},...
-        InputTable{5},InputTable{4},i1,i2,j1,j2);
+    LineIndex=iview(1);
+    if numel(iview)>1      
+        answer=msgbox_uvmat('INPUT_TXT',['select the line of the input table:' num2str(iview)] ,num2str(iview(1)));
+        LineIndex=str2num(answer);
+%         InputLine=str2num(get(handles.InputLine,'String'));
+%         if ismember(InputLine,iview)
+%             LineIndex=InputLine;
+%         end
+    end
+    FirstFileName=fullfile_uvmat(InputTable{LineIndex,1},InputTable{LineIndex,2},InputTable{LineIndex,3},...
+        InputTable{LineIndex,5},InputTable{LineIndex,4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
         ParamIn.Title='get_field: pick input variables and coordinates for series processing';
         ParamIn.SeriesInput=1;
@@ -2371,15 +2419,15 @@ if isequal(field,'get_field...')
                 set(handles.FieldName,'Value',1) % set menu to 'velocity
                 XName='X';
                 YName='y';
-                set(handles.VelType,'visible','on')
-                set(handles.VelType_title,'visible','on')
         end
         set(handles.FieldName,'Value',1)
         set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
-            set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
-            set(handles.VelType,'visible','off')
-            set(handles.VelType_title,'visible','off')
+           if ~isempty(regexp(FieldList{1},'^vec'))
+                set(handles.FieldName,'Value',1)
+           else
+                set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
+           end
             XName=GetFieldData.Coordinates.Coord_x;
             YName=GetFieldData.Coordinates.Coord_y;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
@@ -2391,10 +2439,10 @@ if isequal(field,'get_field...')
                 case 'attribute'
                     TimeName=['att:' GetFieldData.Time.TimeName];
                     % update the time table
-                    TimeTable{iview,2}=get_time(Param.IndexRange.MinIndex_i(iview),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % Min time     
-                    TimeTable{iview,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % first time              
-                    TimeTable{iview,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % last time                     
-                    TimeTable{iview,5}=get_time(Param.IndexRange.MaxIndex_i(iview),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{iview},GetFieldData.Time.TimeName);  % Max time
+                    TimeTable{LineIndex,2}=get_time(Param.IndexRange.MinIndex_i(LineIndex),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Min time     
+                    TimeTable{LineIndex,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % first time              
+                    TimeTable{LineIndex,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % last time                     
+                    TimeTable{LineIndex,5}=get_time(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Max time
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
                     set(handles.NomType,'String','*')
@@ -2408,11 +2456,13 @@ if isequal(field,'get_field...')
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
-            TimeTable{iview,1}=TimeName;
+            TimeTable{LineIndex,1}=TimeName;
             set(handles.TimeTable,'Data',TimeTable);
         end
         set(handles.Coord_x,'String',XName)
         set(handles.Coord_y,'String',YName)
+        set(handles.Coord_x,'Visible','on')
+        set(handles.Coord_y,'Visible','on')
     else
         msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
     end
@@ -3105,8 +3155,11 @@ function ActionExt_Callback(hObject, eventdata, handles)
 
 ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
-ActionList=get(handles.ActionName,'String');
-ActionName=ActionList{get(handles.ActionName,'Value')};
+if strcmp(ActionExt,'.py (in dev.)')
+    set(handles.RunMode,'Value',2)
+end
+% ActionList=get(handles.ActionName,'String');
+% ActionName=ActionList{get(handles.ActionName,'Value')};
 
 function num_NbProcess_Callback(hObject, eventdata, handles)
 

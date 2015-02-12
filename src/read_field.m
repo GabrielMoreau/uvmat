@@ -135,8 +135,8 @@ switch FileType
                     ListVar=[ListVar {r.VName}];% append the variable in the list if not previously listed
                     Role=[Role {'vector_y'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
-                    ListInputField=[ListInputField {''}];
-                    %ListOperator=[ListOperator {[r.Operator '_V']}];
+                    ListInputField=[ListInputField InputField(ilist)];
+                    %ListInputField=[ListInputField {''}];
                 else
                     checkV=1;
                 end

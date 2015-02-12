@@ -195,7 +195,7 @@ if min(cell2mat(CheckImage))==1 && (~Param.CheckObject || strcmp(Param.ProjObjec
 else
     FileExtOut='.nc'; %netcdf output
 end
-NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
+%NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 RootFileOut=RootFile{1};
 for iview=2:NbView
     if ~strcmp(RootFile{iview},RootFile{1})
@@ -402,10 +402,10 @@ if isempty(Data)||~iscell(Data)
     return
 end
 errormsg='';
-MergeData=Data{1};% merged field= first field by default, reproduces the glabal attributes of the first field
+MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
 NbView=length(Data);
-if NbView==1
-    return
+if NbView==1% if there is only one field, just reproduce it in MergeData
+    return 
 end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
@@ -418,10 +418,9 @@ end
 for icell=1:length(CellInfo)
     if NbDim(icell)~=1 % skip field cells which are of dim 1
         switch CellInfo{icell}.CoordType
-            case 'scattered'  %case of input fields with unstructured coordinates: just concacene data
+            case 'scattered'  %case of input fields with unstructured coordinates: just concatene data
                 for ivar=CellInfo{icell}.VarIndex %  indices of the selected variables in the list FieldData.ListVarName
                     VarName=Data{1}.ListVarName{ivar};
-                    %MergeData=Data{1};% merged field= first field by default, reproduces the glabal attributes of the first field
                     for iview=2:NbView
                         MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
                     end
@@ -430,6 +429,9 @@ for icell=1:length(CellInfo)
                 FFName='';
                 if isfield(CellInfo{icell},'VarIndex_errorflag') && ~isempty(CellInfo{icell}.VarIndex_errorflag)
                     FFName=Data{1}.ListVarName{CellInfo{icell}.VarIndex_errorflag};% name of errorflag variable
+                    MergeData.ListVarName(CellInfo{icell}.VarIndex_errorflag)=[];%remove error flag variable in MergeData (will use NaN instead)
+                    MergeData.VarDimName(CellInfo{icell}.VarIndex_errorflag)=[];
+                    MergeData.VarAttribute(CellInfo{icell}.VarIndex_errorflag)=[];
                 end
                 % select good data on each view
                 for ivar=CellInfo{icell}.VarIndex  %  indices of the selected variables in the list FieldData.ListVarName
@@ -440,27 +442,27 @@ for icell=1:length(CellInfo)
                         else
                             check_bad=isnan(Data{iview}.(VarName)) | Data{iview}.(FFName)~=0;%=0 for NaN or error flagged data values, 1 else
                         end
-                        Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or masked data
+                        Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
                         if iview==1
-                            MergeData.(VarName)=Data{1}.(VarName);% correct the field of MergeData
+                            %MergeData.(VarName)=Data{1}.(VarName);% initiate MergeData with the first field
                             NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
                             return
-                        else      
-                         
-                            MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);%add data
+                        else                             
+                            MergeData.(VarName)=MergeData.(VarName) +double(Data{iview}.(VarName));%add data
                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
                         end
                     end
                     MergeData.(VarName)(NbAver~=0)=MergeData.(VarName)(NbAver~=0)./NbAver(NbAver~=0);% take average of defined data at each point
+                    MergeData.(VarName)(NbAver==0)=NaN;% set to NaN the points with no good data
                 end
         end
-        if isempty(FFName)
-            FFName='FF';
-        end
-        MergeData.(FFName)(NbAver~=0)=0;% flag to 1 undefined summed data
-        MergeData.(FFName)(NbAver==0)=1;% flag to 1 undefined summed data
+%         if isempty(FFName)
+%             FFName='FF';
+%         end
+%         MergeData.(FFName)(NbAver~=0)=0;% flag to 1 undefined summed data
+%         MergeData.(FFName)(NbAver==0)=1;% flag to 1 undefined summed data
     end
 end
 

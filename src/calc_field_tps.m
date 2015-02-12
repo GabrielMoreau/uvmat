@@ -104,8 +104,8 @@ for ilist=1:length(FieldName)
     end
     VarAttribute=[VarAttribute VarAttributeNew];
 end
-Attr_FF.Role='errorflag';
-VarAttribute=[VarAttribute {Attr_FF}];
+%Attr_FF.Role='errorflag';
+%VarAttribute=[VarAttribute {Attr_FF}];
 FieldName(check_remove)=[];
 
 %% loop on subdomains
@@ -159,8 +159,8 @@ for isub=1:NbSubDomain
         end
     end
 end
-DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
-nbval(nbval==0)=1;% to avoid division by zero for averaging
+%DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
+nbval(nbval==0)=NaN;% to avoid division by zero for averaging
 ListFieldOut=fieldnames(DataOut);
 for ifield=1:numel(ListFieldOut)
     DataOut.(ListFieldOut{ifield})=DataOut.(ListFieldOut{ifield})./nbval;

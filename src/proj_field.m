@@ -665,7 +665,7 @@ for icell=1:length(CellInfo)
     VarIndex=find(check_proj);% indices of the variables to be projected
     
     %% identify vector components
-    testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors
+    %testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors
     %     if testU
     %         UName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
     %         VName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
@@ -699,8 +699,8 @@ for icell=1:length(CellInfo)
                     errormsg='range of the projection object is missing';
                     return
                 end
-                ProjData.ListVarName=[ProjData.ListVarName {FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)}}];
-                ProjData.VarDimName=[ProjData.VarDimName {FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)}}];
+                ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
+                ProjData.VarDimName=[ProjData.VarDimName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
                 nbvar=numel(ProjData.ListVarName);
                 ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                 % select the (non false) input data located in the band of projection
@@ -716,16 +716,16 @@ for icell=1:length(CellInfo)
                 [Xproj,indsort]=sort(Xproj);% sort points by increasing absissa along the projection line
                 ProjData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)})=Xproj;
                 for ivar=1:numel(VarIndex)
-                    ProjData.(VarName{ivar})=FieldData.(VarName{ivar})(flagsel);% restrict vrtibles to the projection band
+                    ProjData.(VarName{ivar})=FieldData.(VarName{ivar})(flagsel);% restrict variables to the projection band
                     ProjData.(VarName{ivar})=ProjData.(VarName{ivar})(indsort);% sort by absissa
                     ProjData.ListVarName=[ProjData.ListVarName VarName{ivar}];
-                    ProjData.VarDimName=[ProjData.VarDimName {FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)}}];
+                    ProjData.VarDimName=[ProjData.VarDimName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
                     ProjData.VarAttribute{nbvar+ivar}=FieldData.VarAttribute{VarIndex(ivar)};%reproduce var attribute
                     if isfield(ProjData.VarAttribute{nbvar+ivar},'Role')
                         if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x');
-                            ivar_U=ivar;
+                            ivar_U=nbvar+ivar;
                         elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');
-                            ivar_V=ivar;
+                            ivar_V=nbvar+ivar;
                         end
                     end
                     ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuous lines
@@ -776,6 +776,8 @@ for icell=1:length(CellInfo)
                     FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
                 end
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
+                ProjData.ListVarName=[ProjData.ListVarName {'X'}];
+                ProjData.VarDimName=[ProjData.VarDimName {'X'}];
                 ProjData.X=Xproj;
                 nbvar=numel(ProjData.ListVarName);
                 ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
@@ -783,7 +785,7 @@ for icell=1:length(CellInfo)
                 ProjData.ListVarName=[ProjData.ListVarName ProjVarName];
                 ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
                 for ivar=1:numel(VarAttribute)
-                    ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    ProjData.VarDimName=[ProjData.VarDimName {'X'}];
                     if isfield(VarAttribute{ivar},'Role')
                         if  strcmp(VarAttribute{ivar}.Role,'vector_x');
                             ivar_U=ivar+nbvar;

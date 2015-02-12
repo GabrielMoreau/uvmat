@@ -40,9 +40,9 @@ end
 
 NbDim=max(NbDimArray);% spatial dimension of the input field
 imax=find(NbDimArray==NbDim);% indices of field cells to consider
-if isfield(Field,'NbDim')
-    NbDim=double(Field.NbDim);% deal with plane fields containing z coordinates
-end
+% if isfield(Field,'NbDim')
+%     NbDim=double(Field.NbDim);% deal with plane fields containing z coordinates
+% end
 FieldOut.NbDim=NbDim;
 if  NbDim<=1; return; end% stop here for 1D fields
 

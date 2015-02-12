@@ -1,6 +1,6 @@
-%'aver_stat': calculate field average over a time series
+%'histo_diff': calculate the histogram of the difference between two fields 
 %------------------------------------------------------------------------
-% function ParamOut=aver_stat(Param)
+% function ParamOut=histo_diff(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -56,7 +56,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=aver_stat(Param)
+function ParamOut=histo_diff(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
@@ -68,7 +68,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     ParamOut.FieldTransform = 'on';%can use a transform function
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.stat';%set the output dir extension
+    ParamOut.OutputDirExt='.histodif';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     % check the existence of the first file in the series
     first_j=[];
@@ -135,7 +135,7 @@ ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
-        disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
+        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
         return
     end
     [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
@@ -154,7 +154,7 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
-        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
+        msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
 
@@ -165,7 +165,9 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
 end
-
+if ~(isfield(Param,'ProjObject')&& ismember(Param.ProjObject.ProjMode,{'polygon','rectangle','ellipse'}))
+    disp_uvmat('ERROR','projection in a closed domain: polygon, rectangle or ellipse is needed for histograms',checkrun)
+end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
@@ -179,7 +181,7 @@ else
     return
 end
 if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
-    disp_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
+    msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
     return
 end
 
@@ -214,7 +216,7 @@ end
 
 % for i_slice=1:NbSlice
 % index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
-nbfiles=0;
+% nbfiles=0;
 % nbmissing=0;
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
@@ -266,22 +268,20 @@ for index=1:NbField
         end
         
         %% calculate tps coefficients if needed
-        if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-            Field=tps_coeff_field(Field,check_proj_tps);
-        end
+%         if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
+%             Field=tps_coeff_field(Field,check_proj_tps);
+%         end
         
         %field projection on an object
-        if Param.CheckObject
             [Field,errormsg]=proj_field(Field,Param.ProjObject);
             if ~isempty(errormsg)
-                disp_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg],checkrun)
+                disp_uvmat('ERROR',['error in histo_diff/proj_field:' errormsg],checkrun)
                 return
             end
-        end
-        nbfiles=nbfiles+1;
+%         nbfiles=nbfiles+1;
         
         %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-        if nbfiles==1 %first field
+        if index==1 %first field
             time_1=[];
             if isfield(Field,'Time')
                 time_1=Field.Time(1);
@@ -333,10 +333,6 @@ for ivar=1:length(Field.ListVarName)
     VarName=Field.ListVarName{ivar};
     DataOut.(VarName)=DataOut.(VarName)./NbData.(VarName); % normalize the mean
 end
-nbmissing=NbField-nbfiles;
-if nbmissing~=0
-    disp_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'],checkrun)
-end
 if isempty(time) % time is read from files
     if isfield(Field,'Time')
         time_end=Field.Time(1);%last time read
@@ -352,23 +348,12 @@ end
 
 %% writing the result file
 OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
-if CheckImage{1} %case of images
-    if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
-        DataOut.A=uint16(DataOut.A);
-        imwrite(DataOut.A,OutputFile,'BitDepth',16); % case of 16 bit images
-    else
-        DataOut.A=uint8(DataOut.A);
-        imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
-    end
+errormsg=struct2nc(OutputFile,DataOut); %save result file
+if isempty(errormsg)
     disp([OutputFile ' written']);
-else %case of netcdf input file , determine global attributes
-    errormsg=struct2nc(OutputFile,DataOut); %save result file
-    if isempty(errormsg)
-        disp([OutputFile ' written']);
-    else
-        disp(['error in writting result file: ' errormsg])
-    end
-end  % end averaging  loop
+else
+    disp(['error in writting result file: ' errormsg])
+end
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun

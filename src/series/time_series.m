@@ -206,13 +206,13 @@ end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
-if isfield(Param,'InputFields')
-    InputFields{1}=Param.InputFields;
-end
 if nbview==2
     InputFields{2}=[];%default (case of images)
-    if isfield(Param,'InputFields')
-        InputFields{2}=Param.InputFields{1};%default
+end
+if isfield(Param,'InputFields')
+    InputFields{1}=Param.InputFields;
+    if nbview==2
+        InputFields{2}=Param.InputFields;%default
         if isfield(Param.InputFields,'FieldName_1')
             InputFields{2}.FieldName=Param.InputFields.FieldName_1;
             if isfield(Param.InputFields,'VelType_1')
