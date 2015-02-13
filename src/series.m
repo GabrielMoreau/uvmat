@@ -2104,7 +2104,7 @@ end
 %% Detect the types of input files and set menus and default options in 'FieldName'
 if FieldNameRequest && numel(iview_netcdf)>=1
     set(handles.InputFields,'Visible','on')
-    if CheckList==0        % not civ input made
+    %if CheckList==0        % not civ input made
         if isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
         ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
@@ -2163,9 +2163,9 @@ if FieldNameRequest && numel(iview_netcdf)>=1
             set(handles.FieldName_1,'Visible','off')
         end
         end
-    else
-        set(handles_coord,'Visible','off')% no coord display for civ data
-    end
+%     else
+%         set(handles_coord,'Visible','off')% no coord display for civ data
+%     end
     set(handles.FieldName,'String',FieldList)
 else
     set(handles.InputFields,'Visible','off')

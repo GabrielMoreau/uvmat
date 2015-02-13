@@ -165,7 +165,7 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
 end
-if ~(isfield(Param,'ProjObject')&& ismember(Param.ProjObject.ProjMode,{'polygon','rectangle','ellipse'}))
+if ~(isfield(Param,'ProjObject')&& ismember(Param.ProjObject.Type,{'polygon','rectangle','ellipse'}))
     disp_uvmat('ERROR','projection in a closed domain: polygon, rectangle or ellipse is needed for histograms',checkrun)
 end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
@@ -204,7 +204,7 @@ end
 if NbView==2
     InputFields{2}=[];%default (case of images)
     if isfield(Param,'InputFields')
-        InputFields{2}=Param.InputFields{1};%default
+        InputFields{2}=InputFields{1};%default
         if isfield(Param.InputFields,'FieldName_1')
             InputFields{2}.FieldName=Param.InputFields.FieldName_1;
             if isfield(Param.InputFields,'VelType_1')
@@ -248,18 +248,6 @@ for index=1:NbField
         %% coordinate transform (or other user defined transform)
         if ~isempty(transform_fct)
             switch nargin(transform_fct)
-                case 4
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 3
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
                 case 2
                     Field=transform_fct(Data{1},XmlData{1});
                 case 1
@@ -267,13 +255,20 @@ for index=1:NbField
             end
         end
         
-        %% calculate tps coefficients if needed
+        %% projection of the second (ref) field on the first one
+        % calculate tps coefficients if needed (spatial derivatives)
 %         if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
 %             Field=tps_coeff_field(Field,check_proj_tps);
-%         end
-        
-        %field projection on an object
-            [Field,errormsg]=proj_field(Field,Param.ProjObject);
+%         end       
+          Field.ListVarName={'X','Y','U','V'};
+          Field.VarDimName={'nb_vector','nb_vector','nb_vector','nb_vector'};
+          F.U=scatteredInterpolant(Data{2}.X,Data{2}.Y,Data{2}.U,'linear');
+          Field.U=Field.U-F.U(Field.X,Field.Y);%substract the interpolated ref to U
+          F.V=scatteredInterpolant(Data{2}.X,Data{2}.Y,Data{2}.V,'linear');
+          Field.V=Field.V-F.V(Field.X,Field.Y);%substract the interpolated ref to V
+          
+        %field projection on a close object yielding histogram
+            [Histo,errormsg]=proj_field(Field,Param.ProjObject);% calculate histogram
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',['error in histo_diff/proj_field:' errormsg],checkrun)
                 return
