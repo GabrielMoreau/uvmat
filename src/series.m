@@ -233,12 +233,23 @@ if isfield(Param,'list_fields')&& isfield(Param,'index_fields') &&~isempty(Param
     set(handles.FieldName,'String',Param.list_fields);% list menu fields
     set(handles.FieldName,'Value',Param.index_fields);% selected string index
 end
-if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
-        set(handles.Coord_x,'String',Param.Coord_x_str);% list menu fields
+if isfield(Param,'Coordinates')
+    if isfield(Param.Coordinates,'Coord_x')
+        set(handles.Coord_x,'String',Param.Coordinates.Coord_x)
+    end
+    if isfield(Param.Coordinates,'Coord_y')
+        set(handles.Coord_y,'String',Param.Coordinates.Coord_y)
+    end
+    if isfield(Param.Coordinates,'Coord_z')
+        set(handles.Coord_z,'String',Param.Coordinates.Coord_z)
+    end
 end
-if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
-        set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
-end
+% if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
+%         set(handles.Coord_x,'String',Param.Coord_x_str);% list menu fields
+% end
+% if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
+%         set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
+% end
 
 %% introduce the input file name(s) if defined from input Param,
 if isfield(Param,'InputFile')
@@ -274,17 +285,17 @@ if isfield(Param,'InputFile')
     set(handles.series,'UserData',SeriesData)
     update_rootinfo(handles,Param.HiddenData.i1_series{1},Param.HiddenData.i2_series{1},Param.HiddenData.j1_series{1},Param.HiddenData.j2_series{1},...
         Param.HiddenData.FileInfo{1},Param.HiddenData.MovieObject{1},1)
-    if isfield(Param,'FileName_1')       
+    if isfield(Param,'FileName_1')
         %         display_file_name(handles,Param,2)
         update_rootinfo(handles,Param.HiddenData.i1_series{2},Param.HiddenData.i2_series{2},Param.HiddenData.j1_series{2},Param.HiddenData.j2_series{2},...
             Param.HiddenData.FileInfo{2},Param.HiddenData.MovieObject{2},2)
     end
     %% enable field and veltype menus, in accordance with the current action
-ActionName_Callback([],[], handles)
-
-%% set length of waitbar
-displ_time(handles)
-
+    ActionName_Callback([],[], handles)
+    
+    %% set length of waitbar
+    displ_time(handles)
+    
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 end

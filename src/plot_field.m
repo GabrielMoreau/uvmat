@@ -1368,9 +1368,9 @@ if max(abs(diff2))>0.001*abs(diffy(index(1))) % if max(diff2) is larger than 1/1
         dxymod=sqrt((rangx(2)-rangx(1))*(rangy(1)-rangy(2))/length(vec_X));
         dxy=[-dxymod/4 dxymod/4];% increase the resolution 4 times
     end
-    xi=[rangx(1):dxy(2):rangx(2)];
-    yi=[rangy(1):dxy(1):rangy(2)];
-    A=griddata_uvmat(vec_X,vec_Y,vec_A,xi,yi'); 
+    xi=rangx(1):dxy(2):rangx(2);
+    yi=rangy(1):dxy(1):rangy(2);
+    A=griddata(vec_X,vec_Y,vec_A,xi,yi'); 
     A=reshape(A,length(yi),length(xi));
 else
     x=vec_X(1:index(1));% the set of abscissa (obtained on the first line)

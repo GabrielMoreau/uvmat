@@ -196,13 +196,13 @@ end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
-if isfield(Param,'InputFields')
-    InputFields{1}=Param.InputFields;
-end
 if NbView==2
     InputFields{2}=[];%default (case of images)
-    if isfield(Param,'InputFields')
-        InputFields{2}=Param.InputFields{1};%default
+end
+if isfield(Param,'InputFields')
+    InputFields{1}=Param.InputFields;
+    if NbView==2
+        InputFields{2}=Param.InputFields;%default
         if isfield(Param.InputFields,'FieldName_1')
             InputFields{2}.FieldName=Param.InputFields.FieldName_1;
             if isfield(Param.InputFields,'VelType_1')
@@ -211,7 +211,6 @@ if NbView==2
         end
     end
 end
-
 % for i_slice=1:NbSlice
 % index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
 nbfiles=0;

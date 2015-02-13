@@ -385,7 +385,6 @@ end
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 for icell=1:length(CellInfo)
     CoordType=CellInfo{icell}.CoordType;
-%     testY=0;
     test_Amat=0;
     if NbDim(icell)~=2% proj_patch acts only on fields of space dimension 2
         continue
@@ -1291,8 +1290,10 @@ for icell=1:length(CellInfo)
                             VarDimName{ilist}={'coord_y','coord_x'};
                         end
                     end
+                    if isfield (CellInfo{icell},'VarIndex_vector_x')&& isfield (CellInfo{icell},'VarIndex_vector_y')
                     vector_x_proj=CellInfo{icell}.VarIndex_vector_x; %preserve for next cell
                     vector_y_proj=CellInfo{icell}.VarIndex_vector_y; %preserve for next cell
+                    end
             end
             
         case 'tps'
