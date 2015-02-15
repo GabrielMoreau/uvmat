@@ -70,7 +70,27 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.stat';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-    % check the existence of the first file in the series
+     % check for selection of a projection object
+    hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
+    if  ~isfield(Param,'ProjObject')
+        answer=msgbox_uvmat('INPUT_Y-N','use a projection object?');
+        if strcmp(answer,'Yes')
+            hhseries=guidata(hseries);
+            set(hhseries.CheckObject,'Visible','on')
+            set(hhseries.CheckObject,'Value',1)
+            Param.CheckObject=1;
+            series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+        end
+    end
+    % introduce bin size for histograms
+    if Param.CheckObject
+        SeriesData=get(hseries,'UserData');
+        if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
+            answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
+            ParamOut.ActionInput.VarMesh=str2double(answer);
+        end
+    end
+    % check the existence of the first and last file in the series
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     last_j=[];
@@ -86,7 +106,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
         LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-        if ~exist(FirstFileName,'file')
+        if ~exist(LastFileName,'file')
              msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
         end
     end
@@ -169,7 +189,7 @@ end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
-%% check the validity of  input file types
+%% check the validity of  input file types and set the output file type
 if CheckImage{1}
     FileExtOut='.png'; % write result as .png images for image inputs
 elseif CheckNc{1}
@@ -181,6 +201,9 @@ end
 if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
     disp_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
+end
+if isfield(Param,'ProjObject') && ~strcmp(Param.ProjObject.Type,'plane')
+      FileExtOut='.nc';% write result as .nc files (even for image input)
 end
 
 %% settings for the output file
@@ -211,11 +234,11 @@ if isfield(Param,'InputFields')
         end
     end
 end
-% for i_slice=1:NbSlice
-% index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
-nbfiles=0;
-% nbmissing=0;
-
+nbfiles=0;%counter of the successfully read files (bad files are skipped)
+VarMesh=NaN;
+if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})&& isfield(Param.ActionInput,'VarMesh')%case of histograms 
+     VarMesh=Param.ActionInput.VarMesh;
+end
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
     update_waitbar(WaitbarHandle,index/NbField)
@@ -242,6 +265,7 @@ for index=1:NbField
     
     if isempty(errormsg)
         Field=Data{1}; % default input field structure
+        nbfiles=nbfiles+1; %increment the file counter
         %% coordinate transform (or other user defined transform)
         if ~isempty(transform_fct)
             switch nargin(transform_fct)
@@ -264,50 +288,82 @@ for index=1:NbField
             end
         end
         
-        %% calculate tps coefficients if needed
-        if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-            Field=tps_coeff_field(Field,check_proj_tps);
-        end
-        
-        %field projection on an object
+        %% field projection on an object
         if Param.CheckObject
-            [Field,errormsg]=proj_field(Field,Param.ProjObject);
+            if strcmp(Param.ProjObject.ProjMode,'interp_tps')
+                Field=tps_coeff_field(Field,check_proj_tps);% calculate tps coefficients if needed
+            end
+            [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg],checkrun)
                 return
             end
         end
-        nbfiles=nbfiles+1;
-        
+             
         %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
         if nbfiles==1 %first field
             time_1=[];
             if isfield(Field,'Time')
                 time_1=Field.Time(1);
             end
-            DataOut=Field;%default
-            DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files
-            errorvar=zeros(numel(Field.ListVarName));%index of errorflag associated to each variable
-            for ivar=1:numel(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
-                NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
-                for iivar=1:length(Field.VarAttribute)
-                    if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
-                            && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
-                        errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
+            DataOut=Field;%outcome reproduces the first (projected) field by default
+            DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files         
+            if ismember(Param.ProjObject.ProjMode,{'inside','outside'})%case of histograms
+                for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
+                    VarName=Field.ListVarName{ivar};
+                    if isfield(Data{1},VarName)
+                        DataOut.(VarName)=Field.(VarName);
+                        DataOut.([VarName 'Histo'])=zeros(size(DataOut.(VarName)));
+                        VarMesh=DataOut.(VarName)(2)-DataOut.(VarName)(1);
                     end
                 end
+                disp(['mesh for histogram = ' num2str(VarMesh)])
+            else
+                errorvar=zeros(numel(Field.ListVarName));%index of errorflag associated to each variable
+                for ivar=1:numel(Field.ListVarName)
+                    VarName=Field.ListVarName{ivar};
+                    DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
+                    NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
+                    for iivar=1:length(Field.VarAttribute)
+                        if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
+                                && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
+                            errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
+                        end
+                    end
+                end
+                DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
             end
-            DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-            DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-            DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
         end   %current field
         for ivar=1:length(DataOut.ListVarName)
-            VarName=Field.ListVarName{ivar};
+            VarName=DataOut.ListVarName{ivar};
             sizmean=size(DataOut.(VarName));
             siz=size(Field.(VarName));
-            if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
+            if ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+                if isfield(Data{1},VarName)
+                    MaxValue=max(DataOut.(VarName));% current max of histogram absissa
+                    MinValue=min(DataOut.(VarName));% current min of histogram absissa
+%                     VarMesh=Field.VarAttribute{ivar}.Mesh;
+                    MaxIndex=round(MaxValue/VarMesh);
+                    MinIndex=round(MinValue/VarMesh);
+                    MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
+                    MinIndex_new=round(min(Field.(VarName)/VarMesh));
+                    if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
+                        DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
+                        DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(1,MaxIndex_new-MaxIndex)]; % append the new histo values                    
+                    end
+                    if MinIndex_new <= MinIndex-1
+                        DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
+                        DataOut.([VarName 'Histo'])=[zeros(1,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
+                        ind_start=1;
+                    else
+                        ind_start=MinIndex_new-MinIndex+1;
+                    end
+                    DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
+                        DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);   
+                end
+            elseif ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
                 disp_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
                 return
             else
@@ -327,14 +383,15 @@ for index=1:NbField
     end
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-
-for ivar=1:length(Field.ListVarName)
-    VarName=Field.ListVarName{ivar};
-    DataOut.(VarName)=DataOut.(VarName)./NbData.(VarName); % normalize the mean
+if ~ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+    for ivar=1:length(Field.ListVarName)
+        VarName=Field.ListVarName{ivar};
+        DataOut.(VarName)=DataOut.(VarName)./NbData.(VarName); % normalize the mean
+    end
 end
 nbmissing=NbField-nbfiles;
 if nbmissing~=0
-    disp_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'],checkrun)
+    disp_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipped'],checkrun)
 end
 if isempty(time) % time is read from files
     if isfield(Field,'Time')
@@ -351,7 +408,7 @@ end
 
 %% writing the result file
 OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
-if CheckImage{1} %case of images
+if strcmp(FileExtOut,'.png') %case of images
     if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
         DataOut.A=uint16(DataOut.A);
         imwrite(DataOut.A,OutputFile,'BitDepth',16); % case of 16 bit images
@@ -360,7 +417,7 @@ if CheckImage{1} %case of images
         imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
     end
     disp([OutputFile ' written']);
-else %case of netcdf input file , determine global attributes
+else %case of netcdf  file , determine global attributes
     errormsg=struct2nc(OutputFile,DataOut); %save result file
     if isempty(errormsg)
         disp([OutputFile ' written']);

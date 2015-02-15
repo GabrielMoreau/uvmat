@@ -43,7 +43,7 @@
 %          .XmlData: cell array of 1 or 2 structures representing the xml files associated with the input fieldname (containing timing  and geometry calibration)
 %          .Field: cell array of 1 or 2 structures representing the current  input field(s)
 %          .PlotAxes: field structure representing the current field plotted  on the main axes  (used for mouse operations)
-%          .HistoAxes: idem for histogram axes
+%          .HistoAxes: idem for Histogram axes
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for REFRESH_Callback) %%%%%%%%%%%%%%%%%%%%:
 %
@@ -68,7 +68,7 @@
 %                            |                                    
 %                        (tps_coeff_field.m)               calculate tps coefficients (for filter projection or spatial derivatives).
 %                            |
-%                       UvData.Field-------------->histogram
+%                       UvData.Field-------------->Histogram
 %               _____________|____________
 %              |                          |                    
 %        proj_field.m               proj_field.m       project the field on the projection objects (use set_field_list.m)           
@@ -357,12 +357,13 @@ set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height]
 
 %% reset position of text_display and TableDisplay
 set(handles.text_display,'Units','pixels')
+set(handles.TableDisplay,'Units','pixels')
 pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
     pos_1(3)=1.2*ColumnWidth;
 pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
 pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
 set(handles.text_display,'Position',pos_1)
-set(handles.TableDisplay,'Position',pos_1)
+set(handles.TableDisplay,'Position',[pos_1(1) 10 pos_1(3) 5*pos_1(4)])
 % reset position of CheckTable
 set(handles.CheckTable,'Units','pixels')
 pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
@@ -2555,6 +2556,7 @@ errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
 end
+set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back in red
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
@@ -2573,6 +2575,7 @@ errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
 end
+set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back in red
 
 %------------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
@@ -3613,6 +3616,7 @@ UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_c
 %% usual 1D (x,y) plots
 if UvData.Field.NbDim<=1
     set(handles.Objects,'Visible','off')
+    set(handles.CheckFixAspectRatio,'Value',0)
     [PlotType,PlotParamOut,haxes]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     UvData.PlotAxes=UvData.Field; %store data for further plot modifications
     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
@@ -3621,6 +3625,14 @@ if UvData.Field.NbDim<=1
             set(handles.(list{1}),'Visible','off')
         end
     end
+    set(handles.Histogram,'Visible','off')
+    set(handles.HistoMenu,'Visible','off')
+    set(handles.HistoAxes,'Visible','off')
+    hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
+    if ~isempty(hlegend)
+        delete(hlegend)
+    end
+    cla(handles.HistoAxes)% clear the curves and legend in histogram axes
     set(handles.uvmat,'UserData',UvData)
 %% 2D or 3D fieldname are generally projected
 else
@@ -3689,7 +3701,6 @@ else
         PlotParam{1}.Vectors.ColorScalar={''};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
     end
-    %PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
     
     %% second projection object (view_field display)
     if length( IndexObj)==2
@@ -3698,12 +3709,10 @@ else
             plot_handles{2}=guidata(view_field_handle);
             haxes(2)=plot_handles{2}.PlotAxes;
             PlotParam{2}=read_GUI(view_field_handle);
-            %PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
         end
     end
     
-    %% loop on the projection objects: one or two
-    
+    %% loop on the projection objects: one or two 
     for imap=1:numel(IndexObj)
         iobj=IndexObj(imap);
         if numel(UvData.ProjObject)<iobj
@@ -3757,7 +3766,6 @@ else
         end       
         set(handles.uvmat,'UserData',UvData)
         if ~isempty(ObjectData)
-            %PlotType='none'; %default
             if imap==2 && isempty(view_field_handle)
                 view_field(ObjectData)
             else
@@ -3771,7 +3779,6 @@ else
                         set(hhset_object.ProjMode,'Value',2);
                         set_object('ProjMode_Callback',hset_object,[],hhset_object); 
                     end
-%                     errormsg=PlotType;
                     return
                 end
                 if imap==1
@@ -3796,13 +3803,13 @@ else
         update_mask(handles);
     end
     
-    %% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
+    %% prepare the menus of histograms and plot them (Histogram of the whole volume in 3D case)
     menu_histo=(UvData.Field.ListVarName)';%list of field variables to be displayed for the menu of histogram display
     ind_skip=[];
     % nb_histo=1;
     Ustring='';
     Vstring='';
-    % suppress axes from the histogram menu
+    % suppress axes from the Histogram menu
     for ivar=1:numel(menu_histo)%l loop on field variables:
         if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
             Role=UvData.Field.VarAttribute{ivar}.Role;
@@ -3837,9 +3844,12 @@ else
     % display menus and plot histograms
     test_v=0;
     if ~isempty(menu_histo)
-        set(handles.histo1_menu,'Value',1)
-        set(handles.histo1_menu,'String',menu_histo)
-        histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram
+        set(handles.HistoMenu,'Value',1)
+        set(handles.HistoMenu,'String',menu_histo)
+        set(handles.Histogram,'Visible','on')
+        set(handles.HistoMenu,'Visible','on')
+        set(handles.HistoAxes,'Visible','on')
+        HistoMenu_Callback(handles.HistoMenu, [], handles)% plot first histogram
     end
 end
 
@@ -3851,15 +3861,15 @@ end
 set(handles.uvmat,'Pointer',pointer)
 
 %------------------------------------------------------------------------
-function histo1_menu_Callback(hObject, eventdata, handles)
+function HistoMenu_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 %% get the current field stored in uvmat user data
 UvData=get(handles.uvmat,'UserData');
 Field=UvData.Field;
 
-%% get from the menu 'histo1_menu' the name(s) of the fields to use
-histo_menu=get(handles.histo1_menu,'String');
-histo_value=get(handles.histo1_menu,'Value');
+%% get from the menu 'HistoMenu' the name(s) of the fields to use
+histo_menu=get(handles.HistoMenu,'String');
+histo_value=get(handles.HistoMenu,'Value');
 FieldName=histo_menu{histo_value};
 r=regexp(FieldName,'(?<var1>.*)(?<sep>,)(?<var2>.*)','names');
 FieldName_2='';
@@ -3901,7 +3911,7 @@ if ~check_false
     end
 end
 
-%% calculate and plot histogram
+%% calculate and plot Histogram
 if isempty(Field)
     msgbox_uvmat('ERROR',['empty field ' FieldName])
 else
@@ -3934,7 +3944,18 @@ else
         if ~isempty(units)
             Histo.VarAttribute{1}.units=units;
         end
-        Histo.(FieldName)=linspace(Amin,Amax,50); %absissa values for histo
+        VarMesh=(Amax-Amin)/100;
+        ord=10^(floor(log10(VarMesh)));%order of magnitude
+        if VarMesh/ord >=5
+            VarMesh=5*ord;
+        elseif VarMesh/ord >=2
+            VarMesh=2*ord;
+        else
+            VarMesh=ord;
+        end
+        Amin=VarMesh*(ceil(Amin/VarMesh));
+        Amax=VarMesh*(floor(Amax/VarMesh));
+        Histo.(FieldName)=Amin:VarMesh:Amax; %absissa values for histo
         if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
             C=reshape(double(FieldHisto),1,[]);% reshape in a vector
             Histo.histo(:,1)=hist(C, Histo.(FieldName));  %calculate histogram
@@ -3946,9 +3967,13 @@ else
             end
         end
         plot_field(Histo,handles.HistoAxes);
-        hlegend=legend;
+        hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
+        if isempty(hlegend)
+            hlegend=legend;
+            set(hlegend,'Tag','HistoLegend')
+        end
         if isempty(FieldName_2)
-        set(hlegend,'String',FieldName)
+            set(hlegend,'String',FieldName)
         else
             set(hlegend,'String',{FieldName;FieldName_2})
         end
@@ -4676,12 +4701,12 @@ if isequal(get(handles.VOLUME,'Value'),1)
     if isfield(UvData,'CoordType')
         data.CoordType=UvData.CoordType;
     end
-    if isfield(UvData.Field,'CoordMesh')&~isempty(UvData.Field.CoordMesh)
+    if isfield(UvData.Field,'CoordMesh')&& ~isempty(UvData.Field.CoordMesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
         data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         data.DX=UvData.Field.CoordMesh;
         data.DY=UvData.Field.CoordMesh;
-    elseif isfield(UvData.Field,'Coord_x')&isfield(UvData.Field,'Coord_y')& isfield(UvData.Field,'A')%only image
+    elseif isfield(UvData.Field,'Coord_x')&& isfield(UvData.Field,'Coord_y') && isfield(UvData.Field,'A')%only image
         np=size(UvData.Field.A);
         meshx=(UvData.Field.Coord_x(end)-UvData.Field.Coord_x(1))/np(2);
         meshy=abs(UvData.Field.Coord_y(end)-UvData.Field.Coord_y(1))/np(1);
@@ -5685,9 +5710,9 @@ else
     set(handles.Axes,'Visible','on')
     set(handles.PlotAxes,'Visible','on')
     set(handles.text_display,'Visible','on')
-    if isfield(handles,'TableDisplay')
-    set(handles.TableDisplay,'Visible','off')
-    end
+%     if isfield(handles,'TableDisplay')
+%     set(handles.TableDisplay,'Visible','off')
+%     end
     Coordinates=PlotParam.Axes;
     if isfield(Coordinates,'CheckFixAspectRatio')
         if Coordinates.CheckFixAspectRatio

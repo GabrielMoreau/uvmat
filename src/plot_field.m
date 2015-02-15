@@ -201,6 +201,12 @@ else %plot 1D field (usual graph y vs x)
         CheckHold= PlotParam.CheckHold;
     end       
     PlotParamOut.Axes=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Axes,CheckHold);%
+    if isfield(PlotParamOut,'Vectors')
+        PlotParamOut=rmfield(PlotParamOut,'Vectors');
+    end
+    if isfield(PlotParamOut,'Scalar')
+        PlotParamOut=rmfield(PlotParamOut,'Scalar');
+    end   
     if testzoomaxes
         [zoomaxes,PlotParamOut.Axes]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
         AxeData.ZoomAxes=zoomaxes;
@@ -215,17 +221,12 @@ PlotParamOut.Axes.AspectRatio=AspectRatio(1)/AspectRatio(2);
 %% text display
 htext=findobj(hfig,'Tag','TableDisplay');
 hchecktable=findobj(hfig,'Tag','CheckTable');
-% if isempty(index_2D) && isempty(index_1D)%text display alone
-%     htext=findobj(hfig,'Tag','TableDisplay');
-% else  %text display added to plot
-%     %htext=findobj(hfig,'Tag','text_display');
-% end
 if ~isempty(htext)&&~isempty(hchecktable)
     if isempty(index_0D)
-        set(htext,'Data',{})
-        set(htext,'visible','off')
-        set(hchecktable,'visible','off')
-        set(hchecktable,'Value',0)
+%         set(htext,'Data',{})
+%         set(htext,'visible','off')
+%         set(hchecktable,'visible','off')
+%         set(hchecktable,'Value',0)
     else
         errormsg=plot_text(Data,CellInfo(index_0D),htext);
         set(htext,'visible','on')
@@ -383,9 +384,6 @@ end
 %% set the colors of the successive plots (designed to produce rgb for the three components of color images)
 ColorOrder=[1 0 0;0 1 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(hfig,'DefaultAxesColorOrder',ColorOrder)
-% if isfield(Coordinates,'NextPlot')
-%     set(haxes,'NextPlot',Coordinates.NextPlot)
-% end
 if CheckHold
     set(haxes,'NextPlot','add')
 else
@@ -394,7 +392,6 @@ end
 
 %% prepare the string for plot command
 plotstr='hhh=plot(';
-% coord_x_index=[];
 xtitle='';
 ytitle='';
 test_newplot=~CheckHold;
@@ -402,11 +399,11 @@ MinX=[];
 MaxX=[];
 MinY_cell=[];
 MaxY_cell=[];
+testplot=ones(size(data.ListVarName));%default test for plotted variables
 %loop on input  fields
 for icell=1:numel(CellInfo)
     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
     coord_x_index=CellInfo{icell}.CoordIndex;
-    testplot=ones(size(data.ListVarName));%default test for plotted variables
     coord_x_name{icell}=data.ListVarName{coord_x_index};
     coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
     if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)), 1)) %xtitle not already selected
@@ -572,6 +569,45 @@ else
     CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
 end
 
+%% give statistics for pdf
+ind_var=find(testplot);
+if numel(ind_var)==1 && isfield(data,'VarAttribute') && isfield(data.VarAttribute{ind_var},'Role') &&...
+        strcmp(data.VarAttribute{ind_var}.Role,'histo')
+    pdf_val=data.(data.ListVarName{ind_var});
+    x=coord_x{1};
+    TableData=cell(12,2);
+    TableData(:,1)={'SampleNbr';'Mean';'RMS';'Skewness';'Kurtosis';...
+        'Min';'FirstCentile';'FirstDecile';'Median';'LastDecile';'LastCentile';'Max'};
+    Val=zeros(12,1);
+    Val(1)=sum(pdf_val);% total sample number
+    pdf_val=pdf_val/Val(1);% normalised pdf
+    Val(2)=sum(x.*pdf_val);%Mean
+    x=x-Val(2); %centered variable
+    Variance=sum(x.*x.*pdf_val);
+    Val(3)=sqrt(Variance);
+    Val(4)=(sum(x.*x.*x.*pdf_val))/(Variance*Val(3));%skewness
+    Val(5)=(sum(x.*x.*x.*x.*pdf_val))/(Variance*Variance);%kurtosis
+    Val(6)=min(x);
+    cumpdf=cumsum(pdf_val);
+    ind_centile=find(cumpdf>=0.01,1);
+    Val(7)=x(ind_centile);
+    ind_decile=find(cumpdf>=0.1,1);
+    Val(8)=x(ind_decile);
+    ind_median=find(cumpdf>= 0.5,1);
+    Val(9)=x(ind_median);
+    ind_decile=find(cumpdf>=0.9,1);
+    Val(10)=x(ind_decile);
+    ind_centile=find(cumpdf>=0.99,1);
+    Val(11)=x(ind_centile);
+    Val(12)=max(x);   
+    TableData(:,2)=mat2cell(Val,ones(12,1),1)
+    TableData=[TableData(1:5,:);{'   -- centered','stat: --'};TableData(6:12,:)];
+    htable=findobj(hfig,'Tag','TableDisplay')
+    set(htable,'Data',TableData)
+    set(htable,'Visible','on')
+    drawnow
+end
+    
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam)
 %-------------------------------------------------------------------

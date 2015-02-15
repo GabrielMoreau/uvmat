@@ -122,6 +122,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     
     %show object coordinates in the GUI set_object
     if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
+        set(hh_set_object.Coord,'Data',ObjectData.Coord);
         set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX,4));
         set(hh_set_object.num_RangeY_2,'String',num2str(ObjectData.RangeY,4));
     end

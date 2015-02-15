@@ -454,6 +454,9 @@ end
 
 %% read the object parameters in the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
+if isfield(ObjectData,'CoordLine')% remove CoordLine (not used as object feature)
+    ObjectData=rmfield(ObjectData,'CoordLine');
+end
 if iscell(ObjectData.Coord)%check for empty line
     ObjectData.Coord=[0 0 0];
     hhset_object=guidata(handles.set_object);
@@ -649,6 +652,9 @@ function num_RangeX_2_Callback(hObject, eventdata, handles)
 function SAVE_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
 Object=read_GUI(handles.set_object);
+if isfield(Object,'CoordLine')% remove CoordLine (not used as object feature)
+    Object=rmfield(Object,'CoordLine');
+end
 huvmat=findobj('Tag','uvmat');
 if isempty(huvmat)
     huvmat=findobj(allchild(0),'Name','series');

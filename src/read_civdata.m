@@ -150,7 +150,7 @@ ivar_V_tps=[];
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
-    Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
+    %Field.VarAttribute{ivar}.Mesh=0.025;%typical mesh for histograms O.025 pixel (used in series)
     Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;

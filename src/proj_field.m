@@ -1,6 +1,6 @@
 %'proj_field': projects the field on a projection object
 %--------------------------------------------------------------------------
-%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
+%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData,VarMesh)
 %
 % OUTPUT:
 % ProjData structure containing the fields of the input field FieldData,
@@ -81,7 +81,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
+function [ProjData,errormsg]=proj_field(FieldData,ObjectData,VarMesh)
 errormsg='';%default
 ProjData=[];
 
@@ -109,7 +109,10 @@ switch ObjectData.Type
         [ProjData,errormsg] = proj_line(FieldData,ObjectData);
     case {'polygon','rectangle','ellipse'}
         if isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')
-            [ProjData,errormsg] = proj_patch(FieldData,ObjectData);
+            if ~exist('VarMesh','var')
+                VarMesh=[];
+            end
+            [ProjData,errormsg] = proj_patch(FieldData,ObjectData,VarMesh);
         else
             [ProjData,errormsg] = proj_line(FieldData,ObjectData);
         end
@@ -341,7 +344,7 @@ end
 
 %-----------------------------------------------------------------
 %project in a patch
-function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)%%
+function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData,VarMesh)%%
 %-------------------------------------------------------------------
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 if ~isempty(errormsg)
@@ -364,6 +367,9 @@ ProjData.VarDimName={};
 ProjData.VarAttribute={};
 
 CoordMesh=zeros(1,numel(FieldData.ListVarName));
+%VarMesh=nan(1,numel(FieldData.ListVarName));
+% MinValue=nan(1,numel(FieldData.ListVarName));
+% MaxValue=nan(1,numel(FieldData.ListVarName));
 if isfield (FieldData,'VarAttribute')
     for iattr=1:length(FieldData.VarAttribute)%initialization of variable attribute values
         if isfield(FieldData.VarAttribute{iattr},'Unit')
@@ -372,6 +378,15 @@ if isfield (FieldData,'VarAttribute')
         if isfield(FieldData.VarAttribute{iattr},'CoordMesh')
             CoordMesh(iattr)=FieldData.VarAttribute{iattr}.CoordMesh;
         end
+%         if isfield(FieldData.VarAttribute{iattr},'Mesh')
+%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.Mesh;
+%         end
+%         if isfield(FieldData.VarAttribute{iattr},'MinValue')
+%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.MinValue;
+%         end
+%         if isfield(FieldData.VarAttribute{iattr},'MaxValue')
+%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.MaxValue;
+%         end
     end
 end
 
@@ -495,26 +510,46 @@ for icell=1:length(CellInfo)
         testin=testin & (errorflag==0); % keep only non false vectors
     end
     indsel=find(testin);
+    nbvar=0;
+    VarSize=zeros(size(VarIndex));
     for ivar=VarIndex
         VarName=FieldData.ListVarName{ivar};
-        ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each color component
+        ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each co
         ProjData.([VarName 'Min'])=min(double(FieldData.(VarName)(indsel,:))); % take the min in the selected region , for each color component
-        ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color component
-        if isequal(CoordMesh(ivar),0)
-            [ProjData.([VarName 'Histo']),ProjData.(VarName)]=hist(double(FieldData.(VarName)(indsel,:,:)),100); % default histogram with 100 bins
+        ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color co
+        nbvar=nbvar+1;
+        VarSize(nbvar)=mean((ProjData.([VarName 'Max'])-ProjData.([VarName 'Min']))/100);
+    end
+    if  isempty(VarMesh) || isnan(VarMesh) % mesh not specified as input, estimate from the bounds
+        VarMesh=mean(VarSize);
+        ord=10^(floor(log10(VarMesh)));%order of magnitude
+        if VarMesh/ord >=5
+            VarMesh=5*ord;
+        elseif VarMesh/ord >=2
+            VarMesh=2*ord;
         else
-            ProjData.(VarName)=ProjData.([VarName 'Min'])+CoordMesh(ivar)/2:CoordMesh(ivar):ProjData.([VarName 'Max']); % list of bin values
-            ProjData.([VarName 'Histo'])=hist(double(FieldData.(VarName)(indsel,:)),ProjData.(VarName)); % histogram at predefined bin positions
+            VarMesh=ord;
         end
+    end
+    for ivar=VarIndex
+        VarName=FieldData.ListVarName{ivar};
+        LowBound=VarMesh*ceil(ProjData.([VarName 'Min'])/VarMesh);
+        UpperBound=VarMesh*floor(ProjData.([VarName 'Max'])/VarMesh);
+        ProjData.(VarName)=LowBound:VarMesh:UpperBound; % list of bin values
+        ProjData.([VarName 'Histo'])=hist(double(FieldData.(VarName)(indsel,:)),ProjData.(VarName)); % histogram at predefined bin positions
         ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
         if test_Amat && testcolor
             ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'} {'rgb'} {'rgb'}];%{{'nb_point','rgb'}};
         else
             ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
         end
+        VarAttribute_var=[];
         if isfield(FieldData,'VarAttribute')&& numel(FieldData.VarAttribute)>=ivar
-            ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
+            VarAttribute_var=FieldData.VarAttribute{ivar};
         end
+      %  VarAttribute_var.Role='coord_x';% the variable is now used as an absissa
+        VarAttribute_histo.Role='histo';
+        ProjData.VarAttribute=[ProjData.VarAttribute {VarAttribute_var} {VarAttribute_histo} {[]} {[]} {[]}];
     end
 end
 

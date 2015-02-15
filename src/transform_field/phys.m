@@ -85,7 +85,7 @@ if  ~isempty(Calib{1})
     if ~(isfield(DataIn,'CoordUnit')&& strcmp(DataIn.CoordUnit,'pixel'))
         return % transform only fields in pixel coordinates
     end
-    DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordiantes and velocity components
+    DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordinates and velocity components
     %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
     if isfield(DataIn,'A') && isfield(DataIn,'Coord_x') && ~isempty(DataIn.Coord_x) && isfield(DataIn,'Coord_y')&&...
                                            ~isempty(DataIn.Coord_y) && length(DataIn.A)>1
@@ -116,15 +116,13 @@ if ~isempty(DataOut_1)
         return %bad calib parameter input
     end
     if (isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel'))
-%         return % transform only fields in pixel coordinates
-%     end
-    DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
+        DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
     end
     if isfield(Calib{1},'SliceCoord')
         if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
             DataOut_1.Txt='different plane positions for the two input fields';
             return
-        end        
+        end
         DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
         if isfield(Calib{1},'SliceAngle')
             if ~(isfield(Calib{2},'SliceAngle') && isequal(Calib{2}.SliceAngle,Calib{1}.SliceAngle))
@@ -189,9 +187,6 @@ if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
         DataOut.U=(XOut_2-XOut_1)/Dt;
         DataOut.V=(YOut_2-YOut_1)/Dt;
     end
-%     if ~strcmp(Calib.CalibrationType,'rescale') && isfield(Data,'X_tps') && isfield(Data,'Y_tps') 
-%         [DataOut.X_tps,DataOut.Y_tps]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
-%     end
 end
 
 %% suppress tps

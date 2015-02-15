@@ -232,7 +232,7 @@ if ~isequal(hhh,'')
                 attname(1)=[];
             end
             try
-                if isempty(valuestr)
+                if ~isempty(valuestr)
                     Data.VarAttribute{ivar}.(attname)=valuestr;
                 end
             catch ME

@@ -72,8 +72,27 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.tseries';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-    % check the existence of the first file in the series
-        first_j=[];
+    % check for selection of a projection object
+    hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
+    if  ~isfield(Param,'ProjObject')
+        answer=msgbox_uvmat('INPUT_Y-N','use a projection object for the time_series?');
+        if strcmp(answer,'Yes')
+            hhseries=guidata(hseries);
+            set(hhseries.CheckObject,'Visible','on')
+            set(hhseries.CheckObject,'Value',1)
+            series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+        end
+    end
+    % introduce bin size for histograms
+    if Param.CheckObject
+        SeriesData=get(hseries,'UserData');
+        if checkhisto
+             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
+            ParamOut.ActionInput.VarMesh=str2double(answer);
+        end
+    end
+    % check the existence of the first and last file in the series
+     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     last_j=[];
     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
@@ -84,8 +103,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    elseif isequal(size(Param.InputTable,1),1) && ~isfield(Param,'ProjObject')
-        msgbox_uvmat('WARNING','a projection object may be needed to select points for the time_series')
+    else
+        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
+        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+            Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+        if ~exist(LastFileName,'file')
+            msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
+        end
     end
     return
 end
@@ -250,15 +274,19 @@ if CheckNc{iview}
     end
 end
 
-nbmissing=0; %number of undetected files
-% for i_slice=1:NbSlice
-%index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
-nbfile=0;
+nbfile=0;% not used , to check
 nbmissing=0;
-
+VarMesh=NaN;
+checkhisto=0;
+if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+    checkhisto=1;
+    if isfield(Param.ActionInput,'VarMesh')%case of histograms
+    VarMesh=Param.ActionInput.VarMesh;
+    end
+end
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
-            update_waitbar(WaitbarHandle,index/nbfield)
+    update_waitbar(WaitbarHandle,index/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break % leave the loop if stop is ordered
@@ -303,92 +331,125 @@ for index=1:nbfield
             end
         end
         
-        %field projection on an object 
+        %field projection on an object
         if Param.CheckObject
             % calculate tps coefficients if needed
             if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
                 Field=tps_coeff_field(Field,check_proj_tps);
             end
-            [Field,errormsg]=proj_field(Field,Param.ProjObject);
+            [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',['time_series / proj_field / ' errormsg])
                 return
             end
         end
-        nbfile=nbfile+1;
+%         nbfile=nbfile+1;
         
         % initiate the time series at the first iteration
-        if nbfile==1
+        if index==1
             % stop program if the first field reading is in error
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
                 return
             end
             DataOut=Field;%default
-%             DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
             nbvar=length(Field.ListVarName);
             if nbvar==0
                 disp_uvmat('ERROR','no input variable selected',checkrun)
                 return
             end
-            testsum=2*ones(1,nbvar);%initiate flag for action on each variable
-            if isfield(Field,'VarAttribute') % look for coordinate and flag variables
-                for ivar=1:nbvar
-                    if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
-                        var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
-                        if isequal(var_role,'errorflag')
-                            disp_uvmat('ERROR','do not handle error flags in time series',checkrun)
-                            return
-                        end
-                        if isequal(var_role,'warnflag')
-                            testsum(ivar)=0;  % not recorded variable
-                            eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
-                        end
-                        if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
-                            testsum(ivar)=1; %constant coordinates, record without time evolution
-                        end
-                    end
-                    % check whether the variable ivar is a dimension variable
-                    DimCell=Field.VarDimName{ivar};
-                    if ischar(DimCell)
-                        DimCell={DimCell};
-                    end
-                    if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+            if checkhisto%case of histograms
+                testsum=zeros(1,nbvar);%initiate flag for action on each variable
+                for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
+                    VarName=Field.ListVarName{ivar};
+                    if isfield(Data{1},VarName)
                         testsum(ivar)=1;
+                        DataOut.(VarName)=Field.(VarName);
+                        DataOut.([VarName 'Histo'])=zeros([nbfield numel(DataOut.(VarName))]);
+                        VarMesh=Field.(VarName)(2)-Field.(VarName)(1);
                     end
                 end
-            end
-            for ivar=1:nbvar
-                if testsum(ivar)==2
-                    eval(['DataOut.' Field.ListVarName{ivar} '=[];'])
+                disp(['mesh for histogram = ' num2str(VarMesh)])
+            else
+                testsum=2*ones(1,nbvar);%initiate flag for action on each variable
+                if isfield(Field,'VarAttribute') % look for coordinate and flag variables
+                    for ivar=1:nbvar
+                        if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
+                            var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
+                            if isequal(var_role,'errorflag')
+                                disp_uvmat('ERROR','do not handle error flags in time series',checkrun)
+                                return
+                            end
+                            if isequal(var_role,'warnflag')
+                                testsum(ivar)=0;  % not recorded variable
+                                eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
+                            end
+                            if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
+                                testsum(ivar)=1; %constant coordinates, record without time evolution
+                            end
+                        end
+                        % check whether the variable ivar is a dimension variable
+                        DimCell=Field.VarDimName{ivar};
+                        if ischar(DimCell)
+                            DimCell={DimCell};
+                        end
+                        if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+                            testsum(ivar)=1;
+                        end
+                    end
+                end
+                for ivar=1:nbvar
+                    if testsum(ivar)==2
+                        VarName=Field.ListVarName{ivar};
+                        siz=size(Field.(VarName));
+                        DataOut.(VarName)=zeros([nbfield siz]);
+                    end
                 end
             end
             DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
         end
         
         % add data to the current field
-        for ivar=1:length(Field.ListVarName)
-            VarName=Field.ListVarName{ivar};
-            VarVal=Field.(VarName);
-            if testsum(ivar)==2% test for recorded variable
-                if isempty(errormsg)
-                    if Param.CheckObject && strcmp(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' projection mode
-                        if isempty(VarVal)
-                            disp_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(index))],checkrun)
-                            return
-                        end
-                        VarVal=mean(VarVal,1);
+        if checkhisto
+            for ivar=1:length(Field.ListVarName)
+                VarName=Field.ListVarName{ivar};
+                if isfield(Data{1},VarName)
+                    MaxValue=max(DataOut.(VarName));% current max of histogram absissa
+                    MinValue=min(DataOut.(VarName));% current min of histogram absissa
+                    MaxIndex=round(MaxValue/VarMesh);
+                    MinIndex=round(MinValue/VarMesh);
+                    MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
+                    MinIndex_new=round(min(Field.(VarName)/VarMesh));
+                    if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
+                        DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
+                        DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(nbfield,MaxIndex_new-MaxIndex)]; % append the new histo values
                     end
-                    VarVal=shiftdim(VarVal,-1); %shift dimension
-                    DataOut.(VarName)=cat(1,DataOut.(VarName),VarVal);%concanete the current field to the time series
-                else
-                    DataOut.(VarName)=cat(1,DataOut.(VarName),0);% put each variable to 0 in case of input reading error
+                    if MinIndex_new <= MinIndex-1
+                        DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
+                        DataOut.([VarName 'Histo'])=[zeros(nbfield,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
+                        ind_start=1;
+                    else
+                        ind_start=MinIndex_new-MinIndex+1;
+                    end
+                    DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
+                        DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);
                 end
-            elseif testsum(ivar)==1% variable representing fixed coordinates
-                VarInit=DataOut.(VarName);
-                if isempty(errormsg) && ~isequal(VarVal,VarInit)
-                    disp_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
-                    return
+            end
+        else
+            for ivar=1:length(Field.ListVarName)
+                VarName=Field.ListVarName{ivar};
+                VarVal=Field.(VarName);
+                if testsum(ivar)==2% test for recorded variable
+                    if isempty(errormsg)                     
+                        VarVal=shiftdim(VarVal,-1); %shift dimension
+                        DataOut.(VarName)(index,:,:)=VarVal;%concanete the current field to the time series
+                    end
+                elseif testsum(ivar)==1% variable representing fixed coordinates
+                    VarInit=DataOut.(VarName);
+                    if isempty(errormsg) && ~isequal(VarVal,VarInit)
+                        disp_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
+                        return
+                    end
                 end
             end
         end
@@ -396,12 +457,12 @@ for index=1:nbfield
         % record the time:
         if isempty(time)% time not set by xml filer(s)
             if isfield(Data{1},'Time')
-                DataOut.Time(nbfile,1)=Field.Time;
+                DataOut.Time(index,1)=Field.Time;
             else
-                DataOut.Time(nbfile,1)=index;%default
+                DataOut.Time(index,1)=index;%default
             end
         else % time from ImaDoc prevails  TODO: correct
-            DataOut.Time(nbfile,1)=time(index);%
+            DataOut.Time(index,1)=time(index);%
         end
         
         % record the number of missing input fields
@@ -410,7 +471,6 @@ for index=1:nbfield
             display(['index=' num2str(index) ':' errormsg])
         end
     end
-    
 end
 %%%%%%% END OF LOOP WITHIN A SLICE
 
@@ -455,6 +515,16 @@ if ~test_time
     DataOut.Time=1:nbfield;
 end
 
+%case of histograms
+if checkhisto
+    for ivar=1:numel(Field.ListVarName)
+        VarName=Field.ListVarName{ivar};
+        if isfield(Data{1},VarName)
+            DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
+            DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
+        end
+    end
+end
 % display nbmissing
 if ~isequal(nbmissing,0)
     disp_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)

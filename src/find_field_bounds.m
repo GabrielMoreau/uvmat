@@ -1,4 +1,4 @@
-%'find_field_bounds': % find the boounds and typical meshs of coordinates
+%'find_field_bounds': % find the bounds and typical meshs of coordinates
 %-----------------------------------------------------------------------
 %function  FieldOut=find_field_bounds(Field)
 %-----------------------------------------------------------------------
@@ -8,8 +8,8 @@
 %  .CoordMesh: typical mesh needed for automatic grids
 %
 %INPUT
-% Field
-
+% Field: Matlab structure describing the input field
+%
 %=======================================================================
 % Copyright 2008-2014, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
@@ -40,9 +40,6 @@ end
 
 NbDim=max(NbDimArray);% spatial dimension of the input field
 imax=find(NbDimArray==NbDim);% indices of field cells to consider
-% if isfield(Field,'NbDim')
-%     NbDim=double(Field.NbDim);% deal with plane fields containing z coordinates
-% end
 FieldOut.NbDim=NbDim;
 if  NbDim<=1; return; end% stop here for 1D fields
 
