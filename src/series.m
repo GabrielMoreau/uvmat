@@ -134,7 +134,14 @@ NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
-ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
+[code, message] = system...
+    ('LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') |... [s for s in p if ''matlab'' not in s] | '':''.join(p)") python -c "import fluiddyn"'); 
+if code==0
+    ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
+else
+    ActionExtList={'.m';'.sh'};
+    disp('python library not installed')
+end
 ActionPathList=cell(NbBuiltinAction,1);%initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
 RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
@@ -174,9 +181,9 @@ if exist(profil_perso,'file')
         end
     end
     %get the menu of actions
-    if isfield(h,'ActionExtListUser') && iscell(h.ActionExtListUser)
-        ActionExtList=[ActionExtList; h.ActionExtListUser];
-    end 
+%     if isfield(h,'ActionExtListUser') && iscell(h.ActionExtListUser)
+%         ActionExtList=[ActionExtList; h.ActionExtListUser];
+%     end 
     if isfield(h,'ActionListUser') && iscell(h.ActionListUser) && isfield(h,'ActionPathListUser') && iscell(h.ActionPathListUser)
         ActionList=[ActionList;h.ActionListUser];
         ActionPathList=[ActionPathList;h.ActionPathListUser(:,1)];
@@ -1984,11 +1991,11 @@ if isequal(ActionName,'more...')
     end
     
     % record the file extension and extend the path list if it is a new extension
-    ActionExtList=get(handles.ActionExt,'String');
-    ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
-    if isempty(ActionExtIndex)
-        set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
-    end
+%     ActionExtList=get(handles.ActionExt,'String');
+%     ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
+%     if isempty(ActionExtIndex)
+%         set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
+%     end
 
     % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
     if length(ActionList)>NbBuiltinAction+5; %nb_builtin_ACTION=nbre of functions always remaining in the initial menu
@@ -2011,10 +2018,10 @@ if isequal(ActionName,'more...')
     if NbBuiltinAction+1<=numel(ActionList)-1
         ActionListUser=ActionList(NbBuiltinAction+1:numel(ActionList)-1);
         ActionPathListUser=ActionPathList(NbBuiltinAction+1:numel(ActionList)-1);
-        ActionExtListUser={};
-        if numel(ActionExtList)>2
-            ActionExtListUser=ActionExtList(3:end);
-        end
+%         ActionExtListUser={};
+%         if numel(ActionExtList)>2
+%             ActionExtListUser=ActionExtList(3:end);
+%         end
         if exist(profil_perso,'file')
             save(profil_perso,'ActionListUser','ActionPathListUser','ActionExtListUser','-append')
         else
@@ -3169,8 +3176,6 @@ ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 if strcmp(ActionExt,'.py (in dev.)')
     set(handles.RunMode,'Value',2)
 end
-% ActionList=get(handles.ActionName,'String');
-% ActionName=ActionList{get(handles.ActionName,'Value')};
 
 function num_NbProcess_Callback(hObject, eventdata, handles)
 

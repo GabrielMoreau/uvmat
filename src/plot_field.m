@@ -201,12 +201,14 @@ else %plot 1D field (usual graph y vs x)
         CheckHold= PlotParam.CheckHold;
     end       
     PlotParamOut.Axes=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Axes,CheckHold);%
-    if isfield(PlotParamOut,'Vectors')
-        PlotParamOut=rmfield(PlotParamOut,'Vectors');
+    if isempty(index_2D)
+        if isfield(PlotParamOut,'Vectors')
+            PlotParamOut=rmfield(PlotParamOut,'Vectors');
+        end
+        if isfield(PlotParamOut,'Scalar')
+            PlotParamOut=rmfield(PlotParamOut,'Scalar');
+        end
     end
-    if isfield(PlotParamOut,'Scalar')
-        PlotParamOut=rmfield(PlotParamOut,'Scalar');
-    end   
     if testzoomaxes
         [zoomaxes,PlotParamOut.Axes]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
         AxeData.ZoomAxes=zoomaxes;
@@ -571,8 +573,8 @@ end
 
 %% give statistics for pdf
 ind_var=find(testplot);
-if numel(ind_var)==1 && isfield(data,'VarAttribute') && isfield(data.VarAttribute{ind_var},'Role') &&...
-        strcmp(data.VarAttribute{ind_var}.Role,'histo')
+if numel(ind_var)==1 && isfield(data,'VarAttribute') &&numel(data.VarAttribute)>=ind_var &&...
+        isfield(data.VarAttribute{ind_var},'Role') && strcmp(data.VarAttribute{ind_var}.Role,'histo')
     pdf_val=data.(data.ListVarName{ind_var});
     x=coord_x{1};
     TableData=cell(12,2);

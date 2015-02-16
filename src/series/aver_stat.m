@@ -83,7 +83,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         end
     end
     % introduce bin size for histograms
-    if Param.CheckObject
+    if isfield(Param,'CheckObject') && Param.CheckObject
         SeriesData=get(hseries,'UserData');
         if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
