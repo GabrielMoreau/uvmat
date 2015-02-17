@@ -704,7 +704,7 @@ for ifield=1:NbField
         end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         % shift the grid points by half the expected shift to provide the correlation box position in image A
-        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(nbval>=1,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(nbval>=1,2)/2];
+        par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];
         if par_civ2.CheckDeformation
             par_civ2.DUDX=DUDX./nbval;
             par_civ2.DUDY=DUDY./nbval;
@@ -731,8 +731,6 @@ for ifield=1:NbField
             Data.Civ2_Dt=Civ2_Dt;
              end
         end
-        %         Data.Civ2_Time=1;
-        %         Data.Civ2_Dt=1;
         for ilist=1:length(list_param)
             Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
@@ -960,17 +958,17 @@ end
 %  20>=mask: velocity=0
 checkmask=0;
 MinA=min(min(par_civ.ImageA));
-MinB=min(min(par_civ.ImageB));
+%MinB=min(min(par_civ.ImageB));
+check_undefined=false(size(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     checkmask=1;
     if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
         errormsg='mask must be an image with the same size as the images';
         return
     end
-    %  check_noflux=(par_civ.Mask<100) ;%TODO: to implement
     check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
-    par_civ.ImageA(check_undefined)=MinA;% put image A to zero (i.e. the min image value) in the undefined  area
-    par_civ.ImageB(check_undefined)=MinB;% put image B to zero (i.e. the min image value) in the undefined  area
+    par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
+    par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
@@ -993,26 +991,34 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
         image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
         image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
+        mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
+        mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=min for mask
         check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
         check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
         check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
         check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
         image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
         image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-        image1_mean=mean(mean(image1_crop));
-        image2_mean=mean(mean(image2_crop));
-        %threshold on image minimum
-        if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-            F(ivec)=3;
+        mask1_crop(check1_y,check1_x)=check_undefined(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
+        mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
+        sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
+        if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
+            F(ivec)=3; %
+        else
+            image1_mean=mean(mean(image1_crop))/(1-sizemask);
+            image2_mean=mean(mean(image2_crop))/(1-sizemask);
+            %threshold on image minimum
+            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+                F(ivec)=3;
+            end
+            %threshold on image maximum
+            if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+                F(ivec)=3;
+            end
         end
-        %threshold on image maximum
-        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-            F(ivec)=3;
-        end
-        
         if F(ivec)~=3
-            image1_crop=image1_crop-image1_mean;%substract the mean
-            image2_crop=image2_crop-image2_mean;
+            image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
+            image2_crop=(image2_crop-image2_mean).*~mask2_crop;
             if CheckDeformation
                 xi=(1:mesh:size(image1_crop,2));
                 yi=(1:mesh:size(image1_crop,1))';

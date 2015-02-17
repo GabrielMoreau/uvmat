@@ -221,36 +221,37 @@ AspectRatio=get(haxes,'DataAspectRatio');
 PlotParamOut.Axes.AspectRatio=AspectRatio(1)/AspectRatio(2);
 
 %% text display
-htext=findobj(hfig,'Tag','TableDisplay');
-hchecktable=findobj(hfig,'Tag','CheckTable');
-if ~isempty(htext)&&~isempty(hchecktable)
-    if isempty(index_0D)
-%         set(htext,'Data',{})
-%         set(htext,'visible','off')
-%         set(hchecktable,'visible','off')
-%         set(hchecktable,'Value',0)
-    else
-        errormsg=plot_text(Data,CellInfo(index_0D),htext);
-        set(htext,'visible','on')
-        set(hchecktable,'visible','on')
-        set(hchecktable,'Value',1)
-    end
-    set(hfig,'Unit','pixels');
-    set(htext,'Unit','pixels')
-    PosFig=get(hfig,'Position');
-    % case of no plot with view_field: only text display
-    if strcmp(get(hfig,'Tag'),'view_field')
-        if isempty(index_1D) && isempty(index_2D)% case of no plot: only text display
-            set(haxes,'Visible','off')          
-            PosTable=get(htext,'Position');
-            set(hfig,'Position',[PosFig(1) PosFig(2)  PosTable(3) PosTable(4)])
+if ~(isfield(PlotParamOut,'Axes')&&isfield(PlotParamOut.Axes,'TextDisplay')&&(PlotParamOut.Axes.TextDisplay)) % if text is not already given as statistics
+    htext=findobj(hfig,'Tag','TableDisplay');
+    hchecktable=findobj(hfig,'Tag','CheckTable');
+    if ~isempty(htext)&&~isempty(hchecktable)
+        if isempty(index_0D)
+            %         set(htext,'Data',{})
+            %         set(htext,'visible','off')
+            %         set(hchecktable,'visible','off')
+            %         set(hchecktable,'Value',0)
         else
-            set(haxes,'Visible','on')
-            set(hfig,'Position',[PosFig(1) PosFig(2)  877 677])%default size for view_field
+            errormsg=plot_text(Data,CellInfo(index_0D),htext);
+            set(htext,'visible','on')
+            set(hchecktable,'visible','on')
+            set(hchecktable,'Value',1)
+        end
+        set(hfig,'Unit','pixels');
+        set(htext,'Unit','pixels')
+        PosFig=get(hfig,'Position');
+        % case of no plot with view_field: only text display
+        if strcmp(get(hfig,'Tag'),'view_field')
+            if isempty(index_1D) && isempty(index_2D)% case of no plot: only text display
+                set(haxes,'Visible','off')
+                PosTable=get(htext,'Position');
+                set(hfig,'Position',[PosFig(1) PosFig(2)  PosTable(3) PosTable(4)])
+            else
+                set(haxes,'Visible','on')
+                set(hfig,'Position',[PosFig(1) PosFig(2)  877 677])%default size for view_field
+            end
         end
     end
 end
-
 %% display error message
 if ~isempty(errormsg)
     PlotType=errormsg;
@@ -573,38 +574,54 @@ end
 
 %% give statistics for pdf
 ind_var=find(testplot);
-if numel(ind_var)==1 && isfield(data,'VarAttribute') &&numel(data.VarAttribute)>=ind_var &&...
-        isfield(data.VarAttribute{ind_var},'Role') && strcmp(data.VarAttribute{ind_var}.Role,'histo')
-    pdf_val=data.(data.ListVarName{ind_var});
-    x=coord_x{1};
-    TableData=cell(12,2);
-    TableData(:,1)={'SampleNbr';'Mean';'RMS';'Skewness';'Kurtosis';...
-        'Min';'FirstCentile';'FirstDecile';'Median';'LastDecile';'LastCentile';'Max'};
-    Val=zeros(12,1);
-    Val(1)=sum(pdf_val);% total sample number
-    pdf_val=pdf_val/Val(1);% normalised pdf
-    Val(2)=sum(x.*pdf_val);%Mean
-    x=x-Val(2); %centered variable
-    Variance=sum(x.*x.*pdf_val);
-    Val(3)=sqrt(Variance);
-    Val(4)=(sum(x.*x.*x.*pdf_val))/(Variance*Val(3));%skewness
-    Val(5)=(sum(x.*x.*x.*x.*pdf_val))/(Variance*Variance);%kurtosis
-    Val(6)=min(x);
-    cumpdf=cumsum(pdf_val);
-    ind_centile=find(cumpdf>=0.01,1);
-    Val(7)=x(ind_centile);
-    ind_decile=find(cumpdf>=0.1,1);
-    Val(8)=x(ind_decile);
-    ind_median=find(cumpdf>= 0.5,1);
-    Val(9)=x(ind_median);
-    ind_decile=find(cumpdf>=0.9,1);
-    Val(10)=x(ind_decile);
-    ind_centile=find(cumpdf>=0.99,1);
-    Val(11)=x(ind_centile);
-    Val(12)=max(x);   
-    TableData(:,2)=mat2cell(Val,ones(12,1),1)
-    TableData=[TableData(1:5,:);{'   -- centered','stat: --'};TableData(6:12,:)];
-    htable=findobj(hfig,'Tag','TableDisplay')
+TableData={'Variable';'SampleNbr';'bin size';'Mean';'RMS';'Skewness';'Kurtosis';'    centered ';...
+    'Min';'FirstCentile';'FirstDecile';'Median';'LastDecile';'LastCentile';'Max'};
+CoordinatesOut.TextDisplay=0;
+for icell=1:numel(CellInfo)
+    if isfield(CellInfo{icell},'VarIndex_histo')
+        check_stat=1;
+        CoordinatesOut.TextDisplay=1;
+        VarName=data.ListVarName{CellInfo{icell}.CoordIndex};
+        pdf_val=data.(data.ListVarName{CellInfo{icell}.VarIndex_histo});
+        x=coord_x{icell};
+        Val=zeros(12,1);
+        Val(1)=sum(pdf_val);% total sample number
+        Val(7)=min(x);
+        Val(13)=max(x);
+        Val(2)=(Val(13)-Val(7))/(numel(x)-1);%bin size
+        pdf_val=pdf_val/Val(1);% normalised pdf
+        Val(3)=sum(x.*pdf_val);%Mean
+        x=x-Val(3); %centered variable
+        Variance=sum(x.*x.*pdf_val);
+        Val(4)=sqrt(Variance);
+        Val(5)=(sum(x.*x.*x.*pdf_val))/(Variance*Val(4));%skewness
+        Val(6)=(sum(x.*x.*x.*x.*pdf_val))/(Variance*Variance);%kurtosis
+        cumpdf=cumsum(pdf_val);
+        ind_centile=find(cumpdf>=0.01,1);% first index with cumsum >=0.01
+        Val(8)=(cumpdf(ind_centile)-0.01)*x(ind_centile-1)+(0.01-cumpdf(ind_centile-1))*x(ind_centile);
+        Val(8)=Val(8)/(cumpdf(ind_centile)-cumpdf(ind_centile-1));%linear interpolation near ind_centile
+        ind_decile=find(cumpdf>=0.1,1);
+        Val(9)=(cumpdf(ind_decile)-0.1)*x(ind_decile-1)+(0.1-cumpdf(ind_decile-1))*x(ind_decile);
+        Val(9)=Val(9)/(cumpdf(ind_decile)-cumpdf(ind_decile-1));%linear interpolation near ind_decile;
+        ind_median=find(cumpdf>= 0.5,1);
+        Val(10)=(cumpdf(ind_median)-0.5)*x(ind_median-1)+(0.5-cumpdf(ind_median-1))*x(ind_median);
+        Val(10)=Val(10)/(cumpdf(ind_median)-cumpdf(ind_median-1));%linear interpolation near ind_median;
+        %     Val(9)=x(ind_median);
+        ind_decile=find(cumpdf>=0.9,1);
+        Val(11)=(cumpdf(ind_decile)-0.9)*x(ind_decile-1)+(0.9-cumpdf(ind_decile-1))*x(ind_decile);
+        Val(11)=Val(11)/(cumpdf(ind_decile)-cumpdf(ind_decile-1));%linear interpolation near ind_median;
+        ind_centile=find(cumpdf>=0.99,1);
+        Val(12)=(cumpdf(ind_centile)-0.99)*x(ind_centile-1)+(0.99-cumpdf(ind_centile-1))*x(ind_centile);
+        Val(12)=Val(12)/(cumpdf(ind_centile)-cumpdf(ind_centile-1));%linear interpolation near ind_centile;
+        Val(13)=max(x);
+        Column=mat2cell(Val,ones(13,1),1);
+        Column=[{VarName};Column(1:6);{'stat: --'};Column(7:13)];
+        TableData=[TableData Column];
+    end
+end
+if CoordinatesOut.TextDisplay;
+    disp(TableData);
+    htable=findobj(hfig,'Tag','TableDisplay');
     set(htable,'Data',TableData)
     set(htable,'Visible','on')
     drawnow

@@ -372,6 +372,7 @@ function SetDefaultParam_Callback(hObject, eventdata, handles)
 Param.ConfigSource='\default';
 
 %% Civ1 parameters
+Param.CheckCiv1=1;
 Param.Civ1.CorrBoxSize=[25 25];
 Param.Civ1.SearchBoxSize=[55 55];
 Param.Civ1.SearchBoxShift=[0 0];
@@ -380,21 +381,25 @@ Param.Civ1.Dx=20;
 Param.Civ1.Dy=20;
 Param.Civ1.CheckGrid=0;
 Param.Civ1.CheckMask=0;
+Param.Civ1.Mask='';
 Param.Civ1.CheckThreshold=0;
 Param.Civ1.TestCiv1=0;
 
 %% Fix1 parameters
+Param.CheckFix1=1;
 Param.Fix1.CheckFmin2=1;
 Param.Fix1.CheckF3=1;
 Param.Fix1.MinCorr=0.2000;
 
 %% Patch1 parameters
+Param.CheckPatch1=1;
 Param.Patch1.FieldSmooth=10;
 Param.Patch1.MaxDiff=1.5000;
 Param.Patch1.SubDomainSize=1000;
 Param.Patch1.TestPatch1=0;
 
 %% Civ2 parameters
+Param.CheckCiv2=1;
 Param.Civ2.CorrBoxSize=[21 21];
 Param.Civ2.SearchBoxSize=[27 27];
 Param.Civ2.CorrSmooth=1;
@@ -402,22 +407,26 @@ Param.Civ2.Dx=10;
 Param.Civ2.Dy=10;
 Param.Civ2.CheckGrid=0;
 Param.Civ2.CheckMask=0;
+Param.Civ2.Mask='';
 Param.Civ2.CheckThreshold=0;
 Param.Civ2.TestCiv2=0;
 
 %% Fix2 parameters
+Param.CheckFix2=1;
 Param.Fix2.CheckFmin2=1;
 Param.Fix2.CheckF4=1;
 Param.Fix2.CheckF3=1;
 Param.Fix2.MinCorr=0.2000;
 
 %% Patch2 parameters
+Param.CheckPatch2=1;
 Param.Patch2.FieldSmooth=2;
 Param.Patch2.MaxDiff=1.5000;
 Param.Patch2.SubDomainSize=1000;
 Param.Patch2.TestPatch2=0;
 
 fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
+update_CivOptions(handles,0)
 
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
@@ -1128,7 +1137,7 @@ end
 %------------------------------------------------------------------------
 % --- Executes on selection in menu CorrSmooth.
 function num_CorrSmooth_Callback(hObject, eventdata, handles)
-set(handles.configSource,'String','NEW')
+set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 
@@ -1472,7 +1481,7 @@ if strcmp(PanelName,'Civ1')
     end 
 end
 set(hObject,'BackgroundColor',[1 0 1])
-set(handles.configSource,'String','NEW')
+set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
@@ -1517,8 +1526,8 @@ else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
 end
-set(handles.configSource,'String','NEW')
-set(handles.configSource,'BackgroundColor',[1 0 1])
+set(handles.ConfigSource,'String','NEW')
+set(handles.ConfigSource,'BackgroundColor',[1 0 1])
 
 % %------------------------------------------------------------------------
 % % --- Executes on button press in get_gridpatch1.
@@ -1734,7 +1743,7 @@ if get(hObject,'Value')
 else
     set(obj,'Visible','off')
 end
-set(handles.configSource,'String','NEW')
+set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%   TEST functions
@@ -1747,8 +1756,12 @@ function TestCiv1_Callback(hObject, eventdata, handles)
 drawnow
 if get(handles.TestCiv1,'Value')
     set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch  
-    %Param.Action.RUN=1;
-    
+    set(handles.CheckFix1,'value',0)% desactivate next step
+    set(handles.CheckPatch1,'value',0)% desactivate next step
+    set(handles.CheckCiv2,'value',0)% desactivate next step
+    set(handles.CheckFix2,'value',0)% desactivate next step
+    set(handles.CheckPatch2,'value',0)% desactivate next step
+    update_CivOptions(handles,0)
       hseries=findobj(allchild(0),'Tag','series');
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
@@ -1886,10 +1899,9 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
         NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
     end
     figure(1)
-    hold on
-    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r')
+    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.2*ones(size(SmoothingParam)),'m')
     grid on
-    legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)')
+    legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended diff Patch1-Civ1')
     xlabel('smoothing parameter')
     ylabel('smoothing effect')
     set(handles.TestPatch1,'BackgroundColor',[0 1 0])
@@ -1911,6 +1923,9 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 drawnow
 if get(handles.TestCiv2,'Value')
     set(handles.TestCiv2,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
+    set(handles.CheckFix2,'value',0)% desactivate next step
+    set(handles.CheckPatch2,'value',0)% desactivate next step
+    update_CivOptions(handles,0)
       hseries=findobj(allchild(0),'Tag','series');
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
@@ -2064,10 +2079,9 @@ if get(handles.TestPatch2,'Value')% if TestPatch2 is activated
         NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
     end
     figure(1)
-    hold on
-    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r')
+    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.1*ones(size(SmoothingParam)),'m')
     grid on
-    legend('rms velocity diff. Patch2-Civ2 (pixels)','proportion of excluded vectors (between 0 to 1)')
+    legend('rms velocity diff. Patch2-Civ2 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended value diff. Patch2-Civ2')
     xlabel('smoothing parameter')
     ylabel('smoothing effect')
     set(handles.TestPatch2,'BackgroundColor',[0 1 0])

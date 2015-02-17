@@ -367,9 +367,6 @@ ProjData.VarDimName={};
 ProjData.VarAttribute={};
 
 CoordMesh=zeros(1,numel(FieldData.ListVarName));
-%VarMesh=nan(1,numel(FieldData.ListVarName));
-% MinValue=nan(1,numel(FieldData.ListVarName));
-% MaxValue=nan(1,numel(FieldData.ListVarName));
 if isfield (FieldData,'VarAttribute')
     for iattr=1:length(FieldData.VarAttribute)%initialization of variable attribute values
         if isfield(FieldData.VarAttribute{iattr},'Unit')
@@ -378,15 +375,6 @@ if isfield (FieldData,'VarAttribute')
         if isfield(FieldData.VarAttribute{iattr},'CoordMesh')
             CoordMesh(iattr)=FieldData.VarAttribute{iattr}.CoordMesh;
         end
-%         if isfield(FieldData.VarAttribute{iattr},'Mesh')
-%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.Mesh;
-%         end
-%         if isfield(FieldData.VarAttribute{iattr},'MinValue')
-%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.MinValue;
-%         end
-%         if isfield(FieldData.VarAttribute{iattr},'MaxValue')
-%             VarMesh(iattr)=FieldData.VarAttribute{iattr}.MaxValue;
-%         end
     end
 end
 

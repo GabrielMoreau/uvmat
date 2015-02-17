@@ -126,11 +126,13 @@ pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of th
 pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
 set(handles.text_display,'Position',pos_1)
 % reset position of TableDisplay
-set(handles.TableDisplay,'Position',pos_1)
+pos_TableDisplay=[pos_1(1) 2 pos_1(3) 2.2*pos_1(4)];
+set(handles.TableDisplay,'Position',pos_TableDisplay)
+
 % reset position of CheckTable
 pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
-pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
-pos_CheckTable(2)=size_fig(4)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
+pos_CheckTable(1)=pos_1(1);%-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
+pos_CheckTable(2)=pos_TableDisplay(2)+pos_TableDisplay(4);%size_fig(4)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
 set(handles.CheckTable,'Position',pos_CheckTable)
 
 %% reset position of CheckHold
