@@ -445,6 +445,7 @@ for icell=1:length(CellInfo)
                         Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
                         if iview==1
                             %MergeData.(VarName)=Data{1}.(VarName);% initiate MergeData with the first field
+                            MergeData.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
                             NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';

@@ -1,6 +1,6 @@
 %'num2stra': transform number to the corresponding character string depending on the nomenclature
 %--------------------------------------------
-% function str=num2stra(num,nom_type)
+% function str=num2stra(num,nom_type,index)
 %
 % OUTPUT: 
 % str: character string
@@ -8,7 +8,7 @@
 % INPUT:
 % num: input number (file index)
 % nom_type: nomencalture type (see fct name_generator)
-%
+% index: 1 or 2 (first or secodn index in file naming)
 % see also: stra2num, name_generator, name2display
 
 %=======================================================================

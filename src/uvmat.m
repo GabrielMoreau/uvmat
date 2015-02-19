@@ -1691,6 +1691,7 @@ drawnow
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+errormsg='';
 if isempty(i1_series)
     fileinput=uigetfile_uvmat('pick an input file',fullfile(RootPath,SubDir));
     hh=dir(fileinput);
@@ -2090,7 +2091,9 @@ if isfield(XmlData,'GeometryCalib')
         set(handles.pxcmy,'String','')
         set(handles.pxcmx,'Visible','off')
         set(handles.pxcmy,'Visible','off')
+        if index==1
         set(handles.TransformName,'Value',1); %  no transform by default
+        end
     else
         set(handles.pxcmx,'Visible','on')
         set(handles.pxcmy,'Visible','on')
@@ -2104,7 +2107,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcmx,'String',num2str(pixcmx))
             set(handles.pxcmy,'String',num2str(pixcmy))
         end
-        if ~get(handles.CheckFixLimits,'Value')
+        if ~get(handles.CheckFixLimits,'Value')&& index==1
             set(handles.TransformName,'Value',3); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')            
@@ -3770,10 +3773,10 @@ else
                 view_field(ObjectData)
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap});
-                if ~isempty(regexp(PlotType,'^error'))
+                if ~isempty(regexp(PlotType,'^error'))%exit in case of plotting error
                     if ~isempty(regexp(PlotType,'attempt to plot two vector fields'))
                         set(handles.CheckEditObject,'Value',1)
-                        CheckEditObject_Callback([], [], handles)
+                        CheckEditObject_Callback([], [], handles)% propose to edit the main projection plane
                         hset_object=findobj(allchild(0),'Tag','set_object');%find the GUI set_object
                         hhset_object=guidata(hset_object);%
                         set(hhset_object.ProjMode,'Value',2);
@@ -3784,7 +3787,7 @@ else
                 if imap==1
                     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
                 else
-                    errormsg=fill_GUI(PlotParamOut,view_field_handle);
+                    errormsg=fill_GUI(PlotParamOut,view_field_handle);%TODO: check effect on text display
                 end
                 for list={'Scalar','Vectors'}
                     if ~isfield(PlotParamOut,list{1})

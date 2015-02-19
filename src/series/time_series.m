@@ -91,6 +91,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
             ParamOut.ActionInput.VarMesh=str2double(answer);
         end
     end
+    % test for subtraction
+       if size(Param.InputTable,1)==2
+            answer=msgbox_uvmat('INPUT_Y-N','substract the two input file series (Yes) or concatene them (No)');
+            ParamOut.ActionInput.CheckSub=str2double(answer);
+        end
     % check the existence of the first and last file in the series
      first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
@@ -160,6 +165,7 @@ MovieObject=cell(1,nbview);
 CheckImage=cell(1,nbview);
 CheckNc=cell(1,nbview);
 frame_index=cell(1,nbview);
+
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
@@ -284,6 +290,10 @@ if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','
     VarMesh=Param.ActionInput.VarMesh;
     end
 end
+CheckSub=0;%default
+if isfield(Parma,'ActionInput') && isfield(Param.ActionInput,'CheckSub')
+CheckSub=ParamOut.ActionInput.CheckSub;
+end
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
     update_waitbar(WaitbarHandle,index/nbfield)
@@ -311,23 +321,35 @@ for index=1:nbfield
         Field=Data{1}; % default input field structure
         % coordinate transform (or other user defined transform)
         if ~isempty(transform_fct)
-            switch nargin(transform_fct)
-                case 4
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    else
+            if CheckSub
+                switch nargin(transform_fct)
+                    case 4
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 3
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 2
                         Field=transform_fct(Data{1},XmlData{1});
+                    case 1
+                        Field=transform_fct(Data{1});
+                end
+            else
+                if nargin(transform_fct)>=2
+                    for iview=1:nbview
+                        Data{iview}=transform_fct(Data{iview},XmlData{iview});
                     end
-                case 3
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
+                else
+                    for iview=1:nbview
+                        Data{iview}=transform_fct(Data{iview});
                     end
-                case 2
-                    Field=transform_fct(Data{1},XmlData{1});
-                case 1
-                    Field=transform_fct(Data{1});
+                end
             end
         end
         
@@ -343,7 +365,7 @@ for index=1:nbfield
                 return
             end
         end
-%         nbfile=nbfile+1;
+        %         nbfile=nbfile+1;
         
         % initiate the time series at the first iteration
         if index==1
@@ -440,7 +462,7 @@ for index=1:nbfield
                 VarName=Field.ListVarName{ivar};
                 VarVal=Field.(VarName);
                 if testsum(ivar)==2% test for recorded variable
-                    if isempty(errormsg)                     
+                    if isempty(errormsg)
                         VarVal=shiftdim(VarVal,-1); %shift dimension
                         DataOut.(VarName)(index,:,:)=VarVal;%concanete the current field to the time series
                     end

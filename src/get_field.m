@@ -35,7 +35,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 24-Apr-2014 22:45:34
+% Last Modified by GUIDE v2.5 18-Feb-2015 23:42:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -65,6 +65,7 @@ function get_field_OpeningFcn(hObject, eventdata, handles,filename,ParamIn)
 handles.output = 'Cancel';
 guidata(hObject, handles);
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
+set(hObject,'CloseRequestFcn',{@closefcn,handles})
 
 %% enter input data
 if ischar(filename) % input file name
@@ -255,7 +256,7 @@ if isfield(ParamIn,'Title')
 end
 
 %% set z coordinate menu if relevant
-if Field.MaxDim>=3
+if Field.MaxDim>=3 && prod(Field.DimValue)<10^8; % 3D field (with memory content smaller than 400 Mo)
     set(handles.Check3D,'Value',1)
 else
     set(handles.Check3D,'Value',0)
@@ -268,35 +269,27 @@ drawnow
 uiwait(handles.get_field);
 
 %------------------------------------------------------------------------
-% --- Outputs from this function are returned to the command line.
-%------------------------------------------------------------------------
-function varargout = get_field_OutputFcn(hObject, eventdata, handles)
-
-varargout{1} = handles.output;
-delete(handles.get_field)
-
-%------------------------------------------------------------------------
 % --- Executes when user attempts to close get_field.
 %------------------------------------------------------------------------
-function get_field_CloseRequestFcn(hObject, eventdata, handles)
-
-if isequal(get(handles.get_field, 'waitstatus'), 'waiting')
-    % The GUI is still in UIWAIT, us UIRESUME
-    uiresume(handles.get_field);
-else
-    % The GUI is no longer waiting, just close it
-    delete(handles.get_field);
-end
-
 %------------------------------------------------------------------------
-% --- Executes on button press in OK.
-%------------------------------------------------------------------------
-function OK_Callback(hObject, eventdata, handles)
 
-handles.output=read_GUI(handles.get_field);
-guidata(hObject, handles);% Update handles structure
-uiresume(handles.get_field);
-drawnow
+
+% Use UIRESUME instead of delete because the OutputFcn needs
+% to get the updated handles structure.
+
+% function get_field_CloseRequestFcn(hObject, eventdata)
+% handles.output=[];
+% guidata(hObject, handles);% Update handles structure
+% %delete(handles.get_field);
+% uiresume(handles.get_field);
+%drawnow
+% if isequal(get(handles.get_field, 'waitstatus'), 'waiting')
+%     % The GUI is still in UIWAIT, us UIRESUME
+%     uiresume(handles.get_field);
+% else
+%     % The GUI is no longer waiting, just close it
+%     delete(handles.get_field);
+% end
 
 % -----------------------------------------------------------------------
 % --- Activated by selection in the list of variables
@@ -610,7 +603,9 @@ if ~get(handles.CheckDimensionX,'Value')
 end
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
 var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
-ListCoord=Field.Display.ListVarName([var_component var_coord]);
+var_coord(var_coord==scalar_index)=[];
+var_component(var_component==scalar_index)=[];
+ListCoord=Field.Display.ListVarName([var_coord var_component]);
 
 %% set default coord selection
 % if numel(find(test_coord))>3
@@ -633,12 +628,17 @@ for ilist=1:numel(var_component)
             coord_val(1)=ilist;
         elseif strcmp(Role,'coord_y')
             coord_val(2)=ilist;
+            elseif strcmp(Role,'coord_z')
+            coord_val(3)=ilist;
         end
     end
 end
 if numel(find(coord_val))<2
-    if numel(var_coord)>=2
-        coord_val=[numel(var_component)+2 numel(var_component)+1];
+    if numel(var_coord)>=3
+         coord_val=[3 2 1];
+    elseif numel(var_coord)>=2
+       % coord_val=[numel(var_component)+2 numel(var_component)+1];
+       coord_val=[2 1];
     else
         coord_val=[1 2];
     end
@@ -744,7 +744,7 @@ vec_color_index=get(handles.vec_color,'Value');
 
 %% set list of possible coordinates
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
-test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
+test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordinate
 check_consistent=1;%check that the selected vector components (and possibly color var) have the same dimensiosn
 ListCoord={''};
 dim_var=Field.Display.VarDimName{vector_x_index};%list of dimensions of the selected variable
@@ -765,7 +765,9 @@ if check_consistent
     end
     var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
     var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
-    ListCoord=Field.Display.ListVarName([var_component var_coord]);
+    var_component(var_component==vector_x_index|var_component==vector_y_index)=[];
+    var_coord(var_coord==vector_x_index|var_coord==vector_y_index)=[];% remove vector components form te possible list of coordinates
+    ListCoord=Field.Display.ListVarName([var_coord var_component]);
     
     %% set default coord selection
     if numel(find(test_coord))>3
@@ -775,11 +777,17 @@ if check_consistent
         if numel(test_coord)<2
             ListCoord={''};
         else
-            set(handles.Coord_x,'Value',2)
-            set(handles.Coord_y,'Value',1)
+            if numel(test_coord)>=3
+                set(handles.Coord_x,'Value',3)
+                set(handles.Coord_y,'Value',2)
+                set(handles.Coord_z,'Value',1)
+            else
+                set(handles.Coord_x,'Value',2)
+                set(handles.Coord_y,'Value',1)
+            end
         end
     else
-        coord_val=[0 0];
+        coord_val=[0 0 0];
         for ilist=1:numel(var_component)
             ivar=var_component(ilist);
             if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
@@ -788,6 +796,8 @@ if check_consistent
                     coord_val(1)=ilist;
                 elseif strcmp(Role,'coord_y')
                     coord_val(2)=ilist;
+                elseif strcmp(Role,'coord_z')
+                    coord_val(3)=ilist;
                 end
             end
         end
@@ -796,12 +806,16 @@ if check_consistent
         end
         if numel(find(coord_val))<2
             %coord_val=[numel(var_component)+2 numel(var_component)+1];
-            coord_val=[1 2];
+            coord_val=[1 2 3];
         end
         set(handles.Coord_x,'Value',coord_val(1))
         set(handles.Coord_y,'Value',coord_val(2))
+        if numel(ListCoord)>=3
+            set(handles.Coord_z,'Value',coord_val(3))
+        end
     end
 end
+set(handles.Coord_z,'String',ListCoord)
 set(handles.Coord_y,'String',ListCoord)
 set(handles.Coord_x,'String',ListCoord)
 
@@ -1042,13 +1056,50 @@ end
 
 % --- Executes on button press in Check3D.
 function Check3D_Callback(hObject, eventdata, handles)
-if get(handles.Check3D,'Value')
+if get(handles.Check3D,'Value')% 3D fields
     status='on';
-else
+else% fields studied as 2D
     status='off';
+ 
 end
 set(handles.Coord_z,'Visible',status)
 % set(handles.CheckDimensionZ,'Visible',status)
 set(handles.Z_title,'Visible',status)
 set(handles.vector_z,'Visible',status)
 set(handles.W_title,'Visible',status)   
+   Field=get(handles.get_field,'UserData');
+    if Field.MaxDim>=3% for 3D fields, propose to use the third variable as time
+        menu=get(handles.SwitchVarIndexTime,'String');
+        val=find(strcmp('variable',menu));
+        if ~isempty(val)
+            set(handles.SwitchVarIndexTime,'Value',val)
+            SwitchVarIndexTime_Callback(handles.SwitchVarIndexTime,[], handles)
+        end
+    end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in OK.
+%------------------------------------------------------------------------
+function OK_Callback(hObject, eventdata, handles)
+handles.output=read_GUI(handles.get_field);
+guidata(hObject, handles);% Update handles structure
+uiresume(handles.get_field);
+drawnow
+% this function then activate get_field_OutputFcn
+
+%------------------------------------------------------------------------
+% --- Executes when the GUI is closed by the mouse on upper right corner.
+%------------------------------------------------------------------------
+function closefcn(hObject, eventdata, handles)
+handles.output=[];
+guidata(hObject, handles);% Update handles structure
+uiresume(handles.get_field);
+drawnow
+
+%------------------------------------------------------------------------
+% --- Outputs from this function are returned to the command line.
+%------------------------------------------------------------------------
+function varargout = get_field_OutputFcn(hObject, eventdata, handles)
+
+varargout{1} =handles.output;
+delete(handles.get_field)

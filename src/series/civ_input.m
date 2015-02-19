@@ -372,7 +372,7 @@ function SetDefaultParam_Callback(hObject, eventdata, handles)
 Param.ConfigSource='\default';
 
 %% Civ1 parameters
-Param.CheckCiv1=1;
+%Param.CheckCiv1=1;
 Param.Civ1.CorrBoxSize=[25 25];
 Param.Civ1.SearchBoxSize=[55 55];
 Param.Civ1.SearchBoxShift=[0 0];
@@ -386,20 +386,20 @@ Param.Civ1.CheckThreshold=0;
 Param.Civ1.TestCiv1=0;
 
 %% Fix1 parameters
-Param.CheckFix1=1;
+%Param.CheckFix1=1;
 Param.Fix1.CheckFmin2=1;
 Param.Fix1.CheckF3=1;
 Param.Fix1.MinCorr=0.2000;
 
 %% Patch1 parameters
-Param.CheckPatch1=1;
+%Param.CheckPatch1=1;
 Param.Patch1.FieldSmooth=10;
 Param.Patch1.MaxDiff=1.5000;
 Param.Patch1.SubDomainSize=1000;
 Param.Patch1.TestPatch1=0;
 
 %% Civ2 parameters
-Param.CheckCiv2=1;
+%Param.CheckCiv2=1;
 Param.Civ2.CorrBoxSize=[21 21];
 Param.Civ2.SearchBoxSize=[27 27];
 Param.Civ2.CorrSmooth=1;
@@ -412,14 +412,14 @@ Param.Civ2.CheckThreshold=0;
 Param.Civ2.TestCiv2=0;
 
 %% Fix2 parameters
-Param.CheckFix2=1;
+%Param.CheckFix2=1;
 Param.Fix2.CheckFmin2=1;
 Param.Fix2.CheckF4=1;
 Param.Fix2.CheckF3=1;
 Param.Fix2.MinCorr=0.2000;
 
 %% Patch2 parameters
-Param.CheckPatch2=1;
+%Param.CheckPatch2=1;
 Param.Patch2.FieldSmooth=2;
 Param.Patch2.MaxDiff=1.5000;
 Param.Patch2.SubDomainSize=1000;

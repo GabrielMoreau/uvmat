@@ -200,7 +200,7 @@ else %plot 1D field (usual graph y vs x)
     if isfield(PlotParam,'CheckHold') 
         CheckHold= PlotParam.CheckHold;
     end       
-    PlotParamOut.Axes=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Axes,CheckHold);%
+    PlotParamOut=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut,CheckHold);%
     if isempty(index_2D)
         if isfield(PlotParamOut,'Vectors')
             PlotParamOut=rmfield(PlotParamOut,'Vectors');
@@ -223,8 +223,8 @@ PlotParamOut.Axes.AspectRatio=AspectRatio(1)/AspectRatio(2);
 %% text display
 if ~(isfield(PlotParamOut,'Axes')&&isfield(PlotParamOut.Axes,'TextDisplay')&&(PlotParamOut.Axes.TextDisplay)) % if text is not already given as statistics
     htext=findobj(hfig,'Tag','TableDisplay');
-    hchecktable=findobj(hfig,'Tag','CheckTable');
-    if ~isempty(htext)&&~isempty(hchecktable)
+%     hchecktable=findobj(hfig,'Tag','CheckTable');
+    if ~isempty(htext)%&&~isempty(hchecktable)
         if isempty(index_0D)
             %         set(htext,'Data',{})
             %         set(htext,'visible','off')
@@ -233,8 +233,8 @@ if ~(isfield(PlotParamOut,'Axes')&&isfield(PlotParamOut.Axes,'TextDisplay')&&(Pl
         else
             errormsg=plot_text(Data,CellInfo(index_0D),htext);
             set(htext,'visible','on')
-            set(hchecktable,'visible','on')
-            set(hchecktable,'Value',1)
+%             set(hchecktable,'visible','on')
+%             set(hchecktable,'Value',1)
         end
         set(hfig,'Unit','pixels');
         set(htext,'Unit','pixels')
@@ -260,7 +260,6 @@ end
 
 %% update the parameters stored in AxeData
 if ishandle(haxes)&&( ~isempty(index_2D)|| ~isempty(index_1D))
-%     AxeData=[];
     if isfield(PlotParamOut,'MinX')
         AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];
         AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];
@@ -361,13 +360,16 @@ end
 %-------------------------------------------------------------------
 % --- plot 1D fields (usual x,y plots)
 %-------------------------------------------------------------------
-function CoordinatesOut=plot_profile(data,CellInfo,haxes,Coordinates,CheckHold)
+function PlotParamOut=plot_profile(data,CellInfo,haxes,PlotParam,CheckHold)
 
 %% initialization
-if ~exist('Coordinates','var')
+if ~(exist('PlotParam','var')&&~isempty(PlotParam.Axes))
     Coordinates=[];
+    PlotParamOut.Axes=Coordinates;
+else
+    Coordinates=PlotParam.Axes;
+    PlotParamOut=PlotParam;
 end
-CoordinatesOut=Coordinates; %default
 hfig=get(haxes,'parent');
 legend_str={};
 
@@ -544,20 +546,20 @@ if fix_lim
 else
     if ~isempty(MinX)
         if check_lim
-            CoordinatesOut.MinX=min(min(MinX),CoordinatesOut.MinX);
-            CoordinatesOut.MaxX=max(max(MaxX),CoordinatesOut.MaxX);
+            Coordinates.MinX=min(min(MinX),Coordinates.MinX);
+            Coordinates.MaxX=max(max(MaxX),Coordinates.MaxX);
         else
-            CoordinatesOut.MinX=min(MinX);
-            CoordinatesOut.MaxX=max(MaxX);
+            Coordinates.MinX=min(MinX);
+            Coordinates.MaxX=max(MaxX);
         end
     end
     if ~isempty(MinY_cell)
         if check_lim
-            CoordinatesOut.MinY=min(min(MinY_cell),CoordinatesOut.MinY);
-            CoordinatesOut.MaxY=max(max(MaxY_cell),CoordinatesOut.MaxY);
+            Coordinates.MinY=min(min(MinY_cell),Coordinates.MinY);
+            Coordinates.MaxY=max(max(MaxY_cell),Coordinates.MaxY);
         else
-            CoordinatesOut.MinY=min(MinY_cell);
-            CoordinatesOut.MaxY=max(MaxY_cell);
+            Coordinates.MinY=min(MinY_cell);
+            Coordinates.MaxY=max(MaxY_cell);
         end
     end
 end
@@ -569,18 +571,20 @@ if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAsp
 else
     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
     AspectRatio=get(haxes,'DataAspectRatio');
-    CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
+    Coordinates.AspectRatio=AspectRatio(1)/AspectRatio(2);
 end
+PlotParamOut.Axes= Coordinates;
 
 %% give statistics for pdf
 ind_var=find(testplot);
 TableData={'Variable';'SampleNbr';'bin size';'Mean';'RMS';'Skewness';'Kurtosis';'    centered ';...
     'Min';'FirstCentile';'FirstDecile';'Median';'LastDecile';'LastCentile';'Max'};
-CoordinatesOut.TextDisplay=0;
+%PlotParamOut.TableDisplay={};
+TextDisplay=0;
 for icell=1:numel(CellInfo)
     if isfield(CellInfo{icell},'VarIndex_histo')
         check_stat=1;
-        CoordinatesOut.TextDisplay=1;
+        TextDisplay=1;
         VarName=data.ListVarName{CellInfo{icell}.CoordIndex};
         pdf_val=data.(data.ListVarName{CellInfo{icell}.VarIndex_histo});
         x=coord_x{icell};
@@ -596,35 +600,46 @@ for icell=1:numel(CellInfo)
         Val(4)=sqrt(Variance);
         Val(5)=(sum(x.*x.*x.*pdf_val))/(Variance*Val(4));%skewness
         Val(6)=(sum(x.*x.*x.*x.*pdf_val))/(Variance*Variance);%kurtosis
-        cumpdf=cumsum(pdf_val);
+        cumpdf=cumsum(pdf_val);% sum of pdf
         ind_centile=find(cumpdf>=0.01,1);% first index with cumsum >=0.01
-        Val(8)=(cumpdf(ind_centile)-0.01)*x(ind_centile-1)+(0.01-cumpdf(ind_centile-1))*x(ind_centile);
-        Val(8)=Val(8)/(cumpdf(ind_centile)-cumpdf(ind_centile-1));%linear interpolation near ind_centile
+        Val(8)=x(ind_centile)+Val(2)/2;%
+        if ind_centile>1
+            Val(8)=(cumpdf(ind_centile)-0.01)*x(ind_centile-1)+(0.01-cumpdf(ind_centile-1))*x(ind_centile);
+            Val(8)=Val(8)/(cumpdf(ind_centile)-cumpdf(ind_centile-1))+Val(2)/2;%linear interpolation near ind_centile
+        end
         ind_decile=find(cumpdf>=0.1,1);
-        Val(9)=(cumpdf(ind_decile)-0.1)*x(ind_decile-1)+(0.1-cumpdf(ind_decile-1))*x(ind_decile);
-        Val(9)=Val(9)/(cumpdf(ind_decile)-cumpdf(ind_decile-1));%linear interpolation near ind_decile;
+        if ind_decile>1
+            Val(9)=x(ind_decile)+Val(2)/2;%
+            Val(9)=(cumpdf(ind_decile)-0.1)*x(ind_decile-1)+(0.1-cumpdf(ind_decile-1))*x(ind_decile);
+            Val(9)=Val(9)/(cumpdf(ind_decile)-cumpdf(ind_decile-1))+Val(2)/2;%linear interpolation near ind_decile;
+        end
         ind_median=find(cumpdf>= 0.5,1);
         Val(10)=(cumpdf(ind_median)-0.5)*x(ind_median-1)+(0.5-cumpdf(ind_median-1))*x(ind_median);
-        Val(10)=Val(10)/(cumpdf(ind_median)-cumpdf(ind_median-1));%linear interpolation near ind_median;
+        Val(10)=Val(10)/(cumpdf(ind_median)-cumpdf(ind_median-1))+Val(2)/2;%linear interpolation near ind_median;
         %     Val(9)=x(ind_median);
         ind_decile=find(cumpdf>=0.9,1);
         Val(11)=(cumpdf(ind_decile)-0.9)*x(ind_decile-1)+(0.9-cumpdf(ind_decile-1))*x(ind_decile);
-        Val(11)=Val(11)/(cumpdf(ind_decile)-cumpdf(ind_decile-1));%linear interpolation near ind_median;
+        Val(11)=Val(11)/(cumpdf(ind_decile)-cumpdf(ind_decile-1))+Val(2)/2;%linear interpolation near ind_median;
         ind_centile=find(cumpdf>=0.99,1);
         Val(12)=(cumpdf(ind_centile)-0.99)*x(ind_centile-1)+(0.99-cumpdf(ind_centile-1))*x(ind_centile);
-        Val(12)=Val(12)/(cumpdf(ind_centile)-cumpdf(ind_centile-1));%linear interpolation near ind_centile;
-        Val(13)=max(x);
+        Val(12)=Val(12)/(cumpdf(ind_centile)-cumpdf(ind_centile-1))+Val(2)/2;%linear interpolation near ind_centile;
         Column=mat2cell(Val,ones(13,1),1);
         Column=[{VarName};Column(1:6);{'stat: --'};Column(7:13)];
         TableData=[TableData Column];
     end
 end
-if CoordinatesOut.TextDisplay;
+if TextDisplay;
     disp(TableData);
-    htable=findobj(hfig,'Tag','TableDisplay');
-    set(htable,'Data',TableData)
-    set(htable,'Visible','on')
-    drawnow
+    PlotParamOut.TableDisplay=TableData;
+   % PlotParamOut.CheckTable=1;
+%     htable=findobj(hfig,'Tag','TableDisplay');
+%     set(htable,'Data',TableData)
+%     set(htable,'Visible','on')
+%     drawnow
+else
+    if isfield(PlotParamOut,'TableDisplay')
+        PlotParamOut=rmfield(PlotParamOut,'TableDisplay');
+    end
 end
     
 %-------------------------------------------------------------------
