@@ -60,7 +60,7 @@
 function ParamOut=time_series(Param) 
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
-if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN 
+if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
@@ -74,30 +74,42 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     % check for selection of a projection object
     hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
+    hhseries=guidata(hseries);
     if  ~isfield(Param,'ProjObject')
         answer=msgbox_uvmat('INPUT_Y-N','use a projection object for the time_series?');
         if strcmp(answer,'Yes')
-            hhseries=guidata(hseries);
             set(hhseries.CheckObject,'Visible','on')
             set(hhseries.CheckObject,'Value',1)
             series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
         end
     end
+    
     % introduce bin size for histograms
     if isfield(Param,'CheckObject') &&Param.CheckObject
         SeriesData=get(hseries,'UserData');
         if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
-             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
+            answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
             ParamOut.ActionInput.VarMesh=str2double(answer);
         end
     end
+    
     % test for subtraction
-       if size(Param.InputTable,1)==2
-            answer=msgbox_uvmat('INPUT_Y-N','substract the two input file series (Yes) or concatene them (No)');
-            ParamOut.ActionInput.CheckSub=str2double(answer);
+    if size(Param.InputTable,1)>2
+        msgbox_uvmat('WARNING','''time_series'' uses only one or two input lines (two for substraction). To concatene fields first use ''merge_proj''');
+    end
+    if size(Param.InputTable,1)>=2
+        answer=msgbox_uvmat('INPUT_Y-N','substract the two input file series?');
+        if strcmp(answer,'Yes')
+            if isempty(Param.FieldTransform.TransformName)
+                set(hhseries.TransformName,'value',2) %select sub_field
+            end
+        else
+            set(hhseries.InputTable,'Data',Param.InputTable(1,:))
         end
+    end
+    
     % check the existence of the first and last file in the series
-     first_j=[];
+    first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     last_j=[];
     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
@@ -290,10 +302,7 @@ if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','
     VarMesh=Param.ActionInput.VarMesh;
     end
 end
-CheckSub=0;%default
-if isfield(Parma,'ActionInput') && isfield(Param.ActionInput,'CheckSub')
-CheckSub=ParamOut.ActionInput.CheckSub;
-end
+
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
     update_waitbar(WaitbarHandle,index/nbfield)
@@ -321,35 +330,23 @@ for index=1:nbfield
         Field=Data{1}; % default input field structure
         % coordinate transform (or other user defined transform)
         if ~isempty(transform_fct)
-            if CheckSub
-                switch nargin(transform_fct)
-                    case 4
-                        if length(Data)==2
-                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                        else
-                            Field=transform_fct(Data{1},XmlData{1});
-                        end
-                    case 3
-                        if length(Data)==2
-                            Field=transform_fct(Data{1},XmlData{1},Data{2});
-                        else
-                            Field=transform_fct(Data{1},XmlData{1});
-                        end
-                    case 2
+            switch nargin(transform_fct)
+                case 4
+                    if length(Data)==2
+                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                    else
                         Field=transform_fct(Data{1},XmlData{1});
-                    case 1
-                        Field=transform_fct(Data{1});
-                end
-            else
-                if nargin(transform_fct)>=2
-                    for iview=1:nbview
-                        Data{iview}=transform_fct(Data{iview},XmlData{iview});
                     end
-                else
-                    for iview=1:nbview
-                        Data{iview}=transform_fct(Data{iview});
+                case 3
+                    if length(Data)==2
+                        Field=transform_fct(Data{1},XmlData{1},Data{2});
+                    else
+                        Field=transform_fct(Data{1},XmlData{1});
                     end
-                end
+                case 2
+                    Field=transform_fct(Data{1},XmlData{1});
+                case 1
+                    Field=transform_fct(Data{1});
             end
         end
         
