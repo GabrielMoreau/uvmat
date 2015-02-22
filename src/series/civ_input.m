@@ -1859,10 +1859,19 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
          Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
      end
      if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+         Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
      end
      ParamPatch1=Param.ActionInput.Patch1; %store the patch1 parameters
      Param.ActionInput=rmfield(Param.ActionInput,'Patch1');% does not execute Patch
+     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+     Param.IndexRange.last_i=Param.IndexRange.first_i;
+     if strcmp(get(handles.ref_j,'Visible'),'on')
+         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+         Param.IndexRange.last_j=Param.IndexRange.first_j;
+     else
+         Param.IndexRange.first_j=1;
+         Param.IndexRange.last_j=1;
+     end
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
      bckcolor=get(handles.civ_input,'Color');
      set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
@@ -1937,6 +1946,15 @@ if get(handles.TestCiv2,'Value')
      set(handles.Civ1,'BackgroundColor',[1 1 0])
      set(handles.Fix1,'BackgroundColor',[1 1 0])
      set(handles.Patch1,'BackgroundColor',[1 1 0])
+     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+     Param.IndexRange.last_i=Param.IndexRange.first_i;
+     if strcmp(get(handles.ref_j,'Visible'),'on')
+         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+         Param.IndexRange.last_j=Param.IndexRange.first_j;
+     else
+         Param.IndexRange.first_j=1;
+         Param.IndexRange.last_j=1;
+     end
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
      
      %% create image data ImageData for display
@@ -2030,6 +2048,15 @@ if get(handles.TestPatch2,'Value')% if TestPatch2 is activated
      end
      ParamPatch2=Param.ActionInput.Patch2; %store the patch1 parameters
      Param.ActionInput=rmfield(Param.ActionInput,'Patch2');% does not execute Patch
+     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+     Param.IndexRange.last_i=Param.IndexRange.first_i;
+     if strcmp(get(handles.ref_j,'Visible'),'on')
+         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+         Param.IndexRange.last_j=Param.IndexRange.first_j;
+     else
+         Param.IndexRange.first_j=1;
+         Param.IndexRange.last_j=1;
+     end
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
      bckcolor=get(handles.civ_input,'Color');
      set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished

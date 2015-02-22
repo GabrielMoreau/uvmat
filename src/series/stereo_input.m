@@ -1,4 +1,4 @@
-%'stereo_input': function associated with the GUI 'stereo_input.fig' to set the input parameters for civ_series
+%'stereo_input': function associated with the GUI 'stereo_input.fig' to set the input parameters for stereo_civ
 %------------------------------------------------------------------------
 % function ParamOut = stereo_input(Param)
 %

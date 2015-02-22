@@ -1,18 +1,19 @@
-%'sub_field': combines two input fields
+%'diff_vel': calculate the difference of two input velocity fields. 
 %
-% the two fields are subtstracted when of the same nature (scalar or
-% vector), if the coordinates do not coincide, the second field is
-% interpolated on the cooridintes of the first one
-%
-% when scalar and vectors are combined, the fields are just merged in a single matlab structure for common visualisation
+% the second velocity field is linearly interpolated 
+% (after elimination of the vectors marked with an error flag) to the positions of
+% the first one before subtraction. The ancilary data of the first field
+% are preserved while those of the second one are lost. 
+
 %-----------------------------------------------------------------------
-% function SubData=sub_field(Field,XmlData,Field_1)
+% function SubData=diff_vel(Field,XmlData,Field_1)
 %
 % OUPUT: 
 % SubData: structure representing the resulting field
 %
 % INPUT: 
 % Field: matlab structure representing the first field
+% XmlData: not used, needed for consistency with the call of transform fct.
 % Field_1:matlab structure representing the second field
 
 %=======================================================================

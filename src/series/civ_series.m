@@ -690,10 +690,6 @@ for ifield=1:NbField
                 maskname=par_civ2.Mask;
             end
         end
-%         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
-%         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
-       % par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
-        %par_civ2.SearchBoxSize(2)=2*iby2+9;
         if CheckInputFile % else Dt given by par_civ2
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 Civ1_Dt=1;
@@ -706,10 +702,10 @@ for ifield=1:NbField
         % shift the grid points by half the expected shift to provide the correlation box position in image A
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];
         if par_civ2.CheckDeformation
-            par_civ2.DUDX=DUDX./nbval;
-            par_civ2.DUDY=DUDY./nbval;
-            par_civ2.DVDX=DVDX./nbval;
-            par_civ2.DVDY=DVDY./nbval;
+            par_civ2.DUDX=DUDX(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DUDY=DUDY(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DVDX=DVDX(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DVDY=DVDY(nbval>=1)./nbval(nbval>=1);
         end
         
         % calculate velocity data (y and v in image indices, reverse to y component)
@@ -909,10 +905,10 @@ end
 nbvec=size(par_civ.Grid,1);
 
 %% prepare correlation and search boxes
-ibx2=ceil(par_civ.CorrBoxSize(1)/2);
-iby2=ceil(par_civ.CorrBoxSize(2)/2);
-isx2=ceil(par_civ.SearchBoxSize(1)/2);
-isy2=ceil(par_civ.SearchBoxSize(2)/2);
+ibx2=floor(par_civ.CorrBoxSize(1)/2);
+iby2=floor(par_civ.CorrBoxSize(2)/2);
+isx2=floor(par_civ.SearchBoxSize(1)/2);
+isy2=floor(par_civ.SearchBoxSize(2)/2);
 shiftx=round(par_civ.SearchBoxShift(:,1));%use the input shift estimate, rounded to the next integer value
 shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
 if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
@@ -967,8 +963,8 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
         return
     end
     check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
-    par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
-    par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
+%     par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
+%     par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
@@ -992,7 +988,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
         image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
         mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
-        mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=min for mask
+        mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
         check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
         check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
         check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
@@ -1005,6 +1001,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
             F(ivec)=3; %
         else
+            image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
+            image2_crop=image2_crop.*~mask2_crop;
             image1_mean=mean(mean(image1_crop))/(1-sizemask);
             image2_mean=mean(mean(image2_crop))/(1-sizemask);
             %threshold on image minimum
@@ -1025,12 +1023,16 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
                 XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
                 YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                        image1_crop_1=image1_crop;
                 image1_crop=interp2(image1_crop,XIant,YIant);
+                        image1_crop_2=image1_crop;
                 image1_crop(isnan(image1_crop))=0;
+                  image1_crop_3=image1_crop;
                 xi=(1:mesh:size(image2_crop,2));
                 yi=(1:mesh:size(image2_crop,1))';
                 image2_crop=interp2(image2_crop,xi,yi);
                 image2_crop(isnan(image2_crop))=0;
+                par_civ.CorrSmooth=3;
                 %%
             end
             sum_square=sum(sum(image1_crop.*image1_crop));
@@ -1040,19 +1042,25 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
             %Find the correlation max, at 255
             [y,x] = find(result_conv==255,1);
+            subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
+            sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
+            sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
             if ~isempty(y) && ~isempty(x)
                 try
                     if par_civ.CorrSmooth==1
                         [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
                     elseif par_civ.CorrSmooth==2
                         [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                    else
+                        [vector,F(ivec)] = quadr_fit(result_conv,x,y);
                     end
                     utable(ivec)=vector(1)*mesh+shiftx(ivec);
                     vtable(ivec)=vector(2)*mesh+shifty(ivec);
                     xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
                     ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                    iref=round(xtable(ivec));% image index for the middle of the vector
+                    iref=round(xtable(ivec));% nearest image index for the middle of the vector
                     jref=round(ytable(ivec));
+                    % eliminate vectors located in the mask
                     if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
                         utable(ivec)=0;
                         vtable(ivec)=0;
@@ -1149,6 +1157,44 @@ if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
     end
 end
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+
+%------------------------------------------------------------------------
+% --- Find the maximum of the correlation function after quadratic interpolation
+function [vector,F] = quadr_fit(result_conv,x,y)
+[npy,npx]=size(result_conv);
+if x<4 || y<4 || npx-x<4 ||npy-y <4
+    F=-2;
+    vector=[x y];
+else
+    F=0;
+    x_ind=x-4:x+4;
+    y_ind=y-4:y+4;
+    x_vec=0.25*(x_ind-x);
+    y_vec=0.25*(y_ind-y);
+    [X,Y]=meshgrid(x_vec,y_vec);
+    coord=[reshape(X,[],1) reshape(Y,[],1)];
+    result_conv=reshape(result_conv(y_ind,x_ind),[],1);
+    
+    
+    % n=numel(X);
+    % x=[X Y];
+    % X=X-0.5;
+    % Y=Y+0.5;
+    % y = (X.*X+2*Y.*Y+X.*Y+6) + 0.1*rand(n,1);
+    p = polyfitn(coord,result_conv,2);
+    A(1,1)=2*p.Coefficients(1);
+    A(1,2)=p.Coefficients(2);
+    A(2,1)=p.Coefficients(2);
+    A(2,2)=2*p.Coefficients(4);
+    vector=[x y]'-A\[p.Coefficients(3) p.Coefficients(5)]';
+    vector=vector'-[floor(npx/2) floor(npy/2)]-1 ;
+    % zg = polyvaln(p,coord);
+    % figure
+    % surf(x_vec,y_vec,reshape(zg,9,9))
+    % hold on
+    % plot3(X,Y,reshape(result_conv,9,9),'o')
+    % hold off
+end
 
 %'RUN_FIX': function for fixing velocity fields:
 %-----------------------------------------------

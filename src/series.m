@@ -2418,6 +2418,7 @@ if isequal(field,'get_field...')
         ParamIn.SeriesInput=1;
         GetFieldData=get_field(FirstFileName,ParamIn);
         FieldList={};
+        if isfield(GetFieldData,'FieldOption')% if a field has been selected
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;
@@ -2481,6 +2482,7 @@ if isequal(field,'get_field...')
         set(handles.Coord_y,'String',YName)
         set(handles.Coord_x,'Visible','on')
         set(handles.Coord_y,'Visible','on')
+        end
     else
         msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
     end

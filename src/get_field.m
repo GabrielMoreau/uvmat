@@ -268,29 +268,6 @@ variables_Callback(handles.variables,[], handles)% list the global attributes
 drawnow
 uiwait(handles.get_field);
 
-%------------------------------------------------------------------------
-% --- Executes when user attempts to close get_field.
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-
-
-% Use UIRESUME instead of delete because the OutputFcn needs
-% to get the updated handles structure.
-
-% function get_field_CloseRequestFcn(hObject, eventdata)
-% handles.output=[];
-% guidata(hObject, handles);% Update handles structure
-% %delete(handles.get_field);
-% uiresume(handles.get_field);
-%drawnow
-% if isequal(get(handles.get_field, 'waitstatus'), 'waiting')
-%     % The GUI is still in UIWAIT, us UIRESUME
-%     uiresume(handles.get_field);
-% else
-%     % The GUI is no longer waiting, just close it
-%     delete(handles.get_field);
-% end
-
 % -----------------------------------------------------------------------
 % --- Activated by selection in the list of variables
 % ----------------------------------------------------------------------
@@ -774,10 +751,10 @@ if check_consistent
         set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
     end
     if numel(var_component)<2
-        if numel(test_coord)<2
+        if numel(find(test_coord))<2
             ListCoord={''};
         else
-            if numel(test_coord)>=3
+            if numel(find(test_coord))>=3
                 set(handles.Coord_x,'Value',3)
                 set(handles.Coord_y,'Value',2)
                 set(handles.Coord_z,'Value',1)
@@ -1067,6 +1044,7 @@ set(handles.Coord_z,'Visible',status)
 set(handles.Z_title,'Visible',status)
 set(handles.vector_z,'Visible',status)
 set(handles.W_title,'Visible',status)   
+if strcmp(status,'on')
    Field=get(handles.get_field,'UserData');
     if Field.MaxDim>=3% for 3D fields, propose to use the third variable as time
         menu=get(handles.SwitchVarIndexTime,'String');
@@ -1076,7 +1054,7 @@ set(handles.W_title,'Visible',status)
             SwitchVarIndexTime_Callback(handles.SwitchVarIndexTime,[], handles)
         end
     end
-
+end 
 %------------------------------------------------------------------------
 % --- Executes on button press in OK.
 %------------------------------------------------------------------------

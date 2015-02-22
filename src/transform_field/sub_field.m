@@ -1,8 +1,7 @@
-%'sub_field': combines two input fields
+%'sub_field': combines two input fields, taking the difference if of the same nature
 %
-% the two fields are subtstracted when of the same nature (scalar or
-% vector), if the coordinates do not coincide, the second field is
-% interpolated on the cooridintes of the first one
+% the two fields are subtracted when of the same nature (scalar or
+% vector),and defined at the same points
 %
 % when scalar and vectors are combined, the fields are just merged in a single matlab structure for common visualisation
 %-----------------------------------------------------------------------

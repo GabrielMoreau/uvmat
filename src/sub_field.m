@@ -43,6 +43,9 @@ if nargin<3
     SubData=Field;
     return
 end
+if ~isfield(Field_1,'VarAttribute')
+    Field_1.VarAttribute={};
+end
 
 %% global attributes
 SubData.ListGlobalAttribute={};%default
@@ -106,6 +109,7 @@ for ilist=1:numel(Field_1.VarAttribute)
     end
 end
 
+
 %% rename the dimensions of the second field if identical to those of the first
 for ilist=1:numel(Field_1.VarDimName)
     DimCell=Field_1.VarDimName{ilist};
@@ -126,7 +130,7 @@ end
 %% look for coordinates common to Field in Field_1
 ind_remove=false(size(Field_1.ListVarName));
 % loop on the variables of the second field Field_1
-for ilist=1:numel(Field_1.ListVarName)
+for ilist=1:numel(Field_1.VarAttribute)
     % case of variable with a single dimension
     if ~isempty(Field_1.VarAttribute{ilist}) && ~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))% if variable with Role coord... is found.
         OldDimName=Field_1.VarDimName{ilist};
@@ -172,6 +176,11 @@ end
 ListVarNameSub=ListVarNameSub(~check_remove); %eliminate removed variables from the list of the second field
 ListVarNameNew=ListVarNameNew(~check_remove); % %list of renaimed varaibles corresponding to ListVarNameSub
 VarDimNameSub=Field_1.VarDimName(~check_remove);
+if numel(Field_1.VarAttribute)<max(find(~check_remove))
+    for ilist=numel(Field_1.VarAttribute)+1:max(find(~check_remove))
+        Field_1.VarAttribute{ilist}={};
+    end
+end
 VarAttributeSub=Field_1.VarAttribute(~check_remove);
 check_rename=check_rename(~check_remove); 
 

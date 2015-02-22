@@ -1,4 +1,4 @@
-% 'signal_spectrum': calculate and display spectrum of the current field 
+% 'signal_spectrum': calculate and display power spectrum of the current field 
 %  operate on a 1D signal or the first dimension of a higher dimensional matrix (then average over other dimensions)
 %  this function aplies the Welch method and call the function of the matlab signal processing toolbox
 %

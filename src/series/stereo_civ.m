@@ -1,4 +1,4 @@
-%'civ_series': PIV function activated by the general GUI series
+%'stereo_civ': determination of topography by image correlation of two stereo views
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria
