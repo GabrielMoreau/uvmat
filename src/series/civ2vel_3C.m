@@ -168,7 +168,7 @@ W=zeros(size(XI,1),size(XI,2));
 
 %% MAIN LOOP ON FIELDS
 warning off
-if NbField<2 && length(filecell{:,1})>2
+if NbField<2 
     disp_uvmat('ERROR','you need at least 2 images to compute the mean position for the stereo.',checkrun)
 return
 end
@@ -284,13 +284,12 @@ for index=1:NbField-1
     
 end
     ZI=mean(ZItemp,3); %mean between two the two time step
+    Vtest=ZItemp(:,:,2)-ZItemp(:,:,1);
     
     [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view a
     [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view b
     
-    %trouver z
-    % trouver les coordonnées px sur chaque image.
-    %A=
+   
     for iview=1:2
         %% reading input file(s)
         [Data{iview},tild,errormsg]=read_civdata(filecell{iview,index},{'vec(U,V)'},'*');
@@ -321,9 +320,11 @@ end
     
     Ua=griddata(X1,Y1,U1,Xa,Ya);
     Va=griddata(X1,Y1,V1,Xa,Ya);
-    A=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,YI,YI,ZI);
     
+    [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X 
+    [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
     
+    %remove wrong vector
     temp=find(Data{2}.FF==0);
     X2=Data{2}.X(temp);
     Y2=Data{2}.Y(temp);
@@ -331,9 +332,15 @@ end
     V2=Data{2}.V(temp);
     Ub=griddata(X2,Y2,U2,Xb,Yb);
     Vb=griddata(X2,Y2,V2,Xb,Yb);
-    B=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,YI,YI,ZI);
+
+    [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X 
+    [B]=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,XI,YI,ZI); %get coef B~
+   
+    
+    % System to solve
     S=ones(size(XI,1),size(XI,2),3);
     D=ones(size(XI,1),size(XI,2),3,3);
+
     S(:,:,1)=A(:,:,1,1).*Ua+A(:,:,2,1).*Va+B(:,:,1,1).*Ub+B(:,:,2,1).*Vb;
     S(:,:,2)=A(:,:,1,2).*Ua+A(:,:,2,2).*Va+B(:,:,1,2).*Ub+B(:,:,2,2).*Vb;
     S(:,:,3)=A(:,:,1,3).*Ua+A(:,:,2,3).*Va+B(:,:,1,3).*Ub+B(:,:,2,3).*Vb;
@@ -348,7 +355,7 @@ end
     D(:,:,3,3)=A(:,:,1,3).*A(:,:,1,3)+A(:,:,2,3).*A(:,:,2,3)+B(:,:,1,3).*B(:,:,1,3)+B(:,:,2,3).*B(:,:,2,3);
     for indj=1:size(XI,1)
         for indi=1:size(XI,2)
-            dxyz=squeeze(S(indj,indi,:))\squeeze(D(indj,indi,:,:));
+            dxyz=(squeeze(D(indj,indi,:,:))*1000)\(squeeze(S(indj,indi,:))*1000); % solving...
             U(indj,indi)=dxyz(1);
             V(indj,indi)=dxyz(2);
             W(indj,indi)=dxyz(3);
@@ -359,6 +366,9 @@ end
     Error(:,:,2)=A(:,:,2,1).*U+A(:,:,2,2).*V+A(:,:,2,3).*W-Va;
     Error(:,:,3)=B(:,:,1,1).*U+B(:,:,1,2).*V+B(:,:,1,3).*W-Ub;
     Error(:,:,4)=B(:,:,2,1).*U+B(:,:,2,2).*V+B(:,:,2,3).*W-Vb;
+    
+    
+
     
     %% generating the name of the merged field
     i1=i1_series{1}(index);
@@ -395,7 +405,10 @@ end
     MergeData.U=U/Dt;
     MergeData.V=V/Dt;
     MergeData.W=W/Dt;
-    MergeData.Error=sqrt(sum(Error.*Error,3));
+    
+    mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+    mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+    MergeData.Error=(sqrt(mfx^2+mfy^2)/4).*sqrt(sum(Error.*Error,3));
     errormsg=struct2nc(OutputFile,MergeData);%save result file
     if isempty(errormsg)
         disp(['output file ' OutputFile ' written'])
@@ -405,10 +418,11 @@ end
 end
 
 
-function A=get_coeff(Calib,X,Y,x,y,z)
+function [A]=get_coeff(Calib,X,Y,x,y,z) % compute A~ coefficients 
 R=(Calib.R)';%rotation matrix
 T_z=Calib.Tx_Ty_Tz(3);
 T=R(7)*x+R(8)*y+R(9)*z+T_z;
+
 A(:,:,1,1)=(R(1)-R(7)*X)./T;
 A(:,:,1,2)=(R(2)-R(8)*X)./T;
 A(:,:,1,3)=(R(3)-R(9)*X)./T;
@@ -416,10 +430,26 @@ A(:,:,2,1)=(R(4)-R(7)*Y)./T;
 A(:,:,2,2)=(R(5)-R(8)*Y)./T;
 A(:,:,2,3)=(R(6)-R(9)*Y)./T;
 
+function [U,V,X,Y]=Ud2U(Calib,Xd,Yd,Ud,Vd) % convert Xd to X  and Ud to U
+
+X1d=Xd-Ud/2;
+X2d=Xd+Ud/2;
+Y1d=Yd-Vd/2;
+Y2d=Yd+Vd/2;
+
+X1=(X1d-Calib.Cx_Cy(1))./Calib.fx_fy(1).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X1d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y1d-Calib.Cx_Cy(2)).^2 ).^(-1);
+X2=(X2d-Calib.Cx_Cy(1))./Calib.fx_fy(1).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X2d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y2d-Calib.Cx_Cy(2)).^2 ).^(-1);
+Y1=(Y1d-Calib.Cx_Cy(2))./Calib.fx_fy(2).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X1d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y1d-Calib.Cx_Cy(2)).^2 ).^(-1);
+Y2=(Y2d-Calib.Cx_Cy(2))./Calib.fx_fy(2).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X2d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y2d-Calib.Cx_Cy(2)).^2 ).^(-1);
+
+U=X2-X1;
+V=Y2-Y1;
+X=X1+U/2;
+Y=Y1+V/2;
 
 
 
-function [z,Xphy,Yphy,error]=shift2z(xmid, ymid, u, v,XmlData)
+function [z,Xphy,Yphy,error]=shift2z(xmid, ymid, u, v,XmlData) % get H from stereo data
 z=0;
 error=0;
 
@@ -428,7 +458,7 @@ error=0;
 Calib_A=XmlData{1}.GeometryCalib;
 R=(Calib_A.R)';
 x_a=xmid- u/2;
-y_a=ymid- u/2;
+y_a=ymid- v/2; 
 z_a=R(7)*x_a+R(8)*y_a+Calib_A.Tx_Ty_Tz(1,3);
 Xa=(R(1)*x_a+R(2)*y_a+Calib_A.Tx_Ty_Tz(1,1))./z_a;
 Ya=(R(4)*x_a+R(5)*y_a+Calib_A.Tx_Ty_Tz(1,2))./z_a;
@@ -444,8 +474,12 @@ Dxa=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
 Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 
 %% second image
+%loading shift angle
+
 Calib_B=XmlData{2}.GeometryCalib;
 R=(Calib_B.R)';
+
+
 x_b=xmid+ u/2;
 y_b=ymid+ v/2;
 z_b=R(7)*x_b+R(8)*y_b+Calib_B.Tx_Ty_Tz(1,3);
@@ -463,15 +497,21 @@ Dyb=(B_2_1.*B_1_3-B_1_1.*B_2_3)./Det;
 
 %% result
 Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
-error=((Dyb-Dya).*u-(Dxb-Dxa).*v)./Den;
+error=((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den;
+% ex=-error.*(Dyb-Dya);
+% ey=-error.*(Dxb-Dxa);
+
+% z1=-u./(Dxb-Dxa);
+% z2=-v./(Dyb-Dya);
+z=((Dxb-Dxa).*(-u)+(Dyb-Dya).*(-v))./Den;
 
 xnew(1,:)=Dxa.*z+x_a;
 xnew(2,:)=Dxb.*z+x_b;
 ynew(1,:)=Dya.*z+y_a;
 ynew(2,:)=Dyb.*z+y_b;
+Xphy=mean(xnew,1);
+Yphy=mean(ynew,1); 
 
-Xphy=mean(xnew,1); %on moyenne les 2 valeurs 
-Yphy=mean(ynew,1);
-z=((Dxb-Dxa).*u-(Dyb-Dya).*v)./Den;
+
 
 

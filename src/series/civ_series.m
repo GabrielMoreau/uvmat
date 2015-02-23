@@ -323,6 +323,7 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 maskname='';% initiate the mask name
+tic;
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
@@ -851,6 +852,7 @@ for ifield=1:NbField
         end
     end
 end
+disp(['ellapsed time ' num2str(toc) ' s'])
 
 % 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
 %--------------------------------------------------------------------------
@@ -1023,16 +1025,13 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
                 XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
                 YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
-                        image1_crop_1=image1_crop;
                 image1_crop=interp2(image1_crop,XIant,YIant);
-                        image1_crop_2=image1_crop;
                 image1_crop(isnan(image1_crop))=0;
-                  image1_crop_3=image1_crop;
                 xi=(1:mesh:size(image2_crop,2));
                 yi=(1:mesh:size(image2_crop,1))';
-                image2_crop=interp2(image2_crop,xi,yi);
+                image2_crop=interp2(image2_crop,xi,yi,'*spline');
                 image2_crop(isnan(image2_crop))=0;
-                par_civ.CorrSmooth=3;
+                %par_civ.CorrSmooth=3;%%%%%%%%%%%%%%%%%%%
                 %%
             end
             sum_square=sum(sum(image1_crop.*image1_crop));

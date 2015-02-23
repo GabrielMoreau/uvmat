@@ -1,4 +1,4 @@
-%'stereo_civ': determination of topography by image correlation of two stereo views
+%'civ_series': PIV function activated by the general GUI series
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria
@@ -281,7 +281,8 @@ for ifield=1:NbField
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
        
     %% Civ1
-   
+
+    
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
         par_civ1=Param.ActionInput.Civ1;
@@ -296,6 +297,9 @@ for ifield=1:NbField
                 return
             end
         end
+        
+
+        
         [A,Rangx,Rangy]=phys_ima(A,XmlData,1);
         [Npy,Npx]=size(A{1});
         PhysImageA=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],1);
@@ -515,17 +519,15 @@ for ifield=1:NbField
         if par_civ2.CheckMask&&~isempty(par_civ2.Mask)&& ~strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
             mask=imread(par_civ2.Mask);
         end
-        ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
-        iby2=ceil(par_civ2.CorrBoxSize(2)/2);
-%         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
-%         par_civ2.SearchBoxSize(2)=2*iby2+9;
+%         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
+%         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
-            par_civ2.DUDX=DUDX./nbval;
-            par_civ2.DUDY=DUDY./nbval;
-            par_civ2.DVDX=DVDX./nbval;
-            par_civ2.DVDY=DVDY./nbval;
+            par_civ2.DUDX=DUDX(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DUDY=DUDY(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DVDX=DVDX(nbval>=1)./nbval(nbval>=1);
+            par_civ2.DVDY=DVDY(nbval>=1)./nbval(nbval>=1);
         end
         % calculate velocity data (y and v in indices, reverse to y component)
         [xtable, ytable, utable, vtable, ctable, F] = civ (par_civ2);
@@ -616,10 +618,6 @@ for ifield=1:NbField
         Data.Civ2_V_smooth(ind_good)=Vres;
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
-        
-            
- 
-        
     end
     
         
@@ -658,9 +656,7 @@ for ifield=1:NbField
             maxiy=minix+par_civ3.Dy*floor((par_civ3.ImageHeight-1)/par_civ3.Dy);
             [GridX,GridY]=meshgrid(minix:par_civ3.Dx:maxix,miniy:par_civ3.Dy:maxiy);
             par_civ3.Grid(:,1)=reshape(GridX,[],1);
-            par_civ3.Grid(:,2)=reshape(GridY,[],1);
-           
-            
+            par_civ3.Grid(:,2)=reshape(GridY,[],1);        
         end
         Shiftx=zeros(size(par_civ3.Grid,1),1);% shift expected from civ2 data
         Shifty=zeros(size(par_civ3.Grid,1),1);
@@ -695,17 +691,15 @@ for ifield=1:NbField
         if par_civ3.CheckMask&&~isempty(par_civ3.Mask)&& ~strcmp(maskname,par_civ3.Mask)% mask exist, not already read in Civ2
             mask=imread(par_civ3.Mask);
         end
-        ibx2=ceil(par_civ3.CorrBoxSize(1)/2);
-        iby2=ceil(par_civ3.CorrBoxSize(2)/2);
-%         par_civ3.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
-%         par_civ3.SearchBoxSize(2)=2*iby2+9;
+%         ibx2=ceil(par_civ3.CorrBoxSize(1)/2);
+%         iby2=ceil(par_civ3.CorrBoxSize(2)/2);
         par_civ3.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ3.Grid=[par_civ3.Grid(nbval>=1,1)-par_civ3.SearchBoxShift(:,1)/2 par_civ3.Grid(nbval>=1,2)-par_civ3.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ3.CheckDeformation
-            par_civ3.DUDX=DUDX./nbval;
-            par_civ3.DUDY=DUDY./nbval;
-            par_civ3.DVDX=DVDX./nbval;
-            par_civ3.DVDY=DVDY./nbval;
+            par_civ3.DUDX=DUDX(nbval>=1)./nbval(nbval>=1);
+            par_civ3.DUDY=DUDY(nbval>=1)./nbval(nbval>=1);
+            par_civ3.DVDX=DVDX(nbval>=1)./nbval(nbval>=1);
+            par_civ3.DVDY=DVDY(nbval>=1)./nbval(nbval>=1);
         end
         % calculate velocity data (y and v in indices, reverse to y component)
         [xtable, ytable, utable, vtable, ctable, F] = civ (par_civ3);
@@ -723,8 +717,8 @@ for ifield=1:NbField
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ3_param];
         
         nbvar=numel(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ3_X','Civ3_Y','Civ3_U','Civ3_V','Civ3_F','Civ3_C','Xphys','Yphys','Zphys','Civ3_E'}];%  cell array containing the names of the fields to record
-        Data.VarDimName=[Data.VarDimName {'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'}];
+        Data.ListVarName=[Data.ListVarName {'Civ3_X','Civ3_Y','Civ3_U','Civ3_V','Civ3_F','Civ3_C','Xphys','Yphys','Zphys'}];%  cell array containing the names of the fields to record
+        Data.VarDimName=[Data.VarDimName {'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'}];
         Data.VarAttribute{nbvar+1}.Role='coord_x';
         Data.VarAttribute{nbvar+2}.Role='coord_y';
         Data.VarAttribute{nbvar+3}.Role='vector_x';
@@ -775,9 +769,9 @@ end
         Data.Patch3_MaxDiff=Param.ActionInput.Patch3.MaxDiff;
         Data.Patch3_SubDomainSize=Param.ActionInput.Patch3.SubDomainSize;
         nbvar=length(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ3_U_smooth','Civ3_V_smooth','Civ3_SubRange','Civ3_NbCentres','Civ3_Coord_tps','Civ3_U_tps','Civ3_V_tps','Xmid','Ymid','Uphys','Vphys'}];
+        Data.ListVarName=[Data.ListVarName {'Civ3_U_smooth','Civ3_V_smooth','Civ3_SubRange','Civ3_NbCentres','Civ3_Coord_tps','Civ3_U_tps','Civ3_V_tps','Xmid','Ymid','Uphys','Vphys','Error'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_3','nb_vec_3',{'nb_coord','nb_bounds','nb_subdomain_3'},{'nb_subdomain_3'},...
-            {'nb_tps_3','nb_coord','nb_subdomain_3'},{'nb_tps_3','nb_subdomain_3'},{'nb_tps_3','nb_subdomain_3'},'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'}];
+            {'nb_tps_3','nb_coord','nb_subdomain_3'},{'nb_tps_3','nb_subdomain_3'},{'nb_tps_3','nb_subdomain_3'},'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'}];
         
         Data.VarAttribute{nbvar+1}.Role='vector_x';
         Data.VarAttribute{nbvar+2}.Role='vector_y';
@@ -804,17 +798,15 @@ end
         Data.Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ3_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
         Data.Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data.Civ3_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
         Data.Uphys=Data.Civ3_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
-        Data.Vphys=Data.Civ3_V_smooth*(Rangy(2)-Rangy(1))/(Npy-1);
-        [Data.Zphys,Data.Xphys,Data.Yphys,Data.Civ3_E]=shift2z(Data.Xmid,Data.Ymid,Data.Uphys,Data.Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytemp)
+        Data.Vphys=Data.Civ3_V_smooth*(Rangy(1)-Rangy(2))/(Npy-1);
+        [Data.Zphys,Data.Xphys,Data.Yphys,Data.Error]=shift2z(Data.Xmid,Data.Ymid,Data.Uphys,Data.Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytemp)
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
         
     end
-    
-    
-    
+      
     
     %% write result in a netcdf file if requested
     if LSM ~= 1 % store all data
@@ -828,8 +820,8 @@ end
         end
     else
        % store only phys data
-        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys'};
-        Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
+        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys','Error'};
+        Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
         temp=find(Data.Civ3_FF==0);
         Data_light.Zphys=Data.Zphys(temp);
         Data_light.Yphys=Data.Yphys(temp);
@@ -839,7 +831,7 @@ end
         Data_light.Ymid=Data.Ymid(temp);
         Data_light.Uphys=Data.Uphys(temp);
         Data_light.Vphys=Data.Vphys(temp);
-       
+        Data_light.Error=Data.Error(temp);
        if exist('ncfile2','var')
             errormsg=struct2nc(ncfile2,Data_light);
             if isempty(errormsg)
@@ -852,7 +844,7 @@ end
     end
    end
 
-  toc 
+  disp(['ellapsed time for the loop ' num2str(toc) ' s'])
 
 
 
@@ -911,10 +903,10 @@ end
 nbvec=size(par_civ.Grid,1);
 
 %% prepare correlation and search boxes 
-ibx2=ceil(par_civ.CorrBoxSize(1)/2);
-iby2=ceil(par_civ.CorrBoxSize(2)/2);
-isx2=ceil(par_civ.SearchBoxSize(1)/2);
-isy2=ceil(par_civ.SearchBoxSize(2)/2);
+ibx2=floor(par_civ.CorrBoxSize(1)/2);
+iby2=floor(par_civ.CorrBoxSize(2)/2);
+isx2=floor(par_civ.SearchBoxSize(1)/2);
+isy2=floor(par_civ.SearchBoxSize(2)/2);
 shiftx=round(par_civ.SearchBoxShift(:,1));
 shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
 if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
@@ -943,25 +935,6 @@ end
 check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
 check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 
-% %% prepare images
-% if isfield(par_civ,'reverse_pair')
-%     if par_civ.reverse_pair
-%         if ischar(par_civ.ImageB)
-%             temp=par_civ.ImageA;
-%             par_civ.ImageA=imread(par_civ.ImageB);
-%         end
-%         if ischar(temp)
-%             par_civ.ImageB=imread(temp);
-%         end
-%     end
-% else
-%     if ischar(par_civ.ImageA)
-%         par_civ.ImageA=imread(par_civ.ImageA);
-%     end
-%     if ischar(par_civ.ImageB)
-%         par_civ.ImageB=imread(par_civ.ImageB);
-%     end
-% end
 par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
 par_civ.ImageB=sum(double(par_civ.ImageB),3);
 [npy_ima npx_ima]=size(par_civ.ImageA);
@@ -988,18 +961,17 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
    end
   %  check_noflux=(par_civ.Mask<100) ;%TODO: to implement
     check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
-    par_civ.ImageA(check_undefined)=MinA;% put image A to zero (i.e. the min image value) in the undefined  area
-    par_civ.ImageB(check_undefined)=MinB;% put image B to zero (i.e. the min image value) in the undefined  area
+%     par_civ.ImageA(check_undefined)=MinA;% put image A to zero (i.e. the min image value) in the undefined  area
+%     par_civ.ImageB(check_undefined)=MinB;% put image B to zero (i.e. the min image value) in the undefined  area
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
 corrmax=0;
 sum_square=1;% default
 mesh=1;% default
-CheckDecimal=isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1;
-if CheckDecimal
-    mesh=0.2;%mesh in pixels for subpixel image interpolation
-    CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
+CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
+if CheckDeformation
+    mesh=0.25;%mesh in pixels for subpixel image interpolation
 end
 % vector=[0 0];%default
 
@@ -1019,15 +991,26 @@ for ivec=1:nbvec
     subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
     image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
     image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
+    mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
+    mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
     check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
     check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
     check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
-    check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
-    
+    check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;   
     image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
     image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-    image1_mean=mean(mean(image1_crop));
-    image2_mean=mean(mean(image2_crop));
+    mask1_crop(check1_y,check1_x)=check_undefined(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
+    mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from imag
+    sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
+        if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
+            F(ivec)=3; %
+        else
+            image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
+            image2_crop=image2_crop.*~mask2_crop;
+            image1_mean=mean(mean(image1_crop))/(1-sizemask);
+            image2_mean=mean(mean(image2_crop))/(1-sizemask);
+%     image1_mean=mean(mean(image1_crop));
+%     image2_mean=mean(mean(image2_crop));
     %threshold on image minimum
     if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
         F(ivec)=3;
@@ -1036,24 +1019,22 @@ for ivec=1:nbvec
     if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
         F(ivec)=3;
     end
-    %         end
+    end
     if F(ivec)~=3
-        image1_crop=image1_crop-image1_mean;%substract the mean
-        image2_crop=image2_crop-image2_mean;
-        if CheckDecimal
-            xi=(1:mesh:size(image1_crop,2));
-            yi=(1:mesh:size(image1_crop,1))';
-            if CheckDeformation
+         image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
+            image2_crop=(image2_crop-image2_mean).*~mask2_crop;
+        if CheckDeformation
+              xi=(1:mesh:size(image1_crop,2));
+                yi=(1:mesh:size(image1_crop,1))';
                 [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
                 XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
                 YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
                 image1_crop=interp2(image1_crop,XIant,YIant);
-            else
-                image1_crop=interp2(image1_crop,xi,yi);
-            end
-            xi=(1:mesh:size(image2_crop,2));
-            yi=(1:mesh:size(image2_crop,1))';
-            image2_crop=interp2(image2_crop,xi,yi);
+                image1_crop(isnan(image1_crop))=0;
+                xi=(1:mesh:size(image2_crop,2));
+                yi=(1:mesh:size(image2_crop,1))';
+                image2_crop=interp2(image2_crop,xi,yi,'*spline');
+                image2_crop(isnan(image2_crop))=0;
         end
         sum_square=(sum(sum(image1_crop.*image1_crop)));%+sum(sum(image2_crop.*image2_crop)))/2;
         %reference: Oliver Pust, PIV: Direct Cross-Correlation
@@ -1062,6 +1043,9 @@ for ivec=1:nbvec
         result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
         %Find the correlation max, at 255
         [y,x] = find(result_conv==255,1);
+        subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
+            sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
+            sum_square=sqrt(sum_square);% sqrt of the variance product to normalise correlation
         if ~isempty(y) && ~isempty(x)
             try
                 if par_civ.CorrSmooth==1
@@ -1285,7 +1269,7 @@ end
 % xmid+ u/2: set of apparent phys x coordinates in the ref plane, image B
 % ymid+ v/2: set of apparent phys y coordinates in the ref plane, image B
 % XmlData: content of the xml files containing geometric calibration parameters
-function [z,Xphy,Yphy,error]=shift2z(xmid, ymid, u, v,XmlData)
+function [z,Xphy,Yphy,Error]=shift2z(xmid, ymid, u, v,XmlData)
 z=0;
 error=0;
 
@@ -1294,7 +1278,7 @@ error=0;
 Calib_A=XmlData{1}.GeometryCalib;
 R=(Calib_A.R)';
 x_a=xmid- u/2;
-y_a=ymid- u/2;
+y_a=ymid- v/2; 
 z_a=R(7)*x_a+R(8)*y_a+Calib_A.Tx_Ty_Tz(1,3);
 Xa=(R(1)*x_a+R(2)*y_a+Calib_A.Tx_Ty_Tz(1,1))./z_a;
 Ya=(R(4)*x_a+R(5)*y_a+Calib_A.Tx_Ty_Tz(1,2))./z_a;
@@ -1310,8 +1294,12 @@ Dxa=(A_1_2.*A_2_3-A_2_2.*A_1_3)./Det;
 Dya=(A_2_1.*A_1_3-A_1_1.*A_2_3)./Det;
 
 %% second image
+%loading shift angle
+
 Calib_B=XmlData{2}.GeometryCalib;
 R=(Calib_B.R)';
+
+
 x_b=xmid+ u/2;
 y_b=ymid+ v/2;
 z_b=R(7)*x_b+R(8)*y_b+Calib_B.Tx_Ty_Tz(1,3);
@@ -1329,16 +1317,21 @@ Dyb=(B_2_1.*B_1_3-B_1_1.*B_2_3)./Det;
 
 %% result
 Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
-error=((Dyb-Dya).*u-(Dxb-Dxa).*v)./Den;
+mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+mtz=(XmlData{1}.GeometryCalib.Tx_Ty_Tz(1,3)+XmlData{2}.GeometryCalib.Tx_Ty_Tz(1,3))/2;
+
+Error=(sqrt(mfx^2+mfy^2)/(2*sqrt(2)*mtz)).*(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den);
+
+z=((Dxb-Dxa).*(-u)+(Dyb-Dya).*(-v))./Den;
 
 xnew(1,:)=Dxa.*z+x_a;
 xnew(2,:)=Dxb.*z+x_b;
 ynew(1,:)=Dya.*z+y_a;
 ynew(2,:)=Dyb.*z+y_b;
-
-Xphy=mean(xnew,1); %on moyenne les 2 valeurs 
+Xphy=mean(xnew,1);
 Yphy=mean(ynew,1);
-z=((Dxb-Dxa).*u-(Dyb-Dya).*v)./Den;
+
 
 
 
