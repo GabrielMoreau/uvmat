@@ -957,7 +957,7 @@ end
 checkmask=0;
 MinA=min(min(par_civ.ImageA));
 %MinB=min(min(par_civ.ImageB));
-check_undefined=false(size(par_civ.ImageA));
+%check_undefined=false(size(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     checkmask=1;
     if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
@@ -989,36 +989,47 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
         image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
         image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
-        mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
-        mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
         check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
         check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
         check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
         check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
         image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
         image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-        mask1_crop(check1_y,check1_x)=check_undefined(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
-        mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
-        sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
-        if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
-            F(ivec)=3; %
+        if checkmask
+            mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
+            mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
+            mask1_crop(check1_y,check1_x)=check_undefined(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
+            mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
+            sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
+            if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
+                F(ivec)=3; %
+            else
+                image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
+                image2_crop=image2_crop.*~mask2_crop;
+                image1_mean=mean(mean(image1_crop))/(1-sizemask);
+                image2_mean=mean(mean(image2_crop))/(1-sizemask);
+            end
         else
-            image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
-            image2_crop=image2_crop.*~mask2_crop;
-            image1_mean=mean(mean(image1_crop))/(1-sizemask);
-            image2_mean=mean(mean(image2_crop))/(1-sizemask);
-            %threshold on image minimum
-            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                F(ivec)=3;
-            end
-            %threshold on image maximum
-            if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                F(ivec)=3;
-            end
+            image1_mean=mean(mean(image1_crop));
+            image2_mean=mean(mean(image2_crop));
         end
+        %threshold on image minimum
+        if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+            F(ivec)=3;
+        end
+        %threshold on image maximum
+        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+            F(ivec)=3;
+        end
+        
         if F(ivec)~=3
-            image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
-            image2_crop=(image2_crop-image2_mean).*~mask2_crop;
+            if checkmask
+                image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
+                image2_crop=(image2_crop-image2_mean).*~mask2_crop;
+            else
+                image1_crop=(image1_crop-image1_mean);
+                image2_crop=(image2_crop-image2_mean);
+            end
             if CheckDeformation
                 xi=(1:mesh:size(image1_crop,2));
                 yi=(1:mesh:size(image1_crop,1))';

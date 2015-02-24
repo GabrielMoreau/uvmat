@@ -787,7 +787,7 @@ if check_consistent
         end
         set(handles.Coord_x,'Value',coord_val(1))
         set(handles.Coord_y,'Value',coord_val(2))
-        if numel(ListCoord)>=3
+        if numel(coord_val)>=3
             set(handles.Coord_z,'Value',coord_val(3))
         end
     end
