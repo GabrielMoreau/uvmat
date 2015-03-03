@@ -282,8 +282,8 @@ if ~isempty(A)
         Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x'}}; %
         Field.Coord_y=[npxy(1)-0.5 0.5];
         Field.Coord_x=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-        ParamOut.Npx=npxy(2);% display image size on the interface
-        ParamOut.Npy=npxy(1);
+%        ParamOut.Npx=npxy(2);% display image size on the interface
+ %       ParamOut.Npy=npxy(1);
 %         Field.VarAttribute{3}.Mesh=1;
     end
     Field.A=A;

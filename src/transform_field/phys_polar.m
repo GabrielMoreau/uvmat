@@ -94,16 +94,16 @@ end
 iscalar=0;
 %transform first field to cartesian phys coordiantes
 if  ~isempty(Calib{1})
-    DataOut=phys_1(Data,Calib{1},origin_xy,radius_offset,angle_offset,angle_scale);
+    DataOut=phys_1(DataIn,Calib{1},origin_xy,radius_offset,angle_offset,angle_scale);
     %case of images or scalar
-    if isfield(Data,'A')&isfield(Data,'Coord_x')&~isempty(Data.Coord_x) & isfield(Data,'Coord_y')&...
-                                           ~isempty(Data.Coord_y)&length(Data.A)>1
+    if isfield(DataIn,'A')&isfield(DataIn,'Coord_x')&~isempty(DataIn.Coord_x) & isfield(DataIn,'Coord_y')&...
+                                           ~isempty(DataIn.Coord_y)&length(DataIn.A)>1
         iscalar=1;
-        A{1}=Data.A;
+        A{1}=DataIn.A;
     end
     %transform of X,Y coordinates for vector fields
-    if isfield(Data,'ZIndex')&~isempty(Data.ZIndex)
-        ZIndex=Data.ZIndex;
+    if isfield(DataIn,'ZIndex')&~isempty(DataIn.ZIndex)
+        ZIndex=DataIn.ZIndex;
     else
         ZIndex=0;
     end

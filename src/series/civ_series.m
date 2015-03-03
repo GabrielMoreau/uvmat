@@ -1014,74 +1014,76 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             image2_mean=mean(mean(image2_crop));
         end
         %threshold on image minimum
-        if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-            F(ivec)=3;
-        end
-        %threshold on image maximum
-        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-            F(ivec)=3;
-        end
-        
         if F(ivec)~=3
-            if checkmask
-                image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
-                image2_crop=(image2_crop-image2_mean).*~mask2_crop;
-            else
-                image1_crop=(image1_crop-image1_mean);
-                image2_crop=(image2_crop-image2_mean);
+            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+                F(ivec)=3;
+                %threshold on image maximum
+            elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+                F(ivec)=3;
             end
-            if CheckDeformation
-                xi=(1:mesh:size(image1_crop,2));
-                yi=(1:mesh:size(image1_crop,1))';
-                [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
-                XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
-                YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
-                image1_crop=interp2(image1_crop,XIant,YIant);
-                image1_crop(isnan(image1_crop))=0;
-                xi=(1:mesh:size(image2_crop,2));
-                yi=(1:mesh:size(image2_crop,1))';
-                image2_crop=interp2(image2_crop,xi,yi,'*spline');
-                image2_crop(isnan(image2_crop))=0;
-                %par_civ.CorrSmooth=3;%%%%%%%%%%%%%%%%%%%
-                %%
-            end
-            sum_square=sum(sum(image1_crop.*image1_crop));
-            %reference: Oliver Pust, PIV: Direct Cross-Correlation
-            result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
-            corrmax= max(max(result_conv));
-            result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-            %Find the correlation max, at 255
-            [y,x] = find(result_conv==255,1);
-            subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
-            sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
-            sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
-            if ~isempty(y) && ~isempty(x)
-                try
-                    if par_civ.CorrSmooth==1
-                        [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                    elseif par_civ.CorrSmooth==2
-                        [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
-                    else
-                        [vector,F(ivec)] = quadr_fit(result_conv,x,y);
-                    end
-                    utable(ivec)=vector(1)*mesh+shiftx(ivec);
-                    vtable(ivec)=vector(2)*mesh+shifty(ivec);
-                    xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                    ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                    iref=round(xtable(ivec));% nearest image index for the middle of the vector
-                    jref=round(ytable(ivec));
-                    % eliminate vectors located in the mask
-                    if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
-                        utable(ivec)=0;
-                        vtable(ivec)=0;
+            if F(ivec)~=3
+                %mask
+                if checkmask
+                    image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
+                    image2_crop=(image2_crop-image2_mean).*~mask2_crop;
+                else
+                    image1_crop=(image1_crop-image1_mean);
+                    image2_crop=(image2_crop-image2_mean);
+                end
+                %deformation
+                if CheckDeformation
+                    xi=(1:mesh:size(image1_crop,2));
+                    yi=(1:mesh:size(image1_crop,1))';
+                    [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
+                    XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
+                    YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                    image1_crop=interp2(image1_crop,XIant,YIant);
+                    image1_crop(isnan(image1_crop))=0;
+                    xi=(1:mesh:size(image2_crop,2));
+                    yi=(1:mesh:size(image2_crop,1))';
+                    image2_crop=interp2(image2_crop,xi,yi,'*spline');
+                    image2_crop(isnan(image2_crop))=0;
+                    %par_civ.CorrSmooth=3;%%%%%%%%%%%%%%%%%%%
+                    %%
+                end
+                sum_square=sum(sum(image1_crop.*image1_crop));
+                %reference: Oliver Pust, PIV: Direct Cross-Correlation
+                result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+                corrmax= max(max(result_conv));
+                result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+                %Find the correlation max, at 255
+                [y,x] = find(result_conv==255,1);
+                subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
+                sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
+                sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
+                if ~isempty(y) && ~isempty(x)
+                    try
+                        if par_civ.CorrSmooth==1
+                            [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                        elseif par_civ.CorrSmooth==2
+                            [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                        else
+                            [vector,F(ivec)] = quadr_fit(result_conv,x,y);
+                        end
+                        utable(ivec)=vector(1)*mesh+shiftx(ivec);
+                        vtable(ivec)=vector(2)*mesh+shifty(ivec);
+                        xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                        ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+                        iref=round(xtable(ivec));% nearest image index for the middle of the vector
+                        jref=round(ytable(ivec));
+                        % eliminate vectors located in the mask
+                        if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
+                            utable(ivec)=0;
+                            vtable(ivec)=0;
+                            F(ivec)=3;
+                        end
+                        ctable(ivec)=corrmax/sum_square;% correlation value
+                    catch ME
                         F(ivec)=3;
                     end
-                    ctable(ivec)=corrmax/sum_square;% correlation value
-                catch ME
+                else
                     F(ivec)=3;
                 end
-            else
-                F(ivec)=3;
             end
         end
     end

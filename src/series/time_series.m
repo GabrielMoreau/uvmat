@@ -89,7 +89,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         SeriesData=get(hseries,'UserData');
         if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
-            ParamOut.ActionInput.VarMesh=str2double(answer);
+            ParamOut.ActionInput.VarMesh=str2num(answer);
         end
     end
     
@@ -294,12 +294,12 @@ end
 
 nbfile=0;% not used , to check
 nbmissing=0;
-VarMesh=NaN;
+VarMesh=[];
 checkhisto=0;
 if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
     checkhisto=1;
-    if isfield(Param.ActionInput,'VarMesh')%case of histograms
-    VarMesh=Param.ActionInput.VarMesh;
+    if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VarMesh')%case of histograms
+        VarMesh=Param.ActionInput.VarMesh;
     end
 end
 
@@ -319,178 +319,200 @@ for index=1:nbfield
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
         if ~isempty(errormsg)
             errormsg=['time_series / read_field / ' errormsg];
-            display(errormsg)
-            break
+            disp(errormsg)
+            break% exit the loop on iview
         end
         if ~isempty(NbSlice_calib)
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
     end
-    if isempty(errormsg)
-        Field=Data{1}; % default input field structure
-        % coordinate transform (or other user defined transform)
-        if ~isempty(transform_fct)
-            switch nargin(transform_fct)
-                case 4
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 3
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 2
+    if ~isempty(errormsg)
+        continue %in case of input error skip the current input field, go to next index
+    end
+    Field=Data{1}; % default input field structure
+    % coordinate transform (or other user defined transform)
+    if ~isempty(transform_fct)
+        switch nargin(transform_fct)
+            case 4
+                if length(Data)==2
+                    Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                else
                     Field=transform_fct(Data{1},XmlData{1});
-                case 1
-                    Field=transform_fct(Data{1});
-            end
-        end
-        
-        %field projection on an object
-        if Param.CheckObject
-            % calculate tps coefficients if needed
-            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-                Field=tps_coeff_field(Field,check_proj_tps);
-            end
-            [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
-            if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',['time_series / proj_field / ' errormsg])
-                return
-            end
-        end
-        %         nbfile=nbfile+1;
-        
-        % initiate the time series at the first iteration
-        if index==1
-            % stop program if the first field reading is in error
-            if ~isempty(errormsg)
-                disp_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
-                return
-            end
-            DataOut=Field;%default
-            nbvar=length(Field.ListVarName);
-            if nbvar==0
-                disp_uvmat('ERROR','no input variable selected',checkrun)
-                return
-            end
-            if checkhisto%case of histograms
-                testsum=zeros(1,nbvar);%initiate flag for action on each variable
-                for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
-                    VarName=Field.ListVarName{ivar};
-                    if isfield(Data{1},VarName)
-                        testsum(ivar)=1;
-                        DataOut.(VarName)=Field.(VarName);
-                        DataOut.([VarName 'Histo'])=zeros([nbfield numel(DataOut.(VarName))]);
-                        VarMesh=Field.(VarName)(2)-Field.(VarName)(1);
-                    end
                 end
-                disp(['mesh for histogram = ' num2str(VarMesh)])
-            else
-                testsum=2*ones(1,nbvar);%initiate flag for action on each variable
-                if isfield(Field,'VarAttribute') % look for coordinate and flag variables
-                    for ivar=1:nbvar
-                        if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
-                            var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
-                            if isequal(var_role,'errorflag')
-                                disp_uvmat('ERROR','do not handle error flags in time series',checkrun)
-                                return
-                            end
-                            if isequal(var_role,'warnflag')
-                                testsum(ivar)=0;  % not recorded variable
-                                eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
-                            end
-                            if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
-                                testsum(ivar)=1; %constant coordinates, record without time evolution
-                            end
-                        end
-                        % check whether the variable ivar is a dimension variable
-                        DimCell=Field.VarDimName{ivar};
-                        if ischar(DimCell)
-                            DimCell={DimCell};
-                        end
-                        if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
-                            testsum(ivar)=1;
-                        end
-                    end
+            case 3
+                if length(Data)==2
+                    Field=transform_fct(Data{1},XmlData{1},Data{2});
+                else
+                    Field=transform_fct(Data{1},XmlData{1});
                 end
-                for ivar=1:nbvar
-                    if testsum(ivar)==2
-                        VarName=Field.ListVarName{ivar};
-                        siz=size(Field.(VarName));
-                        DataOut.(VarName)=zeros([nbfield siz]);
-                    end
-                end
-            end
-            DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
-        end
-        
-        % add data to the current field
-        if checkhisto
-            for ivar=1:length(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                if isfield(Data{1},VarName)
-                    MaxValue=max(DataOut.(VarName));% current max of histogram absissa
-                    MinValue=min(DataOut.(VarName));% current min of histogram absissa
-                    MaxIndex=round(MaxValue/VarMesh);
-                    MinIndex=round(MinValue/VarMesh);
-                    MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
-                    MinIndex_new=round(min(Field.(VarName)/VarMesh));
-                    if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
-                        DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
-                        DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(nbfield,MaxIndex_new-MaxIndex)]; % append the new histo values
-                    end
-                    if MinIndex_new <= MinIndex-1
-                        DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
-                        DataOut.([VarName 'Histo'])=[zeros(nbfield,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
-                        ind_start=1;
-                    else
-                        ind_start=MinIndex_new-MinIndex+1;
-                    end
-                    DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
-                        DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);
-                end
-            end
-        else
-            for ivar=1:length(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                VarVal=Field.(VarName);
-                if testsum(ivar)==2% test for recorded variable
-                    if isempty(errormsg)
-                        VarVal=shiftdim(VarVal,-1); %shift dimension
-                        DataOut.(VarName)(index,:,:)=VarVal;%concanete the current field to the time series
-                    end
-                elseif testsum(ivar)==1% variable representing fixed coordinates
-                    VarInit=DataOut.(VarName);
-                    if isempty(errormsg) && ~isequal(VarVal,VarInit)
-                        disp_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
-                        return
-                    end
-                end
-            end
-        end
-        
-        % record the time:
-        if isempty(time)% time not set by xml filer(s)
-            if isfield(Data{1},'Time')
-                DataOut.Time(index,1)=Field.Time;
-            else
-                DataOut.Time(index,1)=index;%default
-            end
-        else % time from ImaDoc prevails  TODO: correct
-            DataOut.Time(index,1)=time(index);%
-        end
-        
-        % record the number of missing input fields
-        if ~isempty(errormsg)
-            nbmissing=nbmissing+1;
-            display(['index=' num2str(index) ':' errormsg])
+            case 2
+                Field=transform_fct(Data{1},XmlData{1});
+            case 1
+                Field=transform_fct(Data{1});
         end
     end
+    
+    %field projection on an object
+    if Param.CheckObject
+        % calculate tps coefficients if needed
+        if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
+            Field=tps_coeff_field(Field,check_proj_tps);
+        end
+        [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
+        if ~isempty(errormsg)
+            disp_uvmat('ERROR',['time_series / proj_field / ' errormsg],checkrun)
+            return
+        end
+    end
+    %         nbfile=nbfile+1;
+    
+    % initiate the time series at the first iteration
+    if index==1
+        % stop program if the first field reading is in error
+        if ~isempty(errormsg)
+            disp_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
+            return
+        end
+        if ~isfield(Field,'ListVarName')
+            disp_uvmat('ERROR','no variable in the projected field',checkrun)
+            return
+        end
+        DataOut=Field;%output reproduced the first projected field by default
+        nbvar=length(Field.ListVarName);
+        if nbvar==0
+            disp_uvmat('ERROR','no input variable selected',checkrun)
+            return
+        end
+        if checkhisto%case of histograms
+            testsum=zeros(1,nbvar);%initiate flag for action on each variable
+            for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
+                VarName=Field.ListVarName{ivar};
+                if isfield(Data{1},VarName)
+                    DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
+                    DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
+%                     if isfield(DataOut.VarAttribute{ivar},'Role')
+%                     DataOut.VarAttribute{ivar}=rmfield(DataOut.VarAttribute{ivar},'Role');
+%                     end
+                    StatName=pdf2stat;% get the names of statistical quantities to calcuilate at each time
+                    for istat=1:numel(StatName)
+                        DataOut.ListVarName=[DataOut.ListVarName {[VarName StatName{istat}]}];
+                        DataOut.VarDimName=[DataOut.VarDimName {'Time'}];
+                    end
+                    testsum(ivar)=1;
+                    DataOut.(VarName)=Field.(VarName);
+                    DataOut.([VarName 'Histo'])=zeros([nbfield numel(DataOut.(VarName))]);
+                    VarMesh=Field.(VarName)(2)-Field.(VarName)(1);
+                end
+            end
+            disp(['mesh for histogram = ' num2str(VarMesh)])
+        else
+            testsum=2*ones(1,nbvar);%initiate flag for action on each variable
+            if isfield(Field,'VarAttribute') % look for coordinate and flag variables
+                for ivar=1:nbvar
+                    if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
+                        var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
+                        if isequal(var_role,'errorflag')
+                            disp_uvmat('ERROR','do not handle error flags in time series',checkrun)
+                            return
+                        end
+                        if isequal(var_role,'warnflag')
+                            testsum(ivar)=0;  % not recorded variable
+                            eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
+                        end
+                        if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
+                            testsum(ivar)=1; %constant coordinates, record without time evolution
+                        end
+                    end
+                    % check whether the variable ivar is a dimension variable
+                    DimCell=Field.VarDimName{ivar};
+                    if ischar(DimCell)
+                        DimCell={DimCell};
+                    end
+                    if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+                        testsum(ivar)=1;
+                    end
+                end
+            end
+            for ivar=1:nbvar
+                if testsum(ivar)==2
+                    VarName=Field.ListVarName{ivar};
+                    siz=size(Field.(VarName));
+                    DataOut.(VarName)=zeros([nbfield siz]);
+                end
+            end
+        end
+        DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
+    end
+    % end initialisation for index==1
+    
+    % append data from the current field
+
+    if checkhisto % case of histogram (projection mode=inside or outside)
+        for ivar=1:length(Field.ListVarName)
+            VarName=Field.ListVarName{ivar};
+            if isfield(Data{1},VarName)
+                MaxValue=max(DataOut.(VarName));% current max of histogram absissa
+                MinValue=min(DataOut.(VarName));% current min of histogram absissa
+                MaxIndex=round(MaxValue/VarMesh);
+                MinIndex=round(MinValue/VarMesh);
+                MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
+                MinIndex_new=round(min(Field.(VarName)/VarMesh));
+                if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
+                    DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
+                    DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(nbfield,MaxIndex_new-MaxIndex)]; % append the new histo values
+                end
+                if MinIndex_new <= MinIndex-1
+                    DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
+                    DataOut.([VarName 'Histo'])=[zeros(nbfield,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
+                    ind_start=1;
+                else
+                    ind_start=MinIndex_new-MinIndex+1;
+                end
+                DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
+                    DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);
+                VarVal=pdf2stat(Field.(VarName),Field.([VarName 'Histo']));% max of the current field
+                for istat=1:numel(VarVal)
+                    DataOut.([VarName StatName{istat}])(index)=VarVal(istat);
+                end
+            end
+        end
+    else % not histogram
+        for ivar=1:length(Field.ListVarName)
+            VarName=Field.ListVarName{ivar};
+            VarVal=Field.(VarName);
+            if testsum(ivar)==2% test for recorded variable
+                if isempty(errormsg)
+                    VarVal=shiftdim(VarVal,-1); %shift dimension
+                    DataOut.(VarName)(index,:,:)=VarVal;%concanete the current field to the time series
+                end
+            elseif testsum(ivar)==1% variable representing fixed coordinates
+                VarInit=DataOut.(VarName);
+                if isempty(errormsg) && ~isequal(VarVal,VarInit)
+                    disp_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
+                    return
+                end
+            end
+        end
+    end
+    
+    % record the time:
+    if isempty(time)% time not set by xml filer(s)
+        if isfield(Data{1},'Time')
+            DataOut.Time(index,1)=Field.Time;
+        else
+            DataOut.Time(index,1)=index;%default
+        end
+    else % time from ImaDoc prevails  TODO: correct
+        DataOut.Time(index,1)=time(index);%
+    end
+    
+    % record the number of missing input fields
+    if ~isempty(errormsg)
+        nbmissing=nbmissing+1;
+        display(['index=' num2str(index) ':' errormsg])
+    end
 end
+
 %%%%%%% END OF LOOP WITHIN A SLICE
 
 %remove time for global attributes if exists
@@ -534,16 +556,16 @@ if ~test_time
     DataOut.Time=1:nbfield;
 end
 
-%case of histograms
-if checkhisto
-    for ivar=1:numel(Field.ListVarName)
-        VarName=Field.ListVarName{ivar};
-        if isfield(Data{1},VarName)
-            DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
-            DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
-        end
-    end
-end
+% %case of histograms
+% if checkhisto
+%     for ivar=1:numel(Field.ListVarName)
+%         VarName=Field.ListVarName{ivar};
+%         if isfield(Data{1},VarName)
+%             DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
+%             DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
+%         end
+%     end
+% end
 % display nbmissing
 if ~isequal(nbmissing,0)
     disp_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
@@ -558,18 +580,21 @@ else
     disp_uvmat('ERROR',['error in Series/struct2nc: ' errormsg],checkrun)
 end
 
-%% plot the time series (the last one in case of multislices)
-if checkrun
-    figure
-    haxes=axes;
-    plot_field(DataOut,haxes)
-    
-    %% display the result file using the GUI get_field
-    hget_field=findobj(allchild(0),'name','get_field');
-    if ~isempty(hget_field)
-        delete(hget_field)
-    end
-    get_field(OutputFile,DataOut)
+%% plot the time series for  (the last one in case of multislices)
+if checkrun %&& isfield(Param,'ProjObject') && strcmp(Param.ProjObject.Type,'points')
+    %% open the result file with uvmat (in RUN mode)
+    uvmat(OutputFile)% open the last result file with uvmat
 end
+%     figure
+%     haxes=axes;
+%     plot_field(DataOut,haxes)
+%     
+%     %% display the result file using the GUI get_field
+%     hget_field=findobj(allchild(0),'name','get_field');
+%     if ~isempty(hget_field)
+%         delete(hget_field)
+%     end
+%     get_field(OutputFile,DataOut)
+% end
 
 

@@ -139,8 +139,7 @@ path_series_fct=fullfile(path_series,'series');%path of the functions in subdire
 if code==0
     ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
 else
-    ActionExtList={'.m';'.sh'};
-    disp('python library not installed')
+    ActionExtList={'.m';'.sh'};  % python options not installed
 end
 ActionPathList=cell(NbBuiltinAction,1);%initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
@@ -148,6 +147,7 @@ RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m
 [s,w]=system('oarstat');% look for cluster system 'oar'
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster_oar'}];
+    set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
 end
 [s,w]=system('qstat');% look for cluster system 'sge'
 if isequal(s,0)
@@ -595,6 +595,7 @@ set(handles.InputLine,'String',num2str(iline));
 %------------------------------------------------------------------------
 function InputTable_KeyPressFcn(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
+set(handles.OutputSubDir,'BackgroundColor',[1 0 1])% set edit box OutputSubDir to magenta color to indicate that refresh may be needed
 xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
 if ~isempty(xx)
     switch xx
@@ -1499,6 +1500,9 @@ if strcmp(ActionExt,'.sh')
             addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
             compile(ActionName,TransformPath)
             cd(currentdir)
+        else
+            errormsg='Action launch interrupted';
+            return
         end       
     else
         sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
@@ -1529,7 +1533,11 @@ switch RunMode
     case 'cluster_oar'
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1;% one core used only (limitation of Matlab licences)
-            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version .sh for multi-core processing');
+            answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
+            if ~strcmp(answer,'Yes')
+                errormsg='Action launch interrupted';
+                return
+            end
             extra_oar='';
         else
             answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
@@ -1557,7 +1565,6 @@ if isfield(Param,'OutputSubDir')
     while detect
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
         if strcmp(answer,'Cancel')
-            set(handles.RUN,'backgroundcolor',[1 0 0])
             return
         elseif strcmp(answer,'Yes')
             detect=0;
@@ -3297,6 +3304,9 @@ uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],
 uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
     'Callback',@(hObject,eventdata)num_ref_j_Callback(hObject,eventdata),'String',num2str(ref_j),'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','num_ref_j','TooltipString','''num_ref_j'': reference field index i used to display dt in ''list_pair_civ''');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.01 0.01 0.3 0.12],'BackgroundColor',[0 1 0],...
+    'Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),'String','OK','FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Tag','OK','TooltipString','''OK'': validate the choice');
 %  last raw  of the GUI: pushbuttons
 % uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
 %     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
@@ -3386,6 +3396,12 @@ function num_ref_j_Callback(hObject, eventdata)
 Mode_Callback([],[])
 
 %------------------------------------------------------------------------
+function OK_Callback(hObject, eventdata)
+%------------------------------------------------------------------------
+delete(get(hObject,'parent'))
+
+
+%------------------------------------------------------------------------
 % --- Executes on button press in ClearLine.
 %------------------------------------------------------------------------
 function ClearLine_Callback(hObject, eventdata, handles)
@@ -3395,3 +3411,19 @@ if size(InputTable,1)>1
     InputTable(iline,:)=[];% suppress the current line if not the first
     set(handles.InputTable,'Data',InputTable);
 end
+
+
+% --- Executes on button press in MonitorCluster.
+function MonitorCluster_Callback(hObject, eventdata, handles)
+web('https://www.legi.grenoble-inp.fr/servload/monika')
+
+
+
+function OutputSubDir_Callback(hObject, eventdata, handles)
+set(handles.OutputSubDir,'BackgroundColor',[1 1 1])
+% hObject    handle to OutputSubDir (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of OutputSubDir as text
+%        str2double(get(hObject,'String')) returns contents of OutputSubDir as a double

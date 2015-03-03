@@ -508,7 +508,7 @@ for icell=1:length(CellInfo)
         nbvar=nbvar+1;
         VarSize(nbvar)=mean((ProjData.([VarName 'Max'])-ProjData.([VarName 'Min']))/100);
     end
-    if  isempty(VarMesh) || isnan(VarMesh) % mesh not specified as input, estimate from the bounds
+    if  isempty(VarMesh)% || isnan(VarMesh) % mesh not specified as input, estimate from the bounds
         VarMesh=mean(VarSize);
         ord=10^(floor(log10(VarMesh)));%order of magnitude
         if VarMesh/ord >=5
@@ -523,6 +523,13 @@ for icell=1:length(CellInfo)
         VarName=FieldData.ListVarName{ivar};
         LowBound=VarMesh*ceil(ProjData.([VarName 'Min'])/VarMesh);
         UpperBound=VarMesh*floor(ProjData.([VarName 'Max'])/VarMesh);
+        if numel(indsel)<=1
+            errormsg='only one data point or less for histogram';
+            return
+        elseif isequal(LowBound,UpperBound)
+            errormsg='attempt histogram of uniform field: low bound = high bound';
+            return
+        end       
         ProjData.(VarName)=LowBound:VarMesh:UpperBound; % list of bin values
         ProjData.([VarName 'Histo'])=hist(double(FieldData.(VarName)(indsel,:)),ProjData.(VarName)); % histogram at predefined bin positions
         ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];

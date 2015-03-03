@@ -141,6 +141,11 @@ for iview=1:NbView
     [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    if CheckImage{iview}
+        ParamIn{iview}=MovieObject{iview};
+    else
+        ParamIn{iview}=Param.InputFields;
+    end
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
     if ~isempty(j1_series{iview})
         frame_index{iview}=j1_series{iview};
@@ -195,6 +200,11 @@ if min(cell2mat(CheckImage))==1 && (~Param.CheckObject || strcmp(Param.ProjObjec
 else
     FileExtOut='.nc'; %netcdf output
 end
+if isempty(j1_series{1})
+    NomTypeOut='_1';
+else
+    NomTypeOut='_1_1';
+end
 %NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 RootFileOut=RootFile{1};
 for iview=2:NbView
@@ -231,19 +241,19 @@ end
 %     nbmissing=0;
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+tstart=tic; %used to record the computing time
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
-    
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
     for iview=1:NbView
-        %% reading input file(s)
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+        %% reading input file(s)      
+        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},ParamIn{iview},frame_index{iview}(index));
         if ~isempty(errormsg)
             disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
@@ -322,7 +332,7 @@ for index=1:NbField
             j2=j1;
         end
     end
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,FileExtOut,NomType{1},i1,i2,j1,j2);
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1,i2,j1,j2);
 
     %% recording the merged field
     if strcmp(FileExtOut,'.png')    %output as image
@@ -336,9 +346,9 @@ for index=1:NbField
             siz=size(MergeData.A);
             npy=siz(1);
             npx=siz(2);
-            if isfield(MergeData,'coord_x') && isfield(MergeData,'coord_y')
-                Rangx=MergeData.coord_x;
-                Rangy=MergeData.coord_y;
+            if isfield(MergeData,'Coord_x') && isfield(MergeData,'Coord_y')
+                Rangx=MergeData.Coord_x;
+                Rangy=MergeData.Coord_y;
             elseif isfield(MergeData,'AX')&& isfield(MergeData,'AY')
                 Rangx=[MergeData.AX(1) MergeData.AX(end)];
                 Rangy=[MergeData.AY(1) MergeData.AY(end)];
@@ -391,7 +401,7 @@ for index=1:NbField
         end
     end
 end
-
+disp(['total ellapsed time ' num2str(toc(tstart))])
 
 %'merge_field': concatene fields
 %------------------------------------------------------------------------

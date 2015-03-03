@@ -82,7 +82,6 @@ if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,
     set(handles.num_CorrSmooth,'String',{'1';'2'})
     set(handles.CheckThreshold,'Visible','on')
     set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
-    %set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
 end
 switch Param.Action.ActionName
     case 'stereo_civ'
@@ -287,8 +286,6 @@ if ind_opening==0  %case of image opening, start with Civ1
 else  %case of netcdf file opening, start with the stage read in the file if the input file is being refreshed
     if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
             ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource')) 
-%         answer=msgbox_uvmat('INPUT_Y-N',['import the civ parameters from the netcdf file']);
-%         if strcmp(answer,'Yes')
             for index = 1:min(ind_opening,5)
                 set(handles.(ListOptions{index}),'value',0)
                 fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
@@ -299,7 +296,6 @@ else  %case of netcdf file opening, start with the stage read in the file if the
                 set(handles.(ListOptions{index}),'value',0)
             end
             checkrefresh=1;
-%         end
     end
     if ind_opening>=3
         set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
@@ -695,7 +691,7 @@ indchosen=1;  %%first pair selected by default
 %displ_num used to define the indices of the civ_input pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
-if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
+if isequal(mode,'pair j1-j2')
     dt=1;
     displ='';
     index=0;
@@ -868,9 +864,8 @@ CivInputData=get(handles.civ_input,'UserData');
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
-if strcmp(compare,'displacement')||strcmp(compare,'shift')
-    mode='displacement';
-else
+if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
+ 
     mode_list=get(handles.ListPairMode,'String');
     mode_value=get(handles.ListPairMode,'Value');
     if isempty(mode_list)
@@ -879,6 +874,9 @@ else
     mode=mode_list{mode_value};
 end
 nom_type_ima=CivInputData.NomTypeIma;
+initial=get(handles.ListPairCiv1,'Value');%previous choice of pair
+menu_pair=get(handles.ListPairCiv1,'String');%previous choice of pair.ListPairCiv1
+init_choice=menu_pair{initial};
 
 %% determine nom_type_nc, nomenclature type of the .nc files:
 %[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
@@ -976,10 +974,15 @@ end
 %% determine the default selection in the pair menu for Civ1
 ichoice=find(select,1);% index of first selected pair
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
-initial=get(handles.ListPairCiv1,'Value');%initial choice of pair
-if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
+ichoice=find(strcmp(init_choice,displ_pair'),1);
+if ~isempty(ichoice)
     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
+else
+   set(handles.ListPairCiv1,'Value',1) 
 end
+% if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
+%     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
+% end
 
 %% determine the default selection in the pair menu for Civ2
 if strcmp(get(handles.ListPairCiv2,'Visible'),'on')

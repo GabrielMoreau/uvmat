@@ -64,9 +64,17 @@ if ~isempty(xx)
                 end
             end
         case 112%  key 'p'
-            uvmat('runplus_Callback',hObject,eventdata,handleshaxes)
+            huvmat=findobj(allchild(0),'Tag','uvmat');
+            if ~isempty(huvmat)
+            hhuvmat=guidata(huvmat);
+            uvmat('runplus_Callback',hObject,eventdata,hhuvmat)
+            end
         case 109%  key 'm'
+                      huvmat=findobj(allchild(0),'Tag','uvmat');
+                      if ~isempty(huvmat)
+            hhuvmat=guidata(huvmat);
             uvmat('runmin_Callback',hObject,eventdata,handleshaxes)
+                      end
         otherwise
             if ischar(get(gco,'Tag'))
                 switch get(gco,'tag')% tag of the current edit box

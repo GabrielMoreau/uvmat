@@ -168,11 +168,8 @@ W=zeros(size(XI,1),size(XI,2));
 
 %% MAIN LOOP ON FIELDS
 warning off
-if NbField<2 
-    disp_uvmat('ERROR','you need at least 2 images to compute the mean position for the stereo.',checkrun)
-return
-end
-for index=1:NbField-1
+
+for index=1:NbField
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -190,7 +187,8 @@ for index=1:NbField-1
  for indextemp=index:index+1; 
     if NbView==3 % if there is only 1 stereo folder, extract directly Xphys,Yphys and Zphys
         
-        [Data{3},tild,errormsg] = nc2struct(filecell{3,indextemp}); 
+        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(indextemp),'.nc']); 
+       
        
         if  exist('Data{3}.Civ3_FF','var') % FF is present, remove wrong vector
             temp=find(Data{3}.Civ3_FF==0);
@@ -220,7 +218,7 @@ for index=1:NbField-1
             return
         end
         
-        [Data{3},tild,errormsg] = nc2struct(filecell{3,indextemp}); 
+        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(indextemp),'.nc']); 
         if exist('Data{3}.Civ3_FF','var') % if FF is present, remove wrong vector
             temp=find(Data{3}.Civ3_FF==0);
             Xmid3=Data{3}.Xmid(temp);
@@ -242,7 +240,7 @@ for index=1:NbField-1
         y3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Ymid3-(V3)/2,xq,yq);
         
         
-        [Data{4},tild,errormsg] = nc2struct(filecell{4,indextemp}); 
+        [Data{4},tild,errormsg] = nc2struct([Param.InputTable{4,1},'/',Param.InputTable{4,2},'/',Param.InputTable{4,3},'_',int2str(indextemp),'.nc']); 
         if exist('Data{4}.Civ3_FF','var') % if FF is present, remove wrong vector
             temp=find(Data{4}.Civ3_FF==0);
             Xmid4=Data{4}.Xmid(temp);
