@@ -79,7 +79,7 @@ set(handles.view_field,'UserData',ViewFieldData);%store the initial fig size in 
 AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters
 set(handles.PlotAxes,'UserData',AxeData)
 if exist('Field','var')
-    [PlotType,PlotParamOut]= plot_field(Field,handles.PlotAxes);%,PlotParam,KeepLim,PosColorbar)
+    [PlotType,PlotParamOut]= plot_field(Field,handles.PlotAxes);
     set(handles.Axes,'Visible','on')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
@@ -90,14 +90,12 @@ if exist('Field','var')
         set(handles.Scalar,'Visible','on')
     else
         set(handles.Scalar,'Visible','off')
-    end
-    
+    end   
     errormsg=fill_GUI(PlotParamOut,hObject);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
         return
     end
-    %write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 end
 
 %put the GUI on the lower right of the sceen

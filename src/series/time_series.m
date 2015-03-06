@@ -470,7 +470,7 @@ for index=1:nbfield
                 end
                 DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
                     DataOut.([VarName 'Histo'])(index,ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);
-                VarVal=pdf2stat(Field.(VarName),Field.([VarName 'Histo']));% max of the current field
+                VarVal=pdf2stat((Field.(VarName))',(Field.([VarName 'Histo']))');% max of the current field
                 for istat=1:numel(VarVal)
                     DataOut.([VarName StatName{istat}])(index)=VarVal(istat);
                 end
@@ -505,7 +505,7 @@ for index=1:nbfield
     else % time from ImaDoc prevails  TODO: correct
         DataOut.Time(index,1)=time(index);%
     end
-    
+    index
     % record the number of missing input fields
     if ~isempty(errormsg)
         nbmissing=nbmissing+1;

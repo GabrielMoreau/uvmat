@@ -87,7 +87,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         SeriesData=get(hseries,'UserData');
         if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
-            ParamOut.ActionInput.VarMesh=str2double(answer);
+            ParamOut.ActionInput.VarMesh=str2num(answer);
         end
     end
     % check the existence of the first and last file in the series

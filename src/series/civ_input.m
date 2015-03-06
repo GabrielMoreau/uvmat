@@ -331,7 +331,7 @@ end
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-ListPairCiv1_Callback(hObject, eventdata, handles)
+%ListPairCiv1_Callback(hObject, eventdata, handles)
 
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
@@ -874,9 +874,10 @@ if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
     mode=mode_list{mode_value};
 end
 nom_type_ima=CivInputData.NomTypeIma;
-initial=get(handles.ListPairCiv1,'Value');%previous choice of pair
-menu_pair=get(handles.ListPairCiv1,'String');%previous choice of pair.ListPairCiv1
-init_choice=menu_pair{initial};
+menu_pair=get(handles.ListPairCiv1,'String');%previous menu of ListPairCiv1
+PairCiv1Init=menu_pair{get(handles.ListPairCiv1,'Value')};%previous choice of pair
+menu_pair=get(handles.ListPairCiv2,'String');%previous menu of ListPairCiv1
+PairCiv2Init=menu_pair{get(handles.ListPairCiv2,'Value')};%previous choice of pair
 
 %% determine nom_type_nc, nomenclature type of the .nc files:
 %[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
@@ -972,9 +973,9 @@ if index==1
 end
 
 %% determine the default selection in the pair menu for Civ1
-ichoice=find(select,1);% index of first selected pair
-if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
-ichoice=find(strcmp(init_choice,displ_pair'),1);
+%ichoice=find(select,1);% index of first selected pair
+%if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
+ichoice=find(strcmp(PairCiv1Init,displ_pair'),1);
 if ~isempty(ichoice)
     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
 else
@@ -986,14 +987,24 @@ end
 
 %% determine the default selection in the pair menu for Civ2
 if strcmp(get(handles.ListPairCiv2,'Visible'),'on')
-    initial=get(handles.ListPairCiv2,'Value');
-    if initial>length(displ_pair')%|~isequal(select(initial),1)
-        if ichoice <= length(displ_pair')
-            set(handles.ListPairCiv2,'Value',ichoice);% same pair proposed by default for civ2
-        else
-            set(handles.ListPairCiv2,'Value',1);% same pair proposed by default for civ2
-        end
+    ichoice=find(strcmp(PairCiv2Init,displ_pair'),1);
+    if ~isempty(ichoice)
+        set(handles.ListPairCiv2,'Value',ichoice);% first valid pair proposed by default in the menu
+    else
+        set(handles.ListPairCiv2,'Value',1)
     end
+    
+    %
+    %     initial=get(handles.ListPairCiv2,'Value');
+    %
+    %
+    %     if initial>length(displ_pair')%|~isequal(select(initial),1)
+    %         if ichoice <= length(displ_pair')
+    %             set(handles.ListPairCiv2,'Value',ichoice);% same pair proposed by default for civ2
+    %         else
+    %             set(handles.ListPairCiv2,'Value',1);% same pair proposed by default for civ2
+    %         end
+    %     end
 else
     set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))% initiate the choice of Civ2 as a reproduction of if civ1
 end

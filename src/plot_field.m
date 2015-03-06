@@ -298,23 +298,23 @@ for icell=1:length(CellInfo)
 end
 
 % data need to be displayed in a table
-if strcmp(get(htext,'Type'),'uitable')% display data in a table
-    VarNameCell=cell(1,numel(VarIndex));% prepare list of variable names to display (titles of columns)
-    VarLength=zeros(1,numel(VarIndex));  % default number of values for each variable
-    for ivar=1:numel(VarIndex)
-        VarNameCell{ivar}=FieldData.ListVarName{VarIndex(ivar)};
-        VarLength(ivar)=numel(FieldData.(VarNameCell{ivar}));
-    end
-    set(htext,'ColumnName',VarNameCell)
-    Data=cell(max(VarLength),numel(VarIndex));% prepare the table of data display
-    
-    for ivar=1:numel(VarIndex)
-        VarValue=FieldData.(VarNameCell{ivar});
-        VarValue=reshape(VarValue,[],1);% reshape values array in a column
-        Data(1:numel(VarValue),ivar)=num2cell(VarValue);
-    end
-    set(htext,'Data',Data)
-end
+% if strcmp(get(htext,'Type'),'uitable')% display data in a table
+%     VarNameCell=cell(1,numel(VarIndex));% prepare list of variable names to display (titles of columns)
+%     VarLength=zeros(1,numel(VarIndex));  % default number of values for each variable
+%     for ivar=1:numel(VarIndex)
+%         VarNameCell{ivar}=FieldData.ListVarName{VarIndex(ivar)};
+%         VarLength(ivar)=numel(FieldData.(VarNameCell{ivar}));
+%     end
+%     set(htext,'ColumnName',VarNameCell)
+%     Data=cell(max(VarLength),numel(VarIndex));% prepare the table of data display
+%     
+%     for ivar=1:numel(VarIndex)
+%         VarValue=FieldData.(VarNameCell{ivar});
+%         VarValue=reshape(VarValue,[],1);% reshape values array in a column
+%         Data(1:numel(VarValue),ivar)=num2cell(VarValue);
+%     end
+%     set(htext,'Data',Data)
+% end
 %         if numel(VarValue)>1 && numel(VarValue)<10 % case of a variable with several values 
 %             for ind=1:numel(VarValue)
 %                 VarNameCell{1,ind}=[VarName '_' num2str(ind)];% indicate each value by an index
@@ -576,7 +576,7 @@ PlotParamOut.Axes= Coordinates;
 
 %% give statistics for pdf
 %ind_var=find(testplot);
-TableData={'Variable';'SampleNbr';'bin size';'Mean';'RMS';'Skewness';'Kurtosis';'    centered ';...
+TableData={'Variable';'SampleNbr';'bin size';'Mean';'RMS';'Skewness';'Kurtosis';...
     'Min';'FirstCentile';'FirstDecile';'Median';'LastDecile';'LastCentile';'Max'};
 
 TextDisplay=0;
@@ -586,11 +586,23 @@ for icell=1:numel(CellInfo)
         VarName=data.ListVarName{CellInfo{icell}.CoordIndex};
         pdf_val=data.(data.ListVarName{CellInfo{icell}.VarIndex_histo});
         x=coord_x{icell};
-        
-        Val=pdf2stat(x',pdf_val');
-
-        Column=mat2cell(Val,ones(13,1),1);
-        Column=[{VarName};Column(1:6);{'stat: --'};Column(7:13)];
+        if isrow(x)
+            x=x';
+        end
+        if ~isequal(size(x,1),size(pdf_val,1))
+            pdf_val=pdf_val';
+        end
+        Val=pdf2stat(x,pdf_val);
+        Column=mat2cell(Val,ones(13,1),ones(1,size(Val,2)));
+        if size(Val,2)==1%single component
+            TitleBar={VarName};
+        else
+            TitleBar=cell(1,size(Val,2));
+            for icomp=1:size(Val,2)
+                TitleBar{icomp}=[VarName '_' num2str(icomp)];
+            end
+        end
+        Column=[TitleBar;Column];
         TableData=[TableData Column];
     end
 end
