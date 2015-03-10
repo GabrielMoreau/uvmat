@@ -149,9 +149,13 @@ if isequal(s,0)
     RunModeList=[RunModeList;{'cluster_oar'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
 end
-[s,w]=system('qstat');% look for cluster system 'sge'
+[s,w]=system('qstat --version');% look for cluster system 'sge'
 if isequal(s,0)
-    RunModeList=[RunModeList;{'cluster_sge'}];
+    if regexp(w,'^pbs')
+        RunModeList=[RunModeList;{'cluster_pbs'}];
+    else
+        RunModeList=[RunModeList;{'cluster_sge'}];
+    end
 end
 set(handles.RunMode,'String',RunModeList)
 
@@ -1544,6 +1548,21 @@ switch RunMode
             NbCore=str2double(answer{1});
             extra_oar=answer{2};
         end
+    case 'cluster_pbs'
+        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+            NbCore=1;% one core used only (limitation of Matlab licences)
+            answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
+            if ~strcmp(answer,'Yes')
+                errormsg='Action launch interrupted';
+                return
+            end
+            extra_oar='';
+        else
+            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+            NbCore=str2double(answer{1});
+            %extra_oar=answer{2};%TODO : fix this for LMFA cluster. Maybe
+            %extrs_oar and extra_pbs are not the best names
+        end
 end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
@@ -1888,6 +1907,46 @@ switch RunMode
         fprintf(oar_command);% display in command line
         system(oar_command);  
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched in cluster: press STATUS to see results'])
+    case 'cluster_pbs' % for LMFA Kepler machine
+        %create subdirectory for pbs command and log files
+        DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
+        if exist(DirPBS,'dir')% delete the content of the dir 0_OAR to allow new input
+            curdir=pwd;
+            cd(DirPBS)
+            delete('*')
+            cd(curdir)
+        else
+            [tild,msg1]=mkdir(DirPBS);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' DirPBS ': ' msg1];%error message for directory creation
+                return
+            end
+        end
+        max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
+        walltime_onejob=600;%seconds, max estimated time for asingle file index value
+        filename_joblist=fullfile(DirPBS,'job_list.txt');%create name of the global executable file
+        fid=fopen(filename_joblist,'w');
+        for p=1:length(batch_file_list)
+            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
+        end
+        fclose(fid);
+        system(['chmod +x ' filename_joblist]);% set the file to executable
+        pbs_command=['qstat -n CIVX '...
+            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+            '-l /core=' num2str(NbCore) ','...
+            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
+            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+            extra_oar ' '...
+            '"oar-parexec -s -f ' filename_joblist ' '...
+            '-l ' filename_joblist '.log"\n'];
+        filename_oarcommand=fullfile(DirPBS,'pbs_command');
+        fid=fopen(filename_oarcommand,'w');
+        fprintf(fid,pbs_command);
+        fclose(fid);
+        fprintf(pbs_command);% display in command line
+        %system(pbs_command);  
+        msgbox_uvmat('CONFIRMATION',[ActionName ' command ready to be launched in cluster'])        
     case 'python'
         command = [
             'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
