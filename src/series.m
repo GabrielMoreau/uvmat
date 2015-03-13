@@ -638,11 +638,11 @@ if ~isempty(find(empty_line));
     end
     set(handles.series,'UserData',[])%refresh the stored info
 end
-for iview=1:size(InputTable,1)
+nbview=size(InputTable,1);
+for iview=1:nbview
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
         i1_series=[];
-        %RootPath=fileparts(RootPath); %will try the upper folder
         RootFile='';
     else %scan the input folder
         [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
@@ -661,6 +661,21 @@ for iview=1:size(InputTable,1)
        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview)
     end
 end
+
+%% update MinIndex_i and MaxIndex_i if the input table content has been reduced in line nbre
+MinIndex_i_table=get(handles.MinIndex_i,'Data');%retrieve the min indices in the table MinIndex
+set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
+MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
+set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
+MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
+set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
+MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
+set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
+PairString=get(handles.PairString,'Data');%retrieve the min indices in the table MinIndex
+set(handles.PairString,'Data',PairString(1:nbview,:));
+TimeTable=get(handles.TimeTable,'Data');%retrieve the min indices in the table MinIndex
+set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
+
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
 
@@ -765,14 +780,16 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
-   SeriesData.i1_series(iview+1:end)=[];
+if isfield(SeriesData,'i1_series')
+    SeriesData.i1_series(iview+1:end)=[];
     SeriesData.i2_series(iview+1:end)=[];
     SeriesData.j1_series(iview+1:end)=[];
     SeriesData.j2_series(iview+1:end)=[];
     SeriesData.FileType(iview+1:end)=[];
     SeriesData.FileInfo(iview+1:end)=[];
     SeriesData.Time(iview+1:end)=[];
- InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
+end
+InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 if iview >1
     set(handles.InputLine,'String',num2str(iview))
 end
@@ -1410,6 +1427,9 @@ errormsg='';%default
 %% read the data on the GUI series
 Param=read_GUI_series(handles);%displayed parameters
 SeriesData=get(handles.series,'UserData');%hidden parameters
+if isfield(SeriesData,'TransformInput')
+    Param.TransformInput=SeriesData.TransformInput;
+end
 if ~isfield(SeriesData,'i1_series')
     errormsg='The input field series needs to be refreshed: press REFRESH';
     return
@@ -2402,6 +2422,7 @@ switch OutputSubDirMode
         SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
 end
 set(handles.OutputSubDir,'String',SubDirOut)
+set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
@@ -2970,6 +2991,21 @@ end
 set(handles.TransformPath,'String',TransformPathList{TransformIndex}); %show the path to the senlected function
 set(handles.TransformName,'UserData',TransformPathList);
 
+%% create the function handle of the selected fct
+if ~isempty(TransformName)
+    current_dir=pwd;%current working dir
+    cd(TransformPathList{TransformIndex})
+    transform_handle=str2func(TransformName);
+    cd(current_dir)
+    Field.Action.RUN=0;% indicate that the transform fct is called only to get input param
+    DataOut=feval(transform_handle,Field,[]);% execute the transform fct to get the required conditions
+    if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
+        SeriesData=get(handles.series,'UserData');
+        SeriesData.TransformInput=DataOut.TransformInput;
+        set(handles.series,'UserData',SeriesData)
+    end
+end
+
 %------------------------------------------------------------------------
 % --- fct activated by the upper bar menu ExportConfig
 %------------------------------------------------------------------------
@@ -3033,6 +3069,9 @@ if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fc
     set(handles.ActionInput,'Value',0)
     Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
     SeriesData.ActionInput=Param.ActionInput;
+end
+if isfield(Param,'TransformInput')%  introduce  parameters specific to a transform fct
+    SeriesData.TransformInput=Param.TransformInput;
 end
 if isfield(Param,'ProjObject') %introduce projection object if relevant
     SeriesData.ProjObject=Param.ProjObject;
@@ -3470,6 +3509,7 @@ if size(InputTable,1)>1
     InputTable(iline,:)=[];% suppress the current line if not the first
     set(handles.InputTable,'Data',InputTable);
 end
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refr
 
 
 % --- Executes on button press in MonitorCluster.

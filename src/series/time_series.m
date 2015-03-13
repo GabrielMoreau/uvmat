@@ -219,6 +219,9 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
+    if isfield(Param,'TransformInput')
+        XmlData{1}.TransformInput=Param.TransformInput;
+    end
 end
 
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%

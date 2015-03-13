@@ -178,6 +178,11 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
         cd(Param.FieldTransform.TransformPath)
         transform_fct=str2func(Param.FieldTransform.TransformName);
         cd (currentdir)
+        if isfield(Param,'TransformInput')
+            for iview=1:NbView
+            XmlData{iview}.TransformInput=Param.TransformInput;
+            end
+        end       
 end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE

@@ -34,13 +34,34 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function SubData=diff_vel(Field,XmlData,Field_1)
+function Field=diff_vel(Field,XmlData,Field_1)
 
-SubData=Field;
+%% request input parameters
+if isfield(Field,'Action') && isfield(Field.Action,'RUN') && isequal(Field.Action.RUN,0)
+
+        %default input:
+        def={'1'};% multiplicative factor for the second velocity field 
+
+        if isfield(XmlData,'TransformInput')% if parameters have been memorised
+            if isfield(XmlData.TransformInput,'Factor')
+                def{1}=num2str(XmlData.TransformInput.Factor);
+            end
+        end
+        num_lines= 1;%numel(prompt);
+        % open the dialog fig
+        prompt='enter scale factor for the second field';
+        answer = inputdlg(prompt,'',num_lines,def);
+        Field.TransformInput.Factor=str2num(answer{1});
+    return
+end
+Factor=1;
+if isfield(XmlData,'TransformInput') && isfield(XmlData.TransformInput,'Factor') 
+Factor=XmlData.TransformInput.Factor;
+end
 if exist('Field_1','var')
           F.U=scatteredInterpolant(Field_1.X,Field_1.Y,Field_1.U,'linear');
-         SubData.U=Field.U-F.U(Field.X,Field.Y);%substract the interpolated ref to U
+         Field.U=Field.U-Factor*F.U(Field.X,Field.Y);%substract the interpolated ref to U
           F.V=scatteredInterpolant(Field_1.X,Field_1.Y,Field_1.V,'linear');
-          SubData.V=Field.V-F.V(Field.X,Field.Y);%substract the interpolated ref to V
+          Field.V=Field.V-Factor*F.V(Field.X,Field.Y);%substract the interpolated ref to V
 end
   

@@ -687,7 +687,7 @@ time=CivInputData.Time;
 siztime=size(CivInputData.Time);
 nbfield=siztime(1)-1;
 nbfield2=siztime(2)-1;
-indchosen=1;  %%first pair selected by default
+%indchosen=1;  %%first pair selected by default
 %displ_num used to define the indices of the civ_input pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
@@ -906,7 +906,7 @@ checkframe=strcmp(TimeUnit,'frame');
 displ_pair={''};
 nbpair=200;%default
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
-nbpair=200; %default
+%nbpair=200; %default
 
 %% determine the menu display in .ListPairCiv1
 switch mode
@@ -914,34 +914,38 @@ switch mode
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
+                displ_pair_dt{ipair}=displ_pair{ipair};
                 if ~checkframe
                     if size(Time,1)>=ref_i+1+ceil(ipair/2) && size(Time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
                         dt=Time(ref_i+1+ceil(ipair/2),ref_j+1)-Time(ref_i+1-floor(ipair/2),ref_j+1);%Time interval dtref_j+1
-                        displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                        displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(dt*1000)];
                     end
                 else
                     dt=ipair/1000;
-                    displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(ipair)];
+                    displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(ipair)];
                 end
             else
-                displ_pair{ipair}='...'; %pair not displayed in the menu
+                displ_pair{ipair}='...';
+                displ_pair_dt{ipair}='...'; %pair not displayed in the menu
             end
         end
     case 'series(Dj)'
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
+                displ_pair_dt{ipair}=displ_pair{ipair};
                 if ~checkframe
                     if size(Time,2)>=ref_j+1+ceil(ipair/2) && size(Time,1)>=ref_i+1 && ref_j-floor(ipair/2)>=0 && ref_i>=0
                         dt=Time(ref_i+1,ref_j+1+ceil(ipair/2))-Time(ref_i+1,ref_j+1-floor(ipair/2));%Time interval dtref_j+1
-                        displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                        displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(dt*1000)];
                     end
                 else
                     dt=ipair/1000;
-                    displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                    displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(dt*1000)];
                 end
             else
                 displ_pair{ipair}='...'; %pair not displayed in the menu
+                displ_pair_dt{ipair}='...'; %pair not displayed in the menu
             end
         end
     case 'pair j1-j2'%case of pairs
@@ -955,26 +959,33 @@ switch mode
             for numod_b=(numod_a+1):MaxIndex_j
                 index_pair=index_pair+1;
                 displ_pair{index_pair}=['j= ' num2stra(numod_a,nom_type_ima) '-' num2stra(numod_b,nom_type_ima)];
+                displ_pair_dt{ipair}=displ_pair{ipair};
                 dt(index_pair)=numod_b-numod_a;%default dt
                 if size(Time,1)>ref_i && size(Time,2)>numod_b  % && ~checkframe
                     dt(index_pair)=Time(ref_i+1,numod_b+1)-Time(ref_i+1,numod_a+1);% Time interval dt
-                    displ_pair{index_pair}=[displ_pair{index_pair} ' :dt= ' num2str(dt(index_pair)*1000)];
+                    displ_pair_dt{index_pair}=[displ_pair_dt{index_pair} ' :dt= ' num2str(dt(index_pair)*1000)];
                 end
             end
             
         end
         [tild,indsort]=sort(dt);
         displ_pair=displ_pair(indsort);
+        displ_pair_dt=displ_pair_dt(indsort);
     case 'displacement'
         displ_pair={'Di=Dj=0'};
+        displ_pair_dt={'Di=Dj=0'};
 end
 if index==1
-    set(handles.ListPairCiv1,'String',displ_pair');
+    set(handles.ListPairCiv1,'String',displ_pair_dt');
 end
 
 %% determine the default selection in the pair menu for Civ1
 %ichoice=find(select,1);% index of first selected pair
 %if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
+end_pair=regexp(PairCiv1Init,' :dt=');
+if ~isempty(end_pair)
+    PairCiv1Init=PairCiv1Init(1:end_pair-1);
+end
 ichoice=find(strcmp(PairCiv1Init,displ_pair'),1);
 if ~isempty(ichoice)
     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
@@ -987,48 +998,21 @@ end
 
 %% determine the default selection in the pair menu for Civ2
 if strcmp(get(handles.ListPairCiv2,'Visible'),'on')
+    end_pair=regexp(PairCiv2Init,' :dt=');
+    if ~isempty(end_pair)
+        PairCiv2Init=PairCiv2Init(1:end_pair-1);
+    end
     ichoice=find(strcmp(PairCiv2Init,displ_pair'),1);
     if ~isempty(ichoice)
         set(handles.ListPairCiv2,'Value',ichoice);% first valid pair proposed by default in the menu
     else
         set(handles.ListPairCiv2,'Value',1)
     end
-    
-    %
-    %     initial=get(handles.ListPairCiv2,'Value');
-    %
-    %
-    %     if initial>length(displ_pair')%|~isequal(select(initial),1)
-    %         if ichoice <= length(displ_pair')
-    %             set(handles.ListPairCiv2,'Value',ichoice);% same pair proposed by default for civ2
-    %         else
-    %             set(handles.ListPairCiv2,'Value',1);% same pair proposed by default for civ2
-    %         end
-    %     end
 else
     set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))% initiate the choice of Civ2 as a reproduction of if civ1
 end
-set(handles.ListPairCiv2,'String',displ_pair');
+set(handles.ListPairCiv2,'String',displ_pair_dt');
 set(gcf,'Pointer','arrow')% Indicate that the process is finished
-
-
-    
-% %------------------------------------------------------------------------   
-% % call 'view_field.fig' to display the  field selected in the list of 'status'
-% function open_view_field(hObject, eventdata)
-% %------------------------------------------------------------------------
-% list=get(hObject,'String');
-% index=get(hObject,'Value');
-% rootroot=get(hObject,'UserData');
-% filename=list{index};
-% ind_dot=strfind(filename,'...');
-% filename=filename(1:ind_dot-1);
-% filename=fullfile(rootroot,filename);
-% delete(get(hObject,'parent'))%delete the display figure to stop the check process
-% if exist(filename,'file')%visualise the vel field if it exists
-%     uvmat(filename)
-%     set(gcbo,'Value',1)
-% end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1159,6 +1143,11 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 function CheckDeformation_Callback(hObject, eventdata, handles)
 set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
+if get(handles.CheckDeformation,'Value')
+    set(handles.num_CorrSmooth,'Visible','off')
+else
+    set(handles.num_CorrSmooth,'Visible','on')
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Callbacks in the uipanel Fix1

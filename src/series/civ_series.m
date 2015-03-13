@@ -1035,16 +1035,15 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                     xi=(1:mesh:size(image1_crop,2));
                     yi=(1:mesh:size(image1_crop,1))';
                     [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
-                    XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
-                    YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                    XIant=XI-par_civ.DUDX(ivec)*XI+par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
+                    YIant=YI+par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
                     image1_crop=interp2(image1_crop,XIant,YIant);
                     image1_crop(isnan(image1_crop))=0;
                     xi=(1:mesh:size(image2_crop,2));
                     yi=(1:mesh:size(image2_crop,1))';
                     image2_crop=interp2(image2_crop,xi,yi,'*spline');
                     image2_crop(isnan(image2_crop))=0;
-                    %par_civ.CorrSmooth=3;%%%%%%%%%%%%%%%%%%%
-                    %%
+                    par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
                 end
                 sum_square=sum(sum(image1_crop.*image1_crop));
                 %reference: Oliver Pust, PIV: Direct Cross-Correlation
