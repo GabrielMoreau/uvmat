@@ -52,7 +52,7 @@ txt(1:title_pos-1)=[];% remove the  blank char at the beginning
 
 %% get the list of channel names
 Break_pos=regexp(txt,'\n','once');%find the line break
-VarNameCell=textscan(txt(1:Break_pos-1),'%s');% read list of variable names (until next line break)
+VarNameCell=textscan(txt(1:Break_pos-2),'%s');% read list of variable names (until next line break)
 Data.ListVarName=VarNameCell{1};
 Data.ListVarName(end)=[]; %remove last name (Comment)
 Data.ListVarName{1}='Time'; %replace first name ('X_Value') by 'Time')

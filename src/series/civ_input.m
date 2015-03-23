@@ -959,7 +959,7 @@ switch mode
             for numod_b=(numod_a+1):MaxIndex_j
                 index_pair=index_pair+1;
                 displ_pair{index_pair}=['j= ' num2stra(numod_a,nom_type_ima) '-' num2stra(numod_b,nom_type_ima)];
-                displ_pair_dt{ipair}=displ_pair{ipair};
+                displ_pair_dt{index_pair}=displ_pair{index_pair};
                 dt(index_pair)=numod_b-numod_a;%default dt
                 if size(Time,1)>ref_i && size(Time,2)>numod_b  % && ~checkframe
                     dt(index_pair)=Time(ref_i+1,numod_b+1)-Time(ref_i+1,numod_a+1);% Time interval dt

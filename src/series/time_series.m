@@ -303,6 +303,9 @@ if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','
     checkhisto=1;
     if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VarMesh')%case of histograms
         VarMesh=Param.ActionInput.VarMesh;
+    else
+        VarMesh=[];
+        disp_uvmat('WARNING','automatic bin size for histograms, select time_series again to set the value',checkrun)
     end
 end
 

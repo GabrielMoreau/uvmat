@@ -238,9 +238,14 @@ if isfield(Param,'InputFields')
     end
 end
 nbfiles=0;%counter of the successfully read files (bad files are skipped)
-VarMesh=NaN;
-if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})&& isfield(Param.ActionInput,'VarMesh')%case of histograms 
+VarMesh=[];
+if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+    if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VarMesh')%case of histograms 
      VarMesh=Param.ActionInput.VarMesh;
+    else
+       VarMesh=[];
+       disp_uvmat('WARNING','automatic bin size for histograms, select aver_stat again to set the value',checkrun)
+    end
 end
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
@@ -311,7 +316,7 @@ for index=1:NbField
             end
             DataOut=Field;%outcome reproduces the first (projected) field by default
             DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files         
-            if ismember(Param.ProjObject.ProjMode,{'inside','outside'})%case of histograms
+            if isfield(Param,'ProjObject')&& ismember(Param.ProjObject.ProjMode,{'inside','outside'})%case of histograms
                 for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
                     VarName=Field.ListVarName{ivar};
                     if isfield(Data{1},VarName)
@@ -323,27 +328,37 @@ for index=1:NbField
                 disp(['mesh for histogram = ' num2str(VarMesh)])
             else
                 errorvar=zeros(numel(Field.ListVarName));%index of errorflag associated to each variable
-                for ivar=1:numel(Field.ListVarName)
-                    VarName=Field.ListVarName{ivar};
-                    DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
-                    NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
-                    for iivar=1:length(Field.VarAttribute)
-                        if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
-                                && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
-                            errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
+                if isfield(Field,'VarAttribute')
+                    for ivar=1:numel(Field.ListVarName)
+                        VarName=Field.ListVarName{ivar};
+                        DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
+                        NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
+                        
+                        for iivar=1:length(Field.VarAttribute)
+                            if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
+                                    && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
+                                errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
+                            end
                         end
                     end
+                    DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                    DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                    DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                else
+                                   for ivar=1:numel(Field.ListVarName)
+                                       VarName=Field.ListVarName{ivar};
+                        DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
+                        NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
+                                   end
                 end
-                DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-                DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-                DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                
             end
         end   %current field
         for ivar=1:length(DataOut.ListVarName)
             VarName=DataOut.ListVarName{ivar};
             sizmean=size(DataOut.(VarName));
             siz=size(Field.(VarName));
-            if ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+            if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
                 if isfield(Data{1},VarName)
                     MaxValue=max(DataOut.(VarName));% current max of histogram absissa
                     MinValue=min(DataOut.(VarName));% current min of histogram absissa
@@ -386,7 +401,7 @@ for index=1:NbField
     end
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-if ~ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+if ~(isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'}))
     for ivar=1:length(Field.ListVarName)
         VarName=Field.ListVarName{ivar};
         DataOut.(VarName)=DataOut.(VarName)./NbData.(VarName); % normalize the mean
