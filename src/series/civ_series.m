@@ -976,6 +976,7 @@ mesh=1;% default
 CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
 if CheckDeformation
     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
+    par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
 end
 
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
@@ -1043,7 +1044,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                     yi=(1:mesh:size(image2_crop,1))';
                     image2_crop=interp2(image2_crop,xi,yi,'*spline');
                     image2_crop(isnan(image2_crop))=0;
-                    par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
                 end
                 sum_square=sum(sum(image1_crop.*image1_crop));
                 %reference: Oliver Pust, PIV: Direct Cross-Correlation

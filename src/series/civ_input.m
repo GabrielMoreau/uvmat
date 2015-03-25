@@ -322,6 +322,9 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
             set(handle_title_dx,'Visible','off');
         end
     end
+    if isfield(Param.ActionInput,'Civ2')
+       CheckDeformation_Callback(hObject, eventdata, handles)
+    end
 end
 
 %% set the reference indices from the input file indices
@@ -1143,10 +1146,11 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 function CheckDeformation_Callback(hObject, eventdata, handles)
 set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
-if get(handles.CheckDeformation,'Value')
-    set(handles.num_CorrSmooth,'Visible','off')
+handles_CoorSmooth=findobj(get(handles.Civ2,'children'),'Tag','num_CorrSmooth');
+if get(handles.CheckDeformation,'Value')   
+    set(handles_CoorSmooth,'Visible','off')
 else
-    set(handles.num_CorrSmooth,'Visible','on')
+    set(handles_CoorSmooth,'Visible','on')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
