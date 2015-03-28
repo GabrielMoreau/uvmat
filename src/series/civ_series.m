@@ -270,7 +270,7 @@ if CheckInputFile
 end
 
 %% prepare output Data
-Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
+ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 Data.CivStage=0;%default
@@ -411,7 +411,7 @@ for ifield=1:NbField
             for ilist=1:length(list_param)
                 Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
             end
-            Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
+            Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
             Data.CivStage=1;
         end
         % set the list of variables

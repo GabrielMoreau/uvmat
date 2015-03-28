@@ -263,6 +263,7 @@ end
 % end
 
 %% introduce the input file name(s) if defined from input Param,
+set(handles.series,'UserData',[])% initiate Userdata
 if isfield(Param,'InputFile')
     
     %% fill the list of file series
@@ -2077,11 +2078,11 @@ if isequal(ActionName,'more...')
     end
     
     % record the file extension and extend the path list if it is a new extension
-%     ActionExtList=get(handles.ActionExt,'String');
-%     ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
-%     if isempty(ActionExtIndex)
-%         set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
-%     end
+    ActionExtList=get(handles.ActionExt,'String');
+    ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
+    if isempty(ActionExtIndex)
+        set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
+    end
 
     % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
     if length(ActionList)>NbBuiltinAction+5; %nb_builtin_ACTION=nbre of functions always remaining in the initial menu
@@ -2104,10 +2105,10 @@ if isequal(ActionName,'more...')
     if NbBuiltinAction+1<=numel(ActionList)-1
         ActionListUser=ActionList(NbBuiltinAction+1:numel(ActionList)-1);
         ActionPathListUser=ActionPathList(NbBuiltinAction+1:numel(ActionList)-1);
-%         ActionExtListUser={};
-%         if numel(ActionExtList)>2
-%             ActionExtListUser=ActionExtList(3:end);
-%         end
+        ActionExtListUser={};
+        if numel(ActionExtList)>2
+            ActionExtListUser=ActionExtList(3:end);
+        end
         if exist(profil_perso,'file')
             save(profil_perso,'ActionListUser','ActionPathListUser','ActionExtListUser','-append')
         else

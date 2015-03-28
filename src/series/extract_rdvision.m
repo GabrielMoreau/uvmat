@@ -151,7 +151,8 @@ else
     return
 end
 t=xmltree;
-save(t,fullfile(RootPath,'Running.xml'))%create an xml file to indicate that processing takes place
+%%% A REMETTREE %%%%%%%%%%%%%%%%%%%%%
+%save(t,fullfile(RootPath,'Running.xml'))%create an xml file to indicate that processing takes place
 
 %% calibration data and timing: read the ImaDoc files
 mode=''; %default
@@ -308,25 +309,30 @@ for iview=1:size(Param.InputTable,1)
 %     PathDir=fileparts(PathDir);
     
     %% reading the .sqb file
-    m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
-        'uint32' [1 1] 'garbage1';...
-        'double' [1 1] 'timestamp';...
-        'uint32' [1 1] 'file_idx';...
-        'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
+%     m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
+%         'uint32' [1 1] 'garbage1';...
+%         'double' [1 1] 'timestamp';...
+%         'uint32' [1 1] 'file_idx';...
+%         'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
     %%%%%%%BRICOLAGE in case of unreadable .sqb file
-    %     ind=[60 63:152];%indices of bin files
-    %     lengthimage=w*h*bpp;% lengthof an image record on the binary file
-    %     for ii=1:32*numel(ind)
-    %         data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
-    %         %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
-    %         data(ii).file_idx=ind(ceil(ii/32));
-    %         data(ii).timestamp=0.2*(ii-1);
-    %     end
+        ind=[111 114:211];%indices of bin files
+        w=1024;%w=width of images in pixels
+        h=1024;%h=height of images in pixels
+        bpp=2;% nbre of bytes per pixel
+        lengthimage=w*h*bpp;% lengthof an image record on the binary file
+        nbimages=32; %nbre of images of each camera in a bin file 
+        for ii=1:32*numel(ind)
+            data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+            %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
+            data(ii).file_idx=ind(ceil(ii/32));
+            data(ii).timestamp=0.2*(ii-1);
+        end
+        m.Data=data;
     %%%%%%%
     for ii=1: numel(m.Data)
         timestamp(ii)=m.Data(ii).timestamp;
     end
-    timestamp %todo: check withDt from the xml file
+    %timestamp %todo: check withDt from the xml file
     [BinSize,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew)
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun)

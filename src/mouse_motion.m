@@ -121,7 +121,7 @@ if strcmp(htype,'axes')
         elseif test_draw|| test_create_object
             pointershape='crosshair';%set pointer with cross shape 
         else
-        pointershape='fullcross';%set pointer with large cross (default when mouse is over an axis)
+        pointershape='crosshair';%set pointer with large cross (default when mouse is over an axis)
         end
     end
     FigData=get(hCurrentFig,'UserData'); % user data of the current figure
