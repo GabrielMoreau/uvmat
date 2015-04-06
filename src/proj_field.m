@@ -1302,7 +1302,18 @@ for icell=1:length(CellInfo)
                         end
                     end
                     % interpolate and calculate field on the grid
+                    
                     [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
+                    
+                    % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMaesh)
+                    F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
+                    G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                    Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+                    Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                    Dist=Distx.*Distx+Disty.*Disty;
+                    for ivar=1:numel(VarVal)
+                        VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                    end  
                     
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
                         ProjData.(FieldData.ListVarName{vector_x_proj})=ProjData.(FieldData.ListVarName{vector_x_proj})-VarVal{1};
@@ -1335,7 +1346,19 @@ for icell=1:length(CellInfo)
                 if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
                     FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
                 end
+                % interpolate data using thin plate spline
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
+                
+                % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMaesh)
+                F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
+                G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+                Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                Dist=Distx.*Distx+Disty.*Disty;
+                for ivar=1:numel(VarVal)
+                    VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                end
+                
                 ListVarName=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListVarName));
                 for ilist=1:numel(ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
