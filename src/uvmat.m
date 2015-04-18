@@ -3248,6 +3248,7 @@ if isstruct (ParamIn)
     ParamIn.Coord_x=get(handles.Coord_x,'String');
     ParamIn.Coord_y=get(handles.Coord_y,'String');
     ParamIn.Coord_z=get(handles.Coord_z,'String');
+    ParamIn.CheckCoordIndex=strcmp(get(handles.SwitchCoordIndex,'String'),'dim');
     TimeName=get(handles.TimeName,'String');
     r=regexp(TimeName,'^(?<type>(dim:)|(var:))','names');%look for 'var:' or 'dim:' at the beginning of time name
     if ~isempty(r)
@@ -3259,10 +3260,7 @@ if isstruct (ParamIn)
         end
     end 
 end
-% check_tps = 0;         
-% if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
-%        check_tps=1;%tps needed to get the requested field
-% end
+
 [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
 if ~isempty(errormsg)
     errormsg=['uvmat / refresh_field / read_field( ' FileName ') / ' errormsg];
@@ -4269,15 +4267,19 @@ switch field
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
         FieldList={};
         VecColorList={''};
+        XName='';
+        YName='';
         ZName='';
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;
                 VName=GetFieldData.PanelVectors.vector_y;
-                YName=GetFieldData.Coordinates.Coord_y;
-                if isfield(GetFieldData.Coordinates,'Coord_z')
-                ZName=GetFieldData.Coordinates.Coord_z;
-                end
+                if isfield(GetFieldData,'Coordinates')
+                    YName=GetFieldData.Coordinates.Coord_y;
+                    if isfield(GetFieldData.Coordinates,'Coord_z')
+                        ZName=GetFieldData.Coordinates.Coord_z;
+                    end
+                end              
                 CName=GetFieldData.PanelVectors.vec_color;
                 FieldList={['vec(' UName ',' VName ')'];...
                     ['norm(' UName ',' VName ')'];...
@@ -4289,9 +4291,11 @@ switch field
                 end
             case 'scalar'
                 AName=GetFieldData.PanelScalar.scalar;
-                YName=GetFieldData.Coordinates.Coord_y;
-                if isfield(GetFieldData.Coordinates,'Coord_z')
-                ZName=GetFieldData.Coordinates.Coord_z;
+                if isfield(GetFieldData,'Coordinates')
+                    YName=GetFieldData.Coordinates.Coord_y;
+                    if isfield(GetFieldData.Coordinates,'Coord_z')
+                        ZName=GetFieldData.Coordinates.Coord_z;
+                    end
                 end
                 FieldList={AName};
             case '1D plot'
@@ -4301,7 +4305,12 @@ switch field
         end
         % get time as file index, attribute, variable or matrix index
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
-            XName=GetFieldData.Coordinates.Coord_x;
+            if isfield(GetFieldData,'Coordinates')
+                XName=GetFieldData.Coordinates.Coord_x;
+                set(handles.SwitchCoordIndex,'String','var'); % variable used as coordinate
+            else
+                set(handles.SwitchCoordIndex,'String','dim'); % matrix index used a coordinate
+            end
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
             switch TimeNameStr
                 case 'file index'

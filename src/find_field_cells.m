@@ -209,24 +209,23 @@ end
 % two cases: 1)the coordiante variable represents the set of coordiante values
 %            2)the coordinate variable contains only two elements, representing the coordinate bounds for the dimension with the same name as the cordinate
 ivar_remain=find(~check_select);% indices of remaining variables, not already taken into account
-ListVarName=Data.ListVarName(~check_select);%list of remaining variables
+ListVarName=Data.ListVarName(~check_select);%list of names of remaining variables
 VarDimName=Data.VarDimName(~check_select);%dimensions of remaining variables
 check_coord_select= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
 check_coord_select=check_coord_select & ~strcmp('ancillary',Role(~check_select));% do not select ancillary variables as coordinates
-%check_coord(~check_select)=check_coord_select;
 ListCoordIndex=ivar_remain(check_coord_select);% indices of remaining variables with a single dimension
 ListCoordName=ListVarName(check_coord_select);% corresponding names of remaining variables with a single dimension
 ListDimName=VarDimName(check_coord_select);% dimension names of remaining variables with a single dimension
 
 %remove redondant variables -> keep only one variable per dimension
-check_keep=logical(ones(size(ListDimName)));
+check_keep=true(size(ListDimName));
 for idim=1:numel(ListDimName)
-    prev_ind=strcmp(ListDimName{idim},ListDimName(1:idim-1));% check whether the dimension is already taken into account
-    if ~isempty(prev_ind)
+    prev_ind=find(strcmp(ListDimName{idim},ListDimName(1:idim-1)));% check whether the dimension is already taken into account
+    if ~isempty(prev_ind)% in case of multiple coord variable
         if strcmp(ListCoordName{idim},ListDimName{idim}) %variable with the same name as the coordinate taken in priority
-            check_keep(prev_ind)=0;
+            check_keep(prev_ind)=0;% choose a variable with the same name as coordinate in priority
         else
-           check_keep(idim)=0; 
+           check_keep(idim)=0; %keep the first coordiante variable found
         end
     end
 end
@@ -255,7 +254,7 @@ end
 NewCellInfo={};
 NewCellDimIndex={};
 NewNbDim=[];
-for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
+for ivardim=1:numel(VarDimName) % loop at the list of dimensions for the remaining variables
     DimCell=VarDimName{ivardim};% dimension names of the current variable 
     if ischar(DimCell), DimCell={DimCell}; end %transform char to cell if needed
     DimIndices=[];

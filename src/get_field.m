@@ -950,15 +950,21 @@ end
 
 % --- Executes on button press in CheckDimensionY.
 function CheckDimensionX_Callback(hObject, eventdata, handles)
-FieldList=get(handles.FieldOption,'String');
-FieldOption=FieldList{get(handles.FieldOption,'Value')};
-switch FieldOption
-    case '1D plot'
-        
-    case {'scalar'}
-       scalar_Callback(hObject, eventdata, handles)
-    case 'vectors'
+CheckDimensionX=get(handles.CheckDimensionX,'value')
+if CheckDimensionX
+    set(handles.Coordinates,'visible','off')
+else
+    set(handles.Coordinates,'visible','on')
 end
+% FieldList=get(handles.FieldOption,'String');
+% FieldOption=FieldList{get(handles.FieldOption,'Value')};
+% switch FieldOption
+%     case '1D plot'
+%         
+%     case {'scalar'}
+%        scalar_Callback(hObject, eventdata, handles)
+%     case 'vectors'
+% end
 
 % % --- Executes on button press in CheckDimensionY.
 % function CheckDimensionY_Callback(hObject, eventdata, handles)

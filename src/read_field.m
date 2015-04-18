@@ -79,11 +79,7 @@ end
 switch FileType
     case 'civdata'% new format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
-        if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
-%         if ~isempty(strcmp('C',ParamIn.FieldName))% if C image correlation is requested as field (not color visu)
-%             ScalarIndex=strcmp('C',Field.ListVarName);
-%             Field.VarAttribute{ScalarIndex}.Role='scalar';%put role as 'scalar' instead of ancillary
-%         end      
+        if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end     
         ParamOut.CivStage=Field.CivStage;
     case 'civx'% old (obsolete) format for civ results
         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
@@ -127,7 +123,6 @@ switch FileType
                     Role=[Role {'vector_x'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
                     ListInputField=[ListInputField InputField(ilist)];
-                    %ListOperator=[ListOperator {[r.Operator '_U']}];
                 else
                     checkU=1;
                 end
@@ -136,7 +131,7 @@ switch FileType
                     Role=[Role {'vector_y'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
                     ListInputField=[ListInputField InputField(ilist)];
-                    %ListInputField=[ListInputField {''}];
+                    
                 else
                     checkV=1;
                 end
@@ -209,6 +204,16 @@ switch FileType
                 Field.VarDimName(ind_var_V+2)=[];
                 Field.VarAttribute(ind_var_V+2 )=[];
             end
+        end
+        % insert coordinates as indices in case of plots vs matrix index
+        if isfield(ParamIn,'CheckCoordIndex') && ParamIn.CheckCoordIndex
+            Field.ListVarName=[Field.ListDimName Field.ListVarName];
+            Field.VarDimName=[Field.ListDimName Field.VarDimName];
+            for idim=1:numel(Field.ListDimName)
+                CoordName=Field.ListDimName{idim};
+                Field.(CoordName)=1:Field.DimValue(idim);
+            end
+            Field.VarAttribute=[cell(1,numel(Field.ListDimName)) Field.VarAttribute]
         end
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')

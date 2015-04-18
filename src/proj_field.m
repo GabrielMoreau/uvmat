@@ -122,41 +122,6 @@ switch ObjectData.Type
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
 
-% %% take the difference of projected input fields if relevant
-% [CellInfo,NbDim,errormsg]=find_field_cells(ProjData);
-% ind_remove=zeros(size(ProjData.ListVarName));
-% ivar=[];
-% ivar_1=[];
-% for icell=1:numel(CellInfo)
-%     if ~isempty(CellInfo{icell})
-%         % if two scalar are in the same cell
-%         if isfield(CellInfo{icell},'VarIndex_scalar') && numel(CellInfo{icell}.VarIndex_scalar)==2 && ProjData.VarAttribute{CellInfo{icell}.VarIndex_scalar(2)}.CheckSub;
-%             ivar=[ivar CellInfo{icell}.VarIndex_scalar(1)];
-%             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_scalar(2)];
-%         end
-%         % if two vector u components are in the same cell
-%         if isfield(CellInfo{icell},'VarIndex_vector_x') && numel(CellInfo{icell}.VarIndex_vector_x)==2 && ProjData.VarAttribute{CellInfo{icell}.VarIndex_vector_x(2)}.CheckSub;
-%             ivar=[ivar CellInfo{icell}.VarIndex_vector_x(1)];
-%             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_x(2)];
-%         end
-%          % if two vector v components are in the same cell
-%         if isfield(CellInfo{icell},'VarIndex_vector_y') && numel(CellInfo{icell}.VarIndex_vector_y)==2 && ProjData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
-%             ivar=[ivar CellInfo{icell}.VarIndex_vector_y(1)];
-%             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_y(2)];
-%         end
-%     end
-% end
-% % subtract fields if relevant
-% for imod=1:numel(ivar)
-%         VarName=ProjData.ListVarName{ivar(imod)};
-%         VarName_1=ProjData.ListVarName{ivar_1(imod)};
-%         ProjData.(VarName)=double(ProjData.(VarName))-double(ProjData.(VarName_1));
-%         ind_remove(ivar_1(imod))=1;
-% end
-% ProjData.ListVarName(find(ind_remove))=[];
-% ProjData.VarDimName(find(ind_remove))=[];
-% ProjData.VarAttribute(find(ind_remove))=[];
-
 %-----------------------------------------------------------------
 %project on a set of points
 function  [ProjData,errormsg]=proj_points(FieldData,ObjectData)%%
@@ -1142,17 +1107,21 @@ if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no exis
             coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
         end
         [XI,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
+        ProjData.VarDimName={AYName,AXName};
 %         XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
 %         YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
     else% we use the existing grid from field cell #icell_grid
         NbDim=NbDimArray(icell_grid);
         AYName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim-1)};%name of input x coordinate (name preserved on projection)
         AXName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim)};%name of input y coordinate (name preserved on projection)
+        AYDimName=FieldData.VarDimName{CellInfo{icell_grid}.CoordIndex(NbDim-1)};%
+        AXDimName=FieldData.VarDimName{CellInfo{icell_grid}.CoordIndex(NbDim)};%
+         ProjData.VarDimName={AYDimName,AXDimName};
         ProjData.(AYName)=FieldData.(AYName); % new (projected ) y coordinates
         ProjData.(AXName)=FieldData.(AXName); % new (projected ) y coordinates
     end
     ProjData.ListVarName={AYName,AXName};
-    ProjData.VarDimName={AYName,AXName};
+    
     ProjData.VarAttribute={[],[]};
 end
     
