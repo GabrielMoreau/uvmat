@@ -51,7 +51,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 07-Dec-2014 15:50:44
+% Last Modified by GUIDE v2.5 16-Apr-2015 17:29:02
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -1017,6 +1017,18 @@ set(handles.ListCoord,'Data',Coord)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % --------------------------------------------------------------------
+function MenuFlip_x_Callback(hObject, eventdata, handles)
+Coord=get(handles.ListCoord,'Data');
+Coord(:,1)=-Coord(:,1);
+set(handles.ListCoord,'Data',Coord)
+
+% --------------------------------------------------------------------
+function MenuFlip_y_Callback(hObject, eventdata, handles)
+Coord=get(handles.ListCoord,'Data');
+Coord(:,2)=-Coord(:,2);
+set(handles.ListCoord,'Data',Coord)
+
+% --------------------------------------------------------------------
 function MenuImportPoints_Callback(hObject, eventdata, handles)
 fileinput=browse_xml(hObject, eventdata, handles);
 if isempty(fileinput)
@@ -1394,3 +1406,6 @@ else
         update_calib_marker([]);%remove circle marker
     end
 end
+
+
+
