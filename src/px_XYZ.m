@@ -47,7 +47,7 @@ if isfield(Calib,'R')
         H=Calib.InterfaceCoord(3);
         if H>Zphys
             Zphys=H-(H-Zphys)/Calib.RefractionIndex; %corrected z (virtual object)
-            test_refraction=1;
+          %  test_refraction=1;
         end
     end
     

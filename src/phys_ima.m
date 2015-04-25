@@ -1,3 +1,4 @@
+
 % phys_ima: transform several images in phys coordinates on a common pixel grid
 %------------------------------------------------------------------------
 % OUTPUT: 
@@ -60,12 +61,12 @@ for icell=1:length(A)
         if isfield(Calib,'SliceCoord') %.Z= index of plane
            SliceCoord=Calib.SliceCoord(ZIndex,:);
            zphys=SliceCoord(3); %to generalize for non-parallel planes
-           if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
-                H=Calib.InterfaceCoord(3);
-                if H>zphys
-                    zphys=H-(H-zphys)/Calib.RefractionIndex; %corrected z (virtual object)
-                end
-           end
+%            if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
+%                 H=Calib.InterfaceCoord(3);
+%                 if H>zphys
+%                     zphys=H-(H-zphys)/Calib.RefractionIndex; %corrected z (virtual object)
+%                 end
+%            end
         end
         xima=0.5:npx-0.5;%image coordinates of corners
         yima=npy-0.5:-1:0.5;

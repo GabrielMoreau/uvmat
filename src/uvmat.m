@@ -1082,7 +1082,7 @@ if get(handles.SubField,'Value')
 end
 
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-check=0;
+% check=0;
 if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
     GeometryCalib=UvData.XmlData{1}.GeometryCalib;
 else
@@ -1100,8 +1100,10 @@ if isfield(GeometryCalib,'CheckVolumeScan')
     CheckVolumeScan=GeometryCalib.CheckVolumeScan;
 end	
 RefractionIndex=1.33;
+CheckRefraction=0;% default value of the check box refraction 
 if isfield(GeometryCalib,'RefractionIndex')
     RefractionIndex=GeometryCalib.RefractionIndex;
+    CheckRefraction=1;
 end	
 SliceAngle=[0 0 0];
 if isfield(GeometryCalib,'SliceAngle')
@@ -1140,9 +1142,9 @@ uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
     'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
 %  raw 3 of the GUI
-uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
+hcheckrefraction=uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
     'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
-    'String','refraction','Value',0,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
+    'String','refraction','Value',CheckRefraction,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
 uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.75*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
     'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
@@ -1164,8 +1166,6 @@ uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 2*
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
     'String','tild angle y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 %  raw 6 of the GUI
-% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-%     'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
     'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination around the x axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
@@ -1184,6 +1184,7 @@ uicontrol('Style','pushbutton','Units','normalized', 'Position', [2*ii+wwp ii ww
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
     'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
 drawnow
+set_slice_CheckRefraction_Callback(hcheckrefraction,[])
 
 %------------------------------------------------------------------------
 % function called by selecting CheckRefraction in the GUI set_slices
@@ -1234,6 +1235,9 @@ GeometryCalib.SliceAngle(:,3)=0;
 if SliceData.CheckRefraction
     GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
     GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+elseif isfield(GeometryCalib,'RefractionIndex')
+    GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
+    GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');  
 end
 
 %% store the result in the xml file used for calibration
