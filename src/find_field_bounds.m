@@ -40,9 +40,14 @@ end
 
 NbDim=max(NbDimArray);% spatial dimension of the input field
 imax=find(NbDimArray==NbDim);% indices of field cells to consider
+Check4D=0;
+if NbDim>3
+    NbDim=3;
+    Check4D=1;
+end
 FieldOut.NbDim=NbDim;
 if  NbDim<=1; return; end% stop here for 1D fields
-
+ 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 % if NbDim>1
 CoordMax=zeros(numel(imax),NbDim);
@@ -56,6 +61,9 @@ for ind=1:numel(imax)
         CoordMin(ind,NbDim)=min(min(Field.(CoordName)(1:end-3,1,:),[],1),[],3);
         CoordMin(ind,NbDim-1)=min(min(Field.(CoordName)(1:end-3,2,:),[],1),[],3);% min of y component (2D case)
     else
+        if Check4D
+            CellInfo{imax(ind)}.CoordIndex(4:end)=[];
+        end
         XName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
         YName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
         CoordMax(ind,NbDim)=max(max(Field.(XName)));
@@ -65,8 +73,8 @@ for ind=1:numel(imax)
         %         test_x=1;%test for unstructured coordinates
         if NbDim==3
             ZName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-            CoordMax(ind,1)=max(max(Field.(ZName)));
-            CoordMin(ind,1)=min(min(Field.(ZName)));
+            CoordMax(ind,NbDim-2)=max(max(Field.(ZName)));
+            CoordMin(ind,NbDim-2)=min(min(Field.(ZName)));
         end
     end
     switch CellInfo{imax(ind)}.CoordType
@@ -76,6 +84,9 @@ for ind=1:numel(imax)
             Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
         case 'grid'%structured coordinate
             NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
+            if Check4D
+               NbPoints=NbPoints(1:3);
+            end
             Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));
     end
 end
