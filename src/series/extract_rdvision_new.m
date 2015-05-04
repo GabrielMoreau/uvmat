@@ -184,26 +184,16 @@ NbSlice_calib={};
 
 
 for iview=1:size(Param.InputTable,1)
-     filexml=[fullfile(RootPath,Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
+     filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
     if ~exist(filexml,'file')
         disp_uvmat('ERROR',[filexml ' missing'],checkrun)
         return
     end
-%     %[XmlData,error]=imadoc2struct_special(filexml);
      [XmlData,error]=imadoc2struct(filexml);
-%     if ~isempty(error)
-%         disp(error)
-%     end
-%     if isfield(XmlData,'Time')
-%         itime=itime+1;
-%         timecell{itime}=XmlData.Time;
-%     end
-%     if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
-%         NbSlice_calib{1}=size(XmlData.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-%         if ~isequal(NbSlice_calib{1},NbSlice_calib{1})
-%             msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-%         end
-%     end
+     
+     newxml=[fullfile(RootPath,Param.InputTable{iview,3}) '.xml']
+     
+    [SUCCESS] = copyfile(filexml,newxml); %copy the xml file in the upper folder
     
     
 %     % correction to RDvision xml file

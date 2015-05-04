@@ -3484,7 +3484,7 @@ end
 
 % time in the input file, not defined in a xml file or movie
 if isempty(abstime)
-    if strcmp(TimeName,'civdata')||strcmp(TimeName,'civx')||strcmp(TimeName,'timestamp')
+    if (strcmp(TimeName,'civdata')||strcmp(TimeName,'civx')||strcmp(TimeName,'timestamp'))&&isfield(Field{1},'Time')
         abstime=Field{1}.Time;
     elseif ~isempty(regexp(TimeName,'^att:', 'once'))
         abstime=Field{1}.(TimeName(5:end));%the time is an attribute  selected by get_file 

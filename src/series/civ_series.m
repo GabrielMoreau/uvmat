@@ -323,7 +323,7 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 maskname='';% initiate the mask name
-tic;
+tstart=tic;
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
@@ -850,9 +850,10 @@ for ifield=1:NbField
         else
             disp(errormsg)
         end
+        disp(['ellapsed time ' num2str(toc) ' s'])
     end
 end
-disp(['ellapsed time ' num2str(toc) ' s'])
+
 
 % 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
 %--------------------------------------------------------------------------
