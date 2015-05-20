@@ -1274,9 +1274,14 @@ for icell=1:length(CellInfo)
                     
                     [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                     
-                    % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMaesh)
-                    F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
-                    G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                    % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
+                    if exist('scatteredInterpolant','file')%recent Matlab versions
+                        F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
+                        G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                    else
+                        F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
+                        G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
+                    end
                     Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
                     Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                     Dist=Distx.*Distx+Disty.*Disty;
@@ -1318,15 +1323,21 @@ for icell=1:length(CellInfo)
                 % interpolate data using thin plate spline
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
                 
-                % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMaesh)
-                F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
-                G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
-                Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
-                Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
-                Dist=Distx.*Distx+Disty.*Disty;
-                for ivar=1:numel(VarVal)
-                    VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
-                end
+                % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
+                    if exist('scatteredInterpolant','file')%recent Matlab versions
+                        F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
+                        G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                    else
+                        F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
+                        G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
+                    end
+                    Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+                    Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                    Dist=Distx.*Distx+Disty.*Disty;
+                    for ivar=1:numel(VarVal)
+                        VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                    end  
+                    
                 
                 ListVarName=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListVarName));

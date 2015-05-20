@@ -323,7 +323,7 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 maskname='';% initiate the mask name
-tstart=tic;
+tic;
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)

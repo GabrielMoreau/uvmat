@@ -1480,30 +1480,30 @@ test_batch=0;%default: ,no batch mode available
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
 end
-RunTime='';
+% RunTime='';
 if strcmp(ActionExt,'.sh')
     if exist(xmlfile,'file')
         s=xml2struct(xmlfile);
         if strcmp(RunMode,'cluster_oar') && isfield(s,'BatchParam')
-            if isfield(s.BatchParam,'RunTime')
-                RunTime=s.BatchParam.RunTime;
-            end
+%             if isfield(s.BatchParam,'RunTime')
+%                 RunTime=s.BatchParam.RunTime;
+%             end
             if isfield(s.BatchParam,'NbCore')
                 NbCore=s.BatchParam.NbCore;
             end
         elseif (strcmp(RunMode,'background')||strcmp(RunMode,'local')) && isfield(s,'RunParam')
-            if isfield(s.RunParam,'RunTime')
-                RunTime=s.RunParam.RunTime;
-            end
+%             if isfield(s.RunParam,'RunTime')
+%                 RunTime=s.RunParam.RunTime;
+%             end
             if isfield(s.RunParam,'NbCore')
                 NbCore=s.RunParam.NbCore;
             end
         end
     end
-    if isempty(RunTime) && strcmp(RunMode,'cluster_oar')
-       errormsg='RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster';
-        return
-    end
+%     if isempty(RunTime) && strcmp(RunMode,'cluster_oar')
+%        errormsg='RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster';
+%         return
+%     end
 end
 
 %% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
@@ -1514,7 +1514,11 @@ if strcmp(ActionExt,'.sh')
     end
     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
-    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
+    hver=ver('MATLAB');
+    MCRROOT=['MCRROOT' regexprep(hver.Version,'\.','')];%suppress the dot in version number
+    RunTime = getenv(MCRROOT);
+    ActionNameVersion=[ActionName '_' MCRROOT];
+    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']);
     if ~exist(ActionFullName,'file')
         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
         if strcmp(answer,'Yes')
@@ -1530,12 +1534,12 @@ if strcmp(ActionExt,'.sh')
             return
         end       
     else
-        sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
+        sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']));
         m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
         if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
             set(handles.ActionExt,'BackgroundColor',[1 1 0])
             drawnow
-            answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
+            answer=msgbox_uvmat('INPUT_Y-N',[ActionNameVersion '.sh needs to be updated: recompile now?']);
             if strcmp(answer,'Yes')
                 path_uvmat=fileparts(which('series'));
                 currentdir=pwd;
