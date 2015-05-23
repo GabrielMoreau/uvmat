@@ -327,7 +327,7 @@ tic;
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
-        if  get(RUNHandle,'Value')&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        if  ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break
         end
@@ -354,6 +354,7 @@ for ifield=1:NbField
     %% Civ1
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
+        disp('civ1 started')
         par_civ1=Param.ActionInput.Civ1;
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             try
@@ -495,6 +496,7 @@ for ifield=1:NbField
     
     %% Fix1
     if isfield (Param.ActionInput,'Fix1')
+         disp('fix1 started')
         if ~isfield (Param.ActionInput,'Civ1')% if we use existing Civ1, remove previous data beyond Civ1
             Fix1_attr=find(strcmp('Fix1',Data.ListGlobalAttribute));
             Data.ListGlobalAttribute(Fix1_attr)=[];
@@ -518,6 +520,7 @@ for ifield=1:NbField
     end
     %% Patch1
     if isfield (Param.ActionInput,'Patch1')
+        disp('patch1 started')
         if check_civx
             errormsg='Civ Matlab input needed for patch';
             disp_uvmat('ERROR',errormsg,checkrun)
@@ -558,10 +561,12 @@ for ifield=1:NbField
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep 0 for the others
         Data.Civ1_V_smooth(ind_good)=Vres;
         Data.Civ1_FF(ind_good)=FFres;
+        disp('patch1 performed')
     end
     
     %% Civ2
     if isfield (Param.ActionInput,'Civ2')
+        disp('civ2 started')
         par_civ2=Param.ActionInput.Civ2;
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             par_civ2.ImageA=[];
@@ -750,6 +755,7 @@ for ifield=1:NbField
         Data.Civ2_V=reshape(-vtable,[],1);
         Data.Civ2_C=reshape(ctable,[],1);
         Data.Civ2_F=reshape(F,[],1);
+        disp('civ2 performed')
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
         if exist('ncfile','var')
             CivFile=ncfile;
@@ -772,6 +778,7 @@ for ifield=1:NbField
     
     %% Fix2
     if isfield (Param.ActionInput,'Fix2')
+        disp('fix2 started')
         list_param=fieldnames(Param.ActionInput.Fix2)';
         Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
         %indicate the values of all the global attributes in the output data
@@ -803,11 +810,11 @@ for ifield=1:NbField
             Data.Civ2_FF=double(fix(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V));
             Data.CivStage=Data.CivStage+1;
         end
-        
     end
     
     %% Patch2
     if isfield (Param.ActionInput,'Patch2')
+        disp('patch2 started')
         list_param=fieldnames(Param.ActionInput.Patch2)';
         list_param(strcmp('TestPatch2',list_param))=[];% remove the parameter TestCiv1 from the list
         Patch2_param=regexprep(list_param,'^.+','Patch2_$0');% insert 'Fix1_' before  each string in ListFixParam
@@ -840,6 +847,7 @@ for ifield=1:NbField
         Data.Civ2_V_smooth(ind_good)=Vres;
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
+        disp('patch2 performed')
     end
     
     %% write result in a netcdf file if requested

@@ -90,8 +90,8 @@ if ~isempty(frame_idx)
         'uint32' [1 1] 'garbage2' },'Repeat',nb_frames);   
     data=m.Data;
        %%%%%%%BRICOLAGE in case of unreadable .sqb file
-%     ind=[60 63:152];%indices of bin files
-%     lengthimage=w*h*bpp;% lengthof an image record on the binary file
+%      ind=[144 149:646];%indices of bin files
+%      lengthimage=w*h*bpp;% lengthof an image record on the binary file
 %     for ii=1:32*numel(ind)
 %         data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
 %         %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1

@@ -166,6 +166,7 @@ switch FileType
         NormName='';
         UName='';
         VName='';
+        if numel(Field.ListVarName)>NbCoord % if there are variables beyond coord (1 D plots)
         for ilist=1:numel(ListVar)
             Field.VarAttribute{ilist+NbCoord}.Role=Role{ilist};
             Field.VarAttribute{ilist+NbCoord}.ProjModeRequest=ProjModeRequest{ilist};
@@ -188,6 +189,7 @@ switch FileType
                 VName=r.VName;
             end
         end
+
         if ~isempty(NormName)% remove U and V if norm has been calculated and U and V are not needed as variables
             ind_var_U=find(strcmp(UName,ListVar));%check previous listing of variable r.UName
             ind_var_V=find(strcmp(VName,ListVar));%check previous listing of variable r.VName
@@ -215,6 +217,7 @@ switch FileType
             end
             Field.VarAttribute=[cell(1,numel(Field.ListDimName)) Field.VarAttribute]
         end
+                end
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);

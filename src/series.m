@@ -1564,12 +1564,16 @@ switch RunMode
             NbCore=1;% one core used only (limitation of Matlab licences)
             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
             if ~strcmp(answer,'Yes')
-                errormsg='Action launch interrupted';
+                errormsg='Action launch interrupted by user';
                 return
             end
             extra_oar='';
         else
             answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+            if isempty(answer)
+                                errormsg='Action launch interrupted by user';
+                return
+            end
             NbCore=str2double(answer{1});
             extra_oar=answer{2};
         end

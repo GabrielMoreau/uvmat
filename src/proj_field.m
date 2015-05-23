@@ -1286,7 +1286,7 @@ for icell=1:length(CellInfo)
                     Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                     Dist=Distx.*Distx+Disty.*Disty;
                     for ivar=1:numel(VarVal)
-                        VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                        VarVal{ivar}(Dist>4*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
                     end  
                     
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
@@ -1335,7 +1335,7 @@ for icell=1:length(CellInfo)
                     Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                     Dist=Distx.*Distx+Disty.*Disty;
                     for ivar=1:numel(VarVal)
-                        VarVal{ivar}(Dist>2*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                        VarVal{ivar}(Dist>4*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
                     end  
                     
                 
