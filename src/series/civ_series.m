@@ -354,7 +354,9 @@ for ifield=1:NbField
     %% Civ1
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
+        if CheckInputFile
         disp('civ1 started')
+        end
         par_civ1=Param.ActionInput.Civ1;
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             try

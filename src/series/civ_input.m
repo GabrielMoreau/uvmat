@@ -1792,6 +1792,15 @@ if get(handles.TestCiv1,'Value')
      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
      end
      Param.ActionInput.Civ1.CorrSmooth=0;% launch Civ1 with no data point (to get the image names for A and B)
+     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+     Param.IndexRange.last_i=str2num(get(handles.ref_i,'String'));
+     if strcmp(get(handles.ref_j,'Visible'),'on')
+         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+         Param.IndexRange.last_j=Param.IndexRange.first_j;
+     else
+         Param.IndexRange.first_j=1;
+         Param.IndexRange.last_j=1;
+     end
      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results 
      if ~isempty(errormsg), return, end % rmq: error msg displayed in civ_series
      

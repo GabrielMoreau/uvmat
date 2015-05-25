@@ -53,5 +53,6 @@ Bmin=blkproc(Aflagmin,[nblock_y nblock_x],sumblock);% find the number of minima 
 Backg=Backg./Bmin; % find the average of minima in blocks
 B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
 ImPart=(A-B);
-DataOut.A=ImPart.*(ImPart>threshold);
+DataOut.A=ImPart;
+%DataOut.A=ImPart.*(ImPart>threshold);
 DataOut.A=feval(Atype,DataOut.A);

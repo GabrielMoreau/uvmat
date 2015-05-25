@@ -1555,7 +1555,9 @@ if strcmp(ActionExt,'.sh')
      set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
 
-%% set nbre of cluster cores and processes
+%% set nbre of cluster cores and processes: 
+% NbCore is the number of computer processors used 
+% NbProcess is the number of independent processes in which the required calculation is split
 switch RunMode
     case {'local','background'}
         NbCore=1;% no need to split the calculation
@@ -1597,10 +1599,10 @@ if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
 if isempty(Param.IndexRange.NbSlice)
-    NbProcess=NbCore;% choose one process per core
+    NbProcess=NbCore;% choose one process per core if NbSlice is not imposed
 else
-    NbProcess=Param.IndexRange.NbSlice;% the nbre of run processes is equal to the number of slices
-    NbCore=min(NbCore,NbProcess);% at least one process per core
+    NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
+    NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
 end
 
 %% create the output data directory if needed
@@ -1661,13 +1663,13 @@ if ~exist(DirXml,'dir')
 end
 OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
 
-%% get the set of reference field indices
-first_i=1;
-last_i=1;
-incr_i=1;
-first_j=1;
-last_j=1;
-incr_j=1;
+%% get the set of reference input field indices 
+first_i=1;% first i index to process
+last_i=1;% last i index to process
+incr_i=1;% increment step in i index
+first_j=1;% first j index to process
+last_j=1;% last j index to process
+incr_j=1;% increment step in j index
 if isfield(Param.IndexRange,'first_i')
     first_i=Param.IndexRange.first_i;
     incr_i=Param.IndexRange.incr_i;
@@ -1687,6 +1689,7 @@ if isempty(incr_i)&& ~isempty(Param.IndexRange.NbSlice)
     incr_i=1;
     set(handles.num_incr_i,'String','1')
 end
+% case of no increment i defined: processing is done on the available files found in i1_series
 if isempty(incr_i)
     if isempty(incr_j)
         [ref_j,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
@@ -1700,6 +1703,7 @@ if isempty(incr_i)
         ref_i=ref_i-1;
         ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
     end
+% increment i is defined: processing is done on first_i:incr_i:last_i;
 else
     ref_i=first_i:incr_i:last_i;
     if isempty(incr_j)
@@ -1710,8 +1714,8 @@ else
         ref_j=first_j:incr_j:last_j;
     end
 end
-BlockLength=ceil(numel(ref_i)/NbProcess);
-nbfield_j=numel(ref_j);
+BlockLength=ceil(numel(ref_i)/NbProcess);% nbre of input fields in each process 
+nbfield_j=numel(ref_j); % number of j indices
 
 %% record nbre of output files and starting time for computation for status
 StatusData=get(handles.status,'UserData');
@@ -1728,7 +1732,7 @@ end
 StatusData.TimeStart=now;
 set(handles.status,'UserData',StatusData)
 
-
+%% case of a function in Python
 if strcmp(ActionExt, '.py (in dev.)')
     fprintf([
         '\n' ...
@@ -1758,15 +1762,15 @@ if strcmp (RunMode,'local')
             Param.IndexRange.last_i=min(ref_i(iprocess*BlockLength),last_i);
             %Param.IndexRange.last_i=min(first_i+(iprocess)*BlockLength*incr_i-1,last_i);
         else %multislices (then incr_i is not empty)
-             Param.IndexRange.first_i= first_i+incr_i*(iprocess-1);
-             Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
+            Param.IndexRange.first_i= first_i+incr_i*(iprocess-1);
+            Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         end
         if isfield(Param,'OutputSubDir')
-        t=struct2xml(Param);
-        t=set(t,1,'name','Series');
-        filexml=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
-            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        save(t,filexml);
+            t=struct2xml(Param);
+            t=set(t,1,'name','Series');
+            filexml=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
+                Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
+            save(t,filexml);
         end
         switch ActionExt
             case '.m'
@@ -1894,8 +1898,8 @@ switch RunMode
     case 'background'
         for iprocess=1:NbProcess
             system([batch_file_list{iprocess} ' &'])% directly execute the command file for each process
-            msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
         end
+        msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
         DirOAR=fullfile(OutputDir,'0_OAR');
@@ -2040,13 +2044,6 @@ if ~isempty(huigetfile)
 end
 drawnow
 
-%% check whether the input file(s) need to be refreshed
-% SeriesData=get(handles.series,'UserData');%hidden parameters
-% if ~isfield(SeriesData,'i1_series')
-%     msgbox_uvmat('ERROR','The input field series needs to be refreshed: press REFRESH');
-%     return
-% end
-
 %% get Action name and path
 NbBuiltinAction=get(handles.Action,'UserData'); %nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
 ActionList=get(handles.ActionName,'String');% list menu fields
@@ -2105,7 +2102,6 @@ if isequal(ActionName,'more...')
     set(handles.ActionName,'String',ActionList)
        set(handles.ActionName,'UserData',ActionPathList);
     set(handles.ActionExt,'Value',ActionExtIndex)
-%     ActionPathList{ActionIndex,ActionExtIndex}=PathName;
         
     %record the user defined menu additions in personal file profil_perso
     dir_perso=prefdir;
@@ -2133,21 +2129,37 @@ set(handles.ActionPath,'String',ActionPath); %show the path to the senlected fun
 update_waitbar(handles.Waitbar,0)
 
 %% create the function handle for Action
-path_series=which('series');
-if ~isequal(ActionPath,path_series)
-    eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
-    if ~exist(ActionPath,'dir')
-        errormsg=['The prescribed function path ' ActionPath ' does not exist'];
-        return
-    end
-    if ~isequal(spath,ActionPath)
-        addpath(ActionPath)% add the prescribed path if not the current one
-    end
+if ~exist(ActionPath,'dir')
+    msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
+    return
 end
-eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
-if ~isequal(ActionPath,path_series)
-        rmpath(ActionPath)% add the prescribed path if not the current one    
-end
+current_dir=pwd;%current working dir
+cd(ActionPath)
+h_fun=str2func(ActionName);
+cd(current_dir)
+
+% 
+% checkaddpath=0;
+% path_series=which('series');
+% %eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
+% spath=fileparts(which(ActionName)); %spath = current path of the selected function ACTION
+% if ~exist(ActionPath,'dir')
+%     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
+%     return
+% end
+% if ~strcmp(spath,ActionPath)
+%     if strcmp(pwd,spath)
+%         msgbox_uvmat('ERROR',[ 'a function called ' ActionName ' on your working space oversets the selected one']);
+%         return
+%     else
+%         addpath(ActionPath)% add the prescribed path if not the current one
+%         checkaddpath=1;
+%     end
+% end
+% eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
+% if checkaddpath && ~isequal(ActionPath,path_series)
+%     rmpath(ActionPath)% add the prescribed path if not the current one
+% end
 
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles);% read the parameters from the GUI series
@@ -2184,7 +2196,7 @@ FieldList=get(handles.FieldName,'String');% previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String');% previous list as default
 if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
-CheckList=0;% indicate whether FieldName has been updated
+%CheckList=0;% indicate whether FieldName has been updated
 CheckList_1=1;% indicate whether FieldName_1 has been updated
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1 
@@ -2194,7 +2206,7 @@ if VelTypeRequest && numel(iview_civ)>=1
     set(handles.VelType,'Visible','on')
     set(handles.VelType_title,'Visible','on')
     FieldList=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
-    CheckList=1;
+    %CheckList=1;
     set(handles.FieldName,'Value',1); %velocity vector choice by default
     if  VelTypeRequest_1 && numel(iview_civ)>=2 
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
@@ -2346,15 +2358,25 @@ enable_j(handles,status_j) % no j index needed
 
 
 %% NbSlice visibility
-NbSliceVisible='off';%default
-if isfield(ParamOut,'NbSlice') && isequal(ParamOut.NbSlice,'on')
-    NbSliceVisible='on';
-    set(handles.num_NbProcess,'String',get(handles.num_NbSlice,'String'))% the nbre of processes is imposed as the nbre of slices
+%NbSliceVisible='off';%default
+if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
+    set(handles.num_NbSlice,'Visible','on')
+    set(handles.NbSlice_title,'Visible','on')
 else
-    set(handles.num_NbProcess,'String','')% free nbre of processes 
+    set(handles.num_NbSlice,'Visible','off')
+    set(handles.NbSlice_title,'Visible','off')
+    %     set(handles.num_NbProcess,'String',get(handles.num_NbSlice,'String'))% the nbre of processes is imposed as the nbre of slices
+    % else
+    %     set(handles.num_NbProcess,'String','')% free nbre of processes
 end
-set(handles.num_NbSlice,'Visible',NbSliceVisible)
-set(handles.NbSlice_title,'Visible',NbSliceVisible)
+if isnumeric(ParamOut.NbSlice)
+    set(handles.num_NbSlice,'String',num2str(ParamOut.NbSlice))
+    set(handles.num_NbSlice,'Enable','off'); % NbSlice set by the activation of the Action function
+else
+    set(handles.num_NbSlice,'Enable','on'); % NbSlice can be modified on the GUI series
+end
+% set(handles.num_NbSlice,'Visible',NbSliceVisible)
+% set(handles.NbSlice_title,'Visible',NbSliceVisible)
 
 
 
@@ -3002,6 +3024,10 @@ set(handles.TransformName,'UserData',TransformPathList);
 
 %% create the function handle of the selected fct
 if ~isempty(TransformName)
+    if ~exist(TransformPathList{TransformIndex},'dir')
+        msgbox_uvmat('ERROR',['The prescribed transform function path ' TransformPathList{TransformIndex} ' does not exist']);
+        return
+    end
     current_dir=pwd;%current working dir
     cd(TransformPathList{TransformIndex})
     transform_handle=str2func(TransformName);
@@ -3293,12 +3319,12 @@ if strcmp(ActionExt,'.py (in dev.)')
     set(handles.RunMode,'Value',2)
 end
 
-function num_NbProcess_Callback(hObject, eventdata, handles)
+%function num_NbProcess_Callback(hObject, eventdata, handles)
 
 
 function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
-set(handles.num_NbProcess,'String',num2str(NbSlice))
+%set(handles.num_NbProcess,'String',num2str(NbSlice))
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus: 
