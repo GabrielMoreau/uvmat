@@ -1442,7 +1442,7 @@ switch Param.RunMode,
                         end
 
                         extra_oar=answer{2};
-                        walltime_onejob=600;%seconds
+                        walltime_onejob=1800; % seconds
                         filename_joblist=fullfile(RootBat,'job_list.txt');
                         fid=fopen(filename_joblist,'w');
                         for p=1:length(batch_file_list)
@@ -1470,7 +1470,7 @@ switch Param.RunMode,
                         ncores=str2double(...
                             inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
                             );
-                        walltime_onejob=600;%seconds
+                        walltime_onejob=1800; % seconds
                         filename_joblist=fullfile(RootBat,'job_list.txt');
                         fid=fopen(filename_joblist,'w');
                         for p=1:length(batch_file_list)

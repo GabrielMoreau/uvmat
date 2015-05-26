@@ -1916,7 +1916,7 @@ switch RunMode
             end
         end
         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-        walltime_onejob=600;%seconds, max estimated time for asingle file index value
+        walltime_onejob=1800; % seconds, max estimated time for asingle file index value
         filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
@@ -1956,7 +1956,7 @@ switch RunMode
             end
         end
         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-        walltime_onejob=600;%seconds, max estimated time for asingle file index value
+        walltime_onejob=1800; % seconds, max estimated time for asingle file index value
         filename_joblist=fullfile(DirPBS,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
