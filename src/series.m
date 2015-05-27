@@ -1600,6 +1600,10 @@ if ~isfield(Param.IndexRange,'NbSlice')
 end
 if isempty(Param.IndexRange.NbSlice)
     NbProcess=NbCore;% choose one process per core if NbSlice is not imposed
+    switch RunMode
+        case 'cluster_oar'
+            NbProcess=numel(ref_i); % split big list witdh oar-parexec (Gabriel Moreau)
+    end
 else
     NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
     NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
