@@ -1598,16 +1598,6 @@ end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
-if isempty(Param.IndexRange.NbSlice)
-    NbProcess=NbCore;% choose one process per core if NbSlice is not imposed
-    switch RunMode
-        case 'cluster_oar'
-            NbProcess=numel(ref_i); % split big list witdh oar-parexec (Gabriel Moreau)
-    end
-else
-    NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
-    NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
-end
 
 %% create the output data directory if needed
 OutputDir='';
@@ -1717,6 +1707,17 @@ else
     else
         ref_j=first_j:incr_j:last_j;
     end
+end
+
+if isempty(Param.IndexRange.NbSlice)
+    NbProcess=NbCore;% choose one process per core if NbSlice is not imposed
+    switch RunMode
+        case 'cluster_oar'
+            NbProcess=numel(ref_i); % split big list witdh oar-parexec (Gabriel Moreau)
+    end
+else
+    NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
+    NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
 end
 BlockLength=ceil(numel(ref_i)/NbProcess);% nbre of input fields in each process 
 nbfield_j=numel(ref_j); % number of j indices
