@@ -1907,8 +1907,8 @@ switch RunMode
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
-        DirOAR=fullfile(OutputDir,'0_OAR');
-        if exist(DirOAR,'dir')% delete the content of the dir 0_OAR to allow new input
+        DirOAR=fullfile(OutputDir,'0_LOG');
+        if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
             curdir=pwd;
             cd(DirOAR)
             delete('*')
@@ -1929,14 +1929,14 @@ switch RunMode
         end
         fclose(fid);
         system(['chmod +x ' filename_joblist]);% set the file to executable
-        oar_command=['oarsub -n CIVX '...
+        oar_command=['oarsub -n UVmat_' ActionName ' '...
             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
             '-l /core=' num2str(NbCore) ','...
             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
             '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
             extra_oar ' '...
-            '"oar-parexec -f ' filename_joblist ' '...
+            '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"\n'];
         filename_oarcommand=fullfile(DirOAR,'oar_command');
         fid=fopen(filename_oarcommand,'w');
@@ -1948,7 +1948,7 @@ switch RunMode
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
         DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
-        if exist(DirPBS,'dir')% delete the content of the dir 0_OAR to allow new input
+        if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
             curdir=pwd;
             cd(DirPBS)
             delete('*')
