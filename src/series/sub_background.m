@@ -188,13 +188,16 @@ end
 
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
+RUNHandle=[];
+WaitbarHandle=[];
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
-end
+else
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+end
 
 %% input preparation
 NbSlice_i=Param.IndexRange.NbSlice;
@@ -351,7 +354,7 @@ for j_slice=1:NbSlice_j
     if nbfield_series > nbaver_ima
         for ifield = step*(halfnbaver+1):step:nbfield_series-step*(halfnbaver+1)% ifield +iburst=index of the current processed image
             update_waitbar(WaitbarHandle,ifield/nbfield_series)
-            if  ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+            if  ~isempty(RUNHandle)&&~strcmp(get(RUNHandle,'BusyAction'),'queue')
                 disp('program stopped by user')
                 return
             end

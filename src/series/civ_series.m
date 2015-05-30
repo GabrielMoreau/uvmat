@@ -69,6 +69,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputDirExt='.civ';%set the output dir extension
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
+    Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     return
 end
 
@@ -324,6 +325,10 @@ end
 %%%%% MAIN LOOP %%%%%%
 maskname='';% initiate the mask name
 tic;
+CheckOverwrite=1;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
@@ -349,6 +354,9 @@ for ifield=1:NbField
                 ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
                     j1_series_Civ1(ifield),j2_series_Civ1(ifield));
             end
+        end
+        if ~CheckOverwrite && exist(ncfile,'file')          
+        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
     end
     %% Civ1
@@ -860,7 +868,7 @@ for ifield=1:NbField
         else
             disp(errormsg)
         end
-        disp(['ellapsed time ' num2str(toc) ' s'])
+        disp(['ellapsed time ' num2str(toc/60,2) ' minutes'])
     end
 end
 

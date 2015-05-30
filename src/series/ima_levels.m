@@ -94,14 +94,17 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% read input parameters from an xml file if input is a file name (batch mode)
 ParamOut=[];
+RUNHandle=[];
+WaitbarHandle=[];
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
+else% interactive mode in Matlab
+    hseries=findobj(allchild(0),'Tag','series');
+    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% subdirectory for output files
 SubdirOut=[Param.OutputSubDir Param.OutputDirExt];
@@ -170,7 +173,7 @@ end
 j1=[];%default
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
-    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end

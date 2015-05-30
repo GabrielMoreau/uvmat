@@ -1607,7 +1607,12 @@ if isfield(Param,'OutputSubDir')
     detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
     check_create=1; %need to create the result directory by default
     while detect
-        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
+        if Param.CheckOverwrite
+            comment=', possibly overwrite previous data';
+        else
+            comment=', will complement existing result files (no overwriting)';
+        end
+        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) comment]);
         if strcmp(answer,'Cancel')
             return
         elseif strcmp(answer,'Yes')
@@ -1700,7 +1705,7 @@ if isempty(incr_i)
 % increment i is defined: processing is done on first_i:incr_i:last_i;
 else
     ref_i=first_i:incr_i:last_i;
-    if isempty(incr_j)
+    if isempty(incr_j)% automatic finding of the existing j indices
         [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
         ref_j=ref_j-1;
         ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
@@ -1708,19 +1713,25 @@ else
         ref_j=first_j:incr_j:last_j;
     end
 end
-
+CPUTime=5;% job time estimated at 5 min per iteration (on index i and j) by default
+if isfield(Param, 'CPUTime') && ~isempty(Param.CPUTime)
+    CPUTime=Param.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+end
+nbfield_j=numel(ref_j); % number of j indices
 if isempty(Param.IndexRange.NbSlice)
-    NbProcess=NbCore;% choose one process per core if NbSlice is not imposed
+    NbProcess=NbCore;% choose one process per core by default if NbSlice is not imposed
     switch RunMode
         case 'cluster_oar'
-            NbProcess=numel(ref_i); % split big list witdh oar-parexec (Gabriel Moreau)
+            BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min. 
+            NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
     end
 else
     NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
     NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
 end
-BlockLength=ceil(numel(ref_i)/NbProcess);% nbre of input fields in each process 
-nbfield_j=numel(ref_j); % number of j indices
+
+%BlockLength=ceil(numel(ref_i)/NbProcess);% nbre of input fields in each process 
+%nbfield_j=numel(ref_j); % number of j indices
 
 %% record nbre of output files and starting time for computation for status
 StatusData=get(handles.status,'UserData');
@@ -1836,7 +1847,7 @@ elseif ~strcmp(RunMode,'python')
         t=struct2xml(Param);
         t=set(t,1,'name','Series');
         filexml=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
-            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
+            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j)
         save(t,filexml);% save the parameter file
         
         %create the executable file
@@ -1920,31 +1931,45 @@ switch RunMode
                 return
             end
         end
-        max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-        walltime_onejob=1800; % seconds, max estimated time for asingle file index value
-        filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
+        filename_joblist=fullfile(DirOAR,'0_job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
             fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
         end
         fclose(fid);
         system(['chmod +x ' filename_joblist]);% set the file to executable
+        
+        % the command job_list.txt contains the list of NbProcess independent individual jobs 
+        % in which the total calculation has been split. Those are written as executable files .sh in the folder /O_EXE.
+        %  These individual jobs are grouped by the system as oar jobs on the NbCore processors.
+        %  For each processor, the oar job must stop after the walltime which has been set, which is limited to 24 h. 
+        %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are 
+        % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration, 
+        %  the oar job restarts when an individual job ends. 
+        JobTime=CPUTime*BlockLength*nbfield_j% estimated time for one individual job (in minutes)
+        % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
+        WallTimeTotal=min(23,4*JobTime/60);
+        disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
+        % estimated time of an individual job (in min), with a margin of error
+        WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
+        disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
         oar_command=['oarsub -n UVmat_' ActionName ' '...
-            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+            '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
             '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
+            'walltime=' datestr(WallTimeOneJob/24,13) ' '...
             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
             '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
             extra_oar ' '...
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"\n'];
-        filename_oarcommand=fullfile(DirOAR,'oar_command');
+        
+        filename_oarcommand=fullfile(DirOAR,'0_oar_command');
         fid=fopen(filename_oarcommand,'w');
         fprintf(fid,oar_command);
         fclose(fid);
         fprintf(oar_command);% display in command line
         system(oar_command);  
-        msgbox_uvmat('CONFIRMATION',[ActionName ' launched in cluster: press STATUS to see results'])
+        msgbox_uvmat('CONFIRMATION',[ActionName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
         DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
@@ -2301,6 +2326,12 @@ else
     set(handles.InputFields,'Visible','off')
 end
 
+%% Introduce visibility of file overwrite option
+if isfield(ParamOut,'CheckOverwriteVisible')&& strcmp(ParamOut.CheckOverwriteVisible,'on')
+    set(handles.CheckOverwrite,'Visible','on')
+else
+    set(handles.CheckOverwrite,'Visible','off')
+end
 
 %% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
@@ -2461,6 +2492,7 @@ set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
+%set(handles.CheckOverwrite,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
 SeriesData.ActionName=ActionName;%record ActionName for next use
 
@@ -3560,9 +3592,24 @@ web('https://www.legi.grenoble-inp.fr/servload/monika')
 
 function OutputSubDir_Callback(hObject, eventdata, handles)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])
-% hObject    handle to OutputSubDir (see GCBO)
+
+
+% --- Executes on button press in CheckOverwrite.
+function CheckOverwrite_Callback(hObject, eventdata, handles)
+% hObject    handle to CheckOverwrite (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of OutputSubDir as text
-%        str2double(get(hObject,'String')) returns contents of OutputSubDir as a double
+% Hint: get(hObject,'Value') returns toggle state of CheckOverwrite
+
+
+% --- Executes on button press in TestCPUTime.
+function TestCPUTime_Callback(hObject, eventdata, handles)
+% hObject    handle to TestCPUTime (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+
+
