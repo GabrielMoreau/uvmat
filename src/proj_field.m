@@ -521,6 +521,8 @@ end
 % 
 function  [ProjData,errormsg] = proj_line(FieldData, ObjectData)
 %-----------------------------------------------------------------
+
+%% prepare heading for the projected field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);%transfer global attributes
 if ~isempty(errormsg)
     return
@@ -543,6 +545,31 @@ NbPoints=size(ObjectData.Coord,1);
 testfalse=0;
 ListIndex={};
 
+%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+[CellInfo,NbDim,errormsg]=find_field_cells(FieldData);
+if ~isempty(errormsg)
+    errormsg=['error in proj_field/proj_line:' errormsg];
+    return
+end
+CellInfo=CellInfo(NbDim==2); %keep only the 2D cells
+%%%%%% TODO: treat 1D fields: project as identity so that P o P=P for projection operation
+cell_select=true(size(CellInfo));
+
+for icell=1:length(CellInfo)
+    if isfield(CellInfo{icell},'ProjModeRequest')
+        if ~strcmp(CellInfo{icell}.ProjModeRequest, ProjMode)
+            cell_select(icell)=0;
+        end
+        if strcmp(ProjMode,'interp_tps')&& ~strcmp(CellInfo{icell}.CoordType,'tps')
+            cell_select(icell)=0;
+        end
+    end
+end
+if isempty(find(cell_select))
+    errormsg=[' invalid projection mode ''' ProjMode ''': use ''interp_tps'' to interpolate spatial derivatives'];
+    return
+end
+CellInfo=CellInfo(cell_select);
 
 %% projection line: object types selected from  proj_field='line','polyline','polygon','rectangle','ellipse':
 LineCoord=ObjectData.Coord;
@@ -632,16 +659,6 @@ else % need to define the set of interpolation points
         return
     end
 end
-
-
-%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-[CellInfo,NbDim,errormsg]=find_field_cells(FieldData);
-if ~isempty(errormsg)
-    errormsg=['error in proj_field/proj_line:' errormsg];
-    return
-end
-CellInfo=CellInfo(NbDim==2); %keep only the 2D cells
-%%%%%% TODO: treat 1D fields: project as identity so that P o P=P for projection operation
 
 %% loop on variable cells with the same space dimension 2
 ProjData.ListVarName={};
@@ -1286,7 +1303,7 @@ for icell=1:length(CellInfo)
                     Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                     Dist=Distx.*Distx+Disty.*Disty;
                     for ivar=1:numel(VarVal)
-                        VarVal{ivar}(Dist>4*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
+                        VarVal{ivar}(Dist>16*ProjData.CoordMesh)=NaN;% % put to NaN interpolated positions further than 4 meshes from initial data
                     end  
                     
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
@@ -1324,26 +1341,24 @@ for icell=1:length(CellInfo)
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
                 
                 % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
-                    if exist('scatteredInterpolant','file')%recent Matlab versions
-                        F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
-                        G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
-                    else
-                        F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
-                        G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
-                    end
-                    Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
-                    Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
-                    Dist=Distx.*Distx+Disty.*Disty;
-                    for ivar=1:numel(VarVal)
-                        VarVal{ivar}(Dist>4*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions too far from initial data
-                    end  
-                    
-                
+                Coord=permute(Coord,[1 3 2]);
+                Coord=reshape(Coord,size(Coord,1)*size(Coord,2),2);
+                if exist('scatteredInterpolant','file')%recent Matlab versions
+                    F=scatteredInterpolant(Coord,Coord(:,1),'nearest');
+                    G=scatteredInterpolant(Coord,Coord(:,2),'nearest');
+                else
+                    F=TriScatteredInterp(Coord,Coord(:,1),'nearest');
+                    G=TriScatteredInterp(Coord,Coord(:,2),'nearest');
+                end
+                Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+                Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                Dist=Distx.*Distx+Disty.*Disty;
                 ListVarName=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListVarName));
                 for ilist=1:numel(ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
                     VarName=ListVarName{ilist};
                     ProjData.(VarName)=DataOut.(VarName);
+                    ProjData.(VarName)(Dist>16*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions further than 4 meshes from initial data
                     VarDimName{ilist}={'coord_y','coord_x'};
                 end
             end

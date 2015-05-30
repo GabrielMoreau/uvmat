@@ -140,8 +140,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         %%
         if  ~isempty(ObjectData)
             % plot the field projected on the object
-            ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-            if ~isempty(ProjData)
+            [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+            if isempty(errormsg) && ~isempty(ProjData)
                 if strcmp(FigTag,'uvmat')% uvmat plot selected, projection plot seen in view_field
                     hview_field=findobj(allchild(0),'tag','view_field');
                     if isempty(hview_field)
@@ -168,6 +168,10 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(huvmat));%update an existing field plot
                     errormsg=fill_GUI(PlotParam,huvmat);
                 end
+            end
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',errormsg)
+                return
             end
             set(hhuvmat.CheckViewField,'Value',1);%
             set(hhuvmat.CheckEditObject,'Value',1);%   

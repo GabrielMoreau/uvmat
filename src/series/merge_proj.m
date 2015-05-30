@@ -72,6 +72,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.OutputDirExt='.mproj';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
       %check the input files
+    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     PairString='';
@@ -89,15 +90,18 @@ end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 ParamOut=[]; %default output
+RUNHandle=[];
+WaitbarHandle=[];
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
+else
+    hseries=findobj(allchild(0),'Tag','series');
+    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
@@ -406,7 +410,9 @@ for index=1:NbField
         end
     end
 end
-disp(['total ellapsed time ' num2str(toc(tstart))])
+ellapsed_time=toc(tstart);
+disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
+disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])
 
 %'merge_field': concatene fields
 %------------------------------------------------------------------------

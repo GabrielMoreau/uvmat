@@ -1606,8 +1606,12 @@ if isfield(Param,'OutputSubDir')
     SubDirOutNew=SubDirOut;
     detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
     check_create=1; %need to create the result directory by default
+    CheckOverwrite=1;
+    if isfield(Param,'CheckOverwrite')
+        CheckOverwrite=Param.CheckOverwrite;
+    end
     while detect
-        if Param.CheckOverwrite
+        if CheckOverwrite
             comment=', possibly overwrite previous data';
         else
             comment=', will complement existing result files (no overwriting)';
@@ -1718,6 +1722,7 @@ if isfield(Param, 'CPUTime') && ~isempty(Param.CPUTime)
     CPUTime=Param.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
 nbfield_j=numel(ref_j); % number of j indices
+BlockLength=numel(ref_i);%default
 if isempty(Param.IndexRange.NbSlice)
     NbProcess=NbCore;% choose one process per core by default if NbSlice is not imposed
     switch RunMode
@@ -1804,7 +1809,7 @@ if strcmp (RunMode,'local')
 elseif ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
-    DirBat=fullfile(OutputDir,'0_EXE');
+    DirExe=fullfile(OutputDir,'0_EXE');%directory name for executable files
     switch computer
         case {'PCWIN','PCWIN64'} %Windows system
             ExeExt='.bat';
@@ -1812,10 +1817,10 @@ elseif ~strcmp(RunMode,'python')
            ExeExt='.sh';
     end
     %create subdirectory for executable files
-    if ~exist(DirBat,'dir')
-        [tild,msg1]=mkdir(DirBat);
+    if ~exist(DirExe,'dir')
+        [tild,msg1]=mkdir(DirExe);
         if ~strcmp(msg1,'')
-            errormsg=['cannot create ' DirBat ': ' msg1];%error message for directory creation
+            errormsg=['cannot create ' DirExe ': ' msg1];%error message for directory creation
             return
         end
     end
@@ -1851,7 +1856,7 @@ elseif ~strcmp(RunMode,'python')
         save(t,filexml);% save the parameter file
         
         %create the executable file
-         filebat=fullfile_uvmat(DirBat,'',Param.InputTable{1,3},ExeExt,OutputNomType,...
+         filebat=fullfile_uvmat(DirExe,'',Param.InputTable{1,3},ExeExt,OutputNomType,...
            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
         batch_file_list{iprocess}=filebat;
         [fid,message]=fopen(filebat,'w');% create the executable file
@@ -1918,20 +1923,24 @@ switch RunMode
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
-        DirOAR=fullfile(OutputDir,'0_LOG');
-        if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DirOAR)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DirOAR);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
-                return
-            end
-        end
-        filename_joblist=fullfile(DirOAR,'0_job_list.txt');%create name of the global executable file
+        %DirOARLog=fullfile(OutputDir,'0_LOG');
+        %DirOARExe=fullfile(OutputDir,'0_EXE');
+%         if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
+%             curdir=pwd;
+%             cd(DirOAR)
+%             delete('*')
+%             cd(curdir)
+%         else
+%             [tild,msg1]=mkdir(DirOAR);
+%             if ~strcmp(msg1,'')
+%                 errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
+%                 return
+%             end
+%         end
+        filename_joblist=fullfile(DirExe,'0_job_list.txt');%create name of the global executable file
+        filename_log=fullfile(DirLog,'0_job_list.stdout');%file for output messages of the master oar process
+        filename_errors=fullfile(DirLog,'0_job_list.stderr');%file for error messages of the master oar process
+        
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
             fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
@@ -1957,13 +1966,13 @@ switch RunMode
             '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
             '-l /core=' num2str(NbCore) ','...
             'walltime=' datestr(WallTimeOneJob/24,13) ' '...
-            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+            '-E ' filename_errors ' '...
+            '-O ' filename_log ' '...
             extra_oar ' '...
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"\n'];
         
-        filename_oarcommand=fullfile(DirOAR,'0_oar_command');
+        filename_oarcommand=fullfile(DirExe,'0_oar_command');
         fid=fopen(filename_oarcommand,'w');
         fprintf(fid,oar_command);
         fclose(fid);
@@ -3596,11 +3605,7 @@ set(handles.OutputSubDir,'BackgroundColor',[1 1 1])
 
 % --- Executes on button press in CheckOverwrite.
 function CheckOverwrite_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckOverwrite (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of CheckOverwrite
 
 
 % --- Executes on button press in TestCPUTime.

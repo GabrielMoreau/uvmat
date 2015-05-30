@@ -332,7 +332,7 @@ end
 for ifield=1:NbField
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
-        if  ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break
         end

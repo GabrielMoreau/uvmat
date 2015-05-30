@@ -3734,6 +3734,7 @@ else
         end
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.ProjObject{iobj});% project field on the object
         if ~isempty(errormsg)
+            errormsg=['projection on ' UvData.ProjObject{iobj}.Type ': ' errormsg ]; 
             return
         end
         if testnewseries
@@ -5377,7 +5378,11 @@ UvData=get(handles.uvmat,'UserData');
 ObjectData=UvData.ProjObject{get(handles.ListObject_1,'Value')};
 
 %% update the projection plot on uvmat
-ProjData= proj_field(UvData.Field,ObjectData);%project the current input field on object ObjectData
+[ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current input field on object ObjectData
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['projection on ' UvData.ProjObject{iobj}.Type ': ' errormsg ])
+        return
+    end
 plot_field(ProjData,handles.PlotAxes,read_GUI(handles.uvmat));% plot the projected field;
 UvData.PlotAxes=ProjData;% store the plotted field for further update
 %replot all the objects within the new projected field
@@ -5445,7 +5450,11 @@ if isempty(hview_field)
 else
     Data=get(hview_field,'UserData');
     hhview_field=guidata(hview_field);
-    ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+    [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['projection on ' UvData.ProjObject{iobj}.Type ': ' errormsg ])
+        return
+    end
     [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the uvmat interface
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');  
@@ -5613,7 +5622,11 @@ if check_view
     UvData.ProjObject{IndexObj(end)}.Name=list_object{IndexObj(end)};
     
     %% show the projection of the selected object on view_field
-    ProjData= proj_field(UvData.Field,UvData.ProjObject{IndexObj});%project the current field on ObjectData
+    [ProjData,errormsg]= proj_field(UvData.Field,UvData.ProjObject{IndexObj});%project the current field on ObjectData
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['projection on ' UvData.ProjObject{IndexObj}.Type ': ' errormsg])
+        return
+    end
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;

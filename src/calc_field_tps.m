@@ -112,7 +112,7 @@ FieldName(check_remove)=[];
 for isub=1:NbSubDomain
     nbvec_sub=NbCentre(isub);
     check_range=(Coord_interp >=ones(nb_sites,1)*SubRange(:,1,isub)' & Coord_interp<=ones(nb_sites,1)*SubRange(:,2,isub)');
-    ind_sel=find(sum(check_range,2)==nb_coord);
+    ind_sel=find(sum(check_range,2)==nb_coord);% select points whose all coordinates are in the prescribed range
     nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
     if check_grid
         EM = tps_eval(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the velocity from tps 'sources'
