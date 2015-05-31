@@ -1718,8 +1718,8 @@ else
     end
 end
 CPUTime=5;% job time estimated at 5 min per iteration (on index i and j) by default
-if isfield(Param, 'CPUTime') && ~isempty(Param.CPUTime)
-    CPUTime=Param.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
+    CPUTime=Param.Action.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
 nbfield_j=numel(ref_j); % number of j indices
 BlockLength=numel(ref_i);%default
@@ -1852,7 +1852,7 @@ elseif ~strcmp(RunMode,'python')
         t=struct2xml(Param);
         t=set(t,1,'name','Series');
         filexml=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
-            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j)
+            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
         save(t,filexml);% save the parameter file
         
         %create the executable file
@@ -1938,8 +1938,8 @@ switch RunMode
 %             end
 %         end
         filename_joblist=fullfile(DirExe,'0_job_list.txt');%create name of the global executable file
-        filename_log=fullfile(DirLog,'0_job_list.stdout');%file for output messages of the master oar process
-        filename_errors=fullfile(DirLog,'0_job_list.stderr');%file for error messages of the master oar process
+        filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
+        filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
         
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
@@ -1965,7 +1965,7 @@ switch RunMode
         oar_command=['oarsub -n UVmat_' ActionName ' '...
             '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
             '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(WallTimeOneJob/24,13) ' '...
+            'walltime=' datestr(WallTimeTotal/24,13) ' '...
             '-E ' filename_errors ' '...
             '-O ' filename_log ' '...
             extra_oar ' '...

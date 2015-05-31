@@ -97,18 +97,21 @@ end
 
 %% field request
 ProjModeRequest=cell(size(Field.ListVarName));
+if isfield(Field,'VarAttribute')
 for ilist=1:numel(Field.VarAttribute)
     if isfield(Field.VarAttribute{ilist},'ProjModeRequest')
         ProjModeRequest{ilist}=Field.VarAttribute{ilist}.ProjModeRequest;
     end
 end
+end
 ProjModeRequest_1=cell(size(Field_1.ListVarName));
+if isfield(Field_1,'VarAttribute')
 for ilist=1:numel(Field_1.VarAttribute)
     if isfield(Field_1.VarAttribute{ilist},'ProjModeRequest')
         ProjModeRequest_1{ilist}=Field_1.VarAttribute{ilist}.ProjModeRequest;
     end
 end
-
+end
 
 %% rename the dimensions of the second field if identical to those of the first
 for ilist=1:numel(Field_1.VarDimName)
@@ -161,29 +164,32 @@ ListVarNameSub=Field_1.ListVarName;
 ListVarNameNew=ListVarNameSub;
 check_rename=zeros(size(ListVarNameSub));
 check_remove=zeros(size(ListVarNameSub));
-for ilist=1:numel(ListVarNameSub)
-    ind_prev=find(strcmp(ListVarNameSub{ilist},Field.ListVarName),1);% look for duplicated variable name
-    if ~isempty(ind_prev)% variable name exists in Field
-        if isfield(Field_1.VarAttribute{ilist},'Role')&&...
-            ismember(Field_1.VarAttribute{ilist}.Role,{'coord_x','coord_y','scalar','vector_x','vector_y','errorflag'})
-            ListVarNameNew{ilist}=[ListVarNameSub{ilist} '_1'];%modify the name of the second variable
-            check_rename(ilist)=1;
-        else
-            check_remove(ilist)=1;% variable will be removed
+VarDimNameSub={};
+VarAttributeSub={};
+if isfield(Field_1,'VarAttribute')&&~isempty(Field_1.VarAttribute)
+    for ilist=1:numel(ListVarNameSub)
+        ind_prev=find(strcmp(ListVarNameSub{ilist},Field.ListVarName),1);% look for duplicated variable name
+        if ~isempty(ind_prev)% variable name exists in Field
+            if isfield(Field_1.VarAttribute{ilist},'Role')&&...
+                    ismember(Field_1.VarAttribute{ilist}.Role,{'coord_x','coord_y','scalar','vector_x','vector_y','errorflag'})
+                ListVarNameNew{ilist}=[ListVarNameSub{ilist} '_1'];%modify the name of the second variable
+                check_rename(ilist)=1;
+            else
+                check_remove(ilist)=1;% variable will be removed
+            end
         end
     end
-end
-ListVarNameSub=ListVarNameSub(~check_remove); %eliminate removed variables from the list of the second field
-ListVarNameNew=ListVarNameNew(~check_remove); % %list of renaimed varaibles corresponding to ListVarNameSub
-VarDimNameSub=Field_1.VarDimName(~check_remove);
-if numel(Field_1.VarAttribute)<max(find(~check_remove))
-    for ilist=numel(Field_1.VarAttribute)+1:max(find(~check_remove))
-        Field_1.VarAttribute{ilist}={};
+    ListVarNameSub=ListVarNameSub(~check_remove); %eliminate removed variables from the list of the second field
+    ListVarNameNew=ListVarNameNew(~check_remove); % %list of renaimed varaibles corresponding to ListVarNameSub
+    VarDimNameSub=Field_1.VarDimName(~check_remove);
+    if numel(Field_1.VarAttribute)<max(find(~check_remove))
+        for ilist=numel(Field_1.VarAttribute)+1:max(find(~check_remove))
+            Field_1.VarAttribute{ilist}={};
+        end
     end
+    VarAttributeSub=Field_1.VarAttribute(~check_remove);
+    check_rename=check_rename(~check_remove);
 end
-VarAttributeSub=Field_1.VarAttribute(~check_remove);
-check_rename=check_rename(~check_remove); 
-
 % apply the variable renaming and mark the second field variables with the attribute .CheckSub
 for ilist=1:numel(ListVarNameSub)
      SubData.(ListVarNameNew{ilist})=Field_1.(ListVarNameSub{ilist});% copy the variable content to the new name

@@ -34,8 +34,8 @@ if strcmp(DataIn,'*')
 end
 
 %parameters
-radius=2;
-SE=strel('disk',2);
+radius=4;
+SE=strel('disk',radius);
 %--------------------------------------------------------- 
 DataOut=DataIn;%default
 
@@ -43,9 +43,20 @@ if ~isfield(DataIn,'A')
     DataOut.Txt='remove_particles only valid for input images';
     return
 end
-
+[npy,npx]=size(DataIn.A);
+[X,Y]=meshgrid(1:npx,1:npy);
 %BACKGROUND LEVEL
 Atype=class(DataIn.A);
-DataOut.A=imerode(DataIn.A,SE);
+%SE=ones(4);
+Aerode=imerode(DataIn.A,SE);
+Aflagmin=find(DataIn.A==Aerode);
+% Backg=zeros(size(A));
+%Aflagmin=imregionalmin(DataIn.A);%Amin=1 for local image minima
+Xmin=X(Aflagmin);
+Ymin=Y(Aflagmin);
+Amin=double(DataIn.A(Aflagmin));
+F = TriScatteredInterp([Xmin Ymin], Amin);
+DataOut.A=F(X,Y);
+
 % DataOut.A=feval(Atype,DataOut.A);
 
