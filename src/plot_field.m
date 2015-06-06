@@ -81,7 +81,7 @@
 %                expressed in figure relative unit (ex [0.821 0.471 0.019 0.445])
 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%  Copyright 2008-2015, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
 % 

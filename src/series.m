@@ -14,7 +14,7 @@
 %      .civ1=0 or 1, .interp1,  ... : input civ field type
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright 2008-2014, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%  Copyright 2008-2015, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
 % 
