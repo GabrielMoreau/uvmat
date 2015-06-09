@@ -268,6 +268,10 @@ if isfield(Param,'InputFile')
     
     %% fill the list of file series
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
+    if isempty(find(cellfun('isempty',InputTable)==0));% if there is no input file, do not introduce input info
+        set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
+        return
+    end
     TimeTable=[{Param.InputFile.TimeName},{[]},{[]},{[]},{[]}];
     if isfield(Param.InputFile,'RootPath_1')
         InputTable=[InputTable;[{Param.InputFile.RootPath_1},{Param.InputFile.SubDir_1},{Param.InputFile.RootFile_1},{Param.InputFile.NomType_1},{Param.InputFile.FileExt_1}]];

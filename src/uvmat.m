@@ -1205,6 +1205,8 @@ end
 % function called by pressing APPLY in the GUI  set_slices
 function set_slice_APPLY_Callback(hObject,eventdata)
 %------------------------------------------------------------------------    
+set(hObject,'BackgroundColor',[1 1 0]);% paint button in yellow to indicate action
+drawnow
 
 %% get the uvmat GUI data and read the current xml file
 huvmat=findobj(allchild(0),'Tag','uvmat');
@@ -1249,13 +1251,16 @@ else
 end
 
 %% display image with new calibration in the currently opened uvmat interface
-set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+%set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
 uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
 
 %------------------------------------------------------------------------
 % function called by pressing REPLICATE in the GUI  set_slices
 function set_slice_REPLICATE_Callback(hObject,eventdata)
 %------------------------------------------------------------------------ 
+set(hObject,'BackgroundColor',[1 1 0])
+drawnow
 
 %% read the GUI set_slice
 SliceData=read_GUI(get(hObject,'parent'));
@@ -1263,14 +1268,9 @@ SliceData=read_GUI(get(hObject,'parent'));
 %% get info on the GUI uvmat
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
+RootPath=read_file_boxes(hhuvmat);
 
-%% open the GUI browse_data
-% answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
-% if strcmp(answer,'Cancel')
-%     return
-% end
-OutPutDir=uigetfile_uvmat('Campaign to calibrate with slice position?',fileparts(RootPath),'uigetdir');
+OutPutDir=uigetfile_uvmat('choosean image folder to calibrate with slice position?',fileparts(RootPath),'uigetdir');
 OutPut=browse_data(OutPutDir);
 nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
@@ -1285,16 +1285,21 @@ for ilist=1:numel(OutPut.Experiment)
     end
     GeometryCalib=s.GeometryCalib;
     GeometryCalib.NbSlice=SliceData.NbSlice;
-    GeometryCalib.VolumeScan=SliceData.CheckVolumeScan;
+    GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
     Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
     GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
     GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-    GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-    GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+    Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
+    Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
+    GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
+    GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
     GeometryCalib.SliceAngle(:,3)=0;
     if SliceData.CheckRefraction
         GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
         GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+    elseif isfield(GeometryCalib,'RefractionIndex')
+        GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
+        GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
     end
     
     % update the current xml file
@@ -1306,7 +1311,9 @@ for ilist=1:numel(OutPut.Experiment)
         nbcalib=nbcalib+1;
     end
 end
+set(hObject,'BackgroundColor',[1 0 0])
 msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
+
 
 %------------------------------------------------------------------------
 % function called by pressing Cancel in the GUI  set_slices

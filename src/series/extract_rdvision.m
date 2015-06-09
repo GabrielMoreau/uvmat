@@ -235,7 +235,7 @@ for iview=1:size(Param.InputTable,1)
     %% checking consistency with the xml file
     [npi,npj]=size(XmlData.Time);
     if ~isequal(SeqData.nb_frames,(npi-1)*(npj-1))
-        disp_uvmat('ERRROR','inconsistent number of images with respect to the xml file',checkrun);
+        disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str((npi-1)*(npj-1))] ,checkrun);
         return
     end
     
@@ -276,10 +276,11 @@ for iview=1:size(Param.InputTable,1)
     if max(time_diff_max)>0.005
         disp_uvmat('WARNING',['timestamps exceeds xml time by' num2str(max(time_diff_max))],checkrun)
         checkpreserve=1;
-    end
-    if min(time_diff_min)<-0.005
+    elseif min(time_diff_min)<-0.005
         disp_uvmat('WARNING',['timestamps is lower than xml time by' num2str(min(time_diff_min))],checkrun)
         checkpreserve=1;
+    else
+        disp_uvmat('CONFIRMATION','time from xml file correct within better than 5 ms',checkrun)
     end
     if checkpreserve
           disp(  'max and min of timestamp-xml time for each index i:')
