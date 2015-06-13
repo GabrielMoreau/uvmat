@@ -1468,72 +1468,72 @@ else
     set(handles.ListObject,'Value',val);
     flag=1;
     if ~isfield(UvData.Field,'A')
-            msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
-    return
+        msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
+        return
     end
     npx=size(UvData.Field.A,2);
     npy=size(UvData.Field.A,1);
     xi=0.5:npx-0.5;
     yi=0.5:npy-0.5;
     [Xi,Yi]=meshgrid(xi,yi);
-        for iobj=1:length(UvData.ProjObject)
-            ObjectData=UvData.ProjObject{iobj};
-            if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-                flagobj=1;
-                testphys=0; %coordinates in pixels by default
-                if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
-                    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-                        Calib=UvData.XmlData{1}.GeometryCalib;
-                        testphys=1;
-                    end
-                end
-                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
-                    if isequal(ObjectData.Type,'polygon')
-                        X=ObjectData.Coord(:,1);
-                        Y=ObjectData.Coord(:,2);
-                        if testphys
-                            pos=[X Y zeros(size(X))];
-                            if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
-                                if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
-                                    om=norm(Calib.SliceAngle);%norm of rotation angle in radians
-                                    OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
-                                    cos_om=cos(pi*om/180);
-                                    sin_om=sin(pi*om/180);
-                                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                                end
-                                pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
-                                pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
-                                pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
-                            end                           
-                            [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
-                        end
-                        flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                    elseif isequal(ObjectData.Type,'ellipse')
-                        if testphys
-                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                        end
-                        RangeX=max(ObjectData.RangeX);
-                        RangeY=max(ObjectData.RangeY);
-                        X2Max=RangeX*RangeX;
-                        Y2Max=RangeY*RangeY;
-                        distX=(Xi-ObjectData.Coord(1,1));
-                        distY=(Yi-ObjectData.Coord(1,2));
-                        flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                    elseif isequal(ObjectData.Type,'rectangle')
-                        if testphys
-                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                        end
-                        distX=abs(Xi-ObjectData.Coord(1,1));
-                        distY=abs(Yi-ObjectData.Coord(1,2));
-                        flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
-                    end
-                    if isequal(ObjectData.ProjMode,'mask_outside')
-                        flagobj=~flagobj;
-                    end
-                    flag=flag & flagobj;
+    for iobj=1:length(UvData.ProjObject)
+        ObjectData=UvData.ProjObject{iobj};
+        if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
+            flagobj=1;
+            testphys=0; %coordinates in pixels by default
+            if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
+                if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+                    Calib=UvData.XmlData{1}.GeometryCalib;
+                    testphys=1;
                 end
             end
+            if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
+                if isequal(ObjectData.Type,'polygon')
+                    X=ObjectData.Coord(:,1);
+                    Y=ObjectData.Coord(:,2);
+                    if testphys
+                        pos=[X Y zeros(size(X))];
+                        if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
+                            if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
+                                om=norm(Calib.SliceAngle);%norm of rotation angle in radians
+                                OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
+                                cos_om=cos(pi*om/180);
+                                sin_om=sin(pi*om/180);
+                                pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                            end
+                            pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
+                            pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
+                            pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
+                        end
+                        [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
+                    end
+                    flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+                elseif isequal(ObjectData.Type,'ellipse')
+                    if testphys
+                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                    end
+                    RangeX=max(ObjectData.RangeX);
+                    RangeY=max(ObjectData.RangeY);
+                    X2Max=RangeX*RangeX;
+                    Y2Max=RangeY*RangeY;
+                    distX=(Xi-ObjectData.Coord(1,1));
+                    distY=(Yi-ObjectData.Coord(1,2));
+                    flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+                elseif isequal(ObjectData.Type,'rectangle')
+                    if testphys
+                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                    end
+                    distX=abs(Xi-ObjectData.Coord(1,1));
+                    distY=abs(Yi-ObjectData.Coord(1,2));
+                    flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
+                end
+                if isequal(ObjectData.ProjMode,'mask_outside')
+                    flagobj=~flagobj;
+                end
+                flag=flag & flagobj;
+            end
         end
+    end
     %mask name
     RootPath=get(handles.RootPath,'String');
     SubDir=get(handles.SubDir,'String');
@@ -1547,7 +1547,7 @@ else
     mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
     imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
     imflag=flipdim(imflag,1);
-
+    
     %display the mask
     hfigmask=figure;
     set(hfigmask,'Name','mask image')
@@ -1569,7 +1569,11 @@ else
                 msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
             end
         end
-        imwrite(imflag,answer,'BitDepth',8);
+        try
+            imwrite(imflag,answer,'BitDepth',8);
+        catch ME
+            msgbox_uvmat('ERROR',ME.message)
+        end
     end
     set(handles.ListObject,'Value',1)
 end

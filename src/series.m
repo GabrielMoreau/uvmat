@@ -1480,34 +1480,23 @@ end
 %% Get RunTime code from the file PARAM.xml (needed to run compiled functions)
 errormsg='';%default error message
 xmlfile=fullfile(path_series,'PARAM.xml');
-test_batch=0;%default: ,no batch mode available
+%test_batch=0;%default: ,no batch mode available
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
 end
-% RunTime='';
 if strcmp(ActionExt,'.sh')
     if exist(xmlfile,'file')
         s=xml2struct(xmlfile);
         if strcmp(RunMode,'cluster_oar') && isfield(s,'BatchParam')
-%             if isfield(s.BatchParam,'RunTime')
-%                 RunTime=s.BatchParam.RunTime;
-%             end
             if isfield(s.BatchParam,'NbCore')
                 NbCore=s.BatchParam.NbCore;
             end
         elseif (strcmp(RunMode,'background')||strcmp(RunMode,'local')) && isfield(s,'RunParam')
-%             if isfield(s.RunParam,'RunTime')
-%                 RunTime=s.RunParam.RunTime;
-%             end
             if isfield(s.RunParam,'NbCore')
                 NbCore=s.RunParam.NbCore;
             end
         end
     end
-%     if isempty(RunTime) && strcmp(RunMode,'cluster_oar')
-%        errormsg='RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster';
-%         return
-%     end
 end
 
 %% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
@@ -1726,21 +1715,19 @@ if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
     CPUTime=Param.Action.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
 nbfield_j=numel(ref_j); % number of j indices
-BlockLength=numel(ref_i);%default
-if isempty(Param.IndexRange.NbSlice)
-    NbProcess=NbCore;% choose one process per core by default if NbSlice is not imposed
-    switch RunMode
-        case 'cluster_oar'
-            BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min. 
-            NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
-    end
-else
-    NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes 
-    NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
+BlockLength=numel(ref_i);% by default, job involves the full set of i field indices 
+NbProcess=1;
+switch RunMode
+    case {'cluster_oar','cluster_pbs'}
+        if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
+             BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
+             BlockLength=max(BlockLength,ceil(numel(ref_i)/1000));% possibly increase the BlockLength to have less than 1000 jobs
+             NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
+        else
+            NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
+            NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
+        end
 end
-
-%BlockLength=ceil(numel(ref_i)/NbProcess);% nbre of input fields in each process 
-%nbfield_j=numel(ref_j); % number of j indices
 
 %% record nbre of output files and starting time for computation for status
 StatusData=get(handles.status,'UserData');

@@ -1023,6 +1023,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
             if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
                 F(ivec)=3; %
+                utable(ivec)=0;
+                vtable(ivec)=0;
             else
                 image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
                 image2_crop=image2_crop.*~mask2_crop;
@@ -1041,7 +1043,10 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
                 F(ivec)=3;
             end
-            if F(ivec)~=3
+            if F(ivec)==3
+                utable(ivec)=0;
+                vtable(ivec)=0;
+            else
                 %mask
                 if checkmask
                     image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
@@ -1098,6 +1103,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         ctable(ivec)=corrmax/sum_square;% correlation value
                     catch ME
                         F(ivec)=3;
+                        disp(ME.message)
                     end
                 else
                     F(ivec)=3;
@@ -1126,7 +1132,7 @@ result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to av
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
 %http://urapiv.wordpress.com
 peaky = y;
-if y <= npy-1 && y >= 1
+if y <= npy-1 && y > 1
     f0 = log(result_conv(y,x));
     f1 = log(result_conv(y-1,x));
     f2 = log(result_conv(y+1,x));
@@ -1135,7 +1141,7 @@ else
     F=-2; % warning flag for vector truncated by the limited search box
 end
 peakx=x;
-if x <= npx-1 && x >= 1
+if x <= npx-1 && x > 1
     f0 = log(result_conv(y,x));
     f1 = log(result_conv(y,x-1));
     f2 = log(result_conv(y,x+1));

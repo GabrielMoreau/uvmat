@@ -129,17 +129,26 @@ switch FileType
             msgbox_uvmat('ERROR',['error in netcdf input file: ' errormsg])
             return
         end
+        if isfield(Data,'.Civ1_ImageA')
         [PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);%look for the source image A
         [PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);%look for the source image B
+        end
         if isfield(Data,'Civ2_ImageA')
             [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
             [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
         end
         if size(Param.InputTable,1)==1
+             if isfield(Data,'.Civ1_ImageA')
             series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
-        end
-        [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
+                    [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
         [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
+             else
+                 series('display_file_name',hhseries,Data.Civ2_ImageA,'append');%append the image series to the input list
+                         [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaA]=fileparts_uvmat(Data.Civ2_ImageA);
+        [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ2_ImageB);
+             end
+        end
+
         iview_image=2;%line # for the input images
     case 'civxdata'% case of  civx data,
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
