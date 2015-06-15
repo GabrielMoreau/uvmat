@@ -1092,10 +1092,10 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         vtable(ivec)=vector(2)*mesh+shifty(ivec);
                         xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
                         ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                        iref=round(xtable(ivec));% nearest image index for the middle of the vector
-                        jref=round(ytable(ivec));
+                        iref=round(xtable(ivec)+0.5);% nearest image index for the middle of the vector
+                        jref=round(ytable(ivec)+0.5);
                         % eliminate vectors located in the mask
-                        if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
+                        if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
                             utable(ivec)=0;
                             vtable(ivec)=0;
                             F(ivec)=3;
@@ -1128,11 +1128,11 @@ function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
 % vector=[0 0]; %default
 F=0;
 [npy,npx]=size(result_conv);
-result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
+result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
 %http://urapiv.wordpress.com
 peaky = y;
-if y <= npy-1 && y > 1
+if y < npy && y > 1
     f0 = log(result_conv(y,x));
     f1 = log(result_conv(y-1,x));
     f2 = log(result_conv(y+1,x));
@@ -1141,7 +1141,7 @@ else
     F=-2; % warning flag for vector truncated by the limited search box
 end
 peakx=x;
-if x <= npx-1 && x > 1
+if x < npx-1 && x > 1
     f0 = log(result_conv(y,x));
     f1 = log(result_conv(y,x-1));
     f2 = log(result_conv(y,x+1));
@@ -1161,7 +1161,7 @@ peaky=y;
 peakx=x;
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
 [npy,npx]=size(result_conv);
-if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
+if (x < npx) && (y < npy) && (x > 1) && (y > 1)
     F=0;
     for i=-1:1
         for j=-1:1

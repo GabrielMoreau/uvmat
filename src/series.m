@@ -1915,20 +1915,20 @@ switch RunMode
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
         %DirOARLog=fullfile(OutputDir,'0_LOG');
-        %DirOARExe=fullfile(OutputDir,'0_EXE');
-%         if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
-%             curdir=pwd;
-%             cd(DirOAR)
-%             delete('*')
-%             cd(curdir)
-%         else
-%             [tild,msg1]=mkdir(DirOAR);
-%             if ~strcmp(msg1,'')
-%                 errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
-%                 return
-%             end
-%         end
-        filename_joblist=fullfile(DirExe,'0_job_list.txt');%create name of the global executable file
+        DirOAR=fullfile(OutputDir,'0_OAR');
+        if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
+            curdir=pwd;
+            cd(DirOAR)
+            delete('*')
+            cd(curdir)
+        else
+            [tild,msg1]=mkdir(DirOAR);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
+                return
+            end
+        end
+        filename_joblist=fullfile(DirOAR,'0_job_list.txt');%create name of the global executable file
         filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
         filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
         
@@ -1962,13 +1962,14 @@ switch RunMode
             extra_oar ' '...
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"\n'];
-        
-        filename_oarcommand=fullfile(DirExe,'0_oar_command');
+        fprintf(oar_command);% display  system command on the Matlab command window
+         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
+        filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
         fid=fopen(filename_oarcommand,'w');
-        fprintf(fid,oar_command);
+        fprintf(fid,oar_command); % store the command
+        fprintf(fid,result);% store the result (job ID number)
         fclose(fid);
-        fprintf(oar_command);% display in command line
-        system(oar_command);  
+
         msgbox_uvmat('CONFIRMATION',[ActionName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files

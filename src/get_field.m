@@ -243,10 +243,11 @@ if isfield(CellInfo{imax},'CoordIndex')
 end
 
 %% put the GUI on the lower right of the sceen
-set(hObject,'Unit','pixel')
-pos_view_field=get(hObject,'Position');
+set(hObject,'Unit','pixels')
+%pos_view_field=get(hObject,'Position');
 set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');
+pos_view_field(3:4)=[955 648];
 pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
 set(hObject,'Position',pos_view_field)
