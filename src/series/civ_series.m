@@ -355,8 +355,30 @@ for ifield=1:NbField
                     j1_series_Civ1(ifield),j2_series_Civ1(ifield));
             end
         end
-        if ~CheckOverwrite && exist(ncfile,'file')          
-        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+        ncfile_out=ncfile;% by default 
+        if isfield (Param.ActionInput,'Civ2')
+            i1_civ2=i1_series_Civ2(ifield);
+            i2_civ2=i1_civ2;
+            if ~isempty(i2_series_Civ2)
+                i2_civ2=i2_series_Civ2(ifield);
+            end
+            j1_civ2=1;
+            if ~isempty(j1_series_Civ2)
+                j1_civ2=j1_series_Civ2(ifield);
+            end
+            j2_civ2=i1_civ2;
+            if ~isempty(j2_series_Civ2)
+                j2_civ2=j2_series_Civ2(ifield);
+            end
+            if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+                ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+            else % displacement
+                ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
+            end
+        end
+        if ~CheckOverwrite && exist(ncfile_out,'file')
+            disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
     end
     %% Civ1
@@ -581,37 +603,37 @@ for ifield=1:NbField
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             par_civ2.ImageA=[];
             par_civ2.ImageB=[];
-            i1=i1_series_Civ2(ifield);
-            i2=i1;
-            if ~isempty(i2_series_Civ2)
-                i2=i2_series_Civ2(ifield);
-            end
-            j1=1;
-            if ~isempty(j1_series_Civ2)
-                j1=j1_series_Civ2(ifield);
-            end
-            j2=j1;
-            if ~isempty(j2_series_Civ2)
-                j2=j2_series_Civ2(ifield);
-            end
-            ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
+%             i1_civ2=i1_series_Civ2(ifield);
+%             i2_civ2=i1_civ2;
+%             if ~isempty(i2_series_Civ2)
+%                 i2_civ2=i2_series_Civ2(ifield);
+%             end
+%             j1_civ2=1;
+%             if ~isempty(j1_series_Civ2)
+%                 j1_civ2=j1_series_Civ2(ifield);
+%             end
+%             j2_civ2=i1_civ2;
+%             if ~isempty(j2_series_Civ2)
+%                 j2_civ2=j2_series_Civ2(ifield);
+%             end
+            ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
             
             if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
                 par_civ2.ImageA=par_civ1.ImageA;
             else
                 [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
             end
-            ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2,[],j2);
+            ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);
             if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
                 par_civ2.ImageB=par_civ1.ImageB;
             else
                 [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
             end
-            if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-                ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
-            else % displacement
-                ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2,[],j2);
-            end
+%             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
+%             else % displacement
+%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2,[],j2);
+%             end
             par_civ2.ImageWidth=FileInfo_A.Width;
             par_civ2.ImageHeight=FileInfo_A.Height;
             if isfield(par_civ2,'Grid')% grid points set as input file
@@ -711,7 +733,7 @@ for ifield=1:NbField
                 Civ1_Dt=1;
                 Civ2_Dt=1;
             else
-                Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+                Civ2_Dt=time(i2_civ2+1,j2_civ2+1)-time(i1_civ2+1,j1_civ2+1);
             end
         end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
@@ -736,10 +758,10 @@ for ifield=1:NbField
             Data.Civ2_ImageA=ImageName_A;
             Data.Civ2_ImageB=ImageName_B;
              if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                Data.Civ2_Time=time(i2+1,j2+1);% the time is the time of the secodn image
+                Data.Civ2_Time=time(i2_civ2+1,j2_civ2+1);% the time is the time of the secodn image
                 Data.Civ2_Dt=1;% time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
              else
-            Data.Civ2_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
+            Data.Civ2_Time=(time(i2_civ2+1,j2_civ2+1)+time(i1_civ2+1,j1_civ2+1))/2;
             Data.Civ2_Dt=Civ2_Dt;
              end
         end
@@ -862,9 +884,9 @@ for ifield=1:NbField
     
     %% write result in a netcdf file if requested
     if CheckOutputFile
-        errormsg=struct2nc(ncfile,Data);
+        errormsg=struct2nc(ncfile_out,Data);
         if isempty(errormsg)
-            disp([ncfile ' written'])
+            disp([ncfile_out ' written'])
         else
             disp(errormsg)
         end

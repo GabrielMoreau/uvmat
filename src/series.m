@@ -1928,7 +1928,7 @@ switch RunMode
                 return
             end
         end
-        filename_joblist=fullfile(DirOAR,'0_job_list.txt');%create name of the global executable file
+        filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
         filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
         
@@ -1946,10 +1946,10 @@ switch RunMode
         %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are 
         % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration, 
         %  the oar job restarts when an individual job ends. 
-        JobTime=CPUTime*BlockLength*nbfield_j% estimated time for one individual job (in minutes)
+        JobTime=CPUTime*BlockLength*nbfield_j;% estimated time for one individual job (in minutes)
         % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
         WallTimeTotal=min(23,4*JobTime/60);
-        disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
+        %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
         % estimated time of an individual job (in min), with a margin of error
         WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
         disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
@@ -3395,7 +3395,7 @@ switch FileType
             imax=2;
         elseif isequal(Civ,4) || isequal(Civ,5)
             imax=3;
-        elseif isequal(Civ,6) %patch2
+        else%if isequal(Civ,6) %patch2
             imax=4;
         end
 end

@@ -153,8 +153,12 @@ for iview=1:nbview
                     FileType{iview}=FileInfo.FileType;
                     if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                         if isfield(FileInfo,'CivStage')
-                            liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
-                            lastfield=liststage{FileInfo.CivStage};
+                            liststage={'civ','fix','patch'};
+                            stagechoice=1+mod(FileInfo.CivStage-1,3);
+                            iter=1+floor((FileInfo.CivStage-1)/3);
+                            lastfield=[liststage{stagechoice} num2str(iter)];
+                            %liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};                        
+                            %lastfield=liststage{FileInfo.CivStage};                           
                         end
                     end
                     lastfield=[FileType{iview} ', ' lastfield];

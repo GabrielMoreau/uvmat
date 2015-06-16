@@ -37,7 +37,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 15-Jun-2015 19:51:15
+% Last Modified by GUIDE v2.5 16-Jun-2015 00:33:59
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -306,6 +306,7 @@ set(handles.num_RangeZ_2,'Visible','off')
 set(handles.num_DX,'Visible','off')
 set(handles.num_DY,'Visible','off')
 set(handles.num_DZ,'Visible','off')
+set(handles.num_RangeInterp,'Visible','off')
 
 switch ObjectStyle
     case 'points'
@@ -321,6 +322,7 @@ switch ObjectStyle
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
+            set(handles.num_RangeInterp,'Visible','on')
         end       
     case {'rectangle','ellipse'}
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
@@ -340,13 +342,14 @@ switch ObjectStyle
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DY,'Visible','on')
+            set(handles.num_RangeInterp,'Visible','on')
         else
             set(handles.num_DX,'Visible','off')
             set(handles.num_DY,'Visible','off')
         end
-        if  isequal(ProjMode,'interp_lin')
-            set(handles.num_DZ,'Visible','on')  
-        end
+%         if  isequal(ProjMode,'interp_lin')
+%             set(handles.num_DZ,'Visible','on')  
+%         end
      case {'volume'}  
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
@@ -371,10 +374,10 @@ switch ObjectStyle
 end
 % set default values read in the plot of uvmat to initiate the mesh 
 if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
-    if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));     
-        huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
+            huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
         UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-        Field=UvData.Field;
+    if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));     
+%         Field=UvData.Field;
         if  isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
             set(handles.num_DX,'String',num2str(UvData.Field.CoordMesh))
             set(handles.num_DY,'String',num2str(UvData.Field.CoordMesh))
@@ -386,6 +389,9 @@ if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
         if isempty(get(handles.CoordUnit,'String'))
             set(handles.CoordUnit,'String',Field.CoordUnit)
         end       
+    end
+    if isempty(str2num(get(handles.num_RangeInterp,'String')))
+     set(handles.num_RangeInterp,'String',num2str(3*UvData.Field.CoordMesh))% default interpolationlength= 3 meshes
     end
 end
 
@@ -415,7 +421,7 @@ norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
 norm_plane(3)=OmAxis(3)*coeff+cos_om;
 huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-if isfield(UvData,'X') & isfield(UvData,'Y') & isfield(UvData,'Z')
+if isfield(UvData,'X') && isfield(UvData,'Y') && isfield(UvData,'Z')
     Z=norm_plane(1)*(UvData.X)+norm_plane(2)*(UvData.Y)+norm_plane(3)*(UvData.Z);
     set(handles.z_slider,'Min',min(Z))
     set(handles.z_slider,'Max',max(Z))
@@ -690,8 +696,12 @@ if ~isempty(dir_save)
         FullName=fullfile(dir_save,answer);
         t=struct2xml(Object);
         t=set(t,1,'name','ProjObject');
-        save(t,FullName)
-        msgbox_uvmat('CONFIRMATION',[FullName  ' saved'])
+        try
+            save(t,FullName)
+            msgbox_uvmat('CONFIRMATION',[FullName  ' saved'])
+        catch ME
+            msgbox_uvmat('ERROR',ME.message)
+        end
     end
 end
 
@@ -800,22 +810,3 @@ end
 
 
 function num_RangeInterp_Callback(hObject, eventdata, handles)
-% hObject    handle to num_RangeInterp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_RangeInterp as text
-%        str2double(get(hObject,'String')) returns contents of num_RangeInterp as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_RangeInterp_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_RangeInterp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end

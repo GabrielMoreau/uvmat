@@ -1009,6 +1009,12 @@ if isfield(ObjectData,'RangeZ')
     width=max(ObjectData.RangeZ);
 end
 
+%% interpolation range
+thresh2=[];
+if isfield(ObjectData,'RangeInterp')
+    thresh2=ObjectData.RangeInterp*ObjectData.RangeInterp;%square of interpolation range (do not interpolate beyond this range)
+end
+
 %% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 if ~isempty(errormsg)
@@ -1302,10 +1308,11 @@ for icell=1:length(CellInfo)
                     Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
                     Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                     Dist=Distx.*Distx+Disty.*Disty;
-                    for ivar=1:numel(VarVal)
-                        VarVal{ivar}(Dist>16*ProjData.CoordMesh)=NaN;% % put to NaN interpolated positions further than 4 meshes from initial data
-                    end  
-                    
+                    if ~isempty(thresh2)
+                        for ivar=1:numel(VarVal)
+                            VarVal{ivar}(Dist>thresh2)=NaN;% % put to NaN interpolated positions further than 4 meshes from initial data
+                        end
+                    end
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
                         ProjData.(FieldData.ListVarName{vector_x_proj})=ProjData.(FieldData.ListVarName{vector_x_proj})-VarVal{1};
                         ProjData.(FieldData.ListVarName{vector_y_proj})=ProjData.(FieldData.ListVarName{vector_y_proj})-VarVal{2};
@@ -1357,9 +1364,11 @@ for icell=1:length(CellInfo)
                 VarDimName=cell(size(ListVarName));
                 for ilist=1:numel(ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
                     VarName=ListVarName{ilist};
-                    ProjData.(VarName)=DataOut.(VarName);
-                    ProjData.(VarName)(Dist>16*ProjData.CoordMesh)=NaN;% put to NaN interpolated positions further than 4 meshes from initial data
                     VarDimName{ilist}={'coord_y','coord_x'};
+                    ProjData.(VarName)=DataOut.(VarName);
+                    if ~isempty(thresh2)
+                        ProjData.(VarName)(Dist>thresh2)=NaN;% put to NaN interpolated positions further than RangeInterp from initial data
+                    end
                 end
             end
             
