@@ -55,7 +55,12 @@ if ~isempty(errormsg)
     return
 end
 ListVarName=Data.ListVarName;
-nc=netcdf.create(flname,'NC_CLOBBER');%,'clobber'); %create the netcdf file with name flname   
+%nc=netcdf.create(flname,'NC_CLOBBER');%,'clobber'); %create the netcdf file with name flname 
+cmode = netcdf.getConstant('NETCDF4');
+cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
+cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
+nc = netcdf.create(flname, cmode) 
+
 %write global constants
 if isfield(Data,'ListGlobalAttribute')
     keys=Data.ListGlobalAttribute;
