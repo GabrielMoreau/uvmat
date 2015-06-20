@@ -148,6 +148,8 @@ RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster_oar'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
+    set(handles.num_CPUTime,'Visible','on'); % make visible button for access to Monika
+    set(handles.CPUTime_txt,'Visible','on'); % make visible button for access to Monika
 end
 [s,w]=system('qstat --version');% look for cluster system 'sge'
 if isequal(s,0)
@@ -650,7 +652,7 @@ for iview=1:nbview
         i1_series=[];
         RootFile='';
     else %scan the input folder
-        [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
+        [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
     % if no file is found, open a browser
@@ -1710,7 +1712,7 @@ else
         ref_j=first_j:incr_j:last_j;
     end
 end
-CPUTime=5;% job time estimated at 5 min per iteration (on index i and j) by default
+CPUTime=1;% job time estimated at 1 min per iteration (on index i and j) by default
 if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
     CPUTime=Param.Action.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
@@ -1721,7 +1723,7 @@ switch RunMode
     case {'cluster_oar','cluster_pbs'}
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
              BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
-             BlockLength=max(BlockLength,ceil(numel(ref_i)/1000));% possibly increase the BlockLength to have less than 1000 jobs
+             BlockLength=max(BlockLength,ceil(numel(ref_i)/500));% possibly increase the BlockLength to have less than 500 jobs
              NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
         else
             NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
@@ -2000,7 +2002,7 @@ switch RunMode
             '-l /core=' num2str(NbCore) ','...
             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+            '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
             extra_oar ' '...
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"\n'];
