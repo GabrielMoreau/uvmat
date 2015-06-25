@@ -85,10 +85,10 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     
     %% root input file(s) and type
     % check the existence of the first file in the series
-        first_j=[];
-    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+        first_j=[];% note that the function will propose to cover the whole range of indices
+    if isfield(Param.IndexRange,'MinIndex_j'); first_j=Param.IndexRange.MinIndex_j; end
     last_j=[];
-    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    if isfield(Param.IndexRange,'MaxIndex_j'); last_j=Param.IndexRange.MaxIndex_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
@@ -130,8 +130,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         nbfield_j=numel(first_j:incr_j:last_j);%nb of fields for the j index (bursts or volume slices)
     end
     first_i=1;last_i=1;incr_i=1;%default
-    if isfield(Param.IndexRange,'first_i'); last_i=Param.IndexRange.first_i; end   
-    if isfield(Param.IndexRange,'last_i'); last_i=Param.IndexRange.last_i; end
+    if isfield(Param.IndexRange,'MinIndex_i'); first_i=Param.IndexRange.MinIndex_i; end   
+    if isfield(Param.IndexRange,'MaxIndex_i'); last_i=Param.IndexRange.MaxIndex_i; end
     if isfield(Param.IndexRange,'incr_i')&&~isempty(Param.IndexRange.incr_i)
         incr_i=Param.IndexRange.incr_i;
     end
@@ -155,7 +155,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     num_lines= 3;
     def     = { 'No';num2str(nbaver_init);'0.1'};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
-    
+    if isempty(answer)
+        return
+    end
     %check input consistency
     if strcmp(answer{1},'No') && ~isequal(NbSlice_i,1)
         check=msgbox_uvmat('INPUT_Y-N',['confirm the multi-level splitting into ' num2str(NbSlice_i) ' slices']);
@@ -251,7 +253,7 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 % nbaver=nbaver_ima/step: nbre of bursts corresponding to nbaver_ima images. It has been adjusted so that nbaver is an odd integer
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
-nbfield=nbfield_j*nbfield_i; %total number of fields
+
 if Param.ActionInput.CheckVolume
     step=2;% we assume the burst contains only one image pair
     NbSlice_j=nbfield_j;
@@ -261,10 +263,11 @@ else
     step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
         NbSlice_j=1;
         NbSlice=NbSlice_i;
-    nbfield_i=floor(nbfield/NbSlice_i);%total number of  indexes in a slice (adjusted to an integer number of slices)
-    nbfield=nbfield_i*NbSlice_i; %total number of fields after adjustement
-    nbfield_series=nbfield;
+    %nbfield_i=floor(nbfield_i/NbSlice_i);%total number of  indexes in a slice (adjusted to an integer number of slices)
+    %nbfield=nbfield_i*NbSlice_i; %total number of fields after adjustement
+    nbfield_series=nbfield_i*nbfield_j;
 end
+nbfield=nbfield_j*nbfield_i; %total number of fields
 nbaver_ima=Param.ActionInput.SlidingSequenceLength;%number of images for the sliding background
 nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
 if isequal(mod(nbaver,2),0)

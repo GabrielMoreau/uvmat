@@ -1552,7 +1552,7 @@ end
 
 %% set nbre of cluster cores and processes: 
 % NbCore is the number of computer processors used 
-% NbProcess is the number of independent processes in which the required calculation is split
+% NbProcess is the number of independent processes in which the required calculation is split. 
 switch RunMode
     case {'local','background'}
         NbCore=1;% no need to split the calculation
@@ -1729,6 +1729,10 @@ switch RunMode
             NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
             NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
         end
+    otherwise
+         if ~isempty(Param.IndexRange.NbSlice)
+             NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
+         end
 end
 
 %% record nbre of output files and starting time for computation for status
@@ -1767,6 +1771,10 @@ end
 %% direct processing on the current Matlab session
 if strcmp (RunMode,'local')
     for iprocess=1:NbProcess
+        if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
+            disp('program stopped by user')
+            return
+        end
         if isempty(Param.IndexRange.NbSlice)
             %Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
             Param.IndexRange.first_i=ref_i(1+(iprocess-1)*BlockLength);
@@ -1807,7 +1815,7 @@ elseif ~strcmp(RunMode,'python')
         case {'PCWIN','PCWIN64'} %Windows system
             ExeExt='.bat';
         case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-           ExeExt='.sh';
+            ExeExt='.sh';
     end
     %create subdirectory for executable files
     if ~exist(DirExe,'dir')
@@ -1839,30 +1847,36 @@ elseif ~strcmp(RunMode,'python')
             Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         end
         for ilist=1:size(Param.InputTable,1)
-        Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/');%correct path name for PCWIN system
+            Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/');%correct path name for PCWIN system
         end
         % create, fill and save the xml parameter file
         t=struct2xml(Param);
         t=set(t,1,'name','Series');
-        filexml=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
+        filexml{iprocess}=fullfile_uvmat(DirXml,'',Param.InputTable{1,3},'.xml',OutputNomType,...
             Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        save(t,filexml);% save the parameter file
+        save(t,filexml{iprocess});% save the parameter file
         
-        %create the executable file
-         filebat=fullfile_uvmat(DirExe,'',Param.InputTable{1,3},ExeExt,OutputNomType,...
-           Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        batch_file_list{iprocess}=filebat;
+        
+        % set the log file name
+        filelog{iprocess}=fullfile_uvmat(DirLog,'',Param.InputTable{1,3},'.log',OutputNomType,...
+            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
+    end
+end
+
+%% launch the executable files for background or cluster processing
+switch RunMode
+    case 'background'
+        % create the executable file
+        filebat=fullfile_uvmat(DirExe,'',Param.InputTable{1,3},ExeExt,OutputNomType,...
+            first_i,last_i,first_j,last_j);
+        %batch_file_list{iprocess}=filebat;
         [fid,message]=fopen(filebat,'w');% create the executable file
         if isequal(fid,-1)
             errormsg=['creation of .bat file: ' message];
             return
         end
-        
-        % set the log file name
         filelog=fullfile_uvmat(DirLog,'',Param.InputTable{1,3},'.log',OutputNomType,...
-            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        
-        % fill and save the executable file
+           first_i,last_i,first_j,last_j);
         switch ActionExt
             case '.m'% Matlab function
                 switch computer
@@ -1872,21 +1886,26 @@ elseif ~strcmp(RunMode,'python')
                             '. /etc/sysprofile \n'...
                             'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
                             'addpath(''' path_series '''); \n'...
-                            'addpath(''' Param.Action.ActionPath '''); \n'...
-                            '' Param.Action.ActionName  '( ''' filexml '''); \n'...
-                            'exit \n'...
-                            'END_MATLAB \n'];
+                            'addpath(''' Param.Action.ActionPath '''); \n'];
+                        for iprocess=1:NbProcess
+                            cmd=[cmd '' Param.Action.ActionName  '( ''' filexml{iprocess} '''); \n'];
+                        end
+                        cmd=[cmd  'exit \n' 'END_MATLAB \n'];
                         fprintf(fid,cmd);%fill the executable file with the  char string cmd
                         fclose(fid);% close the executable file
                         system(['chmod +x ' filebat]);% set the file to executable
                     case {'PCWIN','PCWIN64'}
-                        text_matlabscript=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
+                        cmd=['matlab -automation -logfile ' regexprep(filelog{iprocess},'\\','\\\\')...
                             ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
-                            'addpath(''' regexprep(Param.Action.ActionPath,'\\','\\\\') ''');'...
-                            '' Param.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
-                        fprintf(fid,text_matlabscript);%fill the executable file with the  char string cmd
+                            'addpath(''' regexprep(Param.Action.ActionPath,'\\','\\\\') ''');'];
+                        for iprocess=1:NbProcess
+                            cmd=[cmd '' Param.Action.ActionName  '( ''' regexprep(filexml{iprocess},'\\','\\\\') ''');']   
+                        end
+                        cmd=[cmd ';exit"'];
+                        fprintf(fid,cmd);%fill the executable file with the  char string cmd
                         fclose(fid);% close the executable file
                 end
+                system([filebat ' &'])% directly execute the command file 
             case '.sh' % compiled Matlab function
                 switch computer
                     case {'GLNX86','GLNXA64','MACI64'}
@@ -1894,134 +1913,125 @@ elseif ~strcmp(RunMode,'python')
                             '#$ -cwd \n '...
                             'sleep $(( $RANDOM / 3000 )) \n '...
                             'hostname && date \n '...
-                            'umask 002 \n'...
-                            fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml];%allow writting access to created files for user group
+                            'umask 002 \n']
+                        for iprocess=1:NbProcess
+                            cmd=[cmd fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
+                        end
                         fprintf(fid,cmd);%fill the executable file with the  char string cmd
                         fclose(fid);% close the executable file
                         system(['chmod +x ' filebat]);% set the file to executable
-                        
-                    case {'PCWIN','PCWIN64'}    
-                        fprintf(fid,cmd);
-                        fclose(fid);
+                        system([filebat ' &'])% directly execute the command file 
+                    case {'PCWIN','PCWIN64'}
+                        msgbox_uvmat('ERROR','option for compiled Matlab functions not implemented for Windows system')
+                        return
                 end
+                msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
+            case 'cluster_oar' % option 'oar-parexec' used
+                %create subdirectory for oar command and global log files
+                DirOAR=fullfile(OutputDir,'0_OAR');
+                if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
+                    curdir=pwd;
+                    cd(DirOAR)
+                    delete('*')
+                    cd(curdir)
+                else
+                    [tild,msg1]=mkdir(DirOAR);
+                    if ~strcmp(msg1,'')
+                        errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
+                        return
+                    end
+                end
+                filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
+                filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
+                filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
+                
+                fid=fopen(filename_joblist,'w');
+                for p=1:length(batch_file_list)
+                    fprintf(fid,[batch_file_list{p} '\n']);% list of exe files
+                end
+                fclose(fid);
+                system(['chmod +x ' filename_joblist]);% set the file to executable
+                
+                % the command job_list.txt contains the list of NbProcess independent individual jobs
+                % in which the total calculation has been split. Those are written as executable files .sh in the folder /O_EXE.
+                %  These individual jobs are grouped by the system as oar jobs on the NbCore processors.
+                %  For each processor, the oar job must stop after the walltime which has been set, which is limited to 24 h.
+                %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are
+                % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration,
+                %  the oar job restarts when an individual job ends.
+                JobTime=CPUTime*BlockLength*nbfield_j;% estimated time for one individual job (in minutes)
+                % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
+                WallTimeTotal=min(23,4*JobTime/60);
+                %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
+                % estimated time of an individual job (in min), with a margin of error
+                WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
+                disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
+                oar_command=['oarsub -n UVmat_' ActionName ' '...
+                    '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
+                    '-l /core=' num2str(NbCore) ','...
+                    'walltime=' datestr(WallTimeTotal/24,13) ' '...
+                    '-E ' filename_errors ' '...
+                    '-O ' filename_log ' '...
+                    extra_oar ' '...
+                    '"oar-parexec -s -f ' filename_joblist ' '...
+                    '-l ' filename_joblist '.log"'];
+                fprintf(oar_command);% display  system command on the Matlab command window
+                [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
+                filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
+                fid=fopen(filename_oarcommand,'w');
+                fprintf(fid,oar_command); % store the command
+                fprintf(fid,result);% store the result (job ID number)
+                fclose(fid);
+                
+                msgbox_uvmat('CONFIRMATION',[ActionName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+            case 'cluster_pbs' % for LMFA Kepler machine
+                %create subdirectory for pbs command and log files
+                DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
+                if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
+                    curdir=pwd;
+                    cd(DirPBS)
+                    delete('*')
+                    cd(curdir)
+                else
+                    [tild,msg1]=mkdir(DirPBS);
+                    if ~strcmp(msg1,'')
+                        errormsg=['cannot create ' DirPBS ': ' msg1];%error message for directory creation
+                        return
+                    end
+                end
+                max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
+                walltime_onejob=1800; % seconds, max estimated time for asingle file index value
+                filename_joblist=fullfile(DirPBS,'job_list.txt');%create name of the global executable file
+                fid=fopen(filename_joblist,'w');
+                for p=1:length(batch_file_list)
+                    fprintf(fid,[batch_file_list{p} '\n']);% list of exe files
+                end
+                fclose(fid);
+                system(['chmod +x ' filename_joblist]);% set the file to executable
+                pbs_command=['qstat -n CIVX '...
+                    '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+                    '-l /core=' num2str(NbCore) ','...
+                    'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
+                    '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+                    '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
+                    extra_oar ' '...
+                    '"oar-parexec -s -f ' filename_joblist ' '...
+                    '-l ' filename_joblist '.log"'];
+                filename_oarcommand=fullfile(DirPBS,'pbs_command');
+                fid=fopen(filename_oarcommand,'w');
+                fprintf(fid,pbs_command);
+                fclose(fid);
+                fprintf(pbs_command);% display in command line
+                %system(pbs_command);
+                msgbox_uvmat('CONFIRMATION',[ActionName ' command ready to be launched in cluster'])
+            case 'python'
+                command = [
+                    'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
+                    'python -m fluiddyn.postproc.uvmat ' filexml{iprocess}];
+                % fprintf(['command:\n' command '\n\n'])
+                system(command, '-echo');
         end
-    end
 end
-
-%% launch the executable files for background or cluster processing
-switch RunMode
-    case 'background'
-        for iprocess=1:NbProcess
-            system([batch_file_list{iprocess} ' &'])% directly execute the command file for each process
-        end
-        msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
-    case 'cluster_oar' % option 'oar-parexec' used
-        %create subdirectory for oar command and log files
-        %DirOARLog=fullfile(OutputDir,'0_LOG');
-        DirOAR=fullfile(OutputDir,'0_OAR');
-        if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DirOAR)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DirOAR);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
-                return
-            end
-        end
-        filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
-        filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
-        filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
-        
-        fid=fopen(filename_joblist,'w');
-        for p=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
-        end
-        fclose(fid);
-        system(['chmod +x ' filename_joblist]);% set the file to executable
-        
-        % the command job_list.txt contains the list of NbProcess independent individual jobs 
-        % in which the total calculation has been split. Those are written as executable files .sh in the folder /O_EXE.
-        %  These individual jobs are grouped by the system as oar jobs on the NbCore processors.
-        %  For each processor, the oar job must stop after the walltime which has been set, which is limited to 24 h. 
-        %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are 
-        % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration, 
-        %  the oar job restarts when an individual job ends. 
-        JobTime=CPUTime*BlockLength*nbfield_j;% estimated time for one individual job (in minutes)
-        % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
-        WallTimeTotal=min(23,4*JobTime/60);
-        %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
-        % estimated time of an individual job (in min), with a margin of error
-        WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
-        disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
-        oar_command=['oarsub -n UVmat_' ActionName ' '...
-            '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
-            '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(WallTimeTotal/24,13) ' '...
-            '-E ' filename_errors ' '...
-            '-O ' filename_log ' '...
-            extra_oar ' '...
-            '"oar-parexec -s -f ' filename_joblist ' '...
-            '-l ' filename_joblist '.log"'];
-        fprintf(oar_command);% display  system command on the Matlab command window
-         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
-        filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
-        fid=fopen(filename_oarcommand,'w');
-        fprintf(fid,oar_command); % store the command
-        fprintf(fid,result);% store the result (job ID number)
-        fclose(fid);
-
-        msgbox_uvmat('CONFIRMATION',[ActionName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
-    case 'cluster_pbs' % for LMFA Kepler machine
-        %create subdirectory for pbs command and log files
-        DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
-        if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DirPBS)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DirPBS);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirPBS ': ' msg1];%error message for directory creation
-                return
-            end
-        end
-        max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-        walltime_onejob=1800; % seconds, max estimated time for asingle file index value
-        filename_joblist=fullfile(DirPBS,'job_list.txt');%create name of the global executable file
-        fid=fopen(filename_joblist,'w');
-        for p=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
-        end
-        fclose(fid);
-        system(['chmod +x ' filename_joblist]);% set the file to executable
-        pbs_command=['qstat -n CIVX '...
-            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-            '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
-            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-            '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
-            extra_oar ' '...
-            '"oar-parexec -s -f ' filename_joblist ' '...
-            '-l ' filename_joblist '.log"'];
-        filename_oarcommand=fullfile(DirPBS,'pbs_command');
-        fid=fopen(filename_oarcommand,'w');
-        fprintf(fid,pbs_command);
-        fclose(fid);
-        fprintf(pbs_command);% display in command line
-        %system(pbs_command);  
-        msgbox_uvmat('CONFIRMATION',[ActionName ' command ready to be launched in cluster'])        
-    case 'python'
-        command = [
-            'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
-            'python -m fluiddyn.postproc.uvmat ' filexml];
-        % fprintf(['command:\n' command '\n\n'])
-        system(command, '-echo');
-end
-
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
