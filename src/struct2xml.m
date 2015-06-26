@@ -1,16 +1,21 @@
-%'struct2xml': transform a matlab structure to a xml tree.
+%'struct2xml': transforms a matlab structure to a xml tree.
 %--------------------------------------------------------------
+%
 % each field with char string or num vector is transformed into a corresponding  xml element
 % each field with a matrix containing n lines is transformed into a xml element repeated n times 
-% WARNING: PROBLEM WITH HIERARCHICAL structures
+% each substructure of the input matlab structure is translateed into a subtree in the xml object
+% it is also possible to append a subtree to an existing xml object t
+%
+% t=struct2xml(Object,t,root_uid)
 %%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT:
 % t: xmltree reproducing the structure of Object
 % type 'save(t)' to visualize the xml text and save(filename,t) to save it in a file
+% to set the title tag of the file, type t=set(t,1,'name','titletag')
 %
 % INPUT:
 %  Object: matlab structure, possibly hierarchical
-%  t: optional input xml tree in which a new branch needs to be appended
+%  t: optional input xml tree in which a subtree needs to be appended
 %  root_uid: optional uid of the xml element under which the new subtree must be appended
 
 %=======================================================================

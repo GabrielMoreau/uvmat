@@ -1763,8 +1763,9 @@ if strcmp(ActionExt, '.py (in dev.)')
 end
 
 
-%% direct processing on the current Matlab session
-% if strcmp (RunMode,'local')
+%% direct processing on the current Matlab session or creation of command files
+filexml=cell(1,NbProcess);% initialisation of the names of the files containing the processing parameters
+extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
 for iprocess=1:NbProcess
     if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
         disp('program stopped by user')
@@ -1772,7 +1773,7 @@ for iprocess=1:NbProcess
     end
     if isempty(Param.IndexRange.NbSlice)
         Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
-%         Param.IndexRange.first_i=ref_i(1+(iprocess-1)*BlockLength);
+        %         Param.IndexRange.first_i=ref_i(1+(iprocess-1)*BlockLength);
         if Param.IndexRange.first_i>last_i
             NbProcess=iprocess-1;% leave the loop, we are at the end of the calculation
             break
@@ -1781,8 +1782,8 @@ for iprocess=1:NbProcess
         %Param.IndexRange.last_i=min(first_i+(iprocess)*BlockLength*incr_i-1,last_i);
         Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
     else %multislices (then incr_i is not empty)
-%         Param.IndexRange.first_i= first_i+incr_i*(iprocess-1);
-%         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
+        %         Param.IndexRange.first_i= first_i+incr_i*(iprocess-1);
+        %         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         Param.IndexRange.first_i= first_i+iprocess-1;
         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
     end
@@ -1808,8 +1809,15 @@ for iprocess=1:NbProcess
         t=set(t,1,'name','Series');
         extxml{iprocess}=fullfile_uvmat('','',Param.InputTable{1,3},'.xml',OutputNomType,...
             Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        filexml{iprocess}=fullfile(OutputDir,'0_XML',extxml{iprocess})
-        save(t, filexml{iprocess});% save the xml file containing the processing parameters
+        filexml{iprocess}=fullfile(OutputDir,'0_XML',extxml{iprocess});
+        try
+            save(t, filexml{iprocess});% save the xml file containing the processing parameters
+        catch ME
+            if ~strcmp (RunMode,'local')
+                errormsg=['error writting ' filexml{iprocess} ': ' ME.message];
+                return
+            end
+        end
     end
     if strcmp (RunMode,'local')
         switch ActionExt
@@ -1826,6 +1834,7 @@ for iprocess=1:NbProcess
         end
     end
 end
+
 if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files

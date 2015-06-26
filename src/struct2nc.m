@@ -48,20 +48,22 @@ if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
     errormsg=['directory ' FilePath ' needs to be created'];
     return
 end
-%check the validity of the input field structure
+
+%% check the validity of the input field structure
 [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
 if ~isempty(errormsg)
     errormsg=['error in struct2nc:invalid input structure_' errormsg];
     return
 end
 ListVarName=Data.ListVarName;
-%nc=netcdf.create(flname,'NC_CLOBBER');%,'clobber'); %create the netcdf file with name flname 
+
+%% create the netcdf file with name flname in format NETCDF4
 cmode = netcdf.getConstant('NETCDF4');
 cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
 cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
-nc = netcdf.create(flname, cmode) 
+nc = netcdf.create(flname, cmode); 
 
-%write global constants
+%% write global constants
 if isfield(Data,'ListGlobalAttribute')
     keys=Data.ListGlobalAttribute;
     for iattr=1:length(keys)
@@ -83,7 +85,8 @@ if isfield(Data,'ListGlobalAttribute')
         end
     end
 end
-%create dimensions
+
+%% create the dimensions
 dimid=zeros(1,length(ListDimName));
 for idim=1:length(ListDimName)
      dimid(idim) = netcdf.defDim(nc,ListDimName{idim},DimValue(idim));
@@ -94,14 +97,32 @@ if isfield(Data,'VarAttribute')
     VarAttribute=Data.VarAttribute;
     testattr=1;
 end
-varid=zeros(1,length(Data.ListVarName));
+
+
+%% create the variables
+varid=nan(1,length(Data.ListVarName));
 for ivar=1:length(ListVarName)
-    varid(ivar)=netcdf.defVar(nc,ListVarName{ivar},'nc_double',dimid(VarDimIndex{ivar}));%define variable  
+    if isfield(Data,ListVarName{ivar})
+        VarClass=class(Data.(ListVarName{ivar}));
+        VarType='';
+        switch VarClass
+            case {'single','double'}
+                VarType='nc_float'; % store all floating reals as single
+            case {'uint8','int16','uint16','int32','uint32','int64','uint64'}
+                VarType='nc_int';
+            case  'logical'
+                VarType='nc_byte';
+        end
+        if ~isempty(VarType)
+            varid(ivar)=netcdf.defVar(nc,ListVarName{ivar},VarType,dimid(VarDimIndex{ivar}));%define variable
+        end
+    end
 end
- %write variable attributes
+
+%% write variable attributes
 if testattr
     for ivar=1:min(numel(VarAttribute),numel(ListVarName))  
-        if isstruct(VarAttribute{ivar})
+        if isstruct(VarAttribute{ivar}) && ~isnan(varid(ivar))
             attr_names=fields(VarAttribute{ivar});
             for iattr=1:length(attr_names)
                 attr_val=VarAttribute{ivar}.(attr_names{iattr});
@@ -113,11 +134,12 @@ if testattr
     end
 end
 netcdf.endDef(nc); %put in data mode
+
+%% fill the variables with input data
 for ivar=1:length(ListVarName)
-    if isfield(Data,ListVarName{ivar})
+    if ~isnan(varid(ivar))
         VarVal=Data.(ListVarName{ivar}); 
         %varval=values of the current variable 
-%        VarDimIndex=Data.VarDimIndex{ivar}; %indices of the variable dimensions in the list of dimensions
         VarDimName=Data.VarDimName{ivar};
         if ischar(VarDimName)
             VarDimName={VarDimName};
@@ -125,11 +147,7 @@ for ivar=1:length(ListVarName)
         siz=size(VarVal);
         testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
         testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), DimValue(VarDimIndex{ivar}));%matlab vector
-        testcolumn=isequal(length(siz),2) && isequal(siz(1), DimValue(VarDimIndex{ivar}))&& isequal(siz(2),1);%matlab column vector
-%             if ~testrange && ~testline && ~testcolumn && ~isequal(siz,DimValue(VarDimIndex))
-%                 errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
-%                 break
-%             end 
+        %testcolumn=isequal(length(siz),2) && isequal(siz(1), DimValue(VarDimIndex{ivar}))&& isequal(siz(2),1);%matlab column vector
         if testline || testrange
             if testrange
                 VarVal=linspace(VarVal(1),VarVal(2),DimValue(VarDimIndex{ivar}));% restitute the whole array of coordinate values

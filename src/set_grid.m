@@ -193,9 +193,9 @@ nbpointsA=size(grid_pix_A);
 XA=grid_pix_A(:,1);%index=position+0.5 rounded at the nearest integer value
 YA=grid_pix_A(:,2);
 unitcolumn=32*ones(size(XA));
-Xchar=num2str(XA,2);
+Xchar=num2str(XA,'%1.1f');% write x coordinate in px, rounded at the first decimal
 blanc=char(unitcolumn);
-Ychar=num2str(YA,2);
+Ychar=num2str(YA,'%1.1f');% write y coordinate in px, rounded at the first decimal
 tete=['1 ' num2str(nbpointsA(1))];
 txt=[Xchar blanc Ychar];
 textgrid={tete;txt};
