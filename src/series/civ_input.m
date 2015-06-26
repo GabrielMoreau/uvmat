@@ -206,22 +206,7 @@ if isfield(SeriesData,'i1_series')&&numel(SeriesData.i1_series)>=iview_image
         MinIndex_j=min(find(ref_j))-1;
     end
 end
-if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
-    set(handles.ListPairMode,'Value',1)
-    set(handles.ListPairMode,'String',{'series(Di)'})
-elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
-    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)'})
-    if  MaxIndex_j <= 10
-        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
-    end
-else
-    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
-    if strcmp(NomTypeNc,'_1-2_1')
-        set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
-    elseif  MaxIndex_j <= 10
-        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
-    end
-end
+
 
 %%  transfer the time from the GUI series, or use file index by default
 time=[];
@@ -271,12 +256,6 @@ set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of t
 set(handles.TimeUnit,'String',TimeUnit);
 %set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
-
-% indicate the min and max indices i and j on the GUI
-set(handles.MinIndex_i,'String',num2str(MinIndex_i))
-set(handles.MaxIndex_i,'String',num2str(MaxIndex_i))
-set(handles.MinIndex_j,'String',num2str(MinIndex_j))
-set(handles.MaxIndex_j,'String',num2str(MaxIndex_j))
 
 
 %% set the civ_input options, depending on the input file content if a nc file has been opened
@@ -335,6 +314,30 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
        CheckDeformation_Callback(hObject, eventdata, handles)
     end
 end
+
+%% set the menu and default choice of civ pairs
+if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
+    set(handles.ListPairMode,'Value',1)
+    set(handles.ListPairMode,'String',{'series(Di)'})
+elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
+    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)'})
+    if  MaxIndex_j <= 10
+        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
+    end
+else
+    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
+    if strcmp(NomTypeNc,'_1-2_1')
+        set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
+    elseif  MaxIndex_j <= 10
+        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
+    end
+end
+
+%% indicate the min and max indices i and j on the GUI
+set(handles.MinIndex_i,'String',num2str(MinIndex_i))
+set(handles.MaxIndex_i,'String',num2str(MaxIndex_i))
+set(handles.MinIndex_j,'String',num2str(MinIndex_j))
+set(handles.MaxIndex_j,'String',num2str(MaxIndex_j))
 
 %% set the reference indices from the input file indices
 if ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource'))
@@ -967,6 +970,7 @@ switch mode
         MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
         index_pair=0;
         %get all the Time intervals in bursts
+        displ_pair_dt='';
         for numod_a=MinIndex_j:MaxIndex_j-1 %nbfield2 always >=2 for 'pair j1-j2' mode
             for numod_b=(numod_a+1):MaxIndex_j
                 index_pair=index_pair+1;
@@ -980,9 +984,11 @@ switch mode
             end
             
         end
+        if index_pair ~=0
         [tild,indsort]=sort(dt);
         displ_pair=displ_pair(indsort);
         displ_pair_dt=displ_pair_dt(indsort);
+        end
     case 'displacement'
         displ_pair={'Di=Dj=0'};
         displ_pair_dt={'Di=Dj=0'};
@@ -1496,9 +1502,9 @@ if strcmp(PanelName,'Civ1')
         set(handle_txtbox,'String',filegrid)
     end 
 end
-set(hObject,'BackgroundColor',[1 0 1])
 set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
+
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
 function CheckMask_Callback(hObject, eventdata, handles)
@@ -1523,10 +1529,6 @@ if value
         filemask=[num2str(nbslice) 'mask'];
         testmask=1;
     else % browse for a mask
-%         filemask=get(hObject,'UserData');%look for previous mask name stored as UserData
-%         if exist(filemask,'file')
-%             filebase=filemask;
-%         end
         filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
         set(hObject,'UserData',filemask);%store for future use
         if ~isempty(filemask)

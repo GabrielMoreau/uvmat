@@ -23,7 +23,7 @@
 
 function varargout = set_grid(varargin)
 
-% Last Modified by GUIDE v2.5 01-Mar-2013 22:41:43
+% Last Modified by GUIDE v2.5 26-Jun-2015 08:54:56
 
 % Begin initialization code - DO NOT PLOT
 gui_Singleton = 1;
@@ -137,12 +137,12 @@ axes(hhuvmat.PlotAxes);
 hold on
 UvData=get(huvmat,'UserData');
 if isfield(UvData.Field, 'CoordUnit')&& strcmp(UvData.Field.CoordUnit,'pixel')
-    plot(grid_pix_A(:,1),grid_pix_A(:,2),'.')
+    plot(grid_pix_A(:,1),grid_pix_A(:,2),'.','Tag','proj_object')
 else
-    plot(grid_phys(:,1),grid_phys(:,2),'.')
+    plot(grid_phys(:,1),grid_phys(:,2),'.','Tag','proj_object')
 end
 
-%% display grid in second image defiend
+%% display grid in second image defined
 if ~isempty(grid_pix_B)
     hviewfield=view_field(get(handles.imageB,'String'));
     hhviewfield=guidata(hviewfield);
@@ -155,6 +155,16 @@ if ~isempty(grid_pix_B)
     end
 end
 
+% --- Executes on button press in clear.
+function clear_Callback(hObject, eventdata, handles)
+huvmat=findobj(allchild(0),'tag','uvmat');
+if ~isempty(huvmat)
+    hhuvmat=guidata(huvmat);
+    hpoints=findobj(hhuvmat.PlotAxes,'Tag','proj_object');
+    if ~isempty(hpoints)
+        delete(hpoints)
+    end
+end
 %------------------------------------------------------------------------
 % --- Executes on button press in CoordType.
 function CoordType_Callback(hObject, eventdata, handles)
@@ -183,9 +193,9 @@ nbpointsA=size(grid_pix_A);
 XA=grid_pix_A(:,1);%index=position+0.5 rounded at the nearest integer value
 YA=grid_pix_A(:,2);
 unitcolumn=32*ones(size(XA));
-Xchar=num2str(XA);
+Xchar=num2str(XA,2);
 blanc=char(unitcolumn);
-Ychar=num2str(YA);
+Ychar=num2str(YA,2);
 tete=['1 ' num2str(nbpointsA(1))];
 txt=[Xchar blanc Ychar];
 textgrid={tete;txt};
@@ -358,3 +368,7 @@ function ImageA_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of ImageA as text
 %        str2double(get(hObject,'String')) returns contents of ImageA as a double
+
+
+
+
