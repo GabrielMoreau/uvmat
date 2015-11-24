@@ -390,7 +390,7 @@ if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.CoordUnit,'String',Field.CoordUnit)
         end       
     end
-    if isempty(str2num(get(handles.num_RangeInterp,'String')))
+    if isempty(str2num(get(handles.num_RangeInterp,'String'))) && isfield(UvData,'Field')
      set(handles.num_RangeInterp,'String',num2str(3*UvData.Field.CoordMesh))% default interpolationlength= 3 meshes
     end
 end

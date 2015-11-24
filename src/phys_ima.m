@@ -39,8 +39,13 @@ Rangx(2)=max(xcorner);
 Rangy(2)=min(ycorner);
 Rangy(1)=max(ycorner);
 test_multi=(max(npx)~=min(npx)) || (max(npy)~=min(npy)); %different image lengths
-npX=1+round((Rangx(2)-Rangx(1))/min(dx));% nbre of pixels in the new image (use the finest resolution min(dx) in the set of images)
-npY=1+round((Rangy(1)-Rangy(2))/min(dy));
+% npX=1+round((Rangx(2)-Rangx(1))/min(dx));% nbre of pixels in the new image (use the finest resolution min(dx) in the set of images)
+% npY=1+round((Rangy(1)-Rangy(2))/min(dy));
+
+npX=1+round((Rangx(2)-Rangx(1))/max(dx));% nbre of pixels in the new image (use the largest resolution max(dx) in the set of images)
+npY=1+round((Rangy(1)-Rangy(2))/max(dy));
+
+
 x=linspace(Rangx(1),Rangx(2),npX);
 y=linspace(Rangy(1),Rangy(2),npY);
 [X,Y]=meshgrid(x,y);%grid in physical coordiantes
@@ -68,8 +73,8 @@ for icell=1:length(A)
 %                 end
 %            end
         end
-        xima=0.5:npx-0.5;%image coordinates of corners
-        yima=npy-0.5:-1:0.5;
+        xima=0.5:npx(icell)-0.5;%image coordinates of corners
+        yima=npy(icell)-0.5:-1:0.5;
         [XIMA_init,YIMA_init]=meshgrid(xima,yima);%grid of initial image in px coordinates
         [XIMA,YIMA]=px_XYZ(XmlData{icell}.GeometryCalib,X,Y,zphys);% image coordinates for each point in the real
         testuint8=isa(A{icell},'uint8');

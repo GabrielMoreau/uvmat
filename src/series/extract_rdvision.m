@@ -69,7 +69,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'off';...%can use a transform function
     ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputSubDirMode='custom'; %output folder given by the program, not by the GUI series
+     ParamOut.OutputDirExt='.extract';%set the output dir extension
+    ParamOut.OutputSubDirMode='one'; %output folder given by the program, not by the GUI series
      % detect the set of image folder
     RootPath=Param.InputTable{1,1};
     ListStruct=dir(RootPath);   
@@ -142,7 +143,7 @@ if strcmp(FileInfo.FileType,'rdvision')
     if ~isequal(FileInfo.NumberOfFrames,nbfield)
         msgbox_uvmat('ERROR',['the whole series of ' num2str(FileInfo.NumberOfFrames) ' images must be extracted at once'])
         %rmfield(OutputDir)
-        return
+%         return
     end
     %% interactive input of specific parameters (for RDvision system)
     display('converting images from RDvision system...')
@@ -182,7 +183,12 @@ NbSlice_calib={};
 %      nbfield2=size(time,1);
 checkpreserve=0;% if =1, will npreserve the original images, else it erases them at the end
 for iview=1:size(Param.InputTable,1)
-    filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
+    for iview_xml=1:size(Param.InputTable,1)% loojk for the xml files in the different data directories
+    filexml=[fullfile(RootPath,Param.InputTable{iview_xml,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
+    if exist(filexml,'file')
+        break
+    end
+    end 
     if ~exist(filexml,'file')
         disp_uvmat('ERROR',[filexml ' missing'],checkrun)
         return
@@ -274,13 +280,13 @@ for iview=1:size(Param.InputTable,1)
     time_diff_max=max(diff_time');
     time_diff_min=min(diff_time');
     if max(time_diff_max)>0.005
-        disp_uvmat('WARNING',['timestamps exceeds xml time by' num2str(max(time_diff_max))],checkrun)
+        disp(['WARNING:timestamps exceeds xml time by' num2str(max(time_diff_max))])
         checkpreserve=1;
     elseif min(time_diff_min)<-0.005
-        disp_uvmat('WARNING',['timestamps is lower than xml time by' num2str(min(time_diff_min))],checkrun)
+        disp(['timestamps is lower than xml time by' num2str(min(time_diff_min))])
         checkpreserve=1;
     else
-        disp_uvmat('CONFIRMATION','time from xml file correct within better than 5 ms',checkrun)
+        disp('CONFIRMATION:time from xml file correct within better than 5 ms')
     end
     if checkpreserve
           disp(  'max and min of timestamp-xml time for each index i:')
@@ -302,14 +308,15 @@ for iview=1:size(Param.InputTable,1)
     
     % check images
     
-    delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
-    if ~checkpreserve
-        for ibin=1:numel(BinList)
-            delete(BinList{ibin})
-        end
-        rmdir(fullfile(RootPath,Param.InputTable{iview,2}))
-    end
+%     delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
+%     if ~checkpreserve
+%         for ibin=1:numel(BinList)
+%             delete(BinList{ibin})
+%         end
+%         rmdir(fullfile(RootPath,Param.InputTable{iview,2}))
+%     end
 end
+delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %--------- reads a series of bin files

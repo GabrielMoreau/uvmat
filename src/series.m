@@ -1767,6 +1767,9 @@ end
 filexml=cell(1,NbProcess);% initialisation of the names of the files containing the processing parameters
 extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
 for iprocess=1:NbProcess
+    extxml{iprocess}='.xml';
+end
+for iprocess=1:NbProcess
     if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
         disp('program stopped by user')
         return
@@ -1827,9 +1830,9 @@ for iprocess=1:NbProcess
                 switch computer
                     case {'PCWIN','PCWIN64'} %Windows system
                         filexml=regexprep(filexml,'\\','\\\\');% add '\' so that '\' are left as characters
-                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml]);% TODO: adapt to DOS system
+                        system([ActionFullName ' ' RunTime ' ' filexml]);% TODO: adapt to DOS system
                     case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml]);
+                        system([ActionFullName ' ' RunTime ' ' filexml]);
                 end
         end
     end
@@ -1940,7 +1943,7 @@ switch RunMode
                                 '#$ -cwd \n '...
                                 'hostname && date \n '...
                                 'umask 002 \n'...
-                                fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml];%allow writting access to created files for user group
+                                ActionFullName ' ' RunTime ' ' filexml];%allow writting access to created files for user group
                             fprintf(fid,cmd);%fill the executable file with the  char string cmd
                             fclose(fid);% close the executable file
                             system(['chmod +x ' batch_file_list{iprocess}]);% set the file to executable
@@ -1950,7 +1953,7 @@ switch RunMode
                             return
                     end
                 end
-                msgbox_uvmat('CONFIRMATION',[ActionName ' launched in background: press STATUS to see results'])
+                msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background: press STATUS to see results'])
         end
         
     case 'cluster_oar' % option 'oar-parexec' used
@@ -1966,7 +1969,7 @@ switch RunMode
                 '#$ -cwd \n '...
                 'hostname && date \n '...
                 'umask 002 \n'...
-                fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
+                ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
             else
                 cmd=[...
                             '#!/bin/bash \n'...
@@ -2020,15 +2023,18 @@ switch RunMode
         % estimated time of an individual job (in min), with a margin of error
         WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
         disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
-        oar_command=['oarsub -n UVmat_' ActionName ' '...
+        oar_command=['oarsub -n UVmat_' ActionFullName ' '...
             '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
             '-l /core=' num2str(NbCore) ','...
             'walltime=' datestr(WallTimeTotal/24,13) ' '...
             '-E ' filename_errors ' '...
             '-O ' filename_log ' '...
             extra_oar ' '...
-            '"oar-parexec -s -f ' filename_joblist ' '...
+           '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"'];
+        
+
+        
         fprintf(oar_command);% display  system command on the Matlab command window
         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
         filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
@@ -2036,7 +2042,7 @@ switch RunMode
         fprintf(fid,oar_command); % store the command
         fprintf(fid,result);% store the result (job ID number)
         fclose(fid);
-        msgbox_uvmat('CONFIRMATION',[ActionName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+        msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
         
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
@@ -2077,7 +2083,7 @@ switch RunMode
         fclose(fid);
         fprintf(pbs_command);% display in command line
         %system(pbs_command);
-        msgbox_uvmat('CONFIRMATION',[ActionName ' command ready to be launched in cluster'])
+        msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
     case 'python'
         command = [
             'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...

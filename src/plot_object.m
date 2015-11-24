@@ -385,7 +385,7 @@ if test_newobj==0;
             end
             if nbpoints>length(PlotData.DeformPoint)
                 for ipt=length(PlotData.DeformPoint)+1:nbpoints
-                    PlotData.DeformPoint(ipt)=line(xline(ipt),yline(ipt),'Color',col,'LineStyle','.','Tag','DeformPoint',...
+                    PlotData.DeformPoint(ipt)=line(xline(ipt),yline(ipt),'Color',col,'LineStyle','-','Tag','DeformPoint',...
                         'SelectionHighlight','off','UserData',hplot);
                 end
                 set(hplot,'UserData',PlotData)
