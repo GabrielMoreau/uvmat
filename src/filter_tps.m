@@ -19,7 +19,7 @@
 % Subdomain: estimated number of data points in each subdomain
 
 %=======================================================================
-% Copyright 2008-2015, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
+% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %

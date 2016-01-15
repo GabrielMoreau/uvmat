@@ -20,22 +20,24 @@
 %     .Fix2: 
 %     .Patch2:
 % ncfile: name of a netcdf file to be created for the result (extension .nc)
+
+%=======================================================================
+% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright 2011-2015, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%     This is part of the toolbox UVMAT.
-% 
+%     This file is part of the toolbox UVMAT.
+%
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published by
-%     the Free Software Foundation; either version 2 of the License, or
-%     (at your option) any later version.
-% 
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (open UVMAT/COPYING.txt) for more details.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
 
 function [Data,errormsg,result_conv]= stereo_civ(Param)
 Data=[];
