@@ -1509,8 +1509,10 @@ if strcmp(ActionExt,'.sh')
     end
     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
-    hver=ver('MATLAB');
-    MCRROOT=['MCRROOT' regexprep(hver.Version,'\.','')];%suppress the dot in version number
+    [mcrmajor, mcrminor] = mcrversion;   
+    MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
+    %hver=ver('MATLAB');
+    %MCRROOT=['MCRROOT' regexprep(hver.Version,'\.','')];%suppress the dot in version number
     RunTime = getenv(MCRROOT);
     ActionNameVersion=[ActionName '_' MCRROOT];
     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']);
