@@ -495,7 +495,7 @@ if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
             set(h_ListCoord,'Data',Coord)
         end
         if isempty(hh)
-            hh=line(Coord(:,4),Coord(:,5),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
+            hh=line(Coord(:,4),Coord(:,5),'Color','m','Tag','calib_points','LineStyle','none','Marker','+');
         else
             set(hh,'XData',Coord(:,4))
             set(hh,'YData',Coord(:,5))

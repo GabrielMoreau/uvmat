@@ -1,21 +1,3 @@
-%=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
-%
-%     This file is part of the toolbox UVMAT.
-%
-%     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
-%     UVMAT is distributed in the hope that it will be useful,
-%     but WITHOUT ANY WARRANTY; without even the implied warranty of
-%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
-
 function [xp,dxpdom,dxpdT,dxpdf,dxpdc,dxpdk,dxpdalpha] = project_points2(X,om,T,f,c,k,alpha)
 
 %project_points2.m
@@ -239,9 +221,9 @@ end;
 
 % Pixel coordinates:
 if length(f)>1,
-    xp = xd3 .* (f * ones(1,n))  +  c*ones(1,n);
+    xp = xd3 .* (f(:) * ones(1,n))  +  c(:)*ones(1,n);
     if nargout > 1,
-        coeff = reshape(f*ones(1,n),2*n,1);
+        coeff = reshape(f(:)*ones(1,n),2*n,1);
         dxpdom = (coeff*ones(1,3)) .* dxd3dom;
         dxpdT = (coeff*ones(1,3)) .* dxd3dT;
         dxpdk = (coeff*ones(1,5)) .* dxd3dk;

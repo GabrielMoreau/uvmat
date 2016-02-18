@@ -1,21 +1,3 @@
-%=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
-%
-%     This file is part of the toolbox UVMAT.
-%
-%     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
-%     UVMAT is distributed in the hope that it will be useful,
-%     but WITHOUT ANY WARRANTY; without even the implied warranty of
-%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
-
 function	[out,dout]=rodrigues(in)
 
 % RODRIGUES	Transform rotation matrix into rotation vector and viceversa.
@@ -205,8 +187,8 @@ elseif ((m==n) & (m==3) & (norm(in' * in - eye(3)) < bigeps)...
                 vabs = sqrt(M(2,2));
                 wabs = sqrt(M(3,3));
 
-                mvec = [M(1,2), M(2,3), M(1,3)];
-                syn  = ((mvec > 1e-4) - (mvec < -1e-4)); % robust sign() function
+                mvec = ([M(1,2), M(2,3), M(1,3)] + [M(2,1), M(3,2), M(3,1)])/2;
+                syn  = ((mvec > eps) - (mvec < -eps)); % robust sign() function
                 hash = syn * [9; 3; 1];
                 idx = find(hash == hashvec);
                 svec = Smat(idx,:)';
@@ -230,18 +212,15 @@ return;
 
 %% test of the Jacobians:
 
-%%%% TEST OF dRdom:
+%% TEST OF dRdom:
 om = randn(3,1);
 dom = randn(3,1)/1000000;
-
 [R1,dR1] = rodrigues(om);
 R2 = rodrigues(om+dom);
-
 R2a = R1 + reshape(dR1 * dom,3,3);
-
 gain = norm(R2 - R1)/norm(R2 - R2a)
 
-%%% TEST OF dOmdR:
+%% TEST OF dOmdR:
 om = randn(3,1);
 R = rodrigues(om);
 dom = randn(3,1)/10000;
@@ -249,14 +228,11 @@ dR = rodrigues(om+dom) - R;
 
 [omc,domdR] = rodrigues(R);
 [om2] = rodrigues(R+dR);
-
 om_app = omc + domdR*dR(:);
-
 gain = norm(om2 - omc)/norm(om2 - om_app)
 
 
-%%% OTHER BUG: (FIXED NOW!!!)
-
+%% OTHER BUG: (FIXED NOW!!!)
 omu = randn(3,1);   
 omu = omu/norm(omu)
 om = pi*omu;        
@@ -264,22 +240,34 @@ om = pi*omu;
 [om2] = rodrigues(R);
 [om om2]
 
-%%% NORMAL OPERATION
-
+%% NORMAL OPERATION
 om = randn(3,1);         
 [R,dR]= rodrigues(om);
 [om2] = rodrigues(R);
 [om om2]
 
-return
-
-% Test: norm(om) = pi
-
+%% Test: norm(om) = pi
 u = randn(3,1);
 u = u / sqrt(sum(u.^2));
 om = pi*u;
 R = rodrigues(om);
-
 R2 = rodrigues(rodrigues(R));
-
 norm(R - R2)
+
+%% Another test case where norm(om)=pi from Chen Feng (June 27th, 2014)
+R = [-0.950146567583153 -6.41765854280073e-05 0.311803617668748; ...
+     -6.41765854277654e-05 -0.999999917385145 -0.000401386434914383; ...
+      0.311803617668748 -0.000401386434914345 0.950146484968298];
+om = rodrigues(R)
+norm(om) - pi
+
+%% Another test case where norm(om)=pi from 余成义 (July 1st, 2014)
+R = [-0.999920129411407	-6.68593208347372e-05	-0.0126384464118876; ...
+     9.53007036072085e-05	-0.999997464662094	-0.00224979713751896; ...
+    -0.0126382639492467	-0.00225082189773293	0.999917600647740];
+om = rodrigues(R)
+norm(om) - pi
+
+
+
+

@@ -1,21 +1,3 @@
-%=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
-%
-%     This file is part of the toolbox UVMAT.
-%
-%     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
-%     UVMAT is distributed in the hope that it will be useful,
-%     but WITHOUT ANY WARRANTY; without even the implied warranty of
-%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
-
 %%% This script alets the user enter the name of the images (base name, numbering scheme,...
 
       
@@ -40,7 +22,7 @@ s_tot = s_ras + s_bmp + s_tif + s_pgm + s_jpg + s_ppm + s_jpeg;
 
 if s_tot < 1,
    fprintf(1,'No image in this directory in either ras, bmp, tif, pgm, ppm or jpg format. Change directory and try again.\n');
-   break;
+   return;
 end;
 
 
