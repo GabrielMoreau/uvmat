@@ -20,24 +20,22 @@
 %     .Fix2: 
 %     .Patch2:
 % ncfile: name of a netcdf file to be created for the result (extension .nc)
-
-%=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
-%   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
-%     This file is part of the toolbox UVMAT.
-%
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%  Copyright 2011-2015, LEGI / CNRS UJF G-INP, Joel.Sommeria@legi.grenoble-inp.fr
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%     This is part of the toolbox UVMAT.
+% 
 %     UVMAT is free software; you can redistribute it and/or modify
-%     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
-%     or (at your option) any later version.
-%
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation; either version 2 of the License, or
+%     (at your option) any later version.
+% 
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
-%=======================================================================
+%     GNU General Public License (open UVMAT/COPYING.txt) for more details.
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [Data,errormsg,result_conv]= stereo_civ(Param)
 Data=[];
@@ -66,6 +64,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputDirExt='.stereo';%set the output dir extension
     Data.OutputSubDirMode='auto'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
+    Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+
     return
 end
 
@@ -167,7 +167,7 @@ else
     end
 end
 if isempty(i1_series_Civ1)||(~isempty(PairCiv2) && isempty(i1_series_Civ2))
-    disp_uvmat('ERROR','no image pair fo civ in the input file index range',checkrun)
+    disp_uvmat('ERROR','no image pair for civ in the input file index range',checkrun)
     return
 end
 
@@ -264,6 +264,11 @@ end
 
 tic
 %%%%% MAIN LOOP %%%%%%
+CheckOverwrite=1;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
+
 for ifield=1:NbField
     update_waitbar(WaitbarHandle,ifield/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -281,6 +286,13 @@ for ifield=1:NbField
         
         ncfile2=fullfile_uvmat(RootPath_A,Civ1Dir,[RootFile_A,'_Light'],'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+        
+     if (~CheckOverwrite && exist(ncfile,'file')) || (~CheckOverwrite && exist(ncfile2,'file')) 
+            disp('existing output file already exists, skip to next field')
+            result_conv=0;
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+     end   
+    
        
     %% Civ1
 
@@ -844,9 +856,12 @@ end
        end
        
     end
-   end
-
-  disp(['ellapsed time for the loop ' num2str(toc) ' s'])
+end
+disp(['ellapsed time for the loop ' num2str(toc) ' s'])
+tic
+while toc < rand(1)*10
+    for i = 1:100000, sqrt(1237); end
+end
 
 
 
@@ -1098,7 +1113,7 @@ vector=[0 0]; %default
 F=0;
 [npy,npx]=size(result_conv);
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
-%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
+%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
 peaky = y;
 if y <= npy-1 && y >= 1
@@ -1135,11 +1150,11 @@ if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
     for i=-1:1
         for j=-1:1
             %following 15 lines based on
-            %H. Nobach � M. Honkanen (2005)
+            %H. Nobach ??? M. Honkanen (2005)
             %Two-dimensional Gaussian regression for sub-pixel displacement
             %estimation in particle image velocimetry or particle position
             %estimation in particle tracking velocimetry
-            %Experiments in Fluids (2005) 38: 511�515
+            %Experiments in Fluids (2005) 38: 511???515
             c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
             c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
             c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));

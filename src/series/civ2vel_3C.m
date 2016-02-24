@@ -33,7 +33,7 @@
 %              .Coord_x: name of x coordinate variable'
 
 %=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2015, LEGI UMR 5519 / CNRS UJF G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
@@ -51,7 +51,7 @@
 %=======================================================================
 
 function ParamOut=civ2vel_3C(Param)
-
+disp('test')
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -67,6 +67,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.OutputSubDirMode='two'; % the two first input lines are used to define the output subfolder
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     %check the input files
+    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     first_j=[];
     if size(Param.InputTable,1)<2
         msgbox_uvmat('WARNING',['two or three input file series are needed'])
@@ -169,13 +170,49 @@ W=zeros(size(XI,1),size(XI,2));
 %% MAIN LOOP ON FIELDS
 warning off
 
+CheckOverwrite=1;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
 for index=1:NbField
+    
     update_waitbar(WaitbarHandle,index/NbField)
+    
+    
+    
+    
+      %% generating the name of the merged field
+    i1=i1_series{1}(index);
+    if ~isempty(i2_series{end})
+        i2=i2_series{end}(index);
+    else
+        i2=i1;
+    end
+    j1=1;
+    j2=1;
+    if ~isempty(j1_series{1})
+        j1=j1_series{1}(index);
+        if ~isempty(j2_series{end})
+            j2=j2_series{end}(index);
+        else
+            j2=j1;
+        end
+    end
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2);
+    
+    %%
+    
+   
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
     
+     if (~CheckOverwrite && exist(OutputFile,'file'))  
+            disp('existing output file already exists, skip to next field')
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+     end   
+     
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
@@ -184,11 +221,19 @@ for index=1:NbField
     %at the middle between to time step
    clear ZItemp
    ZItemp=zeros(size(XI,1),size(XI,2),2);
+   
+   if index==1
+        first_img=i1_series{1,1}(1,1); %id of the first image of the series
+   end
+     
+     idtemp=0;
  for indextemp=index:index+1; 
+     idtemp=idtemp+1;
     if NbView==3 % if there is only 1 stereo folder, extract directly Xphys,Yphys and Zphys
+      
         
-        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(indextemp),'.nc']); 
-       
+        
+        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(first_img+indextemp-1),'.nc']); 
        
         if  exist('Data{3}.Civ3_FF','var') % FF is present, remove wrong vector
             temp=find(Data{3}.Civ3_FF==0);
@@ -218,7 +263,10 @@ for index=1:NbField
             return
         end
         
-        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(indextemp),'.nc']); 
+   
+        
+        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(first_img+indextemp-1),'.nc']); 
+    
         if exist('Data{3}.Civ3_FF','var') % if FF is present, remove wrong vector
             temp=find(Data{3}.Civ3_FF==0);
             Xmid3=Data{3}.Xmid(temp);
@@ -240,7 +288,8 @@ for index=1:NbField
         y3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Ymid3-(V3)/2,xq,yq);
         
         
-        [Data{4},tild,errormsg] = nc2struct([Param.InputTable{4,1},'/',Param.InputTable{4,2},'/',Param.InputTable{4,3},'_',int2str(indextemp),'.nc']); 
+
+         [Data{4},tild,errormsg] = nc2struct([Param.InputTable{4,1},'/',Param.InputTable{4,2},'/',Param.InputTable{4,3},'_',int2str(first_img+indextemp-1),'.nc']); 
         if exist('Data{4}.Civ3_FF','var') % if FF is present, remove wrong vector
             temp=find(Data{4}.Civ3_FF==0);
             Xmid4=Data{4}.Xmid(temp);
@@ -278,7 +327,7 @@ for index=1:NbField
     
    
     
-       ZItemp(:,:,indextemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen gridd
+       ZItemp(:,:,idtemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen gridd
     
 end
     ZI=mean(ZItemp,3); %mean between two the two time step
@@ -319,7 +368,7 @@ end
     Ua=griddata(X1,Y1,U1,Xa,Ya);
     Va=griddata(X1,Y1,V1,Xa,Ya);
     
-    [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X 
+%     [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X 
     [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
     
     %remove wrong vector
@@ -331,7 +380,7 @@ end
     Ub=griddata(X2,Y2,U2,Xb,Yb);
     Vb=griddata(X2,Y2,V2,Xb,Yb);
 
-    [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X 
+%     [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X 
     [B]=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,XI,YI,ZI); %get coef B~
    
     
@@ -368,24 +417,7 @@ end
     
 
     
-    %% generating the name of the merged field
-    i1=i1_series{1}(index);
-    if ~isempty(i2_series{end})
-        i2=i2_series{end}(index);
-    else
-        i2=i1;
-    end
-    j1=1;
-    j2=1;
-    if ~isempty(j1_series{1})
-        j1=j1_series{1}(index);
-        if ~isempty(j2_series{end})
-            j2=j2_series{end}(index);
-        else
-            j2=j1;
-        end
-    end
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2);
+  
     
     %% recording the merged field
     if index==1% initiate the structure at first index
@@ -398,15 +430,15 @@ end
                 {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
         MergeData.coord_x=xI;
         MergeData.coord_y=yI;
-        MergeData.Z=ZI;
     end
     MergeData.U=U/Dt;
     MergeData.V=V/Dt;
     MergeData.W=W/Dt;
+    MergeData.Z=ZI;
     
-    mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
-    mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
-    MergeData.Error=(sqrt(mfx^2+mfy^2)/4).*sqrt(sum(Error.*Error,3));
+%     mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+%     mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+    MergeData.Error=0.5*sqrt(sum(Error.^2,3));
     errormsg=struct2nc(OutputFile,MergeData);%save result file
     if isempty(errormsg)
         disp(['output file ' OutputFile ' written'])
@@ -495,7 +527,7 @@ Dyb=(B_2_1.*B_1_3-B_1_1.*B_2_3)./Det;
 
 %% result
 Den=(Dxb-Dxa).*(Dxb-Dxa)+(Dyb-Dya).*(Dyb-Dya);
-error=((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den;
+error=abs(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v)))./Den;
 % ex=-error.*(Dyb-Dya);
 % ey=-error.*(Dxb-Dxa);
 
