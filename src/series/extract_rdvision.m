@@ -70,7 +70,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
      ParamOut.OutputDirExt='.extract';%set the output dir extension
-    ParamOut.OutputSubDirMode='one'; %output folder given by the program, not by the GUI series
+    ParamOut.OutputSubDirMode='one'; %output folder given by the folder name of the first input line
      % detect the set of image folder
     RootPath=Param.InputTable{1,1};
     ListStruct=dir(RootPath);   
@@ -211,8 +211,9 @@ for iview=1:size(Param.InputTable,1)
         case {'.seq','.sqb'}
             filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
             filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
-            [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
-            [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
+            logdir=[Param.InputTable{1,2} .extract];
+            [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
+            [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
         otherwise
             errormsg='input file extension must be .seq or .sqb';
     end
@@ -300,9 +301,11 @@ for iview=1:size(Param.InputTable,1)
         return
     end
     % check the existence of the expected output image files (from the xml)
+    FileDir=SeqData.sequencename;
+     FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
     for i1=1:npi-1
         for j1=1:npj-1
-            OutputFile=fullfile_uvmat(RootPath,SeqData.sequencename,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
+            OutputFile=fullfile_uvmat(RootPath,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
             A=imread(OutputFile);% check image reading (stop if error)
         end
     end
