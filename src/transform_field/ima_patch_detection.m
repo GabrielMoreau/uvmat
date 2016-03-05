@@ -86,7 +86,10 @@ end
 
 DataOut=DataIn; %default
 %Amask=imread('/fsnet/project/coriolis/2015/15MINI_MEDDY/0_REF_FILES/mask_patch.png');
-plot_mask(DataIn.A,Param.TransformInput.LumThreshold)
+hfig=findobj(allchild(0),'Tag','set_threshold');
+hThreshold=findobj(hfig,'Tag','Threshold');
+Threshold=str2num(get(hThreshold,'String'));
+plot_mask(DataIn.A,Threshold)
 % Athreshold=Param.TransformInput.LumThreshold;
 % %
 % %     DataOut.A=zeros(size(DataIn.A,1),size(DataIn.A,2),3);

@@ -3,7 +3,7 @@
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields with a single input and parameters %%%%
 % OUTPUT: 
-% DataOut:   output field structure 
+% Data:   output field structure 
 %
 %INPUT:
 % DataIn:  input field structure
@@ -28,10 +28,10 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=ima_edge_detection(DataIn,Param)
+function Data=ima_edge_detection(Data,Param,Data_1)
 
 %% request input parameters
-if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
+if isfield(Data,'Action') && isfield(Data.Action,'RUN') && isequal(Data.Action.RUN,0)
     prompt = {'npx';'npy';'threshold'};
     dlg_title = 'get the filter size in x and y';
     num_lines= 3;
@@ -41,14 +41,12 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
         def={num2str(Param.TransformInput.FilterBoxSize_x);num2str(Param.TransformInput.FilterBoxSize_y);num2str(Param.TransformInput.LumThreshold)};
     end
     answer = inputdlg(prompt,dlg_title,num_lines,def);
-    DataOut.TransformInput.FilterBoxSize_x=str2num(answer{1}); %size of the filtering window
-    DataOut.TransformInput.FilterBoxSize_y=str2num(answer{2}); %size of the filtering window
-    DataOut.TransformInput.LumThreshold=str2num(answer{3}); %size of the filtering window
+    Data.TransformInput.FilterBoxSize_x=str2num(answer{1}); %size of the filtering window
+    Data.TransformInput.FilterBoxSize_y=str2num(answer{2}); %size of the filtering window
+    Data.TransformInput.LumThreshold=str2num(answer{3}); %size of the filtering window
     return
 end
 
-DataOut=DataIn; %default
-%DataOut.A=255*edge(DataIn.A);
 
 %definition of the cos shape matrix filter
 ix=[1/2-Param.TransformInput.FilterBoxSize_x/2:-1/2+Param.TransformInput.FilterBoxSize_x/2];%
@@ -61,29 +59,39 @@ fct2_y=cos(iy/((Param.TransformInput.FilterBoxSize_y-1)/2)*pi/2);
 Mfiltre=fct2_y'*fct2_x;
 Mfiltre=Mfiltre/(sum(sum(Mfiltre)));%normalize filter
 
+Afilt=filter2(Mfiltre,Data.A);% smooth the image, excluding the edges (spurious reflexions)
+
+    %Afilt=filter2(Mfiltre,Data.A(100:end-100,100:end-100));% smooth the image, excluding the edges (spurious reflexions)
+  %Data.A= double(Data.A)-Afilt;
 
 
-    Afilt=filter2(Mfiltre,DataIn.A(100:end-100,100:end-100));% smooth the image, excluding the edges (spurious reflexions)
+    
+    
+%     
     Amax=max(max(Afilt));
     Amin=min(min(Afilt));
+%     Data.A( Data_1.A(100:end-100,100:end-100)==100)=(Amin+Amax)/2;
+
+ 
+ 
     Athreshold=(Amin+Amax)*Param.TransformInput.LumThreshold;
 %     
-%     DataOut.A=zeros(size(DataIn.A,1),size(DataIn.A,2),3);
-    DataOut.A=(DataIn.A>Athreshold);%transform to the initial image format
-%     DataOut.A(:,:,1)=DataIn.A;%transform to the initial image format, red
-STATS = regionprops(DataOut.A, 'FilledArea','MinorAxisLength','MajorAxisLength','PixelIdxList');
+%     Data.A=zeros(size(Data.A,1),size(Data.A,2),3);
+    Data.A=(Data.A>Athreshold);%transform to the initial image format
+%     Data.A(:,:,1)=Data.A;%transform to the initial image format, red
+STATS = regionprops(Data.A, 'FilledArea','MinorAxisLength','MajorAxisLength','PixelIdxList');
 Area=zeros(size(STATS));
 for iobj=1:numel(STATS)
     Area(iobj)=STATS(iobj).FilledArea;
 end
-[Area, main_obj]=max(Area);
-    MajorAxisLength=STATS(main_obj).MajorAxisLength
-    MinorAxisLength=STATS(main_obj).MinorAxisLength
+[Area, main_obj]=max(Area)
+    MajorAxisLength=STATS(main_obj).MajorAxisLength;
+    MinorAxisLength=STATS(main_obj).MinorAxisLength;
 for iobj=1:numel(STATS)
     if iobj~=main_obj
-    DataOut.A(STATS(iobj).PixelIdxList)=0;
+    Data.A(STATS(iobj).PixelIdxList)=0;
     end
 end
 
-DataOut.A=Amax*DataOut.A;
+Data.A=Amax*Data.A;
  

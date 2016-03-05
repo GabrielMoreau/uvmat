@@ -63,7 +63,7 @@ function ParamOut=extract_rdvision(Param) %default output=relabel_i_j(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='one'; ...%nbre of slices, 'one' prevents splitting in several processes, ('off' by default)
+    ParamOut.NbSlice=1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
     ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';...%can use a transform function
@@ -183,19 +183,20 @@ NbSlice_calib={};
 %      nbfield2=size(time,1);
 checkpreserve=0;% if =1, will npreserve the original images, else it erases them at the end
 for iview=1:size(Param.InputTable,1)
-    for iview_xml=1:size(Param.InputTable,1)% loojk for the xml files in the different data directories
-    filexml=[fullfile(RootPath,Param.InputTable{iview_xml,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
-    if exist(filexml,'file')
-        break
+    for iview_xml=1:size(Param.InputTable,1)% look for the xml files in the different data directories
+        filexml=[fullfile(RootPath,Param.InputTable{iview_xml,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
+        if exist(filexml,'file')
+            break
+        end
     end
-    end 
     if ~exist(filexml,'file')
         disp_uvmat('ERROR',[filexml ' missing'],checkrun)
         return
     end
     [XmlData,errormsg]=imadoc2struct(filexml);
-    
-    newxml=[fullfile(RootPath,Param.InputTable{iview,3}) '.xml']
+    newxml=fullfile(RootPath,Param.InputTable{iview,3});
+    newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
+    newxml=[newxml '.xml'];
     
     [success,errormsg] = copyfile(filexml,newxml); %copy the xml file in the upper folder
        
@@ -305,17 +306,15 @@ for iview=1:size(Param.InputTable,1)
             A=imread(OutputFile);% check image reading (stop if error)
         end
     end
-    
-    % check images
-    
-%     delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
-%     if ~checkpreserve
-%         for ibin=1:numel(BinList)
-%             delete(BinList{ibin})
-%         end
-%         rmdir(fullfile(RootPath,Param.InputTable{iview,2}))
-%     end
 end
+
+%% remove binary files if transfer OK
+    if ~checkpreserve
+        for ibin=1:numel(BinList)
+            delete(BinList{ibin})
+        end
+        rmdir(fullfile(RootPath,Param.InputTable{iview,2}))
+    end
 delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,7 +350,9 @@ classname=sprintf('uint%d',SeqData.bytesperpixel*8);
 classname=['*' classname];
 BitDepth=8*SeqData.bytesperpixel;%needed to write images (8 or 16 bits)
 binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
-OutputDir=fullfile(PathDir,SeqData.sequencename);
+FileDir=SeqData.sequencename;
+FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
+OutputDir=fullfile(PathDir,FileDir);
 if ~exist(OutputDir,'dir')
     %     errormsg=[OutputDir ' already exist, delete it first'];
     %     return
@@ -370,7 +371,7 @@ for ii=1:SeqData.nb_frames
         j1=mod(ii-1,nbfield2)+1;
     end
     i1=floor((ii-1)/nbfield2)+1;
-    OutputFile=fullfile_uvmat(PathDir,SeqData.sequencename,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
+    OutputFile=fullfile_uvmat(PathDir,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
     fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
     if exist(OutputFile,'file')
         fid=0;

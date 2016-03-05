@@ -1503,7 +1503,7 @@ if strcmp(ActionExt,'.sh')
         end
     end
 end
-
+ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 %% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
 if strcmp(ActionExt,'.sh')
     TransformPath='';
