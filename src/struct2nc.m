@@ -34,20 +34,20 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function errormsg=struct2nc(flname,Data)
-if ~ischar(flname)
-    errormsg='invalid input for the netcf file name';
-    return
-end
+function [errormsg,nc]=struct2nc(flname,Data,action)
+nc=[];
+% if ~ischar(flname)
+%     errormsg='invalid input for the netcf file name';
+%     return
+% end
 if ~exist('Data','var')
      errormsg='no data  input for the netcdf file';
     return
 end 
-FilePath=fileparts(flname);
-if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
-    errormsg=['directory ' FilePath ' needs to be created'];
-    return
+if ~exist('action','var')
+    action='one_input'; %fill the file with data and close it
 end
+
 
 %% check the validity of the input field structure
 [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
@@ -58,10 +58,19 @@ end
 ListVarName=Data.ListVarName;
 
 %% create the netcdf file with name flname in format NETCDF4
-cmode = netcdf.getConstant('NETCDF4');
-cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
-cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
-nc = netcdf.create(flname, cmode); 
+if ischar(flname)
+    FilePath=fileparts(flname);
+    if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
+        errormsg=['directory ' FilePath ' needs to be created'];
+        return
+    end
+    cmode = netcdf.getConstant('NETCDF4');
+    cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
+    cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
+    nc = netcdf.create(flname, cmode);
+else
+    nc=flname;
+end
 
 %% write global constants
 if isfield(Data,'ListGlobalAttribute')
@@ -158,8 +167,9 @@ for ivar=1:length(ListVarName)
         end      
     end
 end
+if strcmp(action,'one_input')
 netcdf.close(nc)
-
+end
 
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
 %------------------------------------------------------------------------
