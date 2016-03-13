@@ -1272,45 +1272,49 @@ huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
 RootPath=read_file_boxes(hhuvmat);
 
-OutPutDir=uigetfile_uvmat('choosean image folder to calibrate with slice position?',fileparts(RootPath),'uigetdir');
-OutPut=browse_data(OutPutDir);
+OutPutDir=uigetfile_uvmat('choose an image folder to document with slice position?',fileparts(RootPath),'uigetdir');
+OutPut=browse_data(OutPutDir,'off','on');
 nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
-    SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
-    XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
-    
-    % read the current xml file
-    [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
-        return
-    end
-    GeometryCalib=s.GeometryCalib;
-    GeometryCalib.NbSlice=SliceData.NbSlice;
-    GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
-    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-    GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-    GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-    Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
-    Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-    GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
-    GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
-    GeometryCalib.SliceAngle(:,3)=0;
-    if SliceData.CheckRefraction
-        GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-        GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-    elseif isfield(GeometryCalib,'RefractionIndex')
-        GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
-        GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
-    end
-    
-    % update the current xml file
-    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-    if ~strcmp(errormsg,'')
-        msgbox_uvmat('ERROR',errormsg);
-    else
-        display([XmlFile ' updated with slice positions'])
-        nbcalib=nbcalib+1;
+    for idevice=1:numel(OutPut.DataSeries)
+        SubDirBase=regexprep(OutPut.DataSeries{idevice},'\..+$','');
+        XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+        
+        % read the current xml file
+        if  exist(XmlFile,'file')
+            [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
+                return
+            end
+            GeometryCalib=s.GeometryCalib;
+            GeometryCalib.NbSlice=SliceData.NbSlice;
+            GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
+            Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+            GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+            GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+            Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
+            Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
+            GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
+            GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
+            GeometryCalib.SliceAngle(:,3)=0;
+            if SliceData.CheckRefraction
+                GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+                GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+            elseif isfield(GeometryCalib,'RefractionIndex')
+                GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
+                GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
+            end
+            
+            % update the current xml file
+            errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+            if ~strcmp(errormsg,'')
+                msgbox_uvmat('ERROR',errormsg);
+            else
+                display([XmlFile ' updated with slice positions'])
+                nbcalib=nbcalib+1;
+            end
+        end
     end
 end
 set(hObject,'BackgroundColor',[1 0 0])

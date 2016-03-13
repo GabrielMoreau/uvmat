@@ -141,8 +141,8 @@ ListFile=ListCells(1,find(~check_dir & ~check_bad));
 %% Main loop
 ImagesPerLevel=100;%100;
 count=0;
-%count=933;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 67->_11_1
-%count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 
+%count=316;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 4684 images -> start at 316 start 67->_11_1
+%count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 3066 images
 %% loop on the files 
 for ifile=1:numel(ListFile)
     update_waitbar(WaitbarHandle,ifile/numel(ListFile))
@@ -155,16 +155,17 @@ for ifile=1:numel(ListFile)
     % loop on the frames within the tiff file
     for iframe=1:NbFrames      
         A=imread(ImageName,iframe);
-        count=count+1;
+
         if isequal(ImagesPerLevel,1)% mode series 
             
-            OutputFile=fullfile(OutputDir,['img_' num2str(count) '.png']);
+            OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
         else % mode multilevel or volume (indices i and j)
             i_index=fix(count/ImagesPerLevel)+1;
             j_index=mod(count,ImagesPerLevel)+1;
             OutputFile=fullfile(OutputDir,['img_' num2str(i_index) '_' num2str(j_index) '.png']);
         end
         imwrite(A,OutputFile,'BitDepth',16)
+        count=count+1;
     end
 end
 

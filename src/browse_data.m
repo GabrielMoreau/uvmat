@@ -46,7 +46,7 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
-function browse_data_OpeningFcn(hObject, eventdata, handles, DataSeries,EnableMirror)
+function browse_data_OpeningFcn(hObject, eventdata, handles, DataSeries,EnableMirror,MultiDevices)
 %------------------------------------------------------------------------
 
 %% Choose default command line output for browse_data
@@ -72,6 +72,11 @@ FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
+if exist('MultiDevices','var') && strcmp(MultiDevices,'on')
+    set(handles.ListDevices,'Max',2)
+else
+    set(handles.ListDevices,'Max',1)
+end
 if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
     set(handles.CreateMirror,'Visible','on')
     set(handles.mirror_txt,'Visible','on')
@@ -607,6 +612,7 @@ if strcmp(get(handles.MirrorDir,'Visible'),'on')
 else
     Campaign=get(handles.SourceDir,'String');
 end
+handles.output=[];
 handles.output.Campaign=Campaign;
 Experiment=get(handles.ListExperiments,'String');
 IndicesExp=get(handles.ListExperiments,'Value');

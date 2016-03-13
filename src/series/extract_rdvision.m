@@ -3,7 +3,8 @@
 % function ParamOut=extract_rdvision(Param)
 %------------------------------------------------------------------------
 %
-%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %OUTPUT
 % ParamOut: sets options in the GUI series.fig needed for the function
@@ -242,6 +243,7 @@ for iview=1:size(Param.InputTable,1)
     end
    
     
+    
     %% reading the .sqb file
     m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
         'uint32' [1 1] 'garbage1';...
@@ -285,6 +287,13 @@ for iview=1:size(Param.InputTable,1)
     if max(abs(difftime))>0.01
         checkpreserve=1;% will not erase the initial files, possibility of error
     end
+    
+        %% checking consistency with the xml file
+    if ~isequal(SeqData.nb_frames,numel(timestamp))
+        disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
+        return
+    end    
+    
     if nbfield2>1
         NomTypeNew='_1_1';
     else
@@ -300,10 +309,15 @@ for iview=1:size(Param.InputTable,1)
     % check the existence of the expected output image files (from the xml)
     FileDir=SeqData.sequencename;
      FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
-    for i1=1:npi-1
-        for j1=1:npj-1
+    for i1=1:numel(timestamp)/nbfield2
+        for j1=1:nbfield2
             OutputFile=fullfile_uvmat(RootPath,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
+            try 
             A=imread(OutputFile);% check image reading (stop if error)
+            catch ME
+                disp(['checking ' OutputFile])
+                disp(ME.message)
+            end
         end
     end
 end
@@ -377,7 +391,7 @@ for ii=1:SeqData.nb_frames
     i1=floor((ii-1)/nbfield2)+1;
     OutputFile=fullfile_uvmat(PathDir,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
     fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
-    if exist(OutputFile,'file')
+    if exist(OutputFile,'file')% do not recreate existing image file
         fid=0;
     else
         if fid==0 || ~strcmp(fname,fname_prev) % open the bin file if not in use
