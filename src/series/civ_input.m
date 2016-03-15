@@ -720,7 +720,7 @@ if isequal(mode,'pair j1-j2')
             index=index+1;
             numlist_a(index)=numod_a;
             numlist_b(index)=numod_b;
-            if size(time,2)>1 && ~checkframe
+            if size(time,2)>1 && ~checkframe && size(CivInputData.Time,1)>ref_i && size(CivInputData.Time,2)>numod_b
                 dt(numod_a,numod_b)=CivInputData.Time(ref_i+1,numod_b+1)-CivInputData.Time(ref_i+1,numod_a+1);%first time interval dt
                 displ_dt(index)=dt(numod_a,numod_b);
             else

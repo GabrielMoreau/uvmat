@@ -1289,7 +1289,7 @@ rot=alpha*[cos(theta) -sin(theta); sin(theta) cos(theta)]';
 %find the existing lines
 h=findobj(haxes,'Tag','vel');% search existing lines in the current axes
 sizh=size(h);
-set(h,'EraseMode','xor');
+%set(h,'EraseMode','xor');
 set(haxes,'NextPlot','replacechildren');
 
 %drawnow
@@ -1345,10 +1345,10 @@ for icolor=1:ncolor
         else
             set(h(2*icolor-1),'Xdata',matx,'Ydata',maty);
             set(h(2*icolor-1),'Color',colorlist(icolor,:));
-            set(h(2*icolor-1),'EraseMode','xor');
+%            set(h(2*icolor-1),'EraseMode','xor');
             set(h(2*icolor),'Xdata',matxar,'Ydata',matyar);
             set(h(2*icolor),'Color',colorlist(icolor,:));
-            set(h(2*icolor),'EraseMode','xor');
+            %set(h(2*icolor),'EraseMode','xor');
         end
     end
 end

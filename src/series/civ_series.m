@@ -889,6 +889,7 @@ for ifield=1:NbField
         errormsg=struct2nc(ncfile_out,Data);
         if isempty(errormsg)
             disp([ncfile_out ' written'])
+            [success,msg] = fileattrib(ncfile_out ,'+w','g');% allow writing access for the group of users, recursively in the folder
         else
             disp(errormsg)
         end

@@ -450,16 +450,21 @@ t=set(t,uid_content,'value','1');% set NbDtj to 1 (correct error in the xml file
 %% check Dtj
 uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
 uid_content=get(t,uid_Dtj,'contents');
-Dtj=str2num(get(t,uid_content,'value'));
-nbfield2=numel(Dtj)+1;
-timestamp=(reshape(timestamp,nbfield2,[]))';
-diff_Dtj=diff(timestamp(1,:))-Dtj;
-if max(abs(diff_Dtj))>min(Dtj)/1000
-    disp(['Dtj from xml file differs from time stamp by ' num2str(max(abs(diff_Dtj))) ', '])%'
+Dtjstring=get(t,uid_content,'value');
+if isempty(Dtjstring)
+    timestamp=timestamp';
+    nbfield2=1;
 else
-    disp('Dtj OK');
+    Dtj=str2num(get(t,uid_content,'value'));
+    nbfield2=numel(Dtj)+1;
+    timestamp=(reshape(timestamp,nbfield2,[]))';
+    diff_Dtj=diff(timestamp(1,:))-Dtj;
+    if max(abs(diff_Dtj))>min(Dtj)/1000
+        disp(['Dtj from xml file differs from time stamp by ' num2str(max(abs(diff_Dtj))) ', '])%'
+    else
+        disp('Dtj OK');
+    end
 end
-
 %% correct NbDti
 NbDti=size(timestamp,1); %default for series or burst
 uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
@@ -502,7 +507,10 @@ t=set(t,uid_content_Dtk,'value',num2str(Dtk_stamp));
 end
 
 save(t,newxml)
-
+       [success,msg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users  
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' newxml ':']; msg1});%error message for directory creation
+        end
 
 
 

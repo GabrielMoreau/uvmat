@@ -1643,10 +1643,6 @@ if isfield(Param,'OutputSubDir')
             errormsg=['cannot create ' OutputDir ': ' msg1];%error message for directory creation
             return
         end
-        [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
-        if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
-        end
     end
     
 elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
@@ -1658,10 +1654,6 @@ if ~exist(DirXml,'dir')
     if ~strcmp(msg1,'')
         errormsg=['cannot create ' DirXml ': ' msg1];%error message for directory creation
         return
-    end
-    [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-    if success==0
-        msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
     end
 end
 OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
@@ -1683,7 +1675,7 @@ if isfield(Param.IndexRange,'first_j')
     last_j=Param.IndexRange.last_j;
     incr_j=Param.IndexRange.incr_j;
 end
-if last_i < first_i || last_j < first_j 
+if last_i < first_i || last_j < first_j
     errormsg= 'series/Run_Callback:last field index must be larger or equal to the first one';
     return
 end
@@ -1706,7 +1698,7 @@ if isempty(incr_i)
         ref_i=ref_i-1;
         ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
     end
-% increment i is defined: processing is done on first_i:incr_i:last_i;
+    % increment i is defined: processing is done on first_i:incr_i:last_i;
 else
     ref_i=first_i:incr_i:last_i;
     if isempty(incr_j)% automatic finding of the existing j indices
@@ -1722,22 +1714,22 @@ if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
     CPUTime=Param.Action.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
 nbfield_j=numel(ref_j); % number of j indices
-BlockLength=numel(ref_i);% by default, job involves the full set of i field indices 
+BlockLength=numel(ref_i);% by default, job involves the full set of i field indices
 NbProcess=1;
 switch RunMode
     case {'cluster_oar','cluster_pbs'}
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
-             BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
-             BlockLength=max(BlockLength,ceil(numel(ref_i)/500));% possibly increase the BlockLength to have less than 500 jobs
-             NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
+            BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
+            BlockLength=max(BlockLength,ceil(numel(ref_i)/500));% possibly increase the BlockLength to have less than 500 jobs
+            NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
         else
             NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
             NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
         end
     otherwise
-         if ~isempty(Param.IndexRange.NbSlice)
-             NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
-         end
+        if ~isempty(Param.IndexRange.NbSlice)
+            NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
+        end
 end
 
 %% record nbre of output files and starting time for computation for status
@@ -1748,7 +1740,7 @@ if isfield(StatusData,'OutputFileMode')
             StatusData.NbOutputFile=numel(ref_i)*nbfield_j;
         case 'NbInput_i'
             StatusData.NbOutputFile=numel(ref_i);
-        case 'NbSlice'    
+        case 'NbSlice'
             StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
     end
 end
@@ -1826,11 +1818,16 @@ for iprocess=1:NbProcess
                 return
             end
         end
+        %         [success,msg] = fileattrib(filexml{iprocess},'+w','g');% allow writing access for the group of users, recursively in the folder
+        %     if success==0
+        %         msgbox_uvmat('WARNING',{['unable to set group write access to ' filexml{iprocess} ':']; msg});%error message for directory creation
+        %     end
     end
     if strcmp (RunMode,'local')
         switch ActionExt
             case '.m'
                 h_fun(Param);% direct launching
+                
             case '.sh'
                 switch computer
                     case {'PCWIN','PCWIN64'} %Windows system
@@ -1842,7 +1839,10 @@ for iprocess=1:NbProcess
         end
     end
 end
-
+% [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+%     if success==0
+%         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
+%     end
 if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
@@ -1870,6 +1870,7 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
             return
         end
     end
+    
     %create the executable file
     file_exe_global=fullfile_uvmat('','',Param.InputTable{1,3},ExeExt,OutputNomType,...
         first_i,last_i,first_j,last_j);
@@ -1878,17 +1879,25 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
         first_i,last_i,first_j,last_j);
     filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
     
-    
+    %     [success,msg] = fileattrib(DirLog,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    %     if success==0
+    %         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirLog ':']; msg});%error message for directory creation
+    %     end
+    %     [success,msg] = fileattrib(fullfile(OutputDir,'0_EXE'),'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    %     if success==0
+    %         msgbox_uvmat('WARNING',{['unable to set group write access to ' fullfile(OutputDir,'0_EXE') ':']; msg});%error message for directory creation
+    %     end
+    %
     for iprocess=1:NbProcess
         
         %create the executable file
         
         batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
-%         [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
-%         if isequal(fid,-1)
-%             errormsg=['creation of ' batch_file_list{iprocess} ':' message];
-%             return
-%         end
+        %         [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
+        %         if isequal(fid,-1)
+        %             errormsg=['creation of ' batch_file_list{iprocess} ':' message];
+        %             return
+        %         end
         
         % set the log file name
         filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));
@@ -1963,28 +1972,32 @@ switch RunMode
         
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar commands
-        for iprocess=1:NbProcess            
+        for iprocess=1:NbProcess
             [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
             if isequal(fid,-1)
                 errormsg=['creation of .bat file: ' message];
                 return
             end
+            %             [success,msg] = fileattrib(batch_file_list{iprocess},'+w','g');% allow writing access for the group of users, recursively in the folder
+            %     if success==0
+            %         msgbox_uvmat('WARNING',{['unable to set group write access to ' batch_file_list{iprocess} ':']; msg});%error message for directory creation
+            %     end
             if  strcmp(ActionExt,'.sh')
-            cmd=['#!/bin/bash \n '...
-                '#$ -cwd \n '...
-                'hostname && date \n '...
-                'umask 002 \n'...
-                ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
+                cmd=['#!/bin/bash \n '...
+                    '#$ -cwd \n '...
+                    'hostname && date \n '...
+                    'umask 002 \n'...
+                    ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
             else
                 cmd=[...
-                            '#!/bin/bash \n'...
-                            '. /etc/sysprofile \n'...
-                            'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog{iprocess} ''' <<END_MATLAB \n'...
-                            'addpath(''' path_series '''); \n'...
-                            'addpath(''' Param.Action.ActionPath '''); \n'...
-                            '' Param.Action.ActionName  '( ''' filexml{iprocess} '''); \n'...
-                            'exit \n'...
-                            'END_MATLAB \n'];
+                    '#!/bin/bash \n'...
+                    '. /etc/sysprofile \n'...
+                    'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog{iprocess} ''' <<END_MATLAB \n'...
+                    'addpath(''' path_series '''); \n'...
+                    'addpath(''' Param.Action.ActionPath '''); \n'...
+                    '' Param.Action.ActionName  '( ''' filexml{iprocess} '''); \n'...
+                    'exit \n'...
+                    'END_MATLAB \n'];
             end
             fprintf(fid,cmd);%fill the executable file with the  char string cmd
             fclose(fid);% close the executable file
@@ -2004,8 +2017,9 @@ switch RunMode
             end
         end
         % create file containing the list of jobs
-        filename_joblist=fullfile(DirOAR,'job_list.txt');% name of the file contqining the list of executables
+        filename_joblist=fullfile(DirOAR,'job_list.txt');% name of the file containing the list of executables
         fid=fopen(filename_joblist,'w');%open it for writting
+        %         [success,msg] = fileattrib(filename_joblist,'+w','g');% allow writing access for the group of users,
         for iprocess=1:length(batch_file_list)
             fprintf(fid,[batch_file_list{iprocess} '\n']);% write list of exe files
         end
@@ -2035,10 +2049,10 @@ switch RunMode
             '-E ' filename_errors ' '...
             '-O ' filename_log ' '...
             extra_oar ' '...
-           '"oar-parexec -s -f ' filename_joblist ' '...
+            '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"'];
         
-
+        
         
         fprintf(oar_command);% display  system command on the Matlab command window
         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
@@ -2048,6 +2062,10 @@ switch RunMode
         fprintf(fid,result);% store the result (job ID number)
         fclose(fid);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+        %         [success,msg] = fileattrib(DirOAR,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+        %     if success==0
+        %         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirOAR ':']; msg});%error message for directory creation
+        %     end
         
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
@@ -2096,7 +2114,12 @@ switch RunMode
         % fprintf(['command:\n' command '\n\n'])
         system(command, '-echo');
 end
-
+if exist(OutputDir,'dir')
+    [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    if success==0
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
+    end
+end
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
