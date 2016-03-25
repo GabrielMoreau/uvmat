@@ -1639,12 +1639,14 @@ for icell=1:length(CellInfo)
             else
                 UName=ListVarName{ivar_U};
                 VName=ListVarName{ivar_V};
-                ProjData.(UName)=cos(PlaneAngle(3))*ProjData.(UName)+ sin(PlaneAngle(3))*ProjData.(VName);
+                UValue=cos(PlaneAngle(3))*ProjData.(UName)+ sin(PlaneAngle(3))*ProjData.(VName);
                 ProjData.(VName)=(-sin(PlaneAngle(3))*ProjData.(UName)+ cos(PlaneAngle(3))*ProjData.(VName));
+                ProjData.(UName)=UValue;
                 if ~isempty(ivar_W)
                     WName=FieldData.ListVarName{ivar_W};
-                    ProjData.(VName)=ProjData.(VName)+ ProjData.(WName)*sin(Theta);%
+                    VValue=ProjData.(VName)+ ProjData.(WName)*sin(Theta);%
                     ProjData.(WName)=NormVec_X*ProjData.(UName)+ NormVec_Y*ProjData.(VName)+ NormVec_Z* ProjData.(WName);
+                    ProjData.(VName)=VValue;
                 end
             end
         end

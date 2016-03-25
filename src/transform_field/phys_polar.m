@@ -45,6 +45,30 @@
 
 function DataOut=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
 %------------------------------------------------------------------------
+%% request input parameters
+if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
+    prompt = {'origin [x y] of polar coordinates';'reference radius';'reference angle(degrees)'};
+    dlg_title = 'set the parameters for the polar coordinates';
+    num_lines= 2;
+    def     = { '[0 0]';'0';'0'};
+    if isfield(XmlData,'TransformInput')
+        if isfield(XmlData.TransformInput,'PolarCentre')
+            def{1}=num2str(XmlData.TransformInput.PolarCentre);
+        end
+        if isfield(XmlData.TransformInput,'PolarReferenceRadius')
+            def{2}=num2str(XmlData.TransformInput.PolarReferenceRadius);
+        end
+        if isfield(XmlData.TransformInput,'PolarReferenceAngle')
+            def{3}=num2str(XmlData.TransformInput.PolarReferenceAngle);
+        end
+    end
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    DataOut.TransformInput.PolarCentre=str2num(answer{1}); 
+    DataOut.TransformInput.PolarReferenceRadius=str2num(answer{2}); 
+    DataOut.TransformInput.PolarReferenceAngle=str2num(answer{3}); 
+    return
+end
+
 Calib{1}=[];
 if nargin==2||nargin==4
     DataOut=DataIn;%default
@@ -67,27 +91,29 @@ end
 
 %parameters for polar coordinates (taken from the calibration data of the first field)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+XmlData.PolarReferenceRadius=450;
+XmlData.PolarReferenceAngle=450*pi/2;
 origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinates
-if isfield(XmlData,'PolarCentre') && isnumeric(XmlData.PolarCentre)
-    if isequal(length(XmlData.PolarCentre),2);
-        origin_xy= XmlData.PolarCentre;
+radius_offset=0;%reference radius used to offset the radial coordinate r
+angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
+if isfield(XmlData,'TransformInput')
+    if isfield(XmlData.TransformInput,'PolarCentre') && isnumeric(XmlData.TransformInput.PolarCentre)
+        if isequal(length(XmlData.TransformInput.PolarCentre),2);
+            origin_xy= XmlData.TransformInput.PolarCentre;
+        end
+    end
+    if isfield(XmlData.TransformInput,'PolarReferenceRadius') && isnumeric(XmlData.TransformInput.PolarReferenceRadius)
+        radius_offset=XmlData.TransformInput.PolarReferenceRadius;
+    end
+    if radius_offset > 0
+        angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
+    else
+        angle_scale=180/pi; %polar angle in degrees
+    end
+    if isfield(XmlData.TransformInput,'PolarReferenceAngle') && isnumeric(XmlData.TransformInput.PolarReferenceAngle)
+        angle_offset=(pi/180)*XmlData.TransformInput.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
     end
 end
-radius_offset=0;%reference radius used to offset the radial coordinate r 
-angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
-if isfield(XmlData,'PolarReferenceRadius') && isnumeric(XmlData.PolarReferenceRadius)
-    radius_offset=XmlData.PolarReferenceRadius;
-end
-if radius_offset > 0
-    angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
-else
-    angle_scale=180/pi; %polar angle in degrees 
-end
-if isfield(XmlData,'PolarReferenceAngle') && isnumeric(XmlData.PolarReferenceAngle)
-    angle_offset=XmlData.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
-end
-% new x coordinate = radius-radius_offset;
-% new y coordinate = theta*angle_scale-angle_offset
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -172,25 +198,25 @@ if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
         DataOut.Y=DataOut.Y-origin_xy(2);%origin of coordinates at the tank center
         [theta,DataOut.X] = cart2pol(DataOut.X,DataOut.Y);%theta  and X are the polar coordinates angle and radius
           %shift and renormalize the polar coordinates
-        DataOut.X=DataOut.X-radius_offset;%
-        DataOut.Y=theta*angle_scale-angle_offset;% normalized angle: distance along reference radius
+        DataOut.X=DataOut.X-radius_offset;%shift the origin of radius, taken as the new X coordinate
+        DataOut.Y=(theta-angle_offset)*angle_scale;% normalized angle: distance along reference radius,taken as the new Y coordinate
         %transform velocity field if exists
-        if isfield(Data,'U')&isfield(Data,'V')&~isempty(Data.U) & ~isempty(Data.V)& isfield(Data,'dt') 
-            if ~isempty(Data.dt)
-            [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z);
-            [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z);
-            UX=(XOut_2-XOut_1)/Data.dt;
-            VY=(YOut_2-YOut_1)/Data.dt;      
+        if isfield(Data,'U') & isfield(Data,'V') & ~isempty(Data.U) & ~isempty(Data.V)& isfield(Data,'Dt') 
+            if ~isempty(Data.Dt)
+            [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z);% X,Y positions of the vector origin in phys
+            [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z);% X,Y positions of the vector end in phys
+            UX=(XOut_2-XOut_1)/Data.Dt;% phys velocity u component
+            VY=(YOut_2-YOut_1)/Data.Dt; % phys velocity v component     
             %transform u,v into polar coordiantes
             DataOut.U=UX.*cos(theta)+VY.*sin(theta);%radial velocity
-            DataOut.V=(-UX.*sin(theta)+VY.*cos(theta));%./(DataOut.X)%+radius_ref);%angular velocity calculated 
+            DataOut.V=(-UX.*sin(theta)+VY.*cos(theta));%./(DataOut.X)%+radius_ref);% azimuthal velocity component 
             %shift and renormalize the angular velocity
             end
         end
         %transform of spatial derivatives
         if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
-                && isfield(Data,'dt')
-            if ~isempty(Data.dt)
+                && isfield(Data,'Dt')
+            if ~isempty(Data.Dt)
                 % estimate the Jacobian matrix DXpx/DXphys
                 for ip=1:length(Data.X)
                     [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),Z);
@@ -206,7 +232,7 @@ if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
                     DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
                     DataOut.DjUi(ip,:,:)=DjUi';
                 end
-                DataOut.DjUi =  DataOut.DjUi/Data.dt;   %     min(Data.DjUi(:,1,1))=DUDX
+                DataOut.DjUi =  DataOut.DjUi/Data.Dt;   %     min(Data.DjUi(:,1,1))=DUDX
             end
         end
     end
