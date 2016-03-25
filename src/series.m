@@ -468,7 +468,7 @@ function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 InputTable=get(handles.InputTable,'Data');
 RootPathCell=InputTable(:,1);
 SubDirCell=InputTable(:,2);
-oldfile=fullfile(RootPathCell{1},SubDirCell{1});
+oldfile=fullfile(InputTable{1,1},InputTable{1,2});
 if isempty(oldfile)
     % use a file name stored in prefdir
     dir_perso=prefdir;
@@ -480,20 +480,67 @@ if isempty(oldfile)
         end
     end
 end
-%% launch the browser
-fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
-hh=dir(fileinput);
-if numel(hh)>1
-    msgbox_uvmat('ERROR','invalid input, probably a broken link');
-else
-    if ~isempty(fileinput)
-        display_file_name(handles,fileinput,'one')
+
+OutPut=browse_data(oldfile,'on','on');% open the GUI browse_data to get select a campaign dir, experiment and device
+NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
+icount=0;
+for iexp=1:numel(OutPut.Experiment)
+    for idevice=1:numel(OutPut.DataSeries)
+        icount=icount+1;
+        InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
+        InputTable{icount,2}=OutPut.DataSeries{idevice};
+        if isempty(InputTable{icount,3})
+            if icount>1
+            InputTable{icount,3}=InputTable{icount-1,3};
+            else
+                InputTable{icount,3}='';
+            end
+        end
+        if isempty(InputTable{icount,4})
+            if icount>1
+            InputTable{icount,4}=InputTable{icount-1,4};
+            else
+                InputTable{icount,4}='';
+            end
+        end
+                if isempty(InputTable{icount,5})
+            if icount>1
+            InputTable{icount,5}=InputTable{icount-1,5};
+            else
+                InputTable{icount,5}='';
+            end
+        end
     end
 end
-append='one';
-set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
-drawnow
-browse_campaign(handles,append);
+if size(InputTable,1)>icount
+    InputTable(icount+1:size(InputTable,1),:)=[];
+end
+set(handles.InputTable,'Data',InputTable)
+REFRESH_Callback(hObject, eventdata, handles)
+% DataSeries=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+% fileinput=uigetfile_uvmat('pick an input file',DataSeries);
+% hh=dir(fileinput);
+% if numel(hh)>1
+%     msgbox_uvmat('ERROR','invalid input, probably a broken link');
+%     return
+% end
+% 
+% 
+% 
+% %% launch the browser
+% fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
+% hh=dir(fileinput);
+% if numel(hh)>1
+%     msgbox_uvmat('ERROR','invalid input, probably a broken link');
+% else
+%     if ~isempty(fileinput)
+%         display_file_name(handles,fileinput,'one')
+%     end
+% end
+% append='one';
+% set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+% drawnow
+% browse_campaign(handles,append);
 
 %------------------------------------------------------------------------
 % --- fct activated by the browser under 'Open campaign/Browse...'
@@ -1485,7 +1532,6 @@ end
 %% Get  PARAM.xml (not used at this stage)
 errormsg='';%default error message
 xmlfile=fullfile(path_series,'PARAM.xml');
-%test_batch=0;%default: ,no batch mode available
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
 end
@@ -1504,7 +1550,8 @@ if strcmp(ActionExt,'.sh')
     end
 end
 ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
-%% If a compiled version has been selected (ext .sh) check weather it needs to be recompiled
+
+%% If a compiled version has been selected (ext .sh) check wether it needs to be recompiled
 if strcmp(ActionExt,'.sh')
     TransformPath='';
     if ~isempty(get(handles.ActionExt,'UserData'))
@@ -1514,11 +1561,10 @@ if strcmp(ActionExt,'.sh')
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
     [mcrmajor, mcrminor] = mcrversion;   
     MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
-    %hver=ver('MATLAB');
-    %MCRROOT=['MCRROOT' regexprep(hver.Version,'\.','')];%suppress the dot in version number
     RunTime = getenv(MCRROOT);
     ActionNameVersion=[ActionName '_' MCRROOT];
     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']);
+    % compile the .m file if the .sh file does not exist yet
     if ~exist(ActionFullName,'file')
         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
         if strcmp(answer,'Yes')
@@ -1551,6 +1597,7 @@ if strcmp(ActionExt,'.sh')
             end
         end
     end
+
     set(handles.ActionExt,'BackgroundColor',[1 1 1])
      set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
@@ -1773,36 +1820,18 @@ for iprocess=1:NbProcess
     end
     if isempty(Param.IndexRange.NbSlice)
         Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
-        %         Param.IndexRange.first_i=ref_i(1+(iprocess-1)*BlockLength);
         if Param.IndexRange.first_i>last_i
             NbProcess=iprocess-1;% leave the loop, we are at the end of the calculation
             break
         end
-        %Param.IndexRange.last_i=min(ref_i(iprocess*BlockLength),last_i);
-        %Param.IndexRange.last_i=min(first_i+(iprocess)*BlockLength*incr_i-1,last_i);
         Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
     else %multislices (then incr_i is not empty)
-        %         Param.IndexRange.first_i= first_i+incr_i*(iprocess-1);
-        %         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
         Param.IndexRange.first_i= first_i+iprocess-1;
         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
     end
     for ilist=1:size(Param.InputTable,1)
         Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/');%correct path name for PCWIN system
     end
-    
-    %         if isempty(Param.IndexRange.NbSlice)% process by blocks of i index
-    %             Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
-    %             if Param.IndexRange.first_i>last_i
-    %                 NbProcess=iprocess-1;
-    %                 break% leave the loop, we are at the end of the calculation
-    %             end
-    %             Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
-    %         else% process by slices of i index if NbSlice is defined, computation in a single process if NbSlice =1
-    %             Param.IndexRange.first_i= first_i+iprocess-1;
-    %             Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
-    %         end
-    
     
     if isfield(Param,'OutputSubDir')
         t=struct2xml(Param);
@@ -1818,10 +1847,6 @@ for iprocess=1:NbProcess
                 return
             end
         end
-        %         [success,msg] = fileattrib(filexml{iprocess},'+w','g');% allow writing access for the group of users, recursively in the folder
-        %     if success==0
-        %         msgbox_uvmat('WARNING',{['unable to set group write access to ' filexml{iprocess} ':']; msg});%error message for directory creation
-        %     end
     end
     if strcmp (RunMode,'local')
         switch ActionExt
@@ -1839,10 +1864,7 @@ for iprocess=1:NbProcess
         end
     end
 end
-% [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-%     if success==0
-%         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg});%error message for directory creation
-%     end
+
 if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
     batch_file_list=cell(NbProcess,1);% initiate the list of executable files
@@ -1878,26 +1900,12 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     filelog_global=fullfile_uvmat('','',Param.InputTable{1,3},'.log',OutputNomType,...
         first_i,last_i,first_j,last_j);
     filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
-    
-    %     [success,msg] = fileattrib(DirLog,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-    %     if success==0
-    %         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirLog ':']; msg});%error message for directory creation
-    %     end
-    %     [success,msg] = fileattrib(fullfile(OutputDir,'0_EXE'),'+w','g','s');% allow writing access for the group of users, recursively in the folder
-    %     if success==0
-    %         msgbox_uvmat('WARNING',{['unable to set group write access to ' fullfile(OutputDir,'0_EXE') ':']; msg});%error message for directory creation
-    %     end
-    %
+
     for iprocess=1:NbProcess
         
         %create the executable file
         
         batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
-        %         [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
-        %         if isequal(fid,-1)
-        %             errormsg=['creation of ' batch_file_list{iprocess} ':' message];
-        %             return
-        %         end
         
         % set the log file name
         filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));
@@ -1957,7 +1965,7 @@ switch RunMode
                                 '#$ -cwd \n '...
                                 'hostname && date \n '...
                                 'umask 002 \n'...
-                                ActionFullName ' ' RunTime ' ' filexml];%allow writting access to created files for user group
+                                ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
                             fprintf(fid,cmd);%fill the executable file with the  char string cmd
                             fclose(fid);% close the executable file
                             system(['chmod +x ' batch_file_list{iprocess}]);% set the file to executable
@@ -1978,10 +1986,6 @@ switch RunMode
                 errormsg=['creation of .bat file: ' message];
                 return
             end
-            %             [success,msg] = fileattrib(batch_file_list{iprocess},'+w','g');% allow writing access for the group of users, recursively in the folder
-            %     if success==0
-            %         msgbox_uvmat('WARNING',{['unable to set group write access to ' batch_file_list{iprocess} ':']; msg});%error message for directory creation
-            %     end
             if  strcmp(ActionExt,'.sh')
                 cmd=['#!/bin/bash \n '...
                     '#$ -cwd \n '...
@@ -2019,7 +2023,6 @@ switch RunMode
         % create file containing the list of jobs
         filename_joblist=fullfile(DirOAR,'job_list.txt');% name of the file containing the list of executables
         fid=fopen(filename_joblist,'w');%open it for writting
-        %         [success,msg] = fileattrib(filename_joblist,'+w','g');% allow writing access for the group of users,
         for iprocess=1:length(batch_file_list)
             fprintf(fid,[batch_file_list{iprocess} '\n']);% write list of exe files
         end
@@ -2052,8 +2055,6 @@ switch RunMode
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"'];
         
-        
-        
         fprintf(oar_command);% display  system command on the Matlab command window
         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
         filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
@@ -2062,10 +2063,6 @@ switch RunMode
         fprintf(fid,result);% store the result (job ID number)
         fclose(fid);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
-        %         [success,msg] = fileattrib(DirOAR,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-        %     if success==0
-        %         msgbox_uvmat('WARNING',{['unable to set group write access to ' DirOAR ':']; msg});%error message for directory creation
-        %     end
         
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
@@ -2120,6 +2117,7 @@ if exist(OutputDir,'dir')
         msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
     end
 end
+
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -2127,7 +2125,6 @@ set(handles.RUN, 'BusyAction','cancel')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN,'enable','on')
 set(handles.RUN, 'Value',0)
-
 
 %------------------------------------------------------------------------
 % --- read parameters from the GUI series

@@ -487,25 +487,12 @@ end
 % --- search the file inside a campaign, using the GUI browse_data
 % -----------------------------------------------------------------------
 function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
-set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
-drawnow
+% set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+% drawnow
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 DataSeries=fullfile(RootPath,SubDir);
 if isempty(DataSeries) %loads the previously stored file name and set it as default in the file_input box
     DataSeries=get(handles.RootPath,'UserData');
-end
-% RootPath=get(handles.RootPath,'String');
-% if isempty(RootPath)
-%     RootPath=get(handles.RootPath,'UserData');%use Rootpath recored from the personal file at uvmat opening
-% end
-% CampaignPath=fileparts(fileparts(RootPath));
-% DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
-% %DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
-% if isempty(DirFull)
-%     return
-% end
-if isempty(DataSeries)||~ischar(DataSeries)
-    DataSeries=pwd;
 end
 OutPut=browse_data(DataSeries,'on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')

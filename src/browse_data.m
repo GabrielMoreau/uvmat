@@ -86,7 +86,7 @@ else
 end
 
 %% initialize the GUI
-if ~(exist('DataSeries','var') && exist(DataSeries,'dir'))
+if ~(exist('DataSeries','var') && ischar(DataSeries) && exist(DataSeries,'dir'))
     DataSeries=pwd;% current dir is the starting data series by default
 end
 [Experiment,DataSeries,Ext]=fileparts(DataSeries);
@@ -272,7 +272,8 @@ for iexp=1:numel(ListExperiments)
         ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
         ListFiles=ListCells(1,:);%list of dir and file  names
         cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
-        check_keep=cellfun('isempty', cell_remove);
+        cell_remove_tild=regexp(ListFiles,'~$');% detect tild the end of file nqme (do not list)
+        check_keep=cellfun('isempty', cell_remove) & cellfun('isempty', cell_remove_tild);
         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
         for ilist=1:numel(ListFiles)
             if check_keep(ilist)% loop on eligible DataSeries folders
@@ -281,6 +282,7 @@ for iexp=1:numel(ListExperiments)
                     delete(mirror)% delete broken link
                 else %update the list of dataSeries
                     [tild,msg]=fileattrib(mirror);
+                    msg.Name=regexprep(msg.Name,'^/.','/');%remove the dot in /. at the beginning of the name
                     if ~strcmp(msg.Name,mirror)% if it is a link
                         ListFiles{ilist}=['~' ListFiles{ilist}];%mark link by '@' in the list
                     end
