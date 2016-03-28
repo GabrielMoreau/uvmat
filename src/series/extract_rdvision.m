@@ -468,13 +468,14 @@ end
 %% correct NbDti
 NbDti=size(timestamp,1); %default for series or burst
 uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
-if ~isempty(uid_motor_nbslice)
+uid_nbDtk=find(t,'ImaDoc/TranslationMotor/NbDtk');
+if ~isempty(uid_motor_nbslice)&& ~isempty(uid_nbDtk)
     uid_content=get(t,uid_motor_nbslice,'contents');
     NbSlice=str2num(get(t,uid_content,'value'));
     NbDti=NbSlice-1;
-uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-uid_content=get(t,uid_NbDti,'contents');
-t=set(t,uid_content,'value',num2str(NbDti));
+    uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
+    uid_content=get(t,uid_NbDti,'contents');
+    t=set(t,uid_content,'value',num2str(NbDti));
 end
 
 %% adjust Dti
@@ -509,7 +510,7 @@ end
 save(t,newxml)
        [success,msg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users  
         if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' newxml ':']; msg1});%error message for directory creation
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' newxml ':']; msg});%error message for directory creation
         end
 
 

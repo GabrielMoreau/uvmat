@@ -67,7 +67,7 @@ else % no file indexing
     NomType='*';
     i1_series=[];i2_series=[];j1_series=[];j2_series=[];
     i1_input=1;i2_input=[];j1_input=[];j2_input=[];
-    if ~exist(fullfileinput,'file')
+    if exist(fullfileinput,'file')~=2
         RootFile='';
         return
     end

@@ -66,6 +66,9 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
     DataOut.TransformInput.PolarCentre=str2num(answer{1}); 
     DataOut.TransformInput.PolarReferenceRadius=str2num(answer{2}); 
     DataOut.TransformInput.PolarReferenceAngle=str2num(answer{3}); 
+    if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+        DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+    end
     return
 end
 

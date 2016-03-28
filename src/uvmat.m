@@ -3584,6 +3584,9 @@ else
     XmlData_1=[];%default
     if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml file as first priority
         XmlData=UvData.XmlData{1};
+        if isfield(UvData,'TransformInput')
+            XmlData.TransformInput=UvData.TransformInput;
+        end
         if numel(UvData.XmlData)==2
             XmlData_1=UvData.XmlData{2};
         end
@@ -4948,6 +4951,9 @@ if ~isempty(list_path{ichoice})
         if isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
             XmlData=UvData.XmlData{1};
         end
+        if isfield(UvData,'TransformInput')
+            XmlData.TransformInput=UvData.TransformInput;
+        end
         UvData.Field.Action.RUN=0;% indicate that the transform fct is called only to get input param
         DataOut=feval(transform_handle,UvData.Field,XmlData);% execute the transform fct to get the required conditions
         if isfield(DataOut,'CoordUnit')% set the requested coord unit (info used to possibly delete the current projection objects)
@@ -4957,7 +4963,7 @@ if ~isempty(list_path{ichoice})
             UvData.InputFieldType=DataOut.InputFieldType;
         end
         if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
-            UvData.XmlData{1}.TransformInput=DataOut.TransformInput;
+            UvData.TransformInput=DataOut.TransformInput;
         end
     end
 end

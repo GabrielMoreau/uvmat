@@ -517,129 +517,144 @@ if size(InputTable,1)>icount
 end
 set(handles.InputTable,'Data',InputTable)
 REFRESH_Callback(hObject, eventdata, handles)
-% DataSeries=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-% fileinput=uigetfile_uvmat('pick an input file',DataSeries);
-% hh=dir(fileinput);
-% if numel(hh)>1
-%     msgbox_uvmat('ERROR','invalid input, probably a broken link');
-%     return
-% end
-% 
-% 
-% 
-% %% launch the browser
-% fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
-% hh=dir(fileinput);
-% if numel(hh)>1
-%     msgbox_uvmat('ERROR','invalid input, probably a broken link');
-% else
-%     if ~isempty(fileinput)
-%         display_file_name(handles,fileinput,'one')
-%     end
-% end
-% append='one';
-% set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
-% drawnow
+
+
+% %------------------------------------------------------------------------
+% % --- fct activated by the browser under 'Open campaign/Browse...'
+% %------------------------------------------------------------------------ 
+% function MenuBrowseCampaignAppend_Callback(hObject, eventdata, handles)
+% append='append';
 % browse_campaign(handles,append);
 
-%------------------------------------------------------------------------
-% --- fct activated by the browser under 'Open campaign/Browse...'
-%------------------------------------------------------------------------ 
-function MenuBrowseCampaignAppend_Callback(hObject, eventdata, handles)
-append='append';
-browse_campaign(handles,append);
-
-%------------------------------------------------------------------------
-function browse_campaign(handles,append);
-
-%% look for the previously opened file 'oldfile'
-
+% %------------------------------------------------------------------------
+% function browse_campaign(handles,append);
 % 
+% %% look for the previously opened file 'oldfile'
 % 
-% InputTable=get(handles.InputTable,'Data');
-% RootPath=InputTable{1,1};
-% CampaignPath=fileparts(fileparts(RootPath));
-% DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
-% if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+% % 
+% % 
+% % InputTable=get(handles.InputTable,'Data');
+% % RootPath=InputTable{1,1};
+% % CampaignPath=fileparts(fileparts(RootPath));
+% % DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
+% % if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+% %     return
+% % end
+% OutPut=browse_data(oldfile);% open the GUI browse_data to get select a campaign dir, experiment and device
+% if ~isfield(OutPut,'Campaign')
 %     return
 % end
-OutPut=browse_data(oldfile);% open the GUI browse_data to get select a campaign dir, experiment and device
-if ~isfield(OutPut,'Campaign')
-    return
-end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-ListStruct=dir(DirName); %list files and the dir DataSeries
-% select the first appropriate file in the dir
-FileName='';
-for ilist=1:numel(ListStruct)
-    if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
-        FileName=ListStruct(ilist).name;
-        FileInfo=get_file_info(fullfile(DirName,FileName));
-        switch FileInfo.FileType
-            case {'image','multimage','civx','civdata','netcdf'}
-                break
-        end
-    end
-end
-if isempty(FileName)
-    msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
-    return
-end
-
-%% update the list of campaigns in the menubar
-MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
-    {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
-check_dir=isempty(find(strcmp(DirName,MenuCampaign)));
-if check_dir %insert the new campaign in the list if it is not found
-    MenuCampaign(end)=[]; %suppress the last item
-    MenuCampaign=[{DirName};MenuCampaign];%insert the new campaign
-    for ilist=1:numel(MenuCampaign)
-        set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
-    end
-    % save the list for future opening:
-    dir_perso=prefdir;
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-        save (profil_perso,'MenuCampaign','-append'); %store the file names for future opening of uvmat
-    else
-        save (profil_perso,'MenuCampaign','-V6'); %store the file names for future opening of uvmat
-    end
-end
-
-%% display the selected field and related information
-if get(handles.CheckAppend,'Value')
-    display_file_name(handles,fullfile(DirName,FileName),'append')
-else
-    display_file_name(handles,fullfile(DirName,FileName),'one')
-end
-set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
+% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+% ListStruct=dir(DirName); %list files and the dir DataSeries
+% % select the first appropriate file in the dir
+% FileName='';
+% for ilist=1:numel(ListStruct)
+%     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
+%         FileName=ListStruct(ilist).name;
+%         FileInfo=get_file_info(fullfile(DirName,FileName));
+%         switch FileInfo.FileType
+%             case {'image','multimage','civx','civdata','netcdf'}
+%                 break
+%         end
+%     end
+% end
+% if isempty(FileName)
+%     msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
+%     return
+% end
+% 
+% %% update the list of campaigns in the menubar
+% MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
+%     {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
+% check_dir=isempty(find(strcmp(DirName,MenuCampaign)));
+% if check_dir %insert the new campaign in the list if it is not found
+%     MenuCampaign(end)=[]; %suppress the last item
+%     MenuCampaign=[{DirName};MenuCampaign];%insert the new campaign
+%     for ilist=1:numel(MenuCampaign)
+%         set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
+%     end
+%     % save the list for future opening:
+%     dir_perso=prefdir;
+%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+%     if exist(profil_perso,'file')
+%         save (profil_perso,'MenuCampaign','-append'); %store the file names for future opening of uvmat
+%     else
+%         save (profil_perso,'MenuCampaign','-V6'); %store the file names for future opening of uvmat
+%     end
+% end
+% 
+% %% display the selected field and related information
+% if get(handles.CheckAppend,'Value')
+%     display_file_name(handles,fullfile(DirName,FileName),'append')
+% else
+%     display_file_name(handles,fullfile(DirName,FileName),'one')
+% end
+% set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 % --------------------------------------------------------------------
 function MenuCampaign_Callback(hObject, eventdata, handles)
 % -------------------------------------------------------------------- 
 set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
-OutPut=browse_data(get(hObject,'Label'));% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(get(hObject,'Label'),'on','on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-hdir=dir(DirName); %list files and dirs
-for ilist=1:numel(hdir)
-    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
-        FileName=hdir(ilist).name;
-        FileInfo=get_file_info(fullfile(DirName,FileName));
-        switch FileInfo.FileType
-            case {'image','multimage','civx','civdata','netcdf'}
-            break
+NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
+icount=0;
+InputTable=get(handles.InputTable,'Data');
+for iexp=1:numel(OutPut.Experiment)
+    for idevice=1:numel(OutPut.DataSeries)
+        icount=icount+1;
+        InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
+        InputTable{icount,2}=OutPut.DataSeries{idevice};
+        if isempty(InputTable{icount,3})
+            if icount>1
+                InputTable{icount,3}=InputTable{icount-1,3};
+            else
+                InputTable{icount,3}='';
+            end
+        end
+        if isempty(InputTable{icount,4})
+            if icount>1
+                InputTable{icount,4}=InputTable{icount-1,4};
+            else
+                InputTable{icount,4}='';
+            end
+        end
+        if isempty(InputTable{icount,5})
+            if icount>1
+                InputTable{icount,5}=InputTable{icount-1,5};
+            else
+                InputTable{icount,5}='';
+            end
         end
     end
 end
-if get(handles.CheckAppend,'Value')
-    display_file_name(handles,fullfile(DirName,FileName),'append')
-else
-    display_file_name(handles,fullfile(DirName,FileName),'one')
+if size(InputTable,1)>icount
+    InputTable(icount+1:size(InputTable,1),:)=[];
 end
-set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
+set(handles.InputTable,'Data',InputTable)
+REFRESH_Callback(hObject, eventdata, handles)
+
+
+% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+% hdir=dir(DirName); %list files and dirs
+% for ilist=1:numel(hdir)
+%     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
+%         FileName=hdir(ilist).name;
+%         FileInfo=get_file_info(fullfile(DirName,FileName));
+%         switch FileInfo.FileType
+%             case {'image','multimage','civx','civdata','netcdf'}
+%             break
+%         end
+%     end
+% end
+% if get(handles.CheckAppend,'Value')
+%     display_file_name(handles,fullfile(DirName,FileName),'append')
+% else
+%     display_file_name(handles,fullfile(DirName,FileName),'one')
+% end
+% set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 
 % --- Executes when selected cell(s) is changed in InputTable.
@@ -1609,15 +1624,16 @@ switch RunMode
     case {'local','background'}
         NbCore=1;% no need to split the calculation
     case 'cluster_oar'
-        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-            NbCore=1;% one core used only (limitation of Matlab licences)
-            answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
-            if ~strcmp(answer,'Yes')
-                errormsg='Action launch interrupted by user';
-                return
-            end
-            extra_oar='';
-        else
+        %%%%% TEST A REMETTRE%%%%%
+ %       if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+%             NbCore=1;% one core used only (limitation of Matlab licences)
+%             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
+%             if ~strcmp(answer,'Yes')
+%                 errormsg='Action launch interrupted by user';
+%                 return
+%             end
+%             extra_oar='';
+ %       else
             answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
             if isempty(answer)
                                 errormsg='Action launch interrupted by user';
@@ -1625,7 +1641,7 @@ switch RunMode
             end
             NbCore=str2double(answer{1});
             extra_oar=answer{2};
-        end
+ %       end
     case 'cluster_pbs'
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1;% one core used only (limitation of Matlab licences)
@@ -1697,7 +1713,7 @@ elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custo
 end
 DirXml=fullfile(OutputDir,'0_XML');
 if ~exist(DirXml,'dir')
-    [tild,msg1]=mkdir(DirXml);
+    [~,msg1]=mkdir(DirXml);
     if ~strcmp(msg1,'')
         errormsg=['cannot create ' DirXml ': ' msg1];%error message for directory creation
         return
@@ -2112,9 +2128,12 @@ switch RunMode
         system(command, '-echo');
 end
 if exist(OutputDir,'dir')
+    [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir)
+    if MESSAGE.GroupWrite~=1
     [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
     if success==0
-        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg});%error message for directory creation
+    end
     end
 end
 
