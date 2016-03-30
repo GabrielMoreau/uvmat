@@ -380,27 +380,67 @@ for index=1:NbField
             save(t,[fileparts(OutputFile) '.xml'])
         end
         
-    else
-        MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim'};
+    else   %output as netcdf files
+        MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','NbCoord','NbDim'};
         MergeData.Conventions='uvmat';
-        MergeData.nb_coord=2;
-        MergeData.nb_dim=2;
-        dt=[];
-        if isfield(Data{1},'dt')&& isnumeric(Data{1}.dt)
-            dt=Data{1}.dt;
+        MergeData.NbCoord=2;
+        MergeData.NbDim=2;
+        % time interval of PIV
+        Dt=[];
+        if isfield(Data{1},'Dt')&& isnumeric(Data{1}.Dt)
+            Dt=Data{1}.Dt;
         end
         for iview =2:numel(Data)
-            if ~(isfield(Data{iview},'dt')&& isequal(Data{iview}.dt,dt))
-                dt=[];%dt not the same for all fields
+            if ~(isfield(Data{iview},'Dt')&& isequal(Data{iview}.Dt,Dt))
+                Dt=[];%dt not the same for all fields
             end
         end
         if ~isempty(timeread)
             MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
             MergeData.Time=timeread;
         end
-        if ~isempty(dt)
-            MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'dt'}];
-            MergeData.dt=dt;
+        % position of projection plane 
+        if isfield(Data{1},'ProjObjectCoord')&& isfield(Data{1},'ProjObjectAngle')
+            'test'
+            ProjObjectCoord=Data{1}.ProjObjectCoord;
+            ProjObjectAngle=Data{1}.ProjObjectAngle;
+            for iview =2:numel(Data)
+                if ~(isfield(Data{iview},'ProjObjectCoord')&& isequal(Data{iview}.ProjObjectCoord,ProjObjectCoord))...
+                        ||~(isfield(Data{iview},'ProjObjectAngle')&& isequal(Data{iview}.ProjObjectAngle,ProjObjectAngle))
+                    ProjObjectCoord=[];%dt not the same for all fields
+                end
+            end
+            if ~isempty(ProjObjectCoord)
+                MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'ProjObjectCoord'} {'ProjObjectAngle'}];
+                MergeData.ProjObjectCoord=ProjObjectCoord;
+                MergeData.ProjObjectAngle=ProjObjectAngle;
+            end
+        end
+        % coord unit
+        if isfield(Data{1},'CoordUnit')
+            CoordUnit=Data{1}.CoordUnit;
+            for iview =2:numel(Data)
+                if ~(isfield(Data{iview},'CoordUnit')&& isequal(Data{iview}.CoordUnit,CoordUnit))
+                    CoordUnit=[];%CoordUnit not the same for all fields
+                end
+            end
+            if ~isempty(CoordUnit)
+                MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'CoordUnit'}];
+                MergeData.CoordUnit=CoordUnit;
+            end
+        end
+        % time unit
+        if isfield(Data{1},'TimeUnit')
+            TimeUnit=Data{1}.TimeUnit;
+            for iview =2:numel(Data)
+                if ~(isfield(Data{iview},'TimeUnit')&& isequal(Data{iview}.TimeUnit,TimeUnit))
+                    TimeUnit=[];%TimeUnit not the same for all fields
+                end
+            end
+            if ~isempty(TimeUnit)
+                MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'TimeUnit'}];
+                MergeData.TimeUnit=TimeUnit;
+            end
         end
         error=struct2nc(OutputFile,MergeData);%save result file
         if isempty(error)

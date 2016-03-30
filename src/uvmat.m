@@ -1212,10 +1212,17 @@ end
 GeometryCalib=s.GeometryCalib;% get thegeometric calibration data
 
 %% read the content of the GUI set_slice
-SliceData=read_GUI(get(hObject,'parent'));
+hset_slice=get(hObject, 'parent');
+hZ=findobj(hset_slice,'Tag','num_Z_1');
+Z_plane=str2num(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
+SliceData=read_GUI(hset_slice);
 GeometryCalib.NbSlice=SliceData.NbSlice;
 GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
-Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+if numel(Z_plane)<=2
+    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+else
+    set(hZ,'String',num2str(Z_plane))% restitute the display qfter reqding by read_GUI
+end
 GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
 GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
 Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);

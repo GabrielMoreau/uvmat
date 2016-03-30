@@ -447,10 +447,10 @@ if test_newobj
     set(hother,'Selected','off')  
     switch ObjectData.Type
         case 'points'
-            hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color',col,'LineStyle','.','Marker','+');
+            hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color',col,'LineStyle','none','Marker','+');
             for ipt=1:length(xline)
                 PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
-                    col,'LineStyle','.','SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
+                    col,'LineStyle','none','SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
                 %create circle around each point
                 if ~isequal(YMax,0)
                     PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...

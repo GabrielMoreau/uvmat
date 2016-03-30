@@ -2238,7 +2238,7 @@ for icell=1:length(CellVarIndex)
                     end     
                     eval(['ProjData.' VarName '=reshape(vec_B,npY,npX,nbcolor);']);
                 end
-                ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga ant�rieur  
+                ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga ant???rieur  
                 ProjData.ListVarName=[ProjData.ListVarName 'FF'];
                 ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Role='errorflag';

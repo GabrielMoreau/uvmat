@@ -466,17 +466,16 @@ function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 
 %% look for the previously opened file 'oldfile'
 InputTable=get(handles.InputTable,'Data');
-RootPathCell=InputTable(:,1);
-SubDirCell=InputTable(:,2);
+if ~isempty(InputTable)
 oldfile=fullfile(InputTable{1,1},InputTable{1,2});
-if isempty(oldfile)
+else
     % use a file name stored in prefdir
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
     if exist(profil_perso,'file')
         h=load (profil_perso);
-        if isfield(h,'RootPath') && ischar(h.RootPath)
-            oldfile=h.RootPath;
+        if isfield(h,'MenuCampaign') && ~isempty(h.MenuCampaign)&& ischar(h.MenuCampaign{1})
+            oldfile=h.MenuCampaign{1};
         end
     end
 end
@@ -518,83 +517,10 @@ end
 set(handles.InputTable,'Data',InputTable)
 REFRESH_Callback(hObject, eventdata, handles)
 
-
-% %------------------------------------------------------------------------
-% % --- fct activated by the browser under 'Open campaign/Browse...'
-% %------------------------------------------------------------------------ 
-% function MenuBrowseCampaignAppend_Callback(hObject, eventdata, handles)
-% append='append';
-% browse_campaign(handles,append);
-
-% %------------------------------------------------------------------------
-% function browse_campaign(handles,append);
-% 
-% %% look for the previously opened file 'oldfile'
-% 
-% % 
-% % 
-% % InputTable=get(handles.InputTable,'Data');
-% % RootPath=InputTable{1,1};
-% % CampaignPath=fileparts(fileparts(RootPath));
-% % DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
-% % if ~ischar(DirFull)|| ~exist(DirFull,'dir')
-% %     return
-% % end
-% OutPut=browse_data(oldfile);% open the GUI browse_data to get select a campaign dir, experiment and device
-% if ~isfield(OutPut,'Campaign')
-%     return
-% end
-% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-% ListStruct=dir(DirName); %list files and the dir DataSeries
-% % select the first appropriate file in the dir
-% FileName='';
-% for ilist=1:numel(ListStruct)
-%     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
-%         FileName=ListStruct(ilist).name;
-%         FileInfo=get_file_info(fullfile(DirName,FileName));
-%         switch FileInfo.FileType
-%             case {'image','multimage','civx','civdata','netcdf'}
-%                 break
-%         end
-%     end
-% end
-% if isempty(FileName)
-%     msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
-%     return
-% end
-% 
-% %% update the list of campaigns in the menubar
-% MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
-%     {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
-% check_dir=isempty(find(strcmp(DirName,MenuCampaign)));
-% if check_dir %insert the new campaign in the list if it is not found
-%     MenuCampaign(end)=[]; %suppress the last item
-%     MenuCampaign=[{DirName};MenuCampaign];%insert the new campaign
-%     for ilist=1:numel(MenuCampaign)
-%         set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
-%     end
-%     % save the list for future opening:
-%     dir_perso=prefdir;
-%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-%     if exist(profil_perso,'file')
-%         save (profil_perso,'MenuCampaign','-append'); %store the file names for future opening of uvmat
-%     else
-%         save (profil_perso,'MenuCampaign','-V6'); %store the file names for future opening of uvmat
-%     end
-% end
-% 
-% %% display the selected field and related information
-% if get(handles.CheckAppend,'Value')
-%     display_file_name(handles,fullfile(DirName,FileName),'append')
-% else
-%     display_file_name(handles,fullfile(DirName,FileName),'one')
-% end
-% set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
-
 % --------------------------------------------------------------------
 function MenuCampaign_Callback(hObject, eventdata, handles)
 % -------------------------------------------------------------------- 
-set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+
 OutPut=browse_data(get(hObject,'Label'),'on','on');% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
@@ -635,26 +561,6 @@ if size(InputTable,1)>icount
 end
 set(handles.InputTable,'Data',InputTable)
 REFRESH_Callback(hObject, eventdata, handles)
-
-
-% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-% hdir=dir(DirName); %list files and dirs
-% for ilist=1:numel(hdir)
-%     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
-%         FileName=hdir(ilist).name;
-%         FileInfo=get_file_info(fullfile(DirName,FileName));
-%         switch FileInfo.FileType
-%             case {'image','multimage','civx','civdata','netcdf'}
-%             break
-%         end
-%     end
-% end
-% if get(handles.CheckAppend,'Value')
-%     display_file_name(handles,fullfile(DirName,FileName),'append')
-% else
-%     display_file_name(handles,fullfile(DirName,FileName),'one')
-% end
-% set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 
 % --- Executes when selected cell(s) is changed in InputTable.
@@ -815,7 +721,7 @@ elseif strcmp(FileType,'figure')
 end
 
 %% enable other menus and uicontrols
-set(handles.MenuOpenCampaign,'Enable','on')
+% set(handles.MenuOpenCampaign,'Enable','on')
 set(handles.MenuCampaign_1,'Enable','on')
 set(handles.MenuCampaign_2,'Enable','on')
 set(handles.MenuCampaign_3,'Enable','on')
@@ -1005,7 +911,7 @@ first_i=str2num(get(handles.num_first_i,'String'));%retrieve previous first i
 % ref_i=str2num(get(handles.num_ref_i,'String'));%index i given by the input field
 ref_i=1;
 if isfield(SeriesData,'ref_i')
-ref_i=SeriesData.ref_i;
+    ref_i=SeriesData.ref_i;
 end
 if isempty(first_i)
     first_i=ref_i;% first_i updated by the input value
@@ -1018,7 +924,7 @@ end
 first_j=str2num(get(handles.num_first_j,'String'));
 ref_j=1;
 if isfield(SeriesData,'ref_j')
-ref_j=SeriesData.ref_j;
+    ref_j=SeriesData.ref_j;
 end
 if isempty(first_j)
     first_j=ref_j;% first_j updated by the input value
@@ -1045,22 +951,22 @@ elseif last_j>MaxIndex_j
 elseif last_j<first_j
     last_j=first_j;
 end
-set(handles.num_first_i,'String',num2str(first_i)); 
+set(handles.num_first_i,'String',num2str(first_i));
 set(handles.num_first_j,'String',num2str(first_j));
-set(handles.num_last_i,'String',num2str(last_i)); 
+set(handles.num_last_i,'String',num2str(last_i));
 set(handles.num_last_j,'String',num2str(last_j));
 
 %% number of slices set by default
-NbSlice=1;%default
+NbSlice=[];%default
 % read  value set by the first series for the append mode (iwiew >1)
 if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
-    NbSlice=str2num(get(handles.num_NbSlice,'String'));
+    NbSlice=str2double(get(handles.num_NbSlice,'String'));
 end
 
 %% default time settings
 TimeUnit='';
 % read  value set by the first series for the append mode (iwiew >1)
-if iview>1 
+if iview>1
     TimeUnit=get(handles.TimeUnit,'String');
 end
 TimeName='';
@@ -1077,20 +983,20 @@ XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2},InputTable{iview
 if ~isempty(XmlFileName)
     [XmlData,errormsg]=imadoc2struct(XmlFileName);
     if ~isempty(errormsg)
-         msgbox_uvmat('WARNING',['error in reading ' XmlFileName ': ' errormsg]);
+        msgbox_uvmat('WARNING',['error in reading ' XmlFileName ': ' errormsg]);
     end
     % read time if available
     if isfield(XmlData,'Time')
-         Time=XmlData.Time;
+        Time=XmlData.Time;
         TimeName='xml';
     end
     if isfield(XmlData,'Camera')
-        if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
-            if iview>1 && ~isempty(NbSlice) && ~strcmp(NbSlice,XmlData.Camera.NbSlice)
-                msgbox_uvmat('WARNING','inconsistent number of slices with the first field series');
-            end
-            NbSlice=XmlData.Camera.NbSlice;% Nbre of slices from camera
-        end
+        %         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
+        %             if iview>1 && ~isempty(NbSlice) && ~strcmp(NbSlice,XmlData.Camera.NbSlice)
+        %                 msgbox_uvmat('WARNING','inconsistent number of slices with the first field series');
+        %             end
+        %             NbSlice=XmlData.Camera.NbSlice;% Nbre of slices from camera
+        %         end
         if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
             if iview>1 && ~isempty(TimeUnit) && ~strcmp(TimeUnit,XmlData.Camera.TimeUnit)
                 msgbox_uvmat('WARNING','inconsistent time unit with the first field series');
@@ -1099,19 +1005,30 @@ if ~isempty(XmlFileName)
         end
     end
     % number of slices
+    if isfield(XmlData,'TranslationMotor')&& isfield(XmlData.TranslationMotor,'NbSlice')
+        NbSlice_motor=XmlData.TranslationMotor.NbSlice;
+        if ~isempty(NbSlice) && ~isequal(NbSlice_motor,NbSlice)
+                msgbox_uvmat('WARNING','inconsistent Z numbers of Z indices');
+        else
+            NbSlice=NbSlice_motor;
+        end
+    end
+   
     if isfield(XmlData,'GeometryCalib')
         check_calib=1;
         if isfield(XmlData.GeometryCalib,'SliceCoord')
             siz=size(XmlData.GeometryCalib.SliceCoord);
-            if siz(1)>1
-                if iview>1 && ~isempty(NbSlice) && ~strcmp(NbSlice,siz(1))
-                    msgbox_uvmat('WARNING','inconsistent number of Z indices with the first field series');
-                end
+            if ~isempty(NbSlice)&& ~isequal(size(1),NbSlice)
+                msgbox_uvmat('WARNING','inconsistent numbers of Z indices between motor and calibration');
+            else
                 NbSlice=siz(1);
             end
         end
     end
-    set(handles.num_NbSlice,'String',num2str(NbSlice))
+end
+if ~isempty(NbSlice)
+set(handles.num_NbSlice,'String',num2str(NbSlice))
+set(handles.num_NbSlice,'Visible','on')
 end
 
 %% read timing  from the current file (prioritary)
@@ -2012,6 +1929,7 @@ switch RunMode
                 cmd=[...
                     '#!/bin/bash \n'...
                     '. /etc/sysprofile \n'...
+                    'module load matlab/8.6 \n'...% CHOICE OF MATLAB VERSION
                     'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog{iprocess} ''' <<END_MATLAB \n'...
                     'addpath(''' path_series '''); \n'...
                     'addpath(''' Param.Action.ActionPath '''); \n'...
