@@ -1341,61 +1341,29 @@ for icell=1:length(CellInfo)
                 Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
                 
                 
-                coord_x=Coord(:,1,:);% initial x coordinates
-            coord_y=Coord(:,2,:);% initial y coordinates
-            check3D=(numel(CellInfo{icell}.CoordIndex)==3);
-            if check3D
-                coord_z=Coord(:,3,:);
-            end
-            
-            % translate  initial coordinates to account for the new origin
-            coord_x=coord_x-ObjectData.Coord(1,1);
-            coord_y=coord_y-ObjectData.Coord(1,2);
-            if check3D
-                coord_z=coord_z-ObjectData.Coord(1,3);
-            end
-            
-            % selection of the vectors in the projection range (3D case)
-            if check3D &&  width > 0
-                %components of the unitiy vector normal to the projection plane
-                fieldZ=norm_plane(1)*coord_x + norm_plane(2)*coord_y+ norm_plane(3)*coord_z;% distance to the plane
-                indcut=find(abs(fieldZ) <= width);
-                for ivar=VarIndex
-                    VarName=FieldData.ListVarName{ivar};
-                    FieldData.(VarName)=FieldData.(VarName)(indcut);
-                end
-                coord_x=coord_x(indcut);
-                coord_y=coord_y(indcut);
-                coord_z=coord_z(indcut);
-            end
-            
-            %rotate coordinates if needed: coord_X,coord_Y= = coordinates in the new plane
-            Psi=PlaneAngle(1);
-            Theta=PlaneAngle(2);
-            Phi=PlaneAngle(3);
-            if testangle && ~test90y && ~test90x;%=1 for slanted plane
-                coord_X=(coord_x *cos(Phi) + coord_y* sin(Phi));
-                coord_Y=(-coord_x *sin(Phi) + coord_y *cos(Phi))*cos(Theta);
-                coord_Y=coord_Y+coord_z *sin(Theta);
-                coord_X=(coord_X *cos(Psi) - coord_Y* sin(Psi));%A VERIFIER
-                coord_Y=(coord_X *sin(Psi) + coord_Y* cos(Psi));
-            else
-                coord_X=coord_x;
-                coord_Y=coord_y;
-            end
-            
-            %restriction to the range of X and Y if imposed by the projection object
-
-                
-                Coord(:,1,:)=coord_X;% initial x coordinates
-            Coord(:,2,:)=coord_Y;% initial y coordinates
-                
-                
                 NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});
                 SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
+                checkUV=0;
                 if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
                     FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
+                    checkUV=1;
                 end
+                
+                %rotate coordinates if needed: coord_X,coord_Y= = coordinates in the new plane
+                Psi=PlaneAngle(1);
+                Theta=PlaneAngle(2);
+                Phi=PlaneAngle(3);
+                if testangle && ~test90y && ~test90x;%=1 for slanted plane
+                    new_XI=XI*cos(Phi) - YI*sin(Phi)+ObjectData.Coord(1);
+                    YI=XI *sin(Phi) + YI *cos(Phi)+ObjectData.Coord(2);
+                    XI=new_XI;
+                    %                 if checkUV
+                    %                     UValue=cos(Phi)*FieldVar(:,:,1)+ sin(Phi)*FieldVar(:,:,2);
+                    %                     FieldVar(:,:,2)=-sin(Phi)*FieldVar(:,:,1)+ cos(Phi)*FieldVar(:,:,2);
+                    %                     FieldVar(:,:,1)=UValue;
+                    %                 end
+                end
+                
                 % interpolate data using thin plate spline
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
                 

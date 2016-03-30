@@ -3611,13 +3611,14 @@ else
     end
 end
 
-%% calculate tps coefficients if needed
-UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
-
 %% get bounds and dimensions of the input field
 UvData.Field=find_field_bounds(UvData.Field);
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
+
+
+%% calculate tps coefficients if needed
+UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
 %% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
 % if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
