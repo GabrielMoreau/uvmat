@@ -121,45 +121,29 @@ for isub=1:NbSubDomain
         [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
     end
     for ilist=1:length(FieldName)
-        %Operator{ilist}='';%default empty operator (vec, norm,...)
-        %r=regexp(FieldName{ilist},'(?<Operator>(^vec|^norm|^curl|^div|^strain))\((?<UName>.+),(?<VName>.+)\)$','names');% TODO, replace U, V
         switch FieldName{ilist}
             case 'vec(U,V)'
-%                 ListVar=[ListVar {'U', 'V'}];
-%                 VarAttribute{var_count+1}.Role='vector_x';
-%                 VarAttribute{var_count+2}.Role='vector_y';
                 DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
                 DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'U'
-%                 ListVar=[ListVar {'U'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
             case 'V'
-%                 ListVar=[ListVar {'V'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'norm(U,V)'
-%                 ListVar=[ListVar {'norm'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 U=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
                 V=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
                 DataOut.norm(ind_sel)=sqrt(U.*U+V.*V);
             case 'curl(U,V)'
-%                 ListVar=[ListVar {'curl'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'div(U,V)'
-%                 ListVar=[ListVar {'div'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
+%             case 'curl_polar(U,V)'
+%                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)+(-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *(Coord_interp(ind_sel,1).*FieldVar(1:nbvec_sub+3,isub,2)))./Coord_interp(ind_sel,1);
             case 'strain(U,V)'
-%                 ListVar=[ListVar {'strain'}];
-%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
         end
     end
 end
-%DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
 nbval(nbval==0)=NaN;% to avoid division by zero for averaging
 ListFieldOut=fieldnames(DataOut);
 for ifield=1:numel(ListFieldOut)

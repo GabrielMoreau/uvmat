@@ -169,6 +169,7 @@ for ivar=1:length(ListVarName)
 end
 if strcmp(action,'one_input')
 netcdf.close(nc)
+[success,errormsg] = fileattrib(flname ,'+w');% allow writing access for the group of users
 end
 
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format

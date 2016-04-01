@@ -56,7 +56,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=merge_proj(Param)
+function ParamOut=merge_proj_polar(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -104,7 +104,7 @@ else
 end
 
 %% define the directory for result file (with path=RootPath{1})
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+OutputDir=['three_cameras' Param.OutputDirExt];% subdirectory for output files
 
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
@@ -318,7 +318,7 @@ for index=1:NbField
         end
         
         %% calculate tps coefficients if needed
-        check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
+        check_proj_tps= 1;
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
         
         %% projection on object (gridded plane)
