@@ -10,7 +10,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%
 % OUTPUT:
 % t: xmltree reproducing the structure of Object
-% type 'save(t)' to visualize the xml text and save(filename,t) to save it in a file
+% type 'save(t)' to visualize the xml text and save(t,filename) to save it in a file
 % to set the title tag of the file, type t=set(t,1,'name','titletag')
 %
 % INPUT:

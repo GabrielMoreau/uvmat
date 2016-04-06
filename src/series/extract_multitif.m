@@ -64,7 +64,7 @@ function ParamOut=ima2netcdf(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; % edit box nbre of slices made active
+    ParamOut.NbSlice=1; % impose calculation in a single process (no parallel processing to avoid 'holes'))
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -86,24 +86,17 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    else
-        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
-        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-        if ~exist(FirstFileName,'file')
-             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
-        end
     end
 
     %% check the validity of  input file types
-    ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
     FileInfo=get_file_info(FirstFileName);
-    FileType=FileInfo.FileType;
-    CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
-    if ~CheckImage
-        msgbox_uvmat('ERROR',['invalid file type input: ' FileType ' not an image'])
+    if ~strcmp(FileInfo.FileType,'multimage')
+        msgbox_uvmat('ERROR',['invalid file type input: ' FileInfo.FileType ' not an image'])
         return
     end
+    xmlinput=uigetfile_uvmat('pick xml file for timing',fileparts(fileparts(FirstFileName)),'.xml');
+    [tild,ParamOut.ActionInput.XmlFile]=fileparts(xmlinput);
+    ParamOut.ActionInput.XmlFile
     
     return
 end
@@ -130,16 +123,27 @@ check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
 ListFile=ListCells(1,find(~check_dir & ~check_bad));
 
-% %% create the netcdf file with name flname in format NETCDF4
+%% check file names
+RootName=regexprep(ListFile{1},'.tif$','')
+for ilist=2:numel(ListFile)
+    rank=regexprep(ListFile{ilist},'.tif$','');
+    rank=regexprep(rank,['^' RootName '@'],'');
+    if ~isequal(str2num(rank),ilist-1)
+        disp('error in the list of input files')
+        return
+    end
+end
+
+%% output directory
  OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
  
-% cmode = netcdf.getConstant('NETCDF4');
-% cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
-% cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
-% nc = netcdf.create(fullfile(OutputDir,'images.nc'), cmode); 
+%% Timing 
+XmlInputFile=fullfile(Param.InputTable{1,1},[Param.ActionInput.XmlFile '.xml'])
+XmlInput=imadoc2struct(XmlInputFile,'Camera');
 
 %% Main loop
-ImagesPerLevel=100;%100;
+
+ImagesPerLevel=size(XmlInput.Time,2)-1;%100;
 count=0;
 %count=316;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 4684 images -> start at 316 start 67->_11_1
 %count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 3066 images
@@ -157,9 +161,9 @@ for ifile=1:numel(ListFile)
         A=imread(ImageName,iframe);
 
         if isequal(ImagesPerLevel,1)% mode series 
-            
+            i_index=count+1;
             OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
-        else % mode multilevel or volume (indices i and j)
+        else % indices i and j 
             i_index=fix(count/ImagesPerLevel)+1;
             j_index=mod(count,ImagesPerLevel)+1;
             OutputFile=fullfile(OutputDir,['img_' num2str(i_index) '_' num2str(j_index) '.png']);
@@ -169,4 +173,15 @@ for ifile=1:numel(ListFile)
     end
 end
 
+%% create the xml file of PCO camera
+XmlInput.Camera.CameraName='PCO';
+t=struct2xml(XmlInput.Camera);
+t=set(t,1,'name','ImaDoc');
+save(fullfile(Param.InputTable{1,1},'PCO.xml'),t)
 
+%% remove initial files if transfer OK
+    if i_index== (size(XmlInput.Time,1)-1)
+
+        [SUCCESS,MESSAGE]=rmdir(DirImages,'s')
+       
+    end

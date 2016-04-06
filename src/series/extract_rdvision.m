@@ -337,26 +337,26 @@ delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that p
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew)
-% BINREAD_RDV Permet de lire les fichiers bin g�n�r�s par Hiris � partir du
-% fichier seq associ�.
+% BINREAD_RDV Permet de lire les fichiers bin g???n???r???s par Hiris ??? partir du
+% fichier seq associ???.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
-%   l'image d'indice FRAME_IDX de la s�quence FILENAME.
+%   l'image d'indice FRAME_IDX de la s???quence FILENAME.
 %
-%   Entr�es
+%   Entr???es
 %   -------
-%   FILENAME  : Nom du fichier s�quence (.seq).
-%   FRAME_IDX : Indice de l'image � lire. Si FRAME_IDX vaut -1 alors la
-%   s�quence est enti�rement lue. Si FRAME_IDX est un tableau d'indices
+%   FILENAME  : Nom du fichier s???quence (.seq).
+%   FRAME_IDX : Indice de l'image ??? lire. Si FRAME_IDX vaut -1 alors la
+%   s???quence est enti???rement lue. Si FRAME_IDX est un tableau d'indices
 %   alors toutes les images d'incides correspondant sont lues. Si FRAME_IDX
 %   est un tableau vide alors aucune image n'est lue mais le nombre
-%   d'images et tous les timestamps sont renvoy�s. Les indices commencent �
-%   1 et se termines � NB_FRAMES.
+%   d'images et tous les timestamps sont renvoy???s. Les indices commencent ???
+%   1 et se termines ??? NB_FRAMES.
 %
 %   Sorties
 %   -------
 %   IMGS        : Images de sortie.
 %   TIMESTAMPS  : Timestaps des images lues.
-%   NB_FRAMES   : Nombres d'images dans la s�quence.
+%   NB_FRAMES   : Nombres d'images dans la s???quence.
 NbBinFile=0;
 BinSize=0;
 fid=0;
@@ -466,10 +466,10 @@ else
     end
 end
 %% correct NbDti
-NbDti=size(timestamp,1); %default for series or burst
+NbDti=size(timestamp,1)-1; %default for series or burst
 uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
-uid_nbDtk=find(t,'ImaDoc/TranslationMotor/NbDtk');
-if ~isempty(uid_motor_nbslice)&& ~isempty(uid_nbDtk)
+uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+if ~isempty(uid_motor_nbslice)&& ~isempty(uid_NbDtk)
     uid_content=get(t,uid_motor_nbslice,'contents');
     NbSlice=str2num(get(t,uid_content,'value'));
     NbDti=NbSlice-1;
@@ -495,7 +495,6 @@ uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
 if ~isempty(uid_Dtk)
 uid_content_Dtk=get(t,uid_Dtk,'contents');
 Dtk=str2num(get(t,uid_content_Dtk,'value'));
-uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
 uid_content_NbDtk=get(t,uid_NbDtk,'contents');
 NbDtk=str2num(get(t,uid_content_NbDtk,'value'));
 Dtk_stamp=(timestamp(end-NbDti,1)-timestamp(1,1))/NbDtk;
@@ -510,7 +509,7 @@ end
 save(t,newxml)
        [success,msg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users  
         if success==0
-            msgbox_uvmat('WARNING',{['unable to set group write access to ' newxml ':']; msg});%error message for directory creation
+            disp({['warning: unable to set group write access to ' newxml ':']; msg});%error message for directory creation
         end
 
 
