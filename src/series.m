@@ -1423,7 +1423,7 @@ if ~isfield(SeriesData,'i1_series')
     errormsg='The input field series needs to be refreshed: press REFRESH';
     return
 end
-if isfield(Param,'InputFields')&& isequal(Param.InputFields.FieldName,'get_field...')
+if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequal(Param.InputFields.FieldName,'get_field...')
     errormsg='input field name(s) not defined, select get_field...';
     return
 end
@@ -2293,10 +2293,10 @@ else
 end   
 
 %% Detect the types of input files and set menus and default options in 'FieldName'
-if FieldNameRequest && numel(iview_netcdf)>=1
-    set(handles.InputFields,'Visible','on')
-    %if CheckList==0        % not civ input made
-        if isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
+if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
+    set(handles.InputFields,'Visible','on')   
+    if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
+        set(handles.FieldName,'Visible','on')
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
         ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
         for ilist=1:numel(ind_var)
@@ -2353,10 +2353,9 @@ if FieldNameRequest && numel(iview_netcdf)>=1
         else
             set(handles.FieldName_1,'Visible','off')
         end
-        end
-%     else
-%         set(handles_coord,'Visible','off')% no coord display for civ data
-%     end
+    else
+        set(handles.FieldName,'Visible','off')
+    end
     set(handles.FieldName,'String',FieldList)
 else
     set(handles.InputFields,'Visible','off')
