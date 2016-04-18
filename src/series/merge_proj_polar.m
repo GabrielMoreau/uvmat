@@ -311,6 +311,8 @@ tstart=tic; %used to record the computing time
 
 
 for index=1:NbField
+    disp(['index=' num2str(index)])
+    disp(['ellapsed time ' num2str(toc(tstart)/60,2) ' minutes'])
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -369,7 +371,7 @@ for index=1:NbField
             disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
         end
-        disp([filecell{iview,index} 'read'])
+        disp([filecell{iview,index} ' read'])
         ListVar=Data{iview}.ListVarName;
         for ilist=1:numel(ListVar)
             Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
