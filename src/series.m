@@ -138,7 +138,7 @@ set(handles.Action,'UserData',NbBuiltinAction)
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [code, message] = system...
-    ('LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') |... [s for s in p if ''matlab'' not in s] | '':''.join(p)") python -c "import fluiddyn"'); 
+    ('LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') |... [s for s in p if ''matlab'' not in s] | '':''.join(p)") python -c "import fluidimage"'); 
 if code==0
     ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
 else
@@ -1734,7 +1734,7 @@ if strcmp(ActionExt, '.py (in dev.)')
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n' ...
         'The option .py is used. It is still in development.\n' ...
         'Do not use it unless you really know what you do!\n' ...
-        'To try it, first install Pyp and the most recent version of FluidDyn.\n' ...
+        'To try it, first install Pyp and the most recent version of FluidImage.\n' ...
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
     RunMode = 'python';
 end
@@ -2041,7 +2041,7 @@ switch RunMode
     case 'python'
         command = [
             'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
-            'python -m fluiddyn.postproc.uvmat ' filexml{iprocess}];
+            'python -m fluidimage.run_from_xml ' filexml{iprocess}];
         % fprintf(['command:\n' command '\n\n'])
         system(command, '-echo');
 end
