@@ -330,10 +330,12 @@ if strcmp(answer,'Yes') %store the calibration data
         msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
         GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
     end
+    
 else
     GeometryCalib=[];
     index=1;
 end
+
 
 %------------------------------------------------------------------------
 % --- determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)

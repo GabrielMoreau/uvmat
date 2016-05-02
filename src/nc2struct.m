@@ -275,7 +275,7 @@ if ~isequal(hhh,'')
                         Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself)
                     end
                 end
-                Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size)); %read the variable data
+                Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size); %read the variable data
                 Data.(VarName)=squeeze(Data.(VarName));%remove singeton dimension
             else
                 Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data

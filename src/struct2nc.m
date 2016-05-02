@@ -1,6 +1,6 @@
 % 'struct2nc': create a netcdf file from a Matlab structure
 %---------------------------------------------------------------------
-% errormsg=struct2nc(flname,Data)
+% errormsg=struct2nc(flname,Data,action)
 %
 % OUTPUT:
 % errormsg=error message, =[]: default, no error
@@ -15,6 +15,7 @@
 %      (requested) .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)
 %       (optional) .VarAttribute: cell array of structures of the form .VarAttribute{ivar}.key=value, defining an attribute key name and value for the variable #ivar
 %      (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+% action: if ='keep_open', don't close the file after creation, keep it open for further data input
 
 %=======================================================================
 % Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -34,31 +35,30 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [errormsg,nc]=struct2nc(flname,Data,action)
+function [errormsg,nc]=struct2nc(flname,Data,action,ListDimName,DimValue,VarDimIndex)
 nc=[];
-% if ~ischar(flname)
-%     errormsg='invalid input for the netcf file name';
-%     return
-% end
+if ~ischar(flname)
+    errormsg='invalid input for the netcf file name';
+    return
+end
 if ~exist('Data','var')
      errormsg='no data  input for the netcdf file';
     return
 end 
-if ~exist('action','var')
-    action='one_input'; %fill the file with data and close it
-end
 
 
 %% check the validity of the input field structure
+if ~ (exist('action','var') && strcmp(action,'keep_open'))
 [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
 if ~isempty(errormsg)
     errormsg=['error in struct2nc:invalid input structure_' errormsg];
     return
 end
+end
 ListVarName=Data.ListVarName;
 
 %% create the netcdf file with name flname in format NETCDF4
-if ischar(flname)
+% if ischar(flname)
     FilePath=fileparts(flname);
     if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
         errormsg=['directory ' FilePath ' needs to be created'];
@@ -68,9 +68,9 @@ if ischar(flname)
     cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
     cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
     nc = netcdf.create(flname, cmode);
-else
-    nc=flname;
-end
+% else
+%     nc=flname;
+% end
 
 %% write global constants
 if isfield(Data,'ListGlobalAttribute')
@@ -112,9 +112,9 @@ end
 varid=nan(1,length(Data.ListVarName));
 for ivar=1:length(ListVarName)
     if isfield(Data,ListVarName{ivar})
-        VarClass=class(Data.(ListVarName{ivar}));
+        VarClass{ivar}=class(Data.(ListVarName{ivar}));
         VarType='';
-        switch VarClass
+        switch VarClass{ivar}
             case {'single','double'}
                 VarType='nc_float'; % store all floating reals as single
             case {'uint8','int16','uint16','int32','uint32','int64','uint64'}
@@ -145,33 +145,35 @@ end
 netcdf.endDef(nc); %put in data mode
 
 %% fill the variables with input data
-for ivar=1:length(ListVarName)
-    if ~isnan(varid(ivar))
-        VarVal=Data.(ListVarName{ivar}); 
-        %varval=values of the current variable 
-        VarDimName=Data.VarDimName{ivar};
-        if ischar(VarDimName)
-            VarDimName={VarDimName};
-        end
-        siz=size(VarVal);
-        testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
-        testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), DimValue(VarDimIndex{ivar}));%matlab vector
-        %testcolumn=isequal(length(siz),2) && isequal(siz(1), DimValue(VarDimIndex{ivar}))&& isequal(siz(2),1);%matlab column vector
-        if testline || testrange
-            if testrange
-                VarVal=linspace(VarVal(1),VarVal(2),DimValue(VarDimIndex{ivar}));% restitute the whole array of coordinate values
+if ~(exist('action','var') && strcmp(action,'keep_open'))
+    for ivar=1:length(ListVarName)
+        if ~isnan(varid(ivar))
+            VarVal=Data.(ListVarName{ivar});
+            if strcmp(VarClass{ivar},'single')
+                VarVal=single(VarVal);
             end
-            netcdf.putVar(nc,varid(ivar), double(VarVal'));
-        else
-            netcdf.putVar(nc,varid(ivar), double(VarVal));
-        end      
+            %varval=values of the current variable
+            VarDimName=Data.VarDimName{ivar};
+            if ischar(VarDimName)
+                VarDimName={VarDimName};
+            end
+            siz=size(VarVal);
+            testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
+            testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), DimValue(VarDimIndex{ivar}));%matlab vector
+            %testcolumn=isequal(length(siz),2) && isequal(siz(1), DimValue(VarDimIndex{ivar}))&& isequal(siz(2),1);%matlab column vector
+            if testline || testrange
+                if testrange
+                    VarVal=linspace(VarVal(1),VarVal(2),DimValue(VarDimIndex{ivar}));% restitute the whole array of coordinate values from the first and last values
+                end
+                netcdf.putVar(nc,varid(ivar), VarVal');
+            else
+                netcdf.putVar(nc,varid(ivar), VarVal);
+            end
+        end
     end
 end
-if strcmp(action,'one_input')
-netcdf.close(nc)
+ netcdf.close(nc)
 [success,errormsg] = fileattrib(flname ,'+w');% allow writing access for the group of users
-end
-
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
 %------------------------------------------------------------------------
 % [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data)

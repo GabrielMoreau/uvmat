@@ -957,7 +957,7 @@ if test_ima
             map=[vec' vec' vec'];
             colormap(map);
         else
-            colormap('default'); % default matlab colormap ('jet')
+            colormap('jet'); % default matlab colormap ('jet')
         end
         
         if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
