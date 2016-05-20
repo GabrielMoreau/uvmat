@@ -145,19 +145,22 @@ NbField=NbField_j*NbField_i; %total number of fields
 
 %% define the name for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-% OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1',i1_series{1}(1));
-% CheckOverwrite=1;%default
-% if isfield(Param,'CheckOverwrite')
-%     CheckOverwrite=Param.CheckOverwrite;
-% end
-% if ~CheckOverwrite && exist(OutputFile,'file')
-%     disp(['existing output file ' OutputFile ' already exists, skip to next field'])
-%     return% skip iteration if the mode overwrite is desactivated and the result file already exists
-% end
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1',i1_series{1}(1));
+CheckOverwrite=1;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
+if ~CheckOverwrite && exist(OutputFile,'file')
+    disp(['existing output file ' OutputFile ' already exists, skip to next field'])
+    return% skip iteration if the mode overwrite is desactivated and the result file already exists
+end
 
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
+
+%% prepare output file content
+
 
 
 %% determine the file type on each line from the first input file 
@@ -262,10 +265,7 @@ end
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 tstart=tic; %used to record the computing time
-CheckOverwrite=1;%default
-if isfield(Param,'CheckOverwrite')
-    CheckOverwrite=Param.CheckOverwrite;
-end
+TimeData=[];
 
 for index=1:NbField
     disp(['index=' num2str(index)])
@@ -276,28 +276,25 @@ for index=1:NbField
         return
     end
     
-        %% generating the name of the merged field
-        i1=i1_series{1}(index);
-        if ~isempty(i2_series{end})
-            i2=i2_series{end}(index);
+    %% generating the name of the merged field
+    i1=i1_series{1}(index);
+    if ~isempty(i2_series{end})
+        i2=i2_series{end}(index);
+    else
+        i2=i1;
+    end
+    j1=1;
+    j2=1;
+    if ~isempty(j1_series{1})
+        j1=j1_series{1}(index);
+        if ~isempty(j2_series{end})
+            j2=j2_series{end}(index);
         else
-            i2=i1;
+            j2=j1;
         end
-        j1=1;
-        j2=1;
-        if ~isempty(j1_series{1})
-            j1=j1_series{1}(index);
-            if ~isempty(j2_series{end})
-                j2=j2_series{end}(index);
-            else
-                j2=j1;
-            end
-        end
-       OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,'.nc',NomTypeOut,i1,i2,j1,j2);
-        if ~CheckOverwrite && exist(OutputFile,'file')
-            disp(['existing output file ' OutputFile ' already exists, skip to next field'])
-            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
-        end
+    end
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,'.nc',NomTypeOut,i1,i2,j1,j2);
+    
     
     %% z position
     ZIndex=mod(i1_series{1}(index)-1,NbSlice_calib{1})+1;%Zindex for phys transform
@@ -316,7 +313,10 @@ for index=1:NbField
         TopoRadius=40*sin(acos((20+ZPos)/40));
         ind_mask=(XI'.*XI'+YI'.*YI')<TopoRadius*TopoRadius;% indidces of data to mask
     end
-    
+    if ~CheckOverwrite && exist(OutputFile,'file')
+        disp(['existing output file ' OutputFile ' already exists, skip to next field'])
+        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+    end
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
@@ -414,7 +414,7 @@ for index=1:NbField
     [npy,npx]=size(Unew);
     
     %% create the output file for the first iteration of the loop
-    if index==1
+    if isempty(TimeData)% initialize 
         TimeData.ListGlobalAttribute={'Conventions','Project','CoordUnit','TimeUnit','ZPos','Time'};
         TimeData.Conventions='uvmat';
         TimeData.Project='2016_Circumpolar';
@@ -434,21 +434,21 @@ for index=1:NbField
         TimeData.radius=radius_shifted;
         TimeData.azimuth=azimuth_arclength;
     end
-        
-        %% append data to the netcdf file for next iterations
-        TimeData.Time=timeread;
-       TimeData.U=Unew;
-       TimeData.V=Vnew;
-       TimeData.curl=MergeData.curl;
-       TimeData.div=MergeData.div;
-
-            [error,ncid]=struct2nc(OutputFile,TimeData);%save result file
-        if isempty(error)
-            disp(['output file ' OutputFile ' written'])
-        else
-            disp(error)
-        end
-            ellapsed_time=toc(tstart);
+    
+    %% append data to the netcdf file for next iterations
+    TimeData.Time=timeread;
+    TimeData.U=Unew;
+    TimeData.V=Vnew;
+    TimeData.curl=MergeData.curl;
+    TimeData.div=MergeData.div;
+    
+    error=struct2nc(OutputFile,TimeData);%save result file
+    if isempty(error)
+        disp(['output file ' OutputFile ' written'])
+    else
+        disp(error)
+    end
+    ellapsed_time=toc(tstart);
     disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
 end
 

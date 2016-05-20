@@ -549,7 +549,7 @@ for ifield=1:NbField
         Data.VarDimName=[Data.VarDimName {'nb_vec_1'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';
-        Data.Civ1_FF=fix(Param.ActionInput.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
+        Data.Civ1_FF=int8(fix(Param.ActionInput.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V));
         Data.CivStage=2;
     end
     %% Patch1
@@ -594,7 +594,7 @@ for ifield=1:NbField
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep 0 for the others
         Data.Civ1_V_smooth(ind_good)=Vres;
-        Data.Civ1_FF(ind_good)=FFres;
+        Data.Civ1_FF(ind_good)=int8(FFres);
         disp('patch1 performed')
     end
     

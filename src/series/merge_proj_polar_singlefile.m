@@ -1,4 +1,4 @@
-%'merge_proj': concatene several fields from series, project on a polar grid
+%'merge_proj': concatene several fields from series, can project them on a regular grid in phys coordinates
 %------------------------------------------------------------------------
 % function ParamOut=merge_proj(Param)
 %------------------------------------------------------------------------
@@ -103,7 +103,6 @@ HeadData.VarAttribute={'coord_y','coord_x'} ;
 HeadData.radius=radius_shifted;
 HeadData.azimuth=azimuth_arclength;    
 thresh2=16; % square of the interpolation range
-
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 ParamOut=[]; %default output
 RUNHandle=[];
@@ -145,19 +144,70 @@ NbField=NbField_j*NbField_i; %total number of fields
 
 %% define the name for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-% OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1',i1_series{1}(1));
-% CheckOverwrite=1;%default
-% if isfield(Param,'CheckOverwrite')
-%     CheckOverwrite=Param.CheckOverwrite;
-% end
-% if ~CheckOverwrite && exist(OutputFile,'file')
-%     disp(['existing output file ' OutputFile ' already exists, skip to next field'])
-%     return% skip iteration if the mode overwrite is desactivated and the result file already exists
-% end
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1',i1_series{1}(1));
+CheckOverwrite=1;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
+if ~CheckOverwrite && exist(OutputFile,'file')
+    DataOld=nc2struct(OutputFile,{'U'});
+    if size(DataOld.U,1)==495
+    disp(['existing output file ' OutputFile ' already exists, skip to next field'])
+    return% skip iteration if the mode overwrite is desactivated and the result file already exists
+    else
+        CheckOverwrite=1;
+    end
+end
 
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
+
+%% prepare output file content
+    TimeData.ListGlobalAttribute={'Conventions','Project','CoordUnit','TimeUnit','ZPos'};
+    TimeData.Conventions='uvmat';
+    TimeData.Project='2016_Circumpolar';
+    TimeData.CoordUnit='cm';
+    TimeData.TimeUnit='s';
+    TimeData.ZPos=0;
+    TimeData.ListVarName={'time','radius','azimuth','U','V','curl','div'};
+    TimeData.VarDimName={'time','radius','azimuth',{'time','radius','azimuth'},{'time','radius','azimuth'}...
+                        {'time','radius','azimuth'},{'time','radius','azimuth'}};
+                    TimeData.VarAttribute{1}.Role='';
+                    TimeData.VarAttribute{2}.Role='';
+                    TimeData.VarAttribute{3}.Role='';
+                    TimeData.VarAttribute{4}.Role='vector_x';
+                    TimeData.VarAttribute{5}.Role='vector_y';
+                    TimeData.VarAttribute{6}.Role='scalar';
+                    TimeData.VarAttribute{7}.Role='scalar';
+                    TimeData.time=nan(1,NbField);
+                    TimeData.radius=radius_shifted;
+                    TimeData.azimuth=azimuth_arclength;
+                    nby=numel(radius);
+                    nbx=numel(azimuth);
+                    TimeData.U=nan(NbField,nby,nbx);
+                    TimeData.V=nan(NbField,nby,nbx);
+                    TimeData.curl=nan(NbField,nby,nbx);
+                    TimeData.div=nan(NbField,nby,nbx);
+                    
+%     if ~isempty(timeread)
+%         MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
+%         MergeData.Time=timeread;
+%     end
+    
+    % time unit
+%     if isfield(Data{1},'TimeUnit')
+%         TimeUnit=Data{1}.TimeUnit;
+%         for iview =2:numel(Data)
+%             if ~(isfield(Data{iview},'TimeUnit')&& isequal(Data{iview}.TimeUnit,TimeUnit))
+%                 TimeUnit=[];%TimeUnit not the same for all fields
+%             end
+%         end
+%         if ~isempty(TimeUnit)
+%             MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'TimeUnit'}];
+%             MergeData.TimeUnit=TimeUnit;
+%         end
+%     end
 
 
 %% determine the file type on each line from the first input file 
@@ -208,7 +258,7 @@ ProjObjectCoord=XmlData{1}.GeometryCalib.SliceCoord;
 CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
 for iview =2:numel(XmlData)
     if ~(isfield(XmlData{iview},'GeometryCalib')&& isequal(XmlData{iview}.GeometryCalib.SliceCoord,ProjObjectCoord))...
-        disp('error: geometric calibration missing or inconsistent plane positions')
+        disp('error: geometric calibration missing')
         return
     end
 end
@@ -239,18 +289,19 @@ for iview=1:NbView
 end
 
 % %% output file type
-if isempty(j1_series{1})
-    NomTypeOut='_1';
-else
-    NomTypeOut='_1_1';
-end
-RootFileOut=RootFile{1};
-for iview=2:NbView
-    if ~strcmp(RootFile{iview},RootFile{1})
-        RootFileOut='mproj';
-        break
-    end
-end
+% FileExtOut='.nc'; %netcdf output
+% if isempty(j1_series{1})
+%     NomTypeOut='_1';
+% else
+%     NomTypeOut='_1_1';
+% end
+% RootFileOut=RootFile{1};
+% for iview=2:NbView
+%     if ~strcmp(RootFile{iview},RootFile{1})
+%         RootFileOut='mproj';
+%         break
+%     end
+% end
 
 
 %% MAIN LOOP ON FIELDS
@@ -262,55 +313,51 @@ end
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 tstart=tic; %used to record the computing time
-CheckOverwrite=1;%default
-if isfield(Param,'CheckOverwrite')
-    CheckOverwrite=Param.CheckOverwrite;
-end
+
 
 for index=1:NbField
-    disp(['index=' num2str(index)])
-    disp(['ellapsed time ' num2str(toc(tstart)/60,4) ' minutes'])
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
-    
-        %% generating the name of the merged field
-        i1=i1_series{1}(index);
-        if ~isempty(i2_series{end})
-            i2=i2_series{end}(index);
-        else
-            i2=i1;
-        end
-        j1=1;
-        j2=1;
-        if ~isempty(j1_series{1})
-            j1=j1_series{1}(index);
-            if ~isempty(j2_series{end})
-                j2=j2_series{end}(index);
-            else
-                j2=j1;
-            end
-        end
-       OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,'.nc',NomTypeOut,i1,i2,j1,j2);
-        if ~CheckOverwrite && exist(OutputFile,'file')
-            disp(['existing output file ' OutputFile ' already exists, skip to next field'])
-            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
-        end
+   
+%     %% generating the name of the merged field
+%     i1=i1_series{1}(index);
+%     if ~isempty(i2_series{end})
+%         i2=i2_series{end}(index);
+%     else
+%         i2=i1;
+%     end
+%     j1=1;
+%     j2=1;
+%     if ~isempty(j1_series{1})
+%         j1=j1_series{1}(index);
+%         if ~isempty(j2_series{end})
+%             j2=j2_series{end}(index);
+%         else
+%             j2=j1;
+%         end
+%     end
+%    % OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1,i2,j1,j2);
+%     if ~CheckOverwrite && exist(OutputFile,'file')
+%         disp(['existing output file ' OutputFile ' already exists, skip to next field'])
+%         continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+%     end
     
     %% z position
     ZIndex=mod(i1_series{1}(index)-1,NbSlice_calib{1})+1;%Zindex for phys transform
-    ZPosNew=ProjObjectCoord(ZIndex,3);
+    ZPos=ProjObjectCoord(ZIndex,3);
     if index==1
-        ZPos=ZPosNew;
+    TimeData.ZPos=ZPos;
     else
-        if ZPosNew~=ZPos
+        if ZPos~=TimeData.ZPos
             disp('inconsistent z positions in the series')
             return
         end
     end
-    % radius of the topography section at z position
+    % radius of the topography section at z pos
+    TopoRadius=0;
     ind_mask=[];
     if ZPos<20
         TopoRadius=40*sin(acos((20+ZPos)/40));
@@ -327,6 +374,7 @@ for index=1:NbField
             disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
         end
+        disp([filecell{iview,index} 'read'])
         ListVar=Data{iview}.ListVarName;
         for ilist=1:numel(ListVar)
             Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
@@ -392,7 +440,6 @@ for index=1:NbField
         return
     end
     
-    
     %% time of the merged field: take the average of the different views
     if ~isempty(time)
         timeread=time(index);
@@ -411,47 +458,56 @@ for index=1:NbField
         MergeData.curl(ind_mask)=NaN;
         MergeData.div(ind_mask)=NaN;
     end
-    [npy,npx]=size(Unew);
+    TimeData.time(index)=timeread;
+    TimeData.U(index,:,:)=Unew;
+    TimeData.V(index,:,:)=Vnew;
+    TimeData.curl(index,:,:)=MergeData.curl;
+    TimeData.div(index,:,:)=MergeData.div;
+     
+    %% recording the merged field
     
-    %% create the output file for the first iteration of the loop
-    if index==1
-        TimeData.ListGlobalAttribute={'Conventions','Project','CoordUnit','TimeUnit','ZPos','Time'};
-        TimeData.Conventions='uvmat';
-        TimeData.Project='2016_Circumpolar';
-        TimeData.CoordUnit='cm';
-        TimeData.TimeUnit='s';
-        TimeData.ZPos=ZPos;
-        TimeData.ListVarName={'radius','azimuth','U','V','curl','div'};
-        TimeData.VarDimName={'radius','azimuth',{'radius','azimuth'},{'radius','azimuth'}...
-            {'radius','azimuth'},{'radius','azimuth'}};
-        TimeData.VarAttribute{1}.Role='';
-        TimeData.VarAttribute{2}.Role='';
-        TimeData.VarAttribute{3}.Role='vector_x';
-        TimeData.VarAttribute{4}.Role='vector_y';
-        TimeData.VarAttribute{5}.Role='scalar';
-        TimeData.VarAttribute{6}.Role='scalar';
-        
-        TimeData.radius=radius_shifted;
-        TimeData.azimuth=azimuth_arclength;
-    end
-        
-        %% append data to the netcdf file for next iterations
-        TimeData.Time=timeread;
-       TimeData.U=Unew;
-       TimeData.V=Vnew;
-       TimeData.curl=MergeData.curl;
-       TimeData.div=MergeData.div;
+%     MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','NbCoord','NbDim','CoordUnit','ZPos'};
+%     MergeData.Conventions='uvmat';
+%     MergeData.NbCoord=2;
+%     MergeData.NbDim=2;
+%     MergeData.CoordUnit=CoordUnit;
+%     MergeData.ZPos=ZPos;
+%     % time interval of PIV
+%     Dt=[];
+%     if isfield(Data{1},'Dt')&& isnumeric(Data{1}.Dt)
+%         Dt=Data{1}.Dt;
+%     end
+%     for iview =2:numel(Data)
+%         if ~(isfield(Data{iview},'Dt')&& isequal(Data{iview}.Dt,Dt))
+%             Dt=[];%dt not the same for all fields
+%         end
+%     end
+%     if ~isempty(timeread)
+%         MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
+%         MergeData.Time=timeread;
+%     end
+%     
+%     % time unit
+%     if isfield(Data{1},'TimeUnit')
+%         TimeUnit=Data{1}.TimeUnit;
+%         for iview =2:numel(Data)
+%             if ~(isfield(Data{iview},'TimeUnit')&& isequal(Data{iview}.TimeUnit,TimeUnit))
+%                 TimeUnit=[];%TimeUnit not the same for all fields
+%             end
+%         end
+%         if ~isempty(TimeUnit)
+%             MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'TimeUnit'}];
+%             MergeData.TimeUnit=TimeUnit;
+%         end
+%     end
 
-            [error,ncid]=struct2nc(OutputFile,TimeData);%save result file
-        if isempty(error)
-            disp(['output file ' OutputFile ' written'])
-        else
-            disp(error)
-        end
-            ellapsed_time=toc(tstart);
-    disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
 end
-
+    error=struct2nc(OutputFile,TimeData);%save result file
+    if isempty(error)
+        disp(['output file ' OutputFile ' written'])
+    else
+        disp(error)
+    end
 ellapsed_time=toc(tstart);
 disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
 disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])

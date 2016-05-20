@@ -79,6 +79,27 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
         for ilist=1:numel(answer)-1
             DataOut.TransformInput.IndexRange(ilist,1:2)=str2num(answer{ilist+1});
         end
+        if DataOut.TransformInput.IndexRange(1,2)-DataOut.TransformInput.IndexRange(1,1)<DataOut.TransformInput.WindowLength
+            msgbox_uvmat('ERROR','WindowLength must be smaller than the total time index range')
+            return
+        end
+        huvmat=findobj(allchild(0),'Tag','uvmat');
+        UvData=get(huvmat,'UserData');
+        Data=UvData.PlotAxes;
+        YName=Data.ListVarName{1};
+        XName=Data.ListVarName{2};
+        yindex=DataOut.TransformInput.IndexRange(2,:);
+        y=Data.(YName)(yindex);
+        xindex=DataOut.TransformInput.IndexRange(3,:);
+        x=Data.(XName)(xindex);
+        haxes=findobj(huvmat,'Tag','PlotAxes');
+        axes(haxes);
+        hbounds=findobj(haxes,'Tag','Bounds');
+        if isempty(hbounds)
+        hbounds=rectangle('Position',[x(1) y(1) x(2)-x(1) y(2)-y(1)],'Tag','Bounds');
+        else
+            set(hbounds,'Position',[x(1) y(1) x(2)-x(1) y(2)-y(1)])
+        end
     end
     return
 end
@@ -89,6 +110,9 @@ WindowLength=Param.TransformInput.WindowLength;
 Shift=round(WindowLength/2);% shift between two windowsof analysis (half window length by default)
 
 %% get the variable to process
+if  ~isfield(DataIn,Param.TransformInput.VariableName)
+    return
+end
 Var= DataIn.(Param.TransformInput.VariableName);%variable to analyse
 if isfield(Param.TransformInput,'IndexRange')
     IndexRange=Param.TransformInput.IndexRange;
@@ -127,7 +151,7 @@ if diff_x>1.001*dx % non constant time interval
     check_interp=1;
 end
 
-%% claculate the spectrum
+%% calculate the spectrum
 specmean=0;% mean spectrum initialisation
 cospecmean=0;
 NbNan=0;

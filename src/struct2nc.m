@@ -117,7 +117,7 @@ for ivar=1:length(ListVarName)
         switch VarClass{ivar}
             case {'single','double'}
                 VarType='nc_float'; % store all floating reals as single
-            case {'uint8','int16','uint16','int32','uint32','int64','uint64'}
+            case {'int8','uint8','int16','uint16','int32','uint32','int64','uint64'}
                 VarType='nc_int';
             case  'logical'
                 VarType='nc_byte';

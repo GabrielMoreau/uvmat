@@ -262,7 +262,7 @@ for ivardim=1:numel(VarDimName) % loop at the list of dimensions for the remaini
         ind_dim=find(strcmp(DimCell{idim},ListDimName));%find the dim index in the list of dimensions ListDimName
         if ~isempty(ind_dim)
             DimIndices=[DimIndices ind_dim]; %update the list of dim indices included in DimCell
-            if check_var && CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordinate definition limited to lower and upper bounds
+            if check_var & CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordinate definition limited to lower and upper bounds
                 if isvector(Data.(ListVarName{ivardim})) 
                     if numel(Data.(ListVarName{ivardim}))>2
                         CoordSize(ind_dim)=numel(Data.(ListVarName{ivardim}));
