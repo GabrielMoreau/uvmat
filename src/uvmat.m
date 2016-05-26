@@ -3713,13 +3713,15 @@ else
     PlotParam{1}=read_GUI(handles.uvmat);
     %default settings if vectors not visible
     if ~isfield(PlotParam{1},'Vectors')
+        if strcmp(get(handles.VelType,'Visible'),'on')
         PlotParam{1}.Vectors.MaxVec=1;
         PlotParam{1}.Vectors.MinVec=0;
         PlotParam{1}.Vectors.CheckFixVecColor=1;
         PlotParam{1}.Vectors.ColCode1=0.33;
         PlotParam{1}.Vectors.ColCode2=0.66;
-        PlotParam{1}.Vectors.ColorScalar={''};
+        PlotParam{1}.Vectors.ColorScalar={'C'};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
+        end
     end
     
     %% second projection object (view_field display)
