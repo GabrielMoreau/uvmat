@@ -52,7 +52,12 @@ switch FileExt
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}
         [A,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
-        
+    case '.h5'
+        hinfo=hdf5info(fileinput);
+        if strcmp(hinfo.GroupHierarchy.Attributes(1).Value.Data,'MultipassPIVResults')
+            FileInfo.FileType='pivdata_fluidimage';
+            FileInfo.CivStage=6; % A MODIFIER
+        end
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension

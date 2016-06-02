@@ -2056,7 +2056,7 @@ FileType=FileInfo.FileType;
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time) && ...
         (strcmp(FileType,'image')|| strcmp(FileType,'multimage'))%||strcmp(FileType,'civdata')||strcmp(FileType,'civx'))
     TimeName='xml';
-elseif strcmp(FileType,'civdata')
+elseif strcmp(FileType,'civdata')% ajouter pivdata_fluidimage
     TimeName='civdata';
 elseif strcmp(FileType,'civx')
     TimeName='civx';
@@ -2161,7 +2161,7 @@ end
 
 %% set default options in menu 'FieldName'
 switch FileType
-    case {'civx','civdata'}
+    case {'civx','civdata','pivdata_fluidimage'}
         [FieldList,ColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
@@ -3204,7 +3204,7 @@ frame_index=1;%default
 FieldName='';%default
 VelType='';%default
 switch UvData.FileType{1}
-    case {'civx','civdata','netcdf'};
+    case {'civx','civdata','netcdf','pivdata_fluidimage'};
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
         if ~strcmp(FieldName,'get_field...')
@@ -3387,7 +3387,8 @@ end
 
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
-if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~strcmp(FieldName,'get_field...')
+if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'pivdata_fluidimage'))...
+        && ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
@@ -3412,7 +3413,8 @@ end
 test_veltype_1=0;
 if isempty(FileName_1)
 elseif ~test_keepdata_1
-    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata'))&& ~strcmp(FieldName_1,'get_field...')
+    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{1},'pivdata_fluidimage'))...
+            && ~strcmp(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
         menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileType{2});
@@ -3713,15 +3715,13 @@ else
     PlotParam{1}=read_GUI(handles.uvmat);
     %default settings if vectors not visible
     if ~isfield(PlotParam{1},'Vectors')
-        if strcmp(get(handles.VelType,'Visible'),'on')
         PlotParam{1}.Vectors.MaxVec=1;
         PlotParam{1}.Vectors.MinVec=0;
         PlotParam{1}.Vectors.CheckFixVecColor=1;
         PlotParam{1}.Vectors.ColCode1=0.33;
         PlotParam{1}.Vectors.ColCode2=0.66;
-        PlotParam{1}.Vectors.ColorScalar={'C'};
+        PlotParam{1}.Vectors.ColorScalar={''};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
-        end
     end
     
     %% second projection object (view_field display)
@@ -4604,7 +4604,7 @@ switch FileType
         elseif isequal(Civ,6) %patch2
             imax=6;
         end
-    case 'civdata'
+    case {'civdata','pivdata_fluidimage'}
         menu={'civ1';'filter1';'civ2';'filter2'};
         if isequal(Civ,0)
             imax=0;
