@@ -153,6 +153,8 @@ end
 nb_select(nb_select==0)=1;
 U_smooth=U_smooth./nb_select;% take the average at the intersection of several subdomains
 V_smooth=V_smooth./nb_select;
+U_smooth(FF==20)=U(FF==20);% set to the initial values the eliminated vectors (flagged as false)
+V_smooth(FF==20)=V(FF==20);
 fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
 Coord_tps=cat(1,Coord_tps,fill);
 

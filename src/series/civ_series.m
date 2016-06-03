@@ -592,7 +592,7 @@ for ifield=1:NbField
         % perform Patch calculation using the UVMAT fct 'filter_tps'
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
-        Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep 0 for the others
+        Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
         Data.Civ1_FF(ind_good)=int8(FFres);
         disp('patch1 performed')
@@ -868,14 +868,14 @@ for ifield=1:NbField
         Data.VarAttribute{nbvar+5}.Role='coord_tps';
         Data.VarAttribute{nbvar+6}.Role='vector_x';
         Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ2_U_smooth=Data.Civ2_U; % zeros(size(Data.Civ2_X));
-        Data.Civ2_V_smooth=Data.Civ2_V; %zeros(size(Data.Civ2_X));
+        Data.Civ2_U_smooth=Data.Civ2_U; 
+        Data.Civ2_V_smooth=Data.Civ2_V; 
         if isfield(Data,'Civ2_FF')
             ind_good=find(Data.Civ2_FF==0);
         else
             ind_good=1:numel(Data.Civ2_X);
         end
-        [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
+        [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures,Vres,tild,FFres]=...
             filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
         Data.Civ2_U_smooth(ind_good)=Ures;
         Data.Civ2_V_smooth(ind_good)=Vres;

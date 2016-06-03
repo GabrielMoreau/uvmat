@@ -493,24 +493,25 @@ t=set(t,uid_content,'value',num2str(Dti_stamp));
 %% adjust Dtk
 uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
 if ~isempty(uid_Dtk)
-uid_content_Dtk=get(t,uid_Dtk,'contents');
-Dtk=str2num(get(t,uid_content_Dtk,'value'));
-uid_content_NbDtk=get(t,uid_NbDtk,'contents');
-NbDtk=str2num(get(t,uid_content_NbDtk,'value'));
-Dtk_stamp=(timestamp(end-NbDti,1)-timestamp(1,1))/NbDtk;
-if abs(Dtk_stamp-Dtk)>Dtk/1000
-    disp([msg 'Dtk from xml file corrected by ' num2str(Dtk_stamp-Dtk)]);
-else
-    disp('Dtk OK')
-end
-t=set(t,uid_content_Dtk,'value',num2str(Dtk_stamp));
+    uid_content_Dtk=get(t,uid_Dtk,'contents');
+    Dtk=str2num(get(t,uid_content_Dtk,'value'));
+    uid_content_NbDtk=get(t,uid_NbDtk,'contents');
+    NbDtk=str2num(get(t,uid_content_NbDtk,'value'));
+    Dtk_stamp=(timestamp(end-NbDti,1)-timestamp(1,1))/NbDtk;
+    if abs(Dtk_stamp-Dtk)>Dtk/1000
+        disp(['Dtk from xml file corrected by ' num2str(Dtk_stamp-Dtk)]);
+    else
+        disp('Dtk OK')
+    end
+    t=set(t,uid_content_Dtk,'value',num2str(Dtk_stamp));
 end
 
 save(t,newxml)
-       [success,msg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users  
-        if success==0
-            disp({['warning: unable to set group write access to ' newxml ':']; msg});%error message for directory creation
-        end
+[success,errormsg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users
+if success==0
+    disp({['warning: unable to set group write access to ' newxml ':']; errormsg});%error message for directory creation
+    msg=erromsg;
+end
 
 
 
