@@ -989,6 +989,32 @@ if ~isempty(XmlFileName)
     if isfield(XmlData,'Time')
         Time=XmlData.Time;
         TimeName='xml';
+                        if XmlData.Time(1,:)==XmlData.Time(2,:)% case starting with index 1
+                    sizDti=size(XmlData.Time,1)-1;%size of the time vector explicitly defined in the xml file
+                    ind_start=1;
+                else 
+                    sizDti=size(XmlData.Time,1);% case starting with index 0
+                    ind_start=0;
+                end
+        % complement the input if the whole time series is not defined
+            if size(i1_series,3)>size(XmlData.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series
+                Dti_total=XmlData.Time(end)-XmlData.Time(1);%total time interval covered by the time vector
+                missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
+                repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
+                time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
+                for j=1:size(XmlData.Time,2)
+                Time(missing_indices,j)=XmlData.Time(time_indices,j)+repeat_nbre'*Dti_total;
+                end
+                % update the xml file with NbDti
+                t=xmltree(XmlFileName);
+                uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
+                if isempty(uid_NbDti)
+                    uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
+                    [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
+                end
+                [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
+                save(t,XmlFileName)
+            end
     end
     if isfield(XmlData,'Camera')
         %         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)

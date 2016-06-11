@@ -1,5 +1,5 @@
 %% get the input file
-fileinput=uigetfile_uvmat('pick an input file','/fsnet/project/coriolis/2015/15STRATJET/Probes');
+fileinput=uigetfile_uvmat('pick an input file','/fsnet/project/coriolis/2016/16MILESTONE/Data');
 [Path,Name,Ext]=fileparts(fileinput);
 
 %% read the input file

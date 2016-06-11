@@ -339,7 +339,7 @@ for j_slice=1:NbSlice_j
         %write result file
         if Param.ActionInput.CheckLevelTransform
             C=levels(Acor);
-            imwrite(C,newname,'BitDepth',8); % save the new image
+            imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo{1}.BitDepth,16)
                 C=uint16(Acor);
@@ -392,7 +392,7 @@ for j_slice=1:NbSlice_j
                 %write result file
                 if Param.ActionInput.CheckLevelTransform
                     C=levels(Acor);
-                    imwrite(C,newname,'BitDepth',8); % save the new image
+                    imwrite(C,newname,'BitDepth',16); % save the new image
                 else
                     if isequal(FileInfo{1}.BitDepth,16)
                         C=uint16(Acor);
@@ -420,7 +420,7 @@ for j_slice=1:NbSlice_j
         %write result file
         if Param.ActionInput.CheckLevelTransform
             C=levels(Acor);
-            imwrite(C,newname,'BitDepth',8); % save the new image
+            imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo{1}.BitDepth,16)
                 C=uint16(Acor);
@@ -434,42 +434,65 @@ for j_slice=1:NbSlice_j
     end
 end
 
-
 function C=levels(A)
-%whos A;
-B=double(A(:,:,1));
-windowsize=round(min(size(B,1),size(B,2))/20);
-windowsize=floor(windowsize/2)*2+1;
-ix=1/2-windowsize/2:-1/2+windowsize/2;%
-%del=np/3;
-%fct=exp(-(ix/del).^2);
-fct2=cos(ix/(windowsize-1)/2*pi/2);
-%Mfiltre=(ones(5,5)/5^2);
-%Mfiltre=fct2';
-Mfiltre=fct2'*fct2;
-Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
 
-C=filter2(Mfiltre,B);
-C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
-C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
-C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
-C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
-C=tanh(B./(2*C));
-[n,c]=hist(reshape(C,1,[]),100);
-% figure;plot(c,n);
+nblock_y=100;%2*Param.TransformInput.BlockSize;
+nblock_x=100;%2*Param.TransformInput.BlockSize;
+[npy,npx]=size(A);
+[X,Y]=meshgrid(1:npx,1:npy);
 
-[m,i]=max(n);
-c_max=c(i);
-[dummy,index]=sort(abs(c-c(i)));
-n=n(index);
-c=c(index);
-i_select = find(cumsum(n)<0.95*sum(n));
-if isempty(i_select)
-    i_select = 1:length(c);
-end
-c_select=c(i_select);
-n_select=n(i_select);
-cmin=min(c_select);
-cmax=max(c_select);
-C=(C-cmin)/(cmax-cmin)*256;
-C=uint8(C);
+%Backg=zeros(size(A));
+%Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
+%Amin=A.*Aflagmin;%values of A at local minima
+% local background: find all the local minima in image subblocks
+fctblock= inline('median(x(:))');
+Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
+fctblock= inline('mean(x(:))');
+B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
+A=(A-B);%substract background
+AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+fctblock= inline('var(x(:))');
+AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+Avalue=AVar./AMean% typical value of particle luminosity
+Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
+C=uint16(1000*tanh(A./(2*Avalue)));
+%Bmin=blkproc(Aflagmin,[nblock_y nblock_x],sumblock);% find the number of minima in blocks
+%Backg=Backg./Bmin; % find the average of minima in blocks
+% function C=levels(A)
+% %whos A;
+% B=double(A(:,:,1));
+% windowsize=round(min(size(B,1),size(B,2))/20);
+% windowsize=floor(windowsize/2)*2+1;
+% ix=1/2-windowsize/2:-1/2+windowsize/2;%
+% %del=np/3;
+% %fct=exp(-(ix/del).^2);
+% fct2=cos(ix/(windowsize-1)/2*pi/2);
+% %Mfiltre=(ones(5,5)/5^2);
+% %Mfiltre=fct2';
+% Mfiltre=fct2'*fct2;
+% Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
+% 
+% C=filter2(Mfiltre,B);
+% C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
+% C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
+% C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
+% C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
+% C=tanh(B./(2*C));
+% [n,c]=hist(reshape(C,1,[]),100);
+% % figure;plot(c,n);
+% 
+% [m,i]=max(n);
+% c_max=c(i);
+% [dummy,index]=sort(abs(c-c(i)));
+% n=n(index);
+% c=c(index);
+% i_select = find(cumsum(n)<0.95*sum(n));
+% if isempty(i_select)
+%     i_select = 1:length(c);
+% end
+% c_select=c(i_select);
+% n_select=n(i_select);
+% cmin=min(c_select);
+% cmax=max(c_select);
+% C=(C-cmin)/(cmax-cmin)*256;
+% C=uint8(C);

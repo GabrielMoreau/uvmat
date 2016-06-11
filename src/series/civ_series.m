@@ -282,11 +282,11 @@ check_civx=0;%default
 %% get timing from the ImaDoc file or input video
 if iview_A~=0
     XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
-    time=[];
+    Time=[];
     if ~isempty(XmlFileName)
         XmlData=imadoc2struct(XmlFileName);
         if isfield(XmlData,'Time')
-            time=XmlData.Time;
+            Time=XmlData.Time;
             TimeSource='xml';
         end
         if isfield(XmlData,'Camera')
@@ -301,21 +301,21 @@ if iview_A~=0
             end
         end
     end
-    if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
-        time=zeros(FileInfo_A.NumberOfFrames+1,2);
-        time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
+        Time=zeros(FileInfo_A.NumberOfFrames+1,2);
+        Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
         TimeSource='video';
         ColorType='truecolor';
     end
-    if isempty(time)% time = index i +0.001 index j by default
+    if isempty(Time)% Time = index i +0.001 index j by default
         %MinIndex_i=min(i1_series_Civ1);
         MaxIndex_i=max(i2_series_Civ1);
         %MinIndex_j=min(j1_series_Civ1);
         MaxIndex_j=max(j2_series_Civ1);
-        time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
-        time=time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
-        time=[zeros(1,MaxIndex_j);time];% insert a first line of zeros
-        time=[zeros(MaxIndex_i+1,1) time];% insert a first column of zeros
+        Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
+        Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
+        Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
+        Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
     end
     
     if length(FileInfo_A) >1 %case of image with multiple frames
@@ -437,11 +437,11 @@ for ifield=1:NbField
                 j2=j2_series_Civ1(ifield);
             end
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                Data.Civ1_Time=time(i2+1,j2+1);% the time is the time of the secodn image
-                Data.Civ1_Dt=1;% time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+                Data.Civ1_Time=Time(i2+1,j2+1);% the Time is the Time of the secodn image
+                Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
             else
-            Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;% the time is the time at the middle of the image pair
-            Data.Civ1_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+            Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
+            Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
             end
             for ilist=1:length(list_param)
                 Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
@@ -735,7 +735,7 @@ for ifield=1:NbField
                 Civ1_Dt=1;
                 Civ2_Dt=1;
             else
-                Civ2_Dt=time(i2_civ2+1,j2_civ2+1)-time(i1_civ2+1,j1_civ2+1);
+                Civ2_Dt=Time(i2_civ2+1,j2_civ2+1)-Time(i1_civ2+1,j1_civ2+1);
             end
         end
         par_civ2.SearchBoxShift=(Civ2_Dt/Civ1_Dt)*[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
@@ -760,10 +760,10 @@ for ifield=1:NbField
             Data.Civ2_ImageA=ImageName_A;
             Data.Civ2_ImageB=ImageName_B;
              if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                Data.Civ2_Time=time(i2_civ2+1,j2_civ2+1);% the time is the time of the secodn image
-                Data.Civ2_Dt=1;% time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+                Data.Civ2_Time=Time(i2_civ2+1,j2_civ2+1);% the Time is the Time of the secodn image
+                Data.Civ2_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
              else
-            Data.Civ2_Time=(time(i2_civ2+1,j2_civ2+1)+time(i1_civ2+1,j1_civ2+1))/2;
+            Data.Civ2_Time=(Time(i2_civ2+1,j2_civ2+1)+Time(i1_civ2+1,j1_civ2+1))/2;
             Data.Civ2_Dt=Civ2_Dt;
              end
         end

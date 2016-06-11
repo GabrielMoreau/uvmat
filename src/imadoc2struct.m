@@ -125,8 +125,13 @@ if isfield(s,'Camera')
             end
         end
     end
+    if ~isfield(s.Camera,'FirstFrameIndexI')
+        s.Camera.FirstFrameIndexI=1; %first index qssumed equl to 1 by default
+    end
     s.Time=[zeros(size(s.Time,1),1) s.Time]; %insert a vertical line of zeros (to deal with zero file indices)
-    s.Time=[zeros(1,size(s.Time,2)); s.Time]; %insert a horizontal line of zeros
+    if s.Camera.FirstFrameIndexI~=0
+    s.Time=[zeros(s.Camera.FirstFrameIndexI,size(s.Time,2)); s.Time]; %insert a horizontal line of zeros
+    end
 end
 
 function [s,errormsg]=read_subtree(subt,Data,NbOccur,NumTest)

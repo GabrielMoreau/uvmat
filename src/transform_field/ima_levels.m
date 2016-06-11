@@ -1,3 +1,13 @@
+% 'ima_remove_background': removes backgound from an image (using the local minimum)
+% requires the Matlab image processing toolbox
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields with a single input %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+%
+%INPUT:
+% DataIn:  first input field structure
+
 %=======================================================================
 % Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
@@ -16,55 +26,56 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=im_levels(DataIn)
-%% set GUI config: no action defined
-DataOut=[];  %default  output field
-if strcmp(DataIn,'*')
+function DataOut=ima_remove_background_blocks(DataIn,Param)
+%------------------------------------------------------------------------
+%% request input parameters
+if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
+    prompt = {'block size(pixels)'};
+    dlg_title = 'get the block size (in pixels) used to calculate the local statistics';
+    num_lines= 1;
+    def     = { '100'};
+    if isfield(Param,'TransformInput')&&isfield(Param.TransformInput,'BlockSize')
+        def={num2str(Param.TransformInput.BlockSize)};
+    end
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    DataOut.TransformInput.BlockSize=str2num(answer{1}); 
     return
 end
-%-----------------------------------------------
-%parameters
-np=30
+if ~isfield(DataIn,'A')
+    DataOut.Txt='remove_particles only valid for input images';
+    return
+end
+if ~exist('imerode','file');
+        DataOut.Txt='the function imerode from the image processing toolbox is needed';
+    return
+end
+
 %--------------------------------------------------------- 
 DataOut=DataIn;%default
+nblock_y=2*Param.TransformInput.BlockSize;
+nblock_x=2*Param.TransformInput.BlockSize;
+[npy,npx]=size(DataIn.A);
+[X,Y]=meshgrid(1:npx,1:npy);
 
-B=double(DataIn.A(:,:,1));
-windowsize=round(min(size(B,1),size(B,2))/20);
-windowsize=floor(windowsize/2)*2+1;
-ix=[1/2-windowsize/2:-1/2+windowsize/2];%
-%del=np/3;
-%fct=exp(-(ix/del).^2);
-fct2=cos(ix/((np-1)/2)*pi/2);
-%Mfiltre=(ones(5,5)/5^2);
-%Mfiltre=fct2';
-Mfiltre=fct2'*fct2;
-Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
-
-C=filter2(Mfiltre,B);
-C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
-C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
-C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
-C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
-C=tanh(B./(2*C));
-[n,c]=hist(reshape(C,1,[]),100);
-% figure;plot(c,n);
-
-[m,i]=max(n);
-c_max=c(i);
-[dummy,index]=sort(abs(c-c(i)));
-n=n(index);
-c=c(index);
-i_select = find(cumsum(n)<0.95*sum(n));
-if isempty(i_select)
-    i_select = 1:length(c);
-end
-c_select=c(i_select);
-n_select=n(i_select);
-cmin=min(c_select);
-cmax=max(c_select);
-C=(C-cmin)/(cmax-cmin)*256;
-DataOut.AA=uint8(C);
+%BACKGROUND LEVEL
+Atype=class(DataIn.A);
+A=double(DataIn.A);
+%Backg=zeros(size(A));
+%Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
+%Amin=A.*Aflagmin;%values of A at local minima
+% local background: find all the local minima in image subblocks
+fctblock= inline('median(x(:))');
+Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
+fctblock= inline('mean(x(:))');
+B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
+A=(A-B);%substract background
+AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+fctblock= inline('var(x(:))');
+AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+Avalue=AVar./AMean% typical value of particle luminosity
+Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
+DataOut.A=uint16(1000*tanh(A./(2*Avalue)));
+%Bmin=blkproc(Aflagmin,[nblock_y nblock_x],sumblock);% find the number of minima in blocks
+%Backg=Backg./Bmin; % find the average of minima in blocks
 
 
-
-DataOut.A=uint8(C);

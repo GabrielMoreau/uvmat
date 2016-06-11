@@ -1969,6 +1969,14 @@ UvData.i1_series{index}=i1_series;
 UvData.i2_series{index}=i2_series;
 UvData.j1_series{index}=j1_series;
 UvData.j2_series{index}=j2_series;
+nbfield=max(max(max(i2_series)));% total number of fields (i index)
+if isempty(nbfield)
+    nbfield=max(max(max(i1_series)));
+end
+nbfield_j=max(max(max(j2_series)));% number of fields along j index
+if isempty(nbfield_j)
+    nbfield_j=max(max(max(j1_series)));
+end
 
 %% read timing and total frame number from the current file (e.g. movie files) 
 TimeUnit='';%default
@@ -2019,9 +2027,35 @@ if ~isempty(XmlFileName)
         ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
         if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
             TimeUnit=XmlDataRead.TimeUnit;
-        end
+        end    
         if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
             XmlData.Time=XmlDataRead.Time;
+             if XmlDataRead.Time(1,:)==XmlDataRead.Time(2,:)% case starting with index 1
+            sizDti=size(XmlDataRead.Time,1)-1;%size of the time vector explicitly defined in the xml file
+            ind_start=1;
+        else
+            sizDti=size(XmlDataRead.Time,1);% case starting with index 0
+            ind_start=0;
+        end
+            % complement the input if the whole time series is not defined
+            if size(i1_series,3)>size(XmlDataRead.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series            
+                Dti_total=XmlDataRead.Time(end)-XmlDataRead.Time(1);%total time interval covered by the time vector
+                missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
+                repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
+                time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
+                for j=1:size(XmlDataRead.Time,2)
+                    XmlData.Time(missing_indices,j)=XmlDataRead.Time(time_indices,j)+repeat_nbre'*Dti_total;
+                end
+                % update the xml file with NbDti
+                t=xmltree(XmlFileName);
+                uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
+                if isempty(uid_NbDti)
+                    uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
+                    [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
+                end
+                [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
+                save(t,XmlFileName)
+            end
         end
         set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
@@ -2069,14 +2103,6 @@ else
 end
 
 %% store last index in handles.MaxIndex_i and .MaxIndex_j
-nbfield=max(max(max(i2_series)));
-if isempty(nbfield)
-    nbfield=max(max(max(i1_series)));
-end
-nbfield_j=max(max(max(j2_series)));
-if isempty(nbfield_j)
-    nbfield_j=max(max(max(j1_series)));
-end
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(size(XmlData.Time,1),1)
