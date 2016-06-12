@@ -96,7 +96,8 @@ end
 NomTypeInput=Param.InputTable{1,4};
 FileType='image';%fdefault
 FileInfo=[];
-if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')
+if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')...
+        &&numel(SeriesData.FileType)>=1&&numel(SeriesData.FileInfo)>=1
     FileType=SeriesData.FileType{1};%type of the first input file series
     FileInfo=SeriesData.FileInfo{1};% info on the first input file series
 else
@@ -213,7 +214,7 @@ time=[];
 TimeUnit='frame'; %default
 CoordUnit='';%default
 pxcm_search=1;
-if isfield(SeriesData,'Time') && ~isempty(SeriesData.Time{1})
+if isfield(SeriesData,'Time') &&numel(SeriesData.Time')>=1 && ~isempty(SeriesData.Time{1})
     time=SeriesData.Time{1};
 end
 if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)

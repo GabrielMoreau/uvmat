@@ -149,11 +149,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
     end
     
-    prompt = {'volume scan mode (Yes/No)';'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
-        'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
+    prompt = {'volume scan mode (Yes/No)';...
+        'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
+        'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles';...
+        'set to 0 image levels below median(Yes/No)';...
+        'image rescaling coefficient(high values reduce the influence of bright particles), =0 for no rescaling' };
     dlg_title = 'get (slice by slice) a sliding background and substract to each image';
-    num_lines= 3;
-    def     = { 'No';num2str(nbaver_init);'0.1'};
+    num_lines= 5;
+    def     = { 'No';num2str(nbaver_init);'0.1';'No';'2'};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
     if isempty(answer)
         return
@@ -180,10 +183,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
     ParamOut.ActionInput.SlidingSequenceLength=nbaver_ima;
     ParamOut.ActionInput.BrightnessRankThreshold=str2double(answer{3});
-    
+    ParamOut.ActionInput.CheckSubmedian=strcmp(answer{4},'Yes');
+    ParamOut.ActionInput.SaturationCoeff=str2double(answer{5});
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
-    answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
-    ParamOut.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
+%     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
+%     ParamOut.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
     return
 end
 %%%%%%%%%%%%%%%%%    STOP HERE FOR PAMETER INPUT MODE   %%%%%%%%%%%%%%%%% 
@@ -232,9 +236,11 @@ FileType{1}=FileInfo{1}.FileType;
 
 
 %% output file naming
-FileExtOut='.png'; % write result as .png images for image inputs
-if strcmp(lower(NomType{1}(end)),'a')
-    NomTypeOut=NomType{1};%case of letter appendix
+FileExtOut='.png'; % write result as .png images for image inputsFileInfo.FileType='image'
+if strcmp(FileInfo{1}.FileType,'image')
+    NomTypeOut=NomType{1};
+% if strcmp(lower(NomType{1}(end)),'a')
+%     NomTypeOut=NomType{1};%case of letter appendix
 elseif isempty(j1_series{1})
     NomTypeOut='_1';
 else
@@ -337,8 +343,8 @@ for j_slice=1:NbSlice_j
         newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if Param.ActionInput.CheckLevelTransform
-            C=levels(Acor);
+        if ~isequal(Param.ActionInput.SaturationCoeff,0)
+            C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo{1}.BitDepth,16)
@@ -390,8 +396,8 @@ for j_slice=1:NbSlice_j
                 end
                 newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
                 %write result file
-                if Param.ActionInput.CheckLevelTransform
-                    C=levels(Acor);
+                if ~isequal(Param.ActionInput.SaturationCoeff,0)
+                    C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
                     imwrite(C,newname,'BitDepth',16); % save the new image
                 else
                     if isequal(FileInfo{1}.BitDepth,16)
@@ -418,8 +424,8 @@ for j_slice=1:NbSlice_j
         end
         newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         %write result file
-        if Param.ActionInput.CheckLevelTransform
-            C=levels(Acor);
+        if ~isequal(Param.ActionInput.SaturationCoeff,0)
+            C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo{1}.BitDepth,16)
@@ -434,7 +440,7 @@ for j_slice=1:NbSlice_j
     end
 end
 
-function C=levels(A)
+function C=levels(A,CheckSubmedian,Coeff)
 
 nblock_y=100;%2*Param.TransformInput.BlockSize;
 nblock_x=100;%2*Param.TransformInput.BlockSize;
@@ -445,54 +451,16 @@ nblock_x=100;%2*Param.TransformInput.BlockSize;
 %Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
 %Amin=A.*Aflagmin;%values of A at local minima
 % local background: find all the local minima in image subblocks
-fctblock= inline('median(x(:))');
-Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
+if CheckSubmedian
+    fctblock= inline('median(x(:))');
+    Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
+    %B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
+    A=A-imresize(Backg,size(A),'bilinear');% substract background interpolated to the initial size image
+end
 fctblock= inline('mean(x(:))');
-B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
-A=(A-B);%substract background
 AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
 fctblock= inline('var(x(:))');
 AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
-Avalue=AVar./AMean% typical value of particle luminosity
+Avalue=AVar./AMean;% typical value of particle luminosity
 Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
-C=uint16(1000*tanh(A./(2*Avalue)));
-%Bmin=blkproc(Aflagmin,[nblock_y nblock_x],sumblock);% find the number of minima in blocks
-%Backg=Backg./Bmin; % find the average of minima in blocks
-% function C=levels(A)
-% %whos A;
-% B=double(A(:,:,1));
-% windowsize=round(min(size(B,1),size(B,2))/20);
-% windowsize=floor(windowsize/2)*2+1;
-% ix=1/2-windowsize/2:-1/2+windowsize/2;%
-% %del=np/3;
-% %fct=exp(-(ix/del).^2);
-% fct2=cos(ix/(windowsize-1)/2*pi/2);
-% %Mfiltre=(ones(5,5)/5^2);
-% %Mfiltre=fct2';
-% Mfiltre=fct2'*fct2;
-% Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
-% 
-% C=filter2(Mfiltre,B);
-% C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
-% C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
-% C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
-% C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
-% C=tanh(B./(2*C));
-% [n,c]=hist(reshape(C,1,[]),100);
-% % figure;plot(c,n);
-% 
-% [m,i]=max(n);
-% c_max=c(i);
-% [dummy,index]=sort(abs(c-c(i)));
-% n=n(index);
-% c=c(index);
-% i_select = find(cumsum(n)<0.95*sum(n));
-% if isempty(i_select)
-%     i_select = 1:length(c);
-% end
-% c_select=c(i_select);
-% n_select=n(i_select);
-% cmin=min(c_select);
-% cmax=max(c_select);
-% C=(C-cmin)/(cmax-cmin)*256;
-% C=uint8(C);
+C=uint16(1000*tanh(A./(Coeff*Avalue)));
