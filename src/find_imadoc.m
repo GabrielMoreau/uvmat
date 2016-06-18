@@ -52,6 +52,20 @@ if ~exist(XmlFileName,'file')
         end
     end
 end
+if ~exist(XmlFileName,'file')% convention Pierre Augier for 3D images
+    check3D=find(~isempty(regexp(SubDirBase,'^level')));
+    if check3D
+        [RootRootPath,RootDir]=fileparts(RootPath);
+        XmlFileName=fullfile(RootRootPath,[RootDir '.xml']);
+        dotchar=regexp(RootDir,'\.');
+        for idot=1:numel(dotchar)
+            XmlFileName=fullfile(RootRootPath,[RootDir(1:dotchar(end-idot+1)-1) '.xml']);
+            if exist(XmlFileName,'file')
+                break
+            end
+        end
+    end
+end
 if exist(XmlFileName,'file')~=2
     XmlFileName='';
 end
