@@ -412,7 +412,6 @@ for index=1:NbField
         end
         % position of projection plane 
         if isfield(Data{1},'ProjObjectCoord')&& isfield(Data{1},'ProjObjectAngle')
-            'test'
             ProjObjectCoord=Data{1}.ProjObjectCoord;
             ProjObjectAngle=Data{1}.ProjObjectAngle;
             for iview =2:numel(Data)

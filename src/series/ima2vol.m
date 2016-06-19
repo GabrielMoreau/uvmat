@@ -1,4 +1,4 @@
-%'ima2vol': concatene  image series to form a 'volume' image .vol used for 3D PIV
+%'ima2vol': concatene  image series to form a 'volume' image, make vertical cuts along x and y
 %------------------------------------------------------------------------
 % function GUI_input=ima2vol(num_i1,num_i2,num_j1,num_j2,Series)
 %
@@ -32,130 +32,162 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function GUI_input=ima2vol(num_i1,num_i2,num_j1,num_j2,Series)
-%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
-    GUI_input={};
-    return %exit the function 
+function ParamOut=ima2vol(Param)
+
+%% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'on';%can use a transform function
+    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
+    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
+    ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='.vertical_cut';%set the output dir extension
+    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+      %check the input files
+    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%enable waitbar
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+%% read input parameters from an xml file if input is a file name (batch mode)
+ParamOut=[];
+RUNHandle=[];
+WaitbarHandle=[];
+checkrun=1;
+if ischar(Param)
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
+else% interactive mode in Matlab
+    hseries=findobj(allchild(0),'Tag','series');
+    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+end
 
-basename=fullfile(Series.RootPath,Series.RootFile) ;
+%% subdirectory for output files
+SubdirOut=[Param.OutputSubDir Param.OutputDirExt];
 
-%create dir of the new images
-[dir_images,namebase]=fileparts(basename);
-[path,subdir_ima]=fileparts(dir_images);
-curdir=pwd;
-cd(path);
-mkdir([subdir_ima '_vol']);
-cd(curdir);
-basename_new=fullfile(path,[subdir_ima '_vol'],namebase);
+%% root input file names and nomenclature type (cell arrays with one element)
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
 
-% read imadoc
-[XmlData,warntext]=imadoc2struct([basename '.xml']);
-nbfield1=size(XmlData.Time,1)
-nbfield2=size(XmlData.Time,2)
 
-answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m')
-test_level=isequal(answer,'Yes')
+%% get the set of input file names (cell array filecell), and file indices
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+% filecell{iview,fileindex}: cell array representing the list of file names
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series, 
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of fields
+[FileInfo{1},VideoObject{1}]=get_file_info(filecell{1,1});% type of input file
+FileType{1}=FileInfo{1}.FileType;
 
-%copy the xml file
-if exist([basename '.xml'],'file')
-    copyfile([basename '.xml'],[basename_new '.xml']);% copy the .civ file
-    t=xmltree([basename_new '.xml']);
-    
-    %update information on the first image name in the series
-    uid_Heading=find(t,'ImaDoc/Heading');
-    if isempty(uid_Heading)
-        [t,uid_Heading]=add(t,1,'element','Heading');
-    end   
-    uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
-    ImageName=name_generator(basename_new,num_i1(1),num_j1(1),'.png','_i_j');
-    [pth,ImageName]=fileparts(ImageName);
-    ImageName=[ImageName '.png']
-    if isempty(uid_ImageName)
-       [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
+%% calibration data and timing: read the ImaDoc files
+[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+if ~isempty(errormsg)
+    disp_uvmat('WARNING',errormsg,checkrun)
+end
+
+%% coordinate transform or other user defined transform
+transform_fct='';%default fct handle
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
+        currentdir=pwd;
+        cd(Param.FieldTransform.TransformPath)
+        transform_fct=str2func(Param.FieldTransform.TransformName);
+        cd (currentdir)      
+end
+
+%% main loop
+for ifile=1:nbfield_i
+    update_waitbar(WaitbarHandle,ifile/nbfield)
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        return
     end
-    uid_value=children(t,uid_ImageName);
-    if isempty(uid_value)
-        t=add(t,uid_ImageName,'chardata',ImageName)%indicate  name of the first image, with ;png extension
-    else
-        t=set(t,uid_value(1),'value',ImageName)%indicate  name of the first image, with ;png extension
-    end  
-    save(t,[basename_new '.xml'])
+    for jfile=1:nbfield_j
+        if ~isempty(j1_series)&&~isequal(j1_series,{[]})
+            j1=j1_series{1}(jfile,ifile);
+        end
+        filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(jfile,ifile),[],j1)
+        [Data,tild,errormsg] = read_field(filename,'image');
+        % transform the input field (e.g; phys) if requested (no transform involving two input fields)
+        if ~isempty(transform_fct)
+            Data.ZIndex=jfile;
+            Data=transform_fct(Data,XmlData{1});
+        end
+        if jfile==1
+            vol=zeros(nbfield_j,size(Data.A,1),size(Data.A,2));
+            Z=1:nbfield_j;%default Z values
+        end
+        vol(jfile,:,:)=double(Data.A);%concacene along y
+        Z(jfile)=Data.PlaneCoord(3);
+    end
+    if ifile==1
+        npx=size(Data.A,2);
+        npy=size(Data.A,1);
+        npz=256;
+        ind_x=round(npx/2)-10:round(npx/2)+10;%image index at the mid x position
+        ind_y=round(npy/2)-10:round(npy/2)+10;;%image index at the mid y position
+        
+        %write xml calibration file, using the first file
+            Rangx=Data.Coord_x;
+            Rangy=Data.Coord_y;
+            Rangz=[Z(end) Z(1)];
+    
+        GeometryCal.CalibrationType='rescale';
+        GeometryCal.CoordUnit=Data.CoordUnit;
+        GeometryCal.focal=1;
+        %scaling along x, y and z
+        pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
+        pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
+        pxcmz=(npz-1)/(Rangz(2)-Rangz(1));
+        T_x=-pxcmx*Rangx(1)+0.5;
+        T_y=-pxcmy*Rangy(2)+0.5;
+        T_z=-pxcmz*Rangz(2)+0.5;
+        % xml file for x cut
+        GeometryCal.R=[pxcmx,0,0;0,pxcmz,0;0,0,1];
+        GeometryCal.Tx_Ty_Tz=[T_x T_z 1];
+        ImaDoc.GeometryCalib=GeometryCal;
+        t=struct2xml(ImaDoc);
+        t=set(t,1,'name','ImaDoc');
+        save(t,fullfile(RootPath{1},SubdirOut,'cut_x.xml'))
+                   % xml file for y cut
+        GeometryCal.R=[pxcmy,0,0;0,pxcmz,0;0,0,1];
+        GeometryCal.Tx_Ty_Tz=[T_y T_z 1];
+        ImaDoc.GeometryCalib=GeometryCal;
+        t=struct2xml(ImaDoc);
+        t=set(t,1,'name','ImaDoc');
+        save(t,fullfile(RootPath{1},SubdirOut,'cut_y.xml')) 
+    end
+    cut_y=squeeze(mean(vol(:,:,ind_x),3));
+    cut_y=interp1(Z,cut_y,linspace(Z(1),Z(end),npz));
+    cut_x=squeeze(mean(vol(:,ind_y,:),2));
+    cut_x=interp1(Z,cut_x,linspace(Z(1),Z(end),npz));
+    
+    filename_x=fullfile_uvmat(RootPath{1},SubdirOut,'cut_x','.png','_1',i1_series{1}(jfile,ifile),[],j1);
+    filename_y=fullfile_uvmat(RootPath{1},SubdirOut,'cut_y','.png','_1',i1_series{1}(jfile,ifile),[],j1);
+    %  filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
+    imwrite(uint8(vol),filename_x,'png','BitDepth',8)%
+    display([filename_x 'written (8bits image)'])
+    imwrite(uint8(vol),filename_y,'png','BitDepth',8)%
+    display([filename_y 'written (8bits image)'])
 end
 
-%main loop
- vol=[];
- for ifile=1:nbfield1*nbfield2
-     update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
-     stopstate=get(hseries.RUN,'BusyAction');
-     if isequal(stopstate,'queue') % enable STOP command
-         filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
-         num_j=mod(ifile-1,nbfield2)+1;
-         num_i=floor((ifile-1)/nbfield2)+1;
-         A=imread(filename);
-         Atype=class(A);
-         if test_level
-             A=levels(A,16);
-             display(num2str(num_i))
-         end
-         vol=[vol;A];%concacene along y
-         if num_j==nbfield2
-             filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
-             imwrite(vol,filename_new,'png','BitDepth',16)% WRITE IN 16 bits: needed for the current version of civ3C3D
-             display([filename_new 'written (16bits image)'])
-             vol=[];
-         end
-     end
- end
 
 
-
-function C=levels(A,bitdepth)
-%whos A;
-B=double(A(:,:,1));
-windowsize=round(min(size(B,1),size(B,2))/20);
-windowsize=floor(windowsize/2)*2+1;
-ix=[1/2-windowsize/2:-1/2+windowsize/2];%
-%del=np/3;
-%fct=exp(-(ix/del).^2);
-fct2=cos(ix/(windowsize-1)/2*pi/2);
-%Mfiltre=(ones(5,5)/5^2);
-%Mfiltre=fct2';
-Mfiltre=fct2'*fct2;
-Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
-
-C=filter2(Mfiltre,B);
-C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
-C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
-C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
-C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
-C=tanh(B./(2*C));
-[n,c]=hist(reshape(C,1,[]),100);
-% figure;plot(c,n);
-
-[m,i]=max(n);
-c_max=c(i);
-[dummy,index]=sort(abs(c-c(i)));
-n=n(index);
-c=c(index);
-i_select = find(cumsum(n)<0.95*sum(n));
-if isempty(i_select)
-    i_select = 1:length(c);
-end
-c_select=c(i_select);
-n_select=n(i_select);
-cmin=min(c_select);
-cmax=max(c_select);
-if isequal(bitdepth,16)
-    C=((C-cmin)/(cmax-cmin))*256*256;
-    C=uint16(C);
-else
-    C=((C-cmin)/(cmax-cmin))*256;
-    C=uint8(C);
-end

@@ -166,8 +166,19 @@ end
 %% set processing parameters
 % not needed for this function
 
-%% update the xml file
-% not needed for this function
+%% coordinate transform or other user defined transform
+transform_fct='';%default fct handle
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
+        currentdir=pwd;
+        cd(Param.FieldTransform.TransformPath)
+        transform_fct=str2func(Param.FieldTransform.TransformName);
+        cd (currentdir)
+        if isfield(Param,'TransformInput')
+            for iview=1:NbView
+            XmlData{iview}.TransformInput=Param.TransformInput;
+            end
+        end       
+end
 
 %% main loop on images
 j1=[];%default
