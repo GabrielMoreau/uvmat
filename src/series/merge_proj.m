@@ -102,7 +102,7 @@ else
     RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
     WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
-
+tild=phys([],[]);% test to provoke the inclusion of the function phys at compilation
 %% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 

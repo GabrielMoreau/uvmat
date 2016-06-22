@@ -961,8 +961,10 @@ if isfield(UvData,'Field')
     if isfield(UvData.Field,'CoordUnit')
         data.CoordUnit=UvData.Field.CoordUnit;
     end
-    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)&&~strcmp(data.Type,'plane_z')
-        data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
+        %data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+        data.DX=UvData.Field.CoordMesh;
+        data.DY=UvData.Field.CoordMesh;
         switch data.Type
             case {'line','polyline','points'}
                 data.RangeY=UvData.Field.CoordMesh;
@@ -984,11 +986,14 @@ if isfield(UvData,'Field')
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
                 data.RangeX=UvData.Field.CoordMesh;
                 data.RangeY=UvData.Field.CoordMesh;
+            case 'plane_z'
+                data.Angle=[0 0 0];
+                data.DX=10*UvData.Field.CoordMesh;
+                data.DY=10*UvData.Field.CoordMesh;
+                data.RangeZ=UvData.Field.CoordMesh;
             otherwise
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
-        data.DX=UvData.Field.CoordMesh;
-        data.DY=UvData.Field.CoordMesh;
     end
     if isfield(UvData.Field,'ProjModeRequest')
         data.ProjMode=UvData.Field.ProjModeRequest;%set the request proj mode option by default

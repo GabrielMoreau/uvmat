@@ -118,17 +118,19 @@ if exist('data','var')
     end
     Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type   
     set(handles.REFRESH,'BackgroundColor',[1 0 0])
-    if isfield(data,'RangeZ') && length(ZBounds) >= 2
+    if isfield(data,'RangeZ')
         set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
-        DZ=max(data.RangeZ);%slider step
-        if ~isnan(ZBounds(1)) && ZBounds(2)~=ZBounds(1)
-            rel_step(1)=min(DZ/(ZBounds(2)-ZBounds(1)),0.2);%must be smaller than 1
-            rel_step(2)=0.1;
-            set(handles.z_slider,'Visible','on')
-            set(handles.z_slider,'Min',ZBounds(1))
-            set(handles.z_slider,'Max',ZBounds(2))
-            set(handles.z_slider,'SliderStep',rel_step)
-            set(handles.z_slider,'Value',(ZBounds(1)+ZBounds(2))/2)
+        if length(ZBounds) >= 2
+            DZ=max(data.RangeZ);%slider step
+            if ~isnan(ZBounds(1)) && ZBounds(2)~=ZBounds(1)
+                rel_step(1)=min(DZ/(ZBounds(2)-ZBounds(1)),0.2);%must be smaller than 1
+                rel_step(2)=0.1;
+                set(handles.z_slider,'Visible','on')
+                set(handles.z_slider,'Min',ZBounds(1))
+                set(handles.z_slider,'Max',ZBounds(2))
+                set(handles.z_slider,'SliderStep',rel_step)
+                set(handles.z_slider,'Value',(ZBounds(1)+ZBounds(2))/2)
+            end
         end
     end
     if isfield(data,'RangeX')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
@@ -280,7 +282,7 @@ menu=get(handles.Type,'String');
 value=get(handles.Type,'Value');
 ObjectStyle=menu{value};
 %%%%%%%%% TODO
-test3D=0; %TODO: update  test3D=isequal(get(handles.ZObject,'Visible'),'on');%3D case
+test3D=strcmp(ObjectStyle,'plane_z'); %TODO: generalize
 %%%%%%%%%
 %default setting
 set(handles.num_Angle_1,'Visible','off')

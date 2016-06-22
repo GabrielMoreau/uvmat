@@ -429,7 +429,25 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
         UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
         set(hhuvmat.CheckViewObject,'Value',1)
     end
-    ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
+        %get handles of the GUI set_object
+    h_set_object=findobj(allchild(0),'Tag','set_object');
+    hh_set_object=guidata(h_set_object);
+    if strcmp(ObjectData.Type,'plane_z')&& ~isempty(ObjectData.Coord)
+        Delta_x=(xy(1,1)-ObjectData.Coord(1,1));%displacement along x
+        Delta_y=(xy(1,2)-ObjectData.Coord(1,2));%displacement along y
+        Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);%modulus of displacement
+        ObjectData.Angle(1)=90*Delta_x/Delta_mod;
+        ObjectData.Angle(2)=90*Delta_y/Delta_mod;
+        ObjectData.Angle(3)=0;% plane rotated by 90 ° along the axis of mouse displacement since the origin
+        set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
+        set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
+        set(hh_set_object.num_Angle_3,'String',num2str(ObjectData.Angle(3)))
+        drawing_status='off';
+    else
+        ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
+        set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
+        drawing_status='create';
+    end
     %TODO replace 0 by z coord for 3D
     hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(CurrentGUI_tag);
     if isempty(hobject)
@@ -448,12 +466,7 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
     PlotData=get(AxeData.CurrentObject,'UserData');
     PlotData.IndexObj=IndexObj;
     set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
-    AxeData.Drawing='create';% flag for mouse motion
-
-    %show object coordinates in the GUI set_object
-    h_set_object=findobj(allchild(0),'Tag','set_object');
-    hh_set_object=guidata(h_set_object);
-    set(hh_set_object.Coord,'Data',ObjectData.Coord);
+    AxeData.Drawing=drawing_status;% flag for mouse motion
 end
 
 %% create calibration points if the GUI geometry_calib is opened, if the main axes PlotAxes of uvmat has ben selected

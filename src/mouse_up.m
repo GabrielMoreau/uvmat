@@ -115,13 +115,6 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                         ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
                     end
                 end
-            case 'plane_z'
-                if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
-                    check_multiple=1;
-                end
-                DX=(xy(1,1)-ObjectData.Coord(1,1));
-                DY=(xy(1,2)-ObjectData.Coord(1,2));
-                ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
             otherwise
                 check_multiple=1;
         end

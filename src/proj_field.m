@@ -954,14 +954,14 @@ norm_plane=[0 0 1];
 %sin_om=0;
 test90x=0;%=1 for 90 degree rotation alround x axis
 test90y=0;%=1 for 90 degree rotation alround y axis
-if strcmp(ObjectData.Type,'plane_z')
-    Delta_x=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
-    Delta_y=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
-    Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);
-    ObjectData.Angle=[0 0 0];
-    ObjectData.Angle(1)=90*Delta_x/Delta_mod;
-    ObjectData.Angle(2)=90*Delta_y/Delta_mod;
-end   
+% if strcmp(ObjectData.Type,'plane_z')
+%     Delta_x=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
+%     Delta_y=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
+%     Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);
+%     ObjectData.Angle=[0 0 0];
+%     ObjectData.Angle(1)=90*Delta_x/Delta_mod;
+%     ObjectData.Angle(2)=90*Delta_y/Delta_mod;
+% end   
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
     test90y=isequal(ObjectData.Angle,[0 90 0]);
     PlaneAngle=(pi/180)*ObjectData.Angle;
@@ -995,9 +995,9 @@ if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
     return
 end
 InterpMesh=min(DX,DY);%mesh used for interpolation in a slanted plane
-if strcmp(ObjectData.Type,'plane_z')
-    InterpMesh=10*InterpMesh;%TODO: temporary, to shorten computation 
-end
+% if strcmp(ObjectData.Type,'plane_z')
+%     InterpMesh=10*InterpMesh;%TODO: temporary, to shorten computation 
+% end
 
 %% extrema along each axis
 testXMin=0;% test if min of X coordinates defined on the projection object, =0 by default
@@ -1673,14 +1673,15 @@ for icell=1:length(CellInfo)
                     XI=Origin(1)+ix(1)*Grid_x+iy(1)*Grid_y+iz(1)*Grid_z;
                     YI=Origin(2)+ix(2)*Grid_x+iy(2)*Grid_y+iz(2)*Grid_z;
                     ZI=Origin(3)+ix(3)*Grid_x+iy(3)*Grid_y+iz(3)*Grid_z;
-                    [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});
-                    X=permute(X,[3 1 2]);
-                    Y=permute(Y,[3 1 2]);
-                    Z=permute(Z,[3 1 2]);
+                   [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});
+%                     X=permute(X,[3 1 2]);
+%                     Y=permute(Y,[3 1 2]);
+%                     Z=permute(Z,[3 1 2]);
                     for ivar=VarIndex
                             VarName=FieldData.ListVarName{ivar};
                             ListVarName=[ListVarName VarName];
                             VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
+                            FieldData.(VarName)=permute(FieldData.(VarName),[2 3 1]);
                             ProjData.(VarName)=interp3(X,Y,Z,double(FieldData.(VarName)),XI,YI,ZI);
                     end
                 end

@@ -149,11 +149,20 @@ if test_line
         case 'polygon'
             xline=[xline; ObjectData.Coord(1,1)];%closing the line
             yline=[yline; ObjectData.Coord(1,2)];
-        case {'plane','volume'}
+        case {'plane','plane_z','volume'}
             if ~isfield(ObjectData,'Angle')
                 ObjectData.Angle=[0 0 0];
             end
-            phi=ObjectData.Angle(3)*pi/180;%angle in radians
+            if strcmp(ObjectData.Type,'plane_z')
+                Angle_1=ObjectData.Angle(1);
+                Angle_2=ObjectData.Angle(2);
+                norm_angle=sqrt(Angle_1*Angle_1+Angle_2*Angle_2);
+                cosphi=Angle_1/norm_angle;%angle in radians
+                sinphi=Angle_2/norm_angle;%angle in radians
+            else
+                cosphi=cos(ObjectData.Angle(3)*pi/180);%angle in radians
+                sinphi=sin(ObjectData.Angle(3)*pi/180);%angle in radians
+            end
             x0=xline(1); y0=yline(1);
             xlim=get(haxes,'XLim');
             ylim=get(haxes,'YLim');
@@ -176,17 +185,18 @@ if test_line
             end
             % axes lines
             xline=NaN(1,13);
-            xline(1)=x0+min(0,XMin)*cos(phi); % min end of the x axes
-            yline(1)=y0+min(0,XMin)*sin(phi);
-            xline(2)=x0+XMax*cos(phi);% max end of the x axes
-            yline(2)=y0+XMax*sin(phi);
-            xline(8)=x0-min(0,YMin)*sin(phi);% min end of the y axes
-            yline(8)=y0+min(0,YMin)*cos(phi);
-            xline(9)=x0-YMax*sin(phi);% max end of the y axes
-            yline(9)=y0+YMax*cos(phi);
+            xline(1)=x0+min(0,XMin)*cosphi; % min end of the x axes
+            yline(1)=y0+min(0,XMin)*sinphi;
+            xline(2)=x0+XMax*cosphi;% max end of the x axes
+            yline(2)=y0+XMax*sinphi;
+            xline(8)=x0-min(0,YMin)*sinphi;% min end of the y axes
+            yline(8)=y0+min(0,YMin)*cosphi;
+            xline(9)=x0-YMax*sinphi;% max end of the y axes
+            yline(9)=y0+YMax*cosphi;
             
             %arrows on x axis
             arrow_scale=graph_scale/20;
+            phi=acos(cosphi);
             xline(3)=xline(2)-arrow_scale*cos(phi-pi/8);
             yline(3)=yline(2)-arrow_scale*sin(phi-pi/8);
             xline(5)=xline(2);
@@ -246,7 +256,7 @@ if isfield(ObjectData,'ProjMode')
         SubLineStyle=':';%range of projection not visible
     end
 end
-if ismember(ObjectData.Type,{'line','polyline','polygon','plane_z'})
+if ismember(ObjectData.Type,{'line','polyline','polygon'})
     if length(xline)<2
         theta=0;
     else
@@ -461,7 +471,7 @@ if test_newobj
                         'LineStyle',SubLineStyle,'Tag','proj_object');
                 end
             end
-        case {'line','polyline','polygon','plane_z'}
+        case {'line','polyline','polygon'}
             hh=line(xline,yline,'Color',col);
                 PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
                 PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
@@ -469,7 +479,7 @@ if test_newobj
                     PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
                         col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
                 end
-        case {'plane','volume'}
+        case {'plane','volume','plane_z'}
             hh=line(xline,yline,'Color',col);
             PlotData.SubObject(1)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
         case 'rectangle'
