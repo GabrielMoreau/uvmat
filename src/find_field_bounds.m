@@ -53,6 +53,7 @@ if  NbDim<=1; return; end% stop here for 1D fields
 CoordMax=zeros(numel(imax),NbDim);
 CoordMin=zeros(numel(imax),NbDim);
 Mesh=zeros(1,numel(imax));
+FieldOut.ProjModeRequest='projection';%default
 for ind=1:numel(imax)
     if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
         CoordName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
@@ -89,6 +90,14 @@ for ind=1:numel(imax)
             end
             Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));
     end
+    if isfield(CellInfo{imax(ind)},'ProjModeRequest')
+        if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_tps')
+            FieldOut.ProjModeRequest='interp_tps';
+        end
+        if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_lin')&& ~strcmp(FieldOut.ProjModeRequest,'interp_tps')
+            FieldOut.ProjModeRequest='interp_lin';
+        end
+    end  
 end
 Mesh=min(Mesh);
 FieldOut.XMax=max(CoordMax(:,end));

@@ -89,8 +89,8 @@ ProjData=[];
 if ~isfield(ObjectData,'Type')||~isfield(ObjectData,'ProjMode')
     return
 end
-ListProjMode={'projection','interp_lin','interp_tps','inside','outside'};%list of effective projection modes
-if isempty(find(strcmp(ObjectData.ProjMode,ListProjMode), 1))% no projection in case 
+% check list of effective projection modes
+if ~ismember(ObjectData.ProjMode,{'projection','interp_lin','interp_tps','inside','outside'})
     return
 end
 if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)
@@ -116,7 +116,7 @@ switch ObjectData.Type
         else
             [ProjData,errormsg] = proj_line(FieldData,ObjectData);
         end
-    case 'plane'
+    case {'plane','plane_z'}
         [ProjData,errormsg] = proj_plane(FieldData,ObjectData);
     case 'volume'
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
@@ -954,6 +954,14 @@ norm_plane=[0 0 1];
 %sin_om=0;
 test90x=0;%=1 for 90 degree rotation alround x axis
 test90y=0;%=1 for 90 degree rotation alround y axis
+if strcmp(ObjectData.Type,'plane_z')
+    Delta_x=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
+    Delta_y=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
+    Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);
+    ObjectData.Angle=[0 0 0];
+    ObjectData.Angle(1)=90*Delta_x/Delta_mod;
+    ObjectData.Angle(2)=90*Delta_y/Delta_mod;
+end   
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
     test90y=isequal(ObjectData.Angle,[0 90 0]);
     PlaneAngle=(pi/180)*ObjectData.Angle;
@@ -985,6 +993,10 @@ end
 if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
     errormsg='DX or DY not defined';
     return
+end
+InterpMesh=min(DX,DY);%mesh used for interpolation in a slanted plane
+if strcmp(ObjectData.Type,'plane_z')
+    InterpMesh=10*InterpMesh;%TODO: temporary, to shorten computation 
 end
 
 %% extrema along each axis
@@ -1070,9 +1082,9 @@ for icell=1:numel(CellInfo)
     ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
 end
     icell_grid=[];% field cell index which defines the grid
-if ~strcmp(ObjectData.ProjMode,'projection')
+if ~strcmp(ObjectData.ProjMode,'projection')&& ~strcmp(ObjectData.Type,'plane_z')% TODO:rationalize
     %% define the new coordinates in case of interpolation on a imposed grid
-    if ~testYMin
+    if ~testYMin 
         errormsg='min Y value not defined for the projection grid';return
     end
     if ~testYMax
@@ -1118,7 +1130,7 @@ if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no exis
     if isempty(icell_grid)||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
         AYName='coord_y';
         AXName='coord_x';
-        if strcmp(ObjectData.ProjMode,'projection')
+        if strcmp(ObjectData.ProjMode,'projection')||strcmp(ObjectData.Type,'plane_z')
             ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
             ProjData.coord_x=[FieldData.XMin FieldData.XMax];
             coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
@@ -1398,7 +1410,7 @@ for icell=1:length(CellInfo)
             DimValue=size(FieldData.(VarName));%input matrix dimensions
             DimValue(DimValue==1)=[];%remove singleton dimensions
             NbDim=numel(DimValue);%update number of space dimensions
-            nbcolor=1; %default number of 'color' components: third matrix index without corresponding coordinate
+           % nbcolor=1; %default number of 'color' components: third matrix index without corresponding coordinate
             if NbDim>=3
                 if NbDim>3
                     errormsg='matrices with more than 3 dimensions not handled';
@@ -1438,10 +1450,10 @@ for icell=1:length(CellInfo)
                     if NbDim==3
                         Coord{3}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(3)});
                     end
-                    if numel(Coord{NbDim-1})==2
+                    if numel(Coord{NbDim-1})==2% case of coordinate defined only by the first and last values
                         DY=(Coord{NbDim-1}(2)-Coord{NbDim-1}(1))/(DimValue(1)-1);
                     end
-                    if numel(Coord{NbDim})==2
+                    if numel(Coord{NbDim})==2% case of coordinate defined only by the first and last values
                         DX=(Coord{NbDim}(2)-Coord{NbDim}(1))/(DimValue(2)-1);
                     end
                     if testYMax
@@ -1452,18 +1464,18 @@ for icell=1:length(CellInfo)
                             YIndexMin=1;
                         end          
                     else
-                        YIndexMax=Coord{NbDim-1}(end)/DY;
+                        YIndexMax=numel(Coord{NbDim-1});
                         YIndexMin=1;
                     end
                     if testXMax
-                         XIndexMax=(XMax-Coord{NbDim}(1))/DY+1;% matrix index corresponding to the max y value for the new field
+                         XIndexMax=(XMax-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the max y value for the new field
                         if testYMin%test_direct(indY)
                             XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
                         else
                             XIndexMin=1;
                         end          
                     else
-                        XIndexMax=Coord{NbDim}(end)/DX;
+                        XIndexMax=numel(Coord{NbDim});
                         XIndexMin=1;
                     end
                     YIndexRange(1)=ceil(min(YIndexMin,YIndexMax));%first y index to select from the previous field
@@ -1626,10 +1638,51 @@ for icell=1:length(CellInfo)
                             end
                         end
                     end
-                else
-                    errormsg='projection of structured coordinates on oblique plane not yet implemented';
-                    %TODO: use interp_lin3
-                    return
+                else   %projection of structured coordinates on oblique plane 
+                    % determine the boundaries of the projected field,
+                    % first find the 8 summits of the initial volume in the
+                    % new coordinates
+                    Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});%initial z coordinates
+                    Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});%initial y coordinates
+                    Coord{3}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(3)});%initial x coordinates
+                    summit=zeros(3,8);% initialize summit coordinates
+                    summit(1,1:4)=[Coord{3}(1) Coord{3}(end) Coord{3}(1) Coord{3}(end)];%square 
+                    summit(2,1:4)=[Coord{2}(1) Coord{2}(1) Coord{2}(end) Coord{2}(end)];% square at z= Coord{1}(1)
+                    summit(1:2,5:8)=summit(1:2,1:4);
+                    summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
+                    Mrot=rodrigues(PlaneAngle);
+                    newsummit=zeros(3,8);% initialize the rotated summit coordinates
+                    ObjectData.Coord=[ObjectData.Coord(1,1); ObjectData.Coord(1,2); 0];%TODO: set in set_object
+                    for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)
+                        newsummit(:,isummit)=Mrot*(summit(:,isummit)-(ObjectData.Coord));
+                    end
+                    coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));
+                    coord_y_proj=min(newsummit(2,:)):InterpMesh: max(newsummit(2,:));
+                    coord_z_proj=-width:InterpMesh:width;
+                    Mrot_inverse=rodrigues(-PlaneAngle);
+                    Origin=Mrot_inverse*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
+                    ix=Mrot_inverse*[coord_x_proj(end)-coord_x_proj(1);0;0];% unit vector along the new x coordinates
+                    iy=Mrot_inverse*[0;coord_y_proj(end)-coord_y_proj(1);0];% unit vector y coordinates
+                    iz=Mrot_inverse*[0;0;coord_z_proj(end)-coord_z_proj(1)];% x unit vector z coordinates
+                    [Grid_x,Grid_y,Grid_z]=meshgrid(1:numel(coord_x_proj),1:numel(coord_y_proj),1:numel(coord_z_proj));
+                    if ismatrix(Grid_x)
+                        Grid_x=shiftdim(Grid_x,-1);
+                        Grid_y=shiftdim(Grid_y,-1);
+                        Grid_z=shiftdim(Grid_z,-1);
+                    end
+                    XI=Origin(1)+ix(1)*Grid_x+iy(1)*Grid_y+iz(1)*Grid_z;
+                    YI=Origin(2)+ix(2)*Grid_x+iy(2)*Grid_y+iz(2)*Grid_z;
+                    ZI=Origin(3)+ix(3)*Grid_x+iy(3)*Grid_y+iz(3)*Grid_z;
+                    [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});
+                    X=permute(X,[3 1 2]);
+                    Y=permute(Y,[3 1 2]);
+                    Z=permute(Z,[3 1 2]);
+                    for ivar=VarIndex
+                            VarName=FieldData.ListVarName{ivar};
+                            ListVarName=[ListVarName VarName];
+                            VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
+                            ProjData.(VarName)=interp3(X,Y,Z,double(FieldData.(VarName)),XI,YI,ZI);
+                    end
                 end
             end
     end
@@ -2263,6 +2316,8 @@ for icell=1:length(CellVarIndex)
                         end
                     end
                 else
+                    RotMatrix=rodrigues(om);
+                    
                     errormsg='projection of structured coordinates on oblique plane not yet implemented';
                     %TODO: use interp3
                     return

@@ -110,7 +110,7 @@ if exist('data','var')
     end
     if isfield(data,'ProjModeMenu')
         set(handles.ProjMode,'UserData',data.ProjModeMenu)% data.ProjModeMenu as default menu (used in Type_Callback)
-    end
+    end      
     errormsg=fill_GUI(data,handles.set_object);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR','bad data input in set_object')
@@ -131,21 +131,21 @@ if exist('data','var')
             set(handles.z_slider,'Value',(ZBounds(1)+ZBounds(2))/2)
         end
     end
-    if isfield(data,'RangeX')
+    if isfield(data,'RangeX')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
         if ischar(data.RangeX)
             data.RangeX=str2num(data.RangeX);
         end
         set(handles.num_RangeX_2,'String',num2str(max(data.RangeX),3))
         set(handles.num_RangeX_1,'String',num2str(min(data.RangeX),3))
     end
-    if isfield(data,'RangeY')
+    if isfield(data,'RangeY')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
         if ischar(data.RangeY)
             data.RangeY=str2num(data.RangeY);
         end
         set(handles.num_RangeY_2,'String',num2str(max(data.RangeY),3))
         set(handles.num_RangeY_1,'String',num2str(min(data.RangeY),3))
     end
-    if isfield(data,'RangeZ')
+    if isfield(data,'RangeZ')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
         if ischar(data.RangeZ)
             data.RangeZ=str2num(data.RangeZ);
         end
@@ -246,8 +246,6 @@ set(handles.Coord,'Data',Coord)
 %% set the projection menu and the corresponding options
 if isempty(get(handles.ProjMode,'UserData'))
     switch Type
-        case {'points','line','plane'}
-            menu_proj={'projection';'interp_lin';'interp_tps';'none'};
         case 'polyline'
             menu_proj={'interp_lin';'interp_tps';'none'};
         case {'polygon','rectangle','ellipse'}
@@ -327,7 +325,7 @@ switch ObjectStyle
     case {'rectangle','ellipse'}
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
-    case {'plane'}  
+    case {'plane','plane_z'}  
         set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
@@ -386,8 +384,8 @@ if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_RangeY_1,'String',num2str(UvData.Field.YMin))
             set(handles.num_RangeY_2,'String',num2str(UvData.Field.YMax))
         end
-        if isempty(get(handles.CoordUnit,'String'))
-            set(handles.CoordUnit,'String',Field.CoordUnit)
+        if isempty(get(handles.CoordUnit,'String'))&& isfield(UvData.Field,'CoordUnit')
+            set(handles.CoordUnit,'String',UvData.Field.CoordUnit)
         end       
     end
     if isempty(str2num(get(handles.num_RangeInterp,'String'))) && isfield(UvData,'Field')

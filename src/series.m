@@ -2291,7 +2291,7 @@ if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 %CheckList=0;% indicate whether FieldName has been updated
 CheckList_1=1;% indicate whether FieldName_1 has been updated
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
-if VelTypeRequest && numel(iview_civ)>=1 
+if VelTypeRequest && numel(iview_civ)>=1
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
     set(handles.VelType,'Value',1)% set first choice by default
     set(handles.VelType,'String',[{'*'};menu])
@@ -2300,7 +2300,7 @@ if VelTypeRequest && numel(iview_civ)>=1
     FieldList=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
     %CheckList=1;
     set(handles.FieldName,'Value',1); %velocity vector choice by default
-    if  VelTypeRequest_1 && numel(iview_civ)>=2 
+    if  VelTypeRequest_1 && numel(iview_civ)>=2
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
         set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
@@ -2316,11 +2316,11 @@ if VelTypeRequest && numel(iview_civ)>=1
 else
     set(handles.VelType,'Visible','off')
     set(handles.VelType_title,'Visible','off')
-end   
+end
 
 %% Detect the types of input files and set menus and default options in 'FieldName'
 if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
-    set(handles.InputFields,'Visible','on')   
+    set(handles.InputFields,'Visible','on')% set the frame InputFields visible
     if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         set(handles.FieldName,'Visible','on')
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
@@ -2345,44 +2345,48 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 set(handles.Coord_z,'String','')
             end
         end
-        set(handles_coord,'Visible','on')
-        FieldList=[FieldList;{'get_field...'}];
-        if FieldNameRequest_1 && numel(iview_netcdf)>=2
-            set(handles.FieldName_1,'Visible','on')
-            if CheckList_1==0        % not civ input made
-                ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
-                ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
-                for ilist=1:numel(ind_var)
-                    if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
-                        FieldList_1={};% previous choice not consistent with new input field
-                        set(handles.FieldName_1,'Value',1)
-                        break
-                    end
+    end
+    
+    set(handles_coord,'Visible','on')
+    FieldList=[FieldList;{'get_field...'}];
+    if FieldNameRequest_1 && numel(iview_netcdf)>=2
+        set(handles.FieldName_1,'Visible','on')
+        if CheckList_1==0        % not civ input made
+            ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
+            ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
+            for ilist=1:numel(ind_var)
+                if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
+                    FieldList_1={};% previous choice not consistent with new input field
+                    set(handles.FieldName_1,'Value',1)
+                    break
                 end
-                warn_coord=0;
-                if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
-                        isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
-                    warn_coord=1;
-                end
-                if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
-                    FieldList_1={};
-                    warn_coord=1;
-                end
-                if warn_coord
-                    msgbox_uvmat('WARNING','coordiante names do not exist in the second netcdf input file')
-                end
-                set(handles.FieldName,'String',[FieldList;{'get_field...'}])
-                set(handles.FieldName_1,'Visible','on')
-                set(handles.FieldName_1,'Value',1)
-                set(handles.FieldName_1,'String',FieldList_1)
             end
-        else
-            set(handles.FieldName_1,'Visible','off')
+            warn_coord=0;
+            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
+                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
+                warn_coord=1;
+            end
+            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
+                FieldList_1={};
+                warn_coord=1;
+            end
+            if warn_coord
+                msgbox_uvmat('WARNING','coordiante names do not exist in the second netcdf input file')
+            end
+            
+            set(handles.FieldName_1,'Visible','on')
+            set(handles.FieldName_1,'Value',1)
+            set(handles.FieldName_1,'String',FieldList_1)
         end
     else
-        set(handles.FieldName,'Visible','off')
+        set(handles.FieldName_1,'Visible','off')
     end
-    set(handles.FieldName,'String',FieldList)
+    if isempty(FieldList)
+        set(handles.FieldName,'Visible','off')
+    else
+        set(handles.FieldName,'Visible','on')
+        set(handles.FieldName,'String',FieldList)
+    end
 else
     set(handles.InputFields,'Visible','off')
 end

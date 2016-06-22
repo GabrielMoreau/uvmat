@@ -384,23 +384,24 @@ if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
     end
     XYData=AxeData.CurrentOrigin;
     if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
-        if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
-            ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
-            % ObjectData.Coord(end,:)=xy(1,:);
-        elseif strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')||strcmp(ObjectData.Type,'volume')
-                ObjectData.Coord=(AxeData.CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate     
+        switch ObjectData.Type
+            case {'line','polyline','polygon','points','plane_z'}
+                ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
+                % ObjectData.Coord(end,:)=xy(1,:);
+            case {'rectangle','ellipse','volume'}
+                ObjectData.Coord=(AxeData.CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate
                 ObjectData.RangeX=abs(ObjectData.Coord(1,1)-xy(1,1));%rectangle width
-                ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height 
-        elseif isequal(ObjectData.Type,'plane') %case of 'plane'
-            DX=(xy(1,1)-ObjectData.Coord(1,1));
-            DY=(xy(1,2)-ObjectData.Coord(1,2));
-            ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt
-            if isfield(ObjectData,'RangeX')
-                XMax=sqrt(DX*DX+DY*DY);
-                if XMax>max(ObjectData.RangeX)
-                    ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+                ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height
+            case 'plane' %case of 'plane'
+                DX=(xy(1,1)-ObjectData.Coord(1,1));
+                DY=(xy(1,2)-ObjectData.Coord(1,2));
+                ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt
+                if isfield(ObjectData,'RangeX')
+                    XMax=sqrt(DX*DX+DY*DY);
+                    if XMax>max(ObjectData.RangeX)
+                        ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+                    end
                 end
-            end
         end
         plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
         pointershape='crosshair';

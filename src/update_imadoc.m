@@ -33,20 +33,21 @@ testappend=0;
 if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     testappend=1;
     backupfile=outputfile;
-    testexist=2;
-    while testexist==2
-        backupfile=[backupfile '~'];
-        testexist=exist(backupfile,'file');
-    end
-    [success,message]=copyfile(outputfile,backupfile);%make backup
-    if success~=1
-        errormsg=['errror in xml file backup: ' message];
-        return
-    end
     t=xmltree(outputfile); %read the file
     title=get(t,1,'name');
     if strcmp(title,'ImaDoc')
-        testappend=1;
+        %         testappend=1;
+        %rename the existing file for backup
+        testexist=2;
+        while testexist==2
+            backupfile=[backupfile '~'];
+            testexist=exist(backupfile,'file');
+        end
+        [success,message]=movefile(outputfile,backupfile);%make backup
+        if success~=1
+            errormsg=['errror in xml file backup: ' message];
+            return
+        end
         %if the xml file is  ImaDoc
         uid_calib=find(t,['ImaDoc/' StructName]);
         if isempty(uid_calib)  %if Struct does not already exists, create it

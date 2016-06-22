@@ -1,4 +1,16 @@
-%'civ2vel_3C': combine velocity fields from two cameras to get three velocity components
+%'civ2vel_3C': combine velocity fields from two cameras to get the three velocity components 
+% used with the GUI 'series':
+%           first input line =raw PIV camera 1 (image coordinates)
+%           second input line=raw PIV camera 2 (image coordinates)
+% Three modes:
+%   1) no additional input: measurements assumed in the reference plane (laser sheet)
+%   2) measurement surface obtained by stereoscopic comparison of the images of the two cameras.
+%           third input line =surface z(x,y) given by correlation between camera 1 and 2 (expressed in phys apparent coordinates)
+%   3)  surface z(x,y) given by adding the displacements of each camera with a third intermediate camera (#3) used to reduce the 
+% to reduce the angle for stereoscopic view.
+%           third input line =correlation between camera 1 and 3 (expressed in phys apparent coordinates)
+%           fourth input line =corelation between camera 2 and 3 (expressed in phys apparent coordinates)
+%                
 %------------------------------------------------------------------------
 % function ParamOut=civ2vel_3C(Param)
 %
@@ -6,6 +18,7 @@
 % ParamOut: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
+% 
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
 % In batch mode, Param is the name of the corresponding xml file containing the same information
 % when Param.Action.RUN=0 (as activated when the current Action is selected
@@ -14,15 +27,15 @@
 % Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
 % see the current structure Param)
 %    .InputTable: cell of input file names, (several lines for multiple input)
-%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}.
+%                3 or 4 lines used as described above
 %    .OutputSubDir: name of the subdirectory for data outputs
 %    .OutputDirExt: directory extension for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
 %             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
 %             .RUN =0 for GUI input, =1 for function activation
-%             .RunMode='local','background', 'cluster': type of function  use
-%             
+%             .RunMode='local','background', 'cluster': type of function  use          
 %    .IndexRange: set the file or frame indices on which the action must be performed
 %    .InputFields: sub structure describing the input fields withfields
 %              .FieldName: name(s) of the field
@@ -51,7 +64,7 @@
 %=======================================================================
 
 function ParamOut=civ2vel_3C(Param)
-disp('test')
+
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -123,10 +136,6 @@ NbField=NbField_j*NbField_i; %total number of fields
 
 %% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-%
-% if ~isfield(Param,'InputFields')
-%     Param.InputFields.FieldName='';
-% end
 
 %% calibration data and timing: read the ImaDoc files
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
@@ -159,7 +168,7 @@ if ~Param.CheckObject
     disp_uvmat('ERROR','a projection plane with interpolation is needed',checkrun)
     return
 end
-ObjectData=Param.ProjObject;
+ObjectData=Param.ProjObject;% Object attached to the GUI series
 xI=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
 yI=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
 [XI,YI]=meshgrid(xI,yI);
@@ -167,179 +176,164 @@ U=zeros(size(XI,1),size(XI,2));
 V=zeros(size(XI,1),size(XI,2));
 W=zeros(size(XI,1),size(XI,2));
 
-%% MAIN LOOP ON FIELDS
+%%%% MAIN LOOP ON FIELDS %%%%%
 warning off
 
 CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
-for index=1:NbField
+for field_index=1:NbField
     
-    update_waitbar(WaitbarHandle,index/NbField)
+    update_waitbar(WaitbarHandle,field_index/NbField)% waitbar to visualise progress (in RUN mode)
     
-    
-    
-    
-      %% generating the name of the merged field
-    i1=i1_series{1}(index);
+    %% generating the name of the output file for the merged field
+    i1=i1_series{1}(field_index);
     if ~isempty(i2_series{end})
-        i2=i2_series{end}(index);
+        i2=i2_series{end}(field_index);
     else
         i2=i1;
     end
     j1=1;
     j2=1;
     if ~isempty(j1_series{1})
-        j1=j1_series{1}(index);
+        j1=j1_series{1}(field_index);
         if ~isempty(j2_series{end})
-            j2=j2_series{end}(index);
+            j2=j2_series{end}(field_index);
         else
             j2=j1;
         end
     end
     OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2);
     
-    %%
-    
-   
+    %% program stop if requested on the GUI
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
     
-     if (~CheckOverwrite && exist(OutputFile,'file'))  
-            disp('existing output file already exists, skip to next field')
-            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
-     end   
-     
+    %% check existence of the output file
+    if (~CheckOverwrite && exist(OutputFile,'file'))
+        disp('existing output file already exists, skip to next field')
+        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+    end
+    
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
-    timeread=zeros(1,NbView);
     
     %get Xphys,Yphys,Zphys from 1 or 2 stereo folders. Positions are taken
     %at the middle between to time step
-   clear ZItemp
-   ZItemp=zeros(size(XI,1),size(XI,2),2);
-   
-   if index==1
+    ZItemp=zeros(size(XI,1),size(XI,2),2);
+    if field_index==1
         first_img=i1_series{1,1}(1,1); %id of the first image of the series
-   end
-     
-     idtemp=0;
- for indextemp=index:index+1; 
-     idtemp=idtemp+1;
-    if NbView==3 % if there is only 1 stereo folder, extract directly Xphys,Yphys and Zphys
-      
-        
-        
-        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(first_img+indextemp-1),'.nc']); 
-       
-        if  exist('Data{3}.Civ3_FF','var') % FF is present, remove wrong vector
-            temp=find(Data{3}.Civ3_FF==0);
-            Zphys=Data{3}.Zphys(temp);
-            Yphys=Data{3}.Yphys(temp);
-            Xphys=Data{3}.Xphys(temp);
-        else 
-            Zphys=Data{3}.Zphys;
-            Yphys=Data{3}.Yphys;
-            Xphys=Data{3}.Xphys;
-        end
-        
-        
-        
-    elseif NbView==4 % is there is 2 stereo folders, get global U and V and compute Zphys
-        
-        
-        %test if the seconde camera is the same for both folder
-        for i=3:4
-        indpt(i)=strfind(Param.InputTable{i,2},'.'); % indice of the "." is the folder name 1
-        indline(i)=strfind(Param.InputTable{i,2},'-'); % indice of the "-" is the folder name1
-        camname{i}=Param.InputTable{i,2}(indline(i)+1:indpt(i)-1);% extract the second camera name 
-        end
-        
-        if strcmp(camname{3},camname{4})==0 
-            disp_uvmat('ERROR','The 2 stereo folders should have the same camera for the second position',checkrun)
-            return
-        end
-        
-   
-        
-        [Data{3},tild,errormsg] = nc2struct([Param.InputTable{3,1},'/',Param.InputTable{3,2},'/',Param.InputTable{3,3},'_',int2str(first_img+indextemp-1),'.nc']); 
-    
-        if exist('Data{3}.Civ3_FF','var') % if FF is present, remove wrong vector
-            temp=find(Data{3}.Civ3_FF==0);
-            Xmid3=Data{3}.Xmid(temp);
-            Ymid3=Data{3}.Ymid(temp);
-            U3=Data{3}.Uphys(temp);
-            V3=Data{3}.Vphys(temp);
-        else 
-            Xmid3=Data{3}.Xmid;
-            Ymid3=Data{3}.Ymid;
-            U3=Data{3}.Uphys;
-            V3=Data{3}.Vphys;
-        end
-        %temporary gridd of merging the 2 stereos datas
-        [xq,yq] = meshgrid(min(Xmid3+(U3)/2):(max(Xmid3+(U3)/2)-min(Xmid3+(U3)/2))/128:max(Xmid3+(U3)/2),min(Ymid3+(V3)/2):(max(Ymid3+(V3)/2)-min(Ymid3+(V3)/2))/128:max(Ymid3+(V3)/2));
-        
-        %1st folder : interpolate the first camera (Dalsa1) points on the second (common) camera
-        %(Dalsa 3)
-        x3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Xmid3-(U3)/2,xq,yq);
-        y3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Ymid3-(V3)/2,xq,yq);
-        
-        
-
-         [Data{4},tild,errormsg] = nc2struct([Param.InputTable{4,1},'/',Param.InputTable{4,2},'/',Param.InputTable{4,3},'_',int2str(first_img+indextemp-1),'.nc']); 
-        if exist('Data{4}.Civ3_FF','var') % if FF is present, remove wrong vector
-            temp=find(Data{4}.Civ3_FF==0);
-            Xmid4=Data{4}.Xmid(temp);
-            Ymid4=Data{4}.Ymid(temp);
-            U4=Data{4}.Uphys(temp);
-            V4=Data{4}.Vphys(temp);
-        else 
-            Xmid4=Data{4}.Xmid;
-            Ymid4=Data{4}.Ymid;
-            U4=Data{4}.Uphys;
-            V4=Data{4}.Vphys;
-        end
-        
-        %2nd folder :interpolate the first camera (Dalsa2) points on the second (common) camera
-        %(Dalsa 3)
-        x4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Xmid4-(U4)/2,xq,yq);
-        y4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Ymid4-(V4)/2,xq,yq);
-        
-        xmid=reshape((x4Q+x3Q)/2,length(xq(:,1)).*length(xq(1,:)),1);
-        ymid=reshape((y4Q+y3Q)/2,length(yq(:,1)).*length(yq(1,:)),1);
-        u=reshape(x4Q-x3Q,length(xq(:,1)).*length(xq(1,:)),1);
-        v=reshape(y4Q-y3Q,length(yq(:,1)).*length(yq(1,:)),1);
-        
-        
-        [Zphys,Xphys,Yphys,error]=shift2z(xmid, ymid, u, v,XmlData); %get Xphy,Yphy and Zphys
-        %remove NaN 
-        tempNaN=isnan(Zphys);tempind=find(tempNaN==1);
-        Zphys(tempind)=[];
-        Xphys(tempind)=[];
-        Yphys(tempind)=[];
-        error(tempind)=[];
-         
     end
     
-    
-   
-    
-       ZItemp(:,:,idtemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen gridd
-    
-end
-    ZI=mean(ZItemp,3); %mean between two the two time step
+    idtemp=0;
+    % get the surface shape corresponding to the PIV measurements
+    for indextemp=field_index:field_index+1;%TODO: generalise to field index intervals>1 for PIV
+        idtemp=idtemp+1;
+        InputFile_3=fullfile(Param.InputTable{3,1},Param.InputTable{3,2},[Param.InputTable{3,3} '_' int2str(first_img+indextemp-1) '.nc']);
+        if NbView==3 % if there is only 1 stereo folder (2 cameras only), extract directly Xphys,Yphys and Zphys  
+            % Data{1}: =raw PIV camera 1 only
+            % Data{2}: =raw PIV camera 2 only
+            % Data{3}: =correlation between camera 1 and 2 
+            [Data{3},tild,errormsg] = nc2struct(InputFile_3);%read input file       
+            if  exist('Data{3}.Civ3_FF','var') % FF is present, remove wrong vector
+                temp=find(Data{3}.Civ3_FF==0);
+                Zphys=Data{3}.Zphys(temp);
+                Yphys=Data{3}.Yphys(temp);
+                Xphys=Data{3}.Xphys(temp);
+            else
+                Zphys=Data{3}.Zphys;
+                Yphys=Data{3}.Yphys;
+                Xphys=Data{3}.Xphys;
+            end
+            
+        elseif NbView==4 % is there is 2 stereo folders, get global U and V and compute Zphys 
+            % Data{1}: =raw PIV camera 1 only (left)
+            % Data{2}: =raw PIV camera 2 only (right) (no PIV done with middle camera)
+            % Data{3}: =corelation between camera 1 and 3 (left and middle)
+            % Data{4}: =corelation between camera 2 and 3 (right and middle)
+            % test if the second camera (3) is the same for both folders 
+            for i=3:4
+                indpt(i)=strfind(Param.InputTable{i,2},'.'); % indice of the "." is the folder name 1
+                indline(i)=strfind(Param.InputTable{i,2},'-'); % indice of the "-" is the folder name1
+                camname{i}=Param.InputTable{i,2}(indline(i)+1:indpt(i)-1);% extract the second camera name
+            end        
+            if strcmp(camname{3},camname{4})==0
+                disp_uvmat('ERROR','The 2 stereo folders should have the same camera for the second position',checkrun)
+                return
+            end      
+            [Data{3},tild,errormsg] = nc2struct(InputFile_3);       
+            if exist('Data{3}.Civ3_FF','var') % if FF is present, remove wrong vector
+                temp=find(Data{3}.Civ3_FF==0);
+                Xmid3=Data{3}.Xmid(temp);
+                Ymid3=Data{3}.Ymid(temp);
+                U3=Data{3}.Uphys(temp);
+                V3=Data{3}.Vphys(temp);
+            else
+                Xmid3=Data{3}.Xmid;
+                Ymid3=Data{3}.Ymid;
+                U3=Data{3}.Uphys;
+                V3=Data{3}.Vphys;
+            end
+            %temporary grid of merging the 2 stereos data
+            [xq,yq] = meshgrid(min(Xmid3+(U3)/2):(max(Xmid3+(U3)/2)-min(Xmid3+(U3)/2))/128:max(Xmid3+(U3)/2),min(Ymid3+(V3)/2):(max(Ymid3+(V3)/2)-min(Ymid3+(V3)/2))/128:max(Ymid3+(V3)/2));
+            
+            %1st folder : interpolate the first camera points on the second (common) camera
+            %(Dalsa 3)
+            x3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Xmid3-(U3)/2,xq,yq);
+            y3Q=griddata(Xmid3+(U3)/2,Ymid3+(V3)/2,Ymid3-(V3)/2,xq,yq);
+            
+            InputFile_4=fullfile(Param.InputTable{4,1},Param.InputTable{4,2},[Param.InputTable{4,3} '_' int2str(first_img+indextemp-1) '.nc']);
+            [Data{4},tild,errormsg] = nc2struct(InputFile_4);
+            if exist('Data{4}.Civ3_FF','var') % if FF is present, remove wrong vector
+                temp=find(Data{4}.Civ3_FF==0);
+                Xmid4=Data{4}.Xmid(temp);
+                Ymid4=Data{4}.Ymid(temp);
+                U4=Data{4}.Uphys(temp);
+                V4=Data{4}.Vphys(temp);
+            else
+                Xmid4=Data{4}.Xmid;
+                Ymid4=Data{4}.Ymid;
+                U4=Data{4}.Uphys;
+                V4=Data{4}.Vphys;
+            end
+            %2nd folder :interpolate the first camera (Dalsa2) points on the second (common) camera
+            %(Dalsa 3)
+            x4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Xmid4-(U4)/2,xq,yq);
+            y4Q=griddata(Xmid4+(U4)/2,Ymid4+(V4)/2,Ymid4-(V4)/2,xq,yq);
+            
+            %add the displacements of the two camera pairs
+            xmid=reshape((x4Q+x3Q)/2,length(xq(:,1)).*length(xq(1,:)),1);
+            ymid=reshape((y4Q+y3Q)/2,length(yq(:,1)).*length(yq(1,:)),1);
+            u=reshape(x4Q-x3Q,length(xq(:,1)).*length(xq(1,:)),1);
+            v=reshape(y4Q-y3Q,length(yq(:,1)).*length(yq(1,:)),1);
+            
+            % get the surface z(x,y) from the combined displacement
+            [Zphys,Xphys,Yphys,error]=shift2z(xmid, ymid, u, v,XmlData); %get Xphy,Yphy and Zphys
+            %remove NaN
+            tempNaN=isnan(Zphys);tempind=find(tempNaN==1);
+            Zphys(tempind)=[];
+            Xphys(tempind)=[];
+            Yphys(tempind)=[];
+            error(tempind)=[];
+            
+        end
+        
+        ZItemp(:,:,idtemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen grid
+        
+    end
+    ZI=mean(ZItemp,3); %mean between two the two times used for surface measurement
     Vtest=ZItemp(:,:,2)-ZItemp(:,:,1);
     
     [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view a
     [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view b
     
-   
+    
     for iview=1:2
-        %% reading input file(s)
-        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,index},{'vec(U,V)'},'*');
+        %% reading PIV input file(s)
+        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,field_index},{'vec(U,V)'},'*');
         if ~isempty(errormsg)
             disp_uvmat('ERROR',['ERROR in civ2vel_3C/read_field/' errormsg],checkrun)
             return
@@ -358,7 +352,7 @@ end
             return
         end
     end
-    %remove wrong vector
+    %remove false vectors
     temp=find(Data{1}.FF==0);
     X1=Data{1}.X(temp);
     Y1=Data{1}.Y(temp);
@@ -368,10 +362,10 @@ end
     Ua=griddata(X1,Y1,U1,Xa,Ya);
     Va=griddata(X1,Y1,V1,Xa,Ya);
     
-%     [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X 
+    [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
     [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
     
-    %remove wrong vector
+    %remove false vectors
     temp=find(Data{2}.FF==0);
     X2=Data{2}.X(temp);
     Y2=Data{2}.Y(temp);
@@ -379,15 +373,15 @@ end
     V2=Data{2}.V(temp);
     Ub=griddata(X2,Y2,U2,Xb,Yb);
     Vb=griddata(X2,Y2,V2,Xb,Yb);
-
-%     [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X 
+    
+    [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X
     [B]=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,XI,YI,ZI); %get coef B~
-   
+    
     
     % System to solve
     S=ones(size(XI,1),size(XI,2),3);
     D=ones(size(XI,1),size(XI,2),3,3);
-
+    
     S(:,:,1)=A(:,:,1,1).*Ua+A(:,:,2,1).*Va+B(:,:,1,1).*Ub+B(:,:,2,1).*Vb;
     S(:,:,2)=A(:,:,1,2).*Ua+A(:,:,2,2).*Va+B(:,:,1,2).*Ub+B(:,:,2,2).*Vb;
     S(:,:,3)=A(:,:,1,3).*Ua+A(:,:,2,3).*Va+B(:,:,1,3).*Ub+B(:,:,2,3).*Vb;
@@ -407,27 +401,22 @@ end
             V(indj,indi)=dxyz(2);
             W(indj,indi)=dxyz(3);
         end
-    end   
+    end
     Error=zeros(size(XI,1),size(XI,2),4);
     Error(:,:,1)=A(:,:,1,1).*U+A(:,:,1,2).*V+A(:,:,1,3).*W-Ua;
     Error(:,:,2)=A(:,:,2,1).*U+A(:,:,2,2).*V+A(:,:,2,3).*W-Va;
     Error(:,:,3)=B(:,:,1,1).*U+B(:,:,1,2).*V+B(:,:,1,3).*W-Ub;
     Error(:,:,4)=B(:,:,2,1).*U+B(:,:,2,2).*V+B(:,:,2,3).*W-Vb;
     
-    
-
-    
-  
-    
     %% recording the merged field
-    if index==1% initiate the structure at first index
+    if field_index==1% initiate the structure at first index
         MergeData.ListGlobalAttribute={'Conventions','Time','Dt'};
         MergeData.Conventions='uvmat';
         MergeData.Time=Time;
         MergeData.Dt=Dt;
         MergeData.ListVarName={'coord_x','coord_y','Z','U','V','W','Error'};
         MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
-                {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
+            {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
         MergeData.coord_x=xI;
         MergeData.coord_y=yI;
     end
@@ -436,8 +425,8 @@ end
     MergeData.W=W/Dt;
     MergeData.Z=ZI;
     
-%     mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
-%     mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+    %     mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+    %     mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
     MergeData.Error=0.5*sqrt(sum(Error.^2,3));
     errormsg=struct2nc(OutputFile,MergeData);%save result file
     if isempty(errormsg)
@@ -460,8 +449,9 @@ A(:,:,2,1)=(R(4)-R(7)*Y)./T;
 A(:,:,2,2)=(R(5)-R(8)*Y)./T;
 A(:,:,2,3)=(R(6)-R(9)*Y)./T;
 
-function [U,V,X,Y]=Ud2U(Calib,Xd,Yd,Ud,Vd) % convert Xd to X  and Ud to U
-
+function [U,V,X,Y]=Ud2U(Calib,Xd,Yd,Ud,Vd) 
+% convert image coordinates to view angles, after removal of  quadratic distorsion
+% input in pixel, output in radians
 X1d=Xd-Ud/2;
 X2d=Xd+Ud/2;
 Y1d=Yd-Vd/2;
@@ -482,7 +472,6 @@ Y=Y1+V/2;
 function [z,Xphy,Yphy,error]=shift2z(xmid, ymid, u, v,XmlData) % get H from stereo data
 z=0;
 error=0;
-
 
 %% first image
 Calib_A=XmlData{1}.GeometryCalib;

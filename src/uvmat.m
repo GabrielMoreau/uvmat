@@ -909,6 +909,13 @@ data.ProjMode='projection';%default
 data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
+% --------------------------------------------------------------------
+function Menuplane_z_Callback(hObject, eventdata, handles)
+data.Type='plane_z';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
 %------------------------------------------------------------------------
 function Menuvolume_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -948,14 +955,13 @@ data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 check_plot=0;
 if isfield(UvData,'Field')
-    Field=UvData.Field;
-    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+    if isfield(UvData.Field,'NbDim')&& isequal(UvData.Field.NbDim,3)
          data.Coord=[0 0 0]; %default
     end
-    if isfield(Field,'CoordUnit')
-        data.CoordUnit=Field.CoordUnit;
+    if isfield(UvData.Field,'CoordUnit')
+        data.CoordUnit=UvData.Field.CoordUnit;
     end
-    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
+    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)&&~strcmp(data.Type,'plane_z')
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
         switch data.Type
             case {'line','polyline','points'}
@@ -983,6 +989,9 @@ if isfield(UvData,'Field')
         end
         data.DX=UvData.Field.CoordMesh;
         data.DY=UvData.Field.CoordMesh;
+    end
+    if isfield(UvData.Field,'ProjModeRequest')
+        data.ProjMode=UvData.Field.ProjModeRequest;%set the request proj mode option by default
     end
 end
 
@@ -5881,3 +5890,6 @@ if get(handles.CheckTable,'Value')
 else
     set(handles.TableDisplay,'Visible','off')
 end
+
+
+

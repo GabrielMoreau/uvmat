@@ -132,133 +132,136 @@ end
 sizcoord=size(ObjectData.Coord);
 
 %% determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
-test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||...
-    isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')|| isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume');
-test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Type,'volume')...
-    ||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside');
+%test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||...
+%   isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')|| isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume');
+%test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Type,'volume')...
+%    ||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside');
+test_line=ismember(ObjectData.Type,{'points','line','polyline','polygon','plane','plane_z','volume'});
+test_patch=ismember(ObjectData.ProjMode,{'inside','outside','mask_inside','mask_outside'});
 if test_line
     xline=ObjectData.Coord(:,1);
     yline=ObjectData.Coord(:,2);
     nbpoints=numel(xline);
-    if isequal(ObjectData.Type,'line_x')
-        xline=[xline; ObjectData.RangeX(2)];%creating the line
-        yline=[yline; ObjectData.RangeY(2)];%creating the line
-    elseif isequal(ObjectData.Type,'polygon')
-        xline=[xline; ObjectData.Coord(1,1)];%closing the line
-        yline=[yline; ObjectData.Coord(1,2)];
-    elseif isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume') 
-        if ~isfield(ObjectData,'Angle')
-            ObjectData.Angle=[0 0 0];
-        end
-        phi=ObjectData.Angle(3)*pi/180;%angle in radians
-        x0=xline(1); y0=yline(1);
-        xlim=get(haxes,'XLim');
-        ylim=get(haxes,'YLim');
-        graph_scale=max(abs(xlim(2)-xlim(1)),abs(ylim(2)-ylim(1)))/2;% estimate the length of axes plots
-        XMax=graph_scale;
-        YMax=graph_scale;
-        XMin=-graph_scale;
-        YMin=-graph_scale;
-        if  ~isempty(XMaxRange)
-            XMax=XMaxRange;
-        end
-        if  ~isempty(XMinRange)
-            XMin=XMinRange;
-        end
-        if  ~isempty(YMaxRange)
-            YMax=YMaxRange;
-        end
-        if  ~isempty(YMinRange)
-            YMin=YMinRange;
-        end   
-        % axes lines
-        xline=NaN(1,13);
-        xline(1)=x0+min(0,XMin)*cos(phi); % min end of the x axes
-        yline(1)=y0+min(0,XMin)*sin(phi);
-        xline(2)=x0+XMax*cos(phi);% max end of the x axes
-        yline(2)=y0+XMax*sin(phi);
-        xline(8)=x0-min(0,YMin)*sin(phi);% min end of the y axes
-        yline(8)=y0+min(0,YMin)*cos(phi);
-        xline(9)=x0-YMax*sin(phi);% max end of the y axes
-        yline(9)=y0+YMax*cos(phi);
-
-        %arrows on x axis
-        arrow_scale=graph_scale/20;
-        xline(3)=xline(2)-arrow_scale*cos(phi-pi/8);
-        yline(3)=yline(2)-arrow_scale*sin(phi-pi/8);
-        xline(5)=xline(2);
-        yline(5)=yline(2);
-        xline(6)=xline(2)-arrow_scale*cos(phi+pi/8);
-        yline(6)=yline(2)-arrow_scale*sin(phi+pi/8);
-        
-        %arrows on y axis
-        xline(10)=xline(9)-arrow_scale*cos(phi+pi/2-pi/8);
-        yline(10)=yline(9)-arrow_scale*sin(phi+pi/2-pi/8);
-        xline(12)=xline(9);
-        yline(12)=yline(9);
-        xline(13)=xline(9)-arrow_scale*cos(phi+pi/2+pi/8);
-        yline(13)=yline(9)-arrow_scale*sin(phi+pi/2+pi/8);     
-        %xline=[Xbeg_x Xend_x NaN Ybeg_x Yend_x];
-        %yline=[Xbeg_y Xend_y NaN Ybeg_y Yend_y];
-        %  dashed lines indicating bounds
-        xsup=NaN(1,5);
-        ysup=NaN(1,5);
-        if ~isempty(XMaxRange)
-            xsup(1)=xline(2)-YMin*sin(phi);
-            ysup(1)=yline(2)+YMin*cos(phi);
-            xsup(2)=xline(2)-YMax*sin(phi);
-            ysup(2)=yline(2)+YMax*cos(phi);
-        end
-        if ~isempty(YMaxRange)
-            xsup(2)=xline(2)-YMax*sin(phi);
-            ysup(2)=yline(2)+YMax*cos(phi);
-            xsup(3)=xline(9)+XMin*cos(phi);
-            ysup(3)=yline(9)+XMin*sin(phi);
-        end    
-        if ~isempty(XMinRange)
-            xsup(3)=xline(9)+XMin*cos(phi);
-            ysup(3)=yline(9)+XMin*sin(phi);
-            xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
-            ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
-        end  
-        if ~isempty(YMinRange)
-           xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
-            ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
-            xsup(5)=xline(8)-YMin*sin(phi);
-            ysup(5)=yline(8)+YMin*cos(phi);
-        end 
+    switch ObjectData.Type
+        case 'line_x'
+            xline=[xline; ObjectData.RangeX(2)];%creating the line
+            yline=[yline; ObjectData.RangeY(2)];%creating the line
+        case 'polygon'
+            xline=[xline; ObjectData.Coord(1,1)];%closing the line
+            yline=[yline; ObjectData.Coord(1,2)];
+        case {'plane','volume'}
+            if ~isfield(ObjectData,'Angle')
+                ObjectData.Angle=[0 0 0];
+            end
+            phi=ObjectData.Angle(3)*pi/180;%angle in radians
+            x0=xline(1); y0=yline(1);
+            xlim=get(haxes,'XLim');
+            ylim=get(haxes,'YLim');
+            graph_scale=max(abs(xlim(2)-xlim(1)),abs(ylim(2)-ylim(1)))/2;% estimate the length of axes plots
+            XMax=graph_scale;
+            YMax=graph_scale;
+            XMin=-graph_scale;
+            YMin=-graph_scale;
+            if  ~isempty(XMaxRange)
+                XMax=XMaxRange;
+            end
+            if  ~isempty(XMinRange)
+                XMin=XMinRange;
+            end
+            if  ~isempty(YMaxRange)
+                YMax=YMaxRange;
+            end
+            if  ~isempty(YMinRange)
+                YMin=YMinRange;
+            end
+            % axes lines
+            xline=NaN(1,13);
+            xline(1)=x0+min(0,XMin)*cos(phi); % min end of the x axes
+            yline(1)=y0+min(0,XMin)*sin(phi);
+            xline(2)=x0+XMax*cos(phi);% max end of the x axes
+            yline(2)=y0+XMax*sin(phi);
+            xline(8)=x0-min(0,YMin)*sin(phi);% min end of the y axes
+            yline(8)=y0+min(0,YMin)*cos(phi);
+            xline(9)=x0-YMax*sin(phi);% max end of the y axes
+            yline(9)=y0+YMax*cos(phi);
+            
+            %arrows on x axis
+            arrow_scale=graph_scale/20;
+            xline(3)=xline(2)-arrow_scale*cos(phi-pi/8);
+            yline(3)=yline(2)-arrow_scale*sin(phi-pi/8);
+            xline(5)=xline(2);
+            yline(5)=yline(2);
+            xline(6)=xline(2)-arrow_scale*cos(phi+pi/8);
+            yline(6)=yline(2)-arrow_scale*sin(phi+pi/8);
+            
+            %arrows on y axis
+            xline(10)=xline(9)-arrow_scale*cos(phi+pi/2-pi/8);
+            yline(10)=yline(9)-arrow_scale*sin(phi+pi/2-pi/8);
+            xline(12)=xline(9);
+            yline(12)=yline(9);
+            xline(13)=xline(9)-arrow_scale*cos(phi+pi/2+pi/8);
+            yline(13)=yline(9)-arrow_scale*sin(phi+pi/2+pi/8);
+            %xline=[Xbeg_x Xend_x NaN Ybeg_x Yend_x];
+            %yline=[Xbeg_y Xend_y NaN Ybeg_y Yend_y];
+            %  dashed lines indicating bounds
+            xsup=NaN(1,5);
+            ysup=NaN(1,5);
+            if ~isempty(XMaxRange)
+                xsup(1)=xline(2)-YMin*sin(phi);
+                ysup(1)=yline(2)+YMin*cos(phi);
+                xsup(2)=xline(2)-YMax*sin(phi);
+                ysup(2)=yline(2)+YMax*cos(phi);
+            end
+            if ~isempty(YMaxRange)
+                xsup(2)=xline(2)-YMax*sin(phi);
+                ysup(2)=yline(2)+YMax*cos(phi);
+                xsup(3)=xline(9)+XMin*cos(phi);
+                ysup(3)=yline(9)+XMin*sin(phi);
+            end
+            if ~isempty(XMinRange)
+                xsup(3)=xline(9)+XMin*cos(phi);
+                ysup(3)=yline(9)+XMin*sin(phi);
+                xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
+                ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
+            end
+            if ~isempty(YMinRange)
+                xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
+                ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
+                xsup(5)=xline(8)-YMin*sin(phi);
+                ysup(5)=yline(8)+YMin*cos(phi);
+            end
     end
-    SubLineStyle='none';%default
-    if isfield(ObjectData,'ProjMode')
-        if isequal(ObjectData.ProjMode,'projection')
-            SubLineStyle='--'; %range of projection marked by dash
-            if isfield (ObjectData,'DX')
-               ObjectData=rmfield(ObjectData,'DX');
-            end
-            if isfield (ObjectData,'DY')
-               ObjectData=rmfield(ObjectData,'DY');
-            end
-        elseif isequal(ObjectData.ProjMode,'filter')
-            SubLineStyle=':';%range of projection not visible
+end
+SubLineStyle='none';%default
+if isfield(ObjectData,'ProjMode')
+    if isequal(ObjectData.ProjMode,'projection')
+        SubLineStyle='--'; %range of projection marked by dash
+        if isfield (ObjectData,'DX')
+            ObjectData=rmfield(ObjectData,'DX');
         end
-    end 
-    if isequal(ObjectData.Type,'line')||isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')
-        if length(xline)<2
-            theta=0;
-        else
-            theta=angle(diff(xline)+1i*diff(yline));
-            theta(length(xline))=theta(length(xline)-1);
+        if isfield (ObjectData,'DY')
+            ObjectData=rmfield(ObjectData,'DY');
         end
-        xsup(1)=xline(1)+YMax*sin(theta(1));
-        xinf(1)=xline(1)-YMax*sin(theta(1));
-        ysup(1)=yline(1)-YMax*cos(theta(1));
-        yinf(1)=yline(1)+YMax*cos(theta(1));
-        for ip=2:length(xline)
-            xsup(ip)=xline(ip)+YMax*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-            xinf(ip)=xline(ip)-YMax*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-            ysup(ip)=yline(ip)-YMax*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-            yinf(ip)=yline(ip)+YMax*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-        end
+    elseif isequal(ObjectData.ProjMode,'filter')
+        SubLineStyle=':';%range of projection not visible
+    end
+end
+if ismember(ObjectData.Type,{'line','polyline','polygon','plane_z'})
+    if length(xline)<2
+        theta=0;
+    else
+        theta=angle(diff(xline)+1i*diff(yline));
+        theta(length(xline))=theta(length(xline)-1);
+    end
+    xsup(1)=xline(1)+YMax*sin(theta(1));
+    xinf(1)=xline(1)-YMax*sin(theta(1));
+    ysup(1)=yline(1)-YMax*cos(theta(1));
+    yinf(1)=yline(1)+YMax*cos(theta(1));
+    for ip=2:length(xline)
+        xsup(ip)=xline(ip)+YMax*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+        xinf(ip)=xline(ip)-YMax*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+        ysup(ip)=yline(ip)-YMax*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+        yinf(ip)=yline(ip)+YMax*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
     end
 end
 
@@ -414,11 +417,11 @@ if test_newobj==0;
         end
     else% no patch image requested, erase existing ones
         if isfield(PlotData,'SubObject')
-        for iobj=1:length(PlotData.SubObject)
-            if ishandle(PlotData.SubObject(iobj)) && strcmp(get(PlotData.SubObject(iobj),'Type'),'image')
-                delete(PlotData.SubObject(iobj))
+            for iobj=1:length(PlotData.SubObject)
+                if ishandle(PlotData.SubObject(iobj)) && strcmp(get(PlotData.SubObject(iobj),'Type'),'image')
+                    delete(PlotData.SubObject(iobj))
+                end
             end
-        end
         end
     end
 end
@@ -458,7 +461,7 @@ if test_newobj
                         'LineStyle',SubLineStyle,'Tag','proj_object');
                 end
             end
-        case {'line','polyline','polygon'}
+        case {'line','polyline','polygon','plane_z'}
             hh=line(xline,yline,'Color',col);
                 PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
                 PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
