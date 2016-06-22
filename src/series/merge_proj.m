@@ -202,10 +202,6 @@ end
 %% output file type
 if min(cell2mat(CheckImage))==1 && (~Param.CheckObject || strcmp(Param.ProjObject.Type,'plane'))
     FileExtOut='.png'; %image output (input and proj result = image)
-    for iview=1:NbView
-        BitDepth(iview)=FileInfo{iview}.BitDepth;
-    end
-    BitDepth=max(BitDepth);
 else
     FileExtOut='.nc'; %netcdf output
 end
@@ -356,12 +352,12 @@ for index=1:NbField
   
     %% recording the merged field
     if strcmp(FileExtOut,'.png')    %output as image
-        if BitDepth==8
-            imwrite(uint8(MergeData.A),OutputFile,'BitDepth',8)
-        else
-            imwrite(uint16(MergeData.A),OutputFile,'BitDepth',16)
-        end
         if index==1
+            if strcmp(class(MergeData.A),'uint8')
+            BitDepth=8;
+            else
+              BitDepth=16;  
+            end
             %write xml calibration file, using the first file
             siz=size(MergeData.A);
             npy=siz(1);
@@ -390,7 +386,11 @@ for index=1:NbField
             t=set(t,1,'name','ImaDoc');
             save(t,[fileparts(OutputFile) '.xml'])
         end
-        
+        if BitDepth==8
+            imwrite(uint8(MergeData.A),OutputFile,'BitDepth',8)
+        else
+            imwrite(uint16(MergeData.A),OutputFile,'BitDepth',16)
+        end
     else   %output as netcdf files
         MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','NbCoord','NbDim'};
         MergeData.Conventions='uvmat';

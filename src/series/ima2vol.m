@@ -45,7 +45,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.vertical_cut';%set the output dir extension
+    ParamOut.OutputDirExt='.vol';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
       %check the input files
     ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
@@ -132,61 +132,56 @@ for ifile=1:nbfield_i
             Data=transform_fct(Data,XmlData{1});
         end
         if jfile==1
-            vol=zeros(nbfield_j,size(Data.A,1),size(Data.A,2));
-            Z=1:nbfield_j;%default Z values
+            VolData.A=zeros(nbfield_j,size(Data.A,1),size(Data.A,2));
+            VolData.Coord_z=1:nbfield_j;%default Z values
         end
-        vol(jfile,:,:)=double(Data.A);%concacene along y
-        Z(jfile)=Data.PlaneCoord(3);
+        VolData.A(jfile,:,:)=Data.A;%concacene along y
+        VolData.Coord_z(jfile)=Data.PlaneCoord(3);
     end
-    if ifile==1
-        npx=size(Data.A,2);
-        npy=size(Data.A,1);
-        npz=256;
-        ind_x=round(npx/2)-10:round(npx/2)+10;%image index at the mid x position
-        ind_y=round(npy/2)-10:round(npy/2)+10;;%image index at the mid y position
-        
-        %write xml calibration file, using the first file
-            Rangx=Data.Coord_x;
-            Rangy=Data.Coord_y;
-            Rangz=[Z(end) Z(1)];
+%         npx=size(Data.A,2);
+%         npy=size(Data.A,1);
+%         npz=256;
+%         ind_x=round(npx/2)-10:round(npx/2)+10;%image index at the mid x position
+%         ind_y=round(npy/2)-10:round(npy/2)+10;%image index at the mid y position
+%         ind_y=ind_y-100;% shift to avoid the injector
+%         %write xml calibration file, using the first file
+%             Rangx=Data.Coord_x;
+%             Rangy=Data.Coord_y;
+%             Rangz=[Z(end) Z(1)];
+%     
+%         GeometryCal.CalibrationType='rescale';
+%         GeometryCal.CoordUnit=Data.CoordUnit;
+%         GeometryCal.focal=1;
+%         %scaling along x, y and z
+%         pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
+%         pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
+%         pxcmz=(npz-1)/(Rangz(2)-Rangz(1));
+%         T_x=-pxcmx*Rangx(1)+0.5;
+%         T_y=-pxcmy*Rangy(2)+0.5;
+%         T_z=-pxcmz*Rangz(2)+0.5;
+%         % xml file for x cut
+%         GeometryCal.R=[pxcmx,0,0;0,pxcmz,0;0,0,1];
+%         GeometryCal.Tx_Ty_Tz=[T_x T_z 1];
+%         ImaDoc.GeometryCalib=GeometryCal;
+%         t=struct2xml(ImaDoc);
+%         t=set(t,1,'name','ImaDoc');
+%         save(t,fullfile(RootPath{1},SubdirOut,'cut_x.xml'))
+%                    % xml file for y cut
+%         GeometryCal.R=[pxcmy,0,0;0,pxcmz,0;0,0,1];
+%         GeometryCal.Tx_Ty_Tz=[T_y T_z 1];
+%         ImaDoc.GeometryCalib=GeometryCal;
+%         t=struct2xml(ImaDoc);
+%         t=set(t,1,'name','ImaDoc');
+%         save(t,fullfile(RootPath{1},SubdirOut,'cut_y.xml')) 
+%     end
     
-        GeometryCal.CalibrationType='rescale';
-        GeometryCal.CoordUnit=Data.CoordUnit;
-        GeometryCal.focal=1;
-        %scaling along x, y and z
-        pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
-        pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
-        pxcmz=(npz-1)/(Rangz(2)-Rangz(1));
-        T_x=-pxcmx*Rangx(1)+0.5;
-        T_y=-pxcmy*Rangy(2)+0.5;
-        T_z=-pxcmz*Rangz(2)+0.5;
-        % xml file for x cut
-        GeometryCal.R=[pxcmx,0,0;0,pxcmz,0;0,0,1];
-        GeometryCal.Tx_Ty_Tz=[T_x T_z 1];
-        ImaDoc.GeometryCalib=GeometryCal;
-        t=struct2xml(ImaDoc);
-        t=set(t,1,'name','ImaDoc');
-        save(t,fullfile(RootPath{1},SubdirOut,'cut_x.xml'))
-                   % xml file for y cut
-        GeometryCal.R=[pxcmy,0,0;0,pxcmz,0;0,0,1];
-        GeometryCal.Tx_Ty_Tz=[T_y T_z 1];
-        ImaDoc.GeometryCalib=GeometryCal;
-        t=struct2xml(ImaDoc);
-        t=set(t,1,'name','ImaDoc');
-        save(t,fullfile(RootPath{1},SubdirOut,'cut_y.xml')) 
-    end
-    cut_y=squeeze(mean(vol(:,:,ind_x),3));
-    cut_y=interp1(Z,cut_y,linspace(Z(1),Z(end),npz));
-    cut_x=squeeze(mean(vol(:,ind_y,:),2));
-    cut_x=interp1(Z,cut_x,linspace(Z(1),Z(end),npz));
-    
-    filename_x=fullfile_uvmat(RootPath{1},SubdirOut,'cut_x','.png','_1',i1_series{1}(jfile,ifile),[],j1);
-    filename_y=fullfile_uvmat(RootPath{1},SubdirOut,'cut_y','.png','_1',i1_series{1}(jfile,ifile),[],j1);
-    %  filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
-    imwrite(uint8(vol),filename_x,'png','BitDepth',8)%
-    display([filename_x 'written (8bits image)'])
-    imwrite(uint8(vol),filename_y,'png','BitDepth',8)%
-    display([filename_y 'written (8bits image)'])
+    filename=fullfile_uvmat(RootPath{1},SubdirOut,RootFile{1},'.nc','_1',i1_series{1}(jfile,ifile),[],j1);
+    VolData.ListVarName={'Coord_z','Coord_y','Coord_x','A'};
+    VolData.VarDimName={'Coord_z','Coord_y','Coord_x',{'Coord_z','Coord_y','Coord_x'}};
+    VolData.Coord_x=Data.Coord_x;
+    VolData.Coord_y=Data.Coord_y;
+    struct2nc(filename,VolData)
+    disp([filename ' written'])
 end
 
 

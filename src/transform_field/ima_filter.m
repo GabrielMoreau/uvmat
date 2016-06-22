@@ -28,25 +28,11 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=ima_filter(DataIn,Param)
+function DataOut=ima_filter(DataIn)
 
-%% request input parameters
-if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
-    prompt = {'npx';'npy'};
-    dlg_title = 'get the filter size in x and y';
-    num_lines= 2;
-    def     = { '20';'20'};
-    if isfield(Param,'TransformInput')&&isfield(Param.TransformInput,'FilterBoxSize_x')&&...
-            isfield(Param.TransformInput,'FilterBoxSize_y')
-        def={num2str(Param.TransformInput.FilterBoxSize_x);num2str(Param.TransformInput.FilterBoxSize_y)};
-    end
-    answer = inputdlg(prompt,dlg_title,num_lines,def);
-    DataOut.TransformInput.FilterBoxSize_x=str2num(answer{1}); %size of the filtering window
-    DataOut.TransformInput.FilterBoxSize_y=str2num(answer{2}); %size of the filtering window
-    return
-end
-
+Origin_x=469;
 DataOut=DataIn; %default
+DataOut.A=
 
 %definition of the cos shape matrix filter
 ix=[1/2-Param.TransformInput.FilterBoxSize_x/2:-1/2+Param.TransformInput.FilterBoxSize_x/2];%

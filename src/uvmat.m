@@ -783,8 +783,10 @@ if exist(MovieName,'file')
     end 
 end
 %create avi open
-aviobj=avifile(MovieName,'Compression','None','fps',fps);
+%aviobj=avifile(MovieName,'Compression','None','fps',fps);
 
+aviobj = VideoWriter(MovieName,'Uncompressed AVI');
+open(aviobj)
 %% get info from uvmat and adjust it
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
@@ -805,10 +807,11 @@ for i=1:FrameNumber
             Title=get(htitle,'String');
             set(htitle,'String',regexprep(Title,'t=\d+.\d*',['t=' time_str]))
             mov=getframe(figure_movie);
-            aviobj=addframe(aviobj,mov);
+           % aviobj=addframe(aviobj,mov);
+            writeVideo(aviobj,mov);
     end
 end
-aviobj=close(aviobj);
+close(aviobj);
 msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
 
 %------------------------------------------------------------------------
