@@ -81,6 +81,9 @@ switch FileType
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
+    case 'pivdata_fluidimage'
+        [Field,ParamOut.VelType,errormsg]=read_pivdata_fluidimage(FileName,InputField,ParamIn.VelType);
+        ParamOut.CivStage=Field.CivStage;
     case 'civx'% old (obsolete) format for civ results
         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
         [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
