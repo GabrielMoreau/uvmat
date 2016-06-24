@@ -110,6 +110,21 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
              msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
         end
     end
+    % determine volume scan mode
+        prompt = {'volume scan mode (Yes/No)'};
+    dlg_title = 'determine volume scan';
+    num_lines= 1;
+    def     = { 'No'};
+     answer=msgbox_uvmat('INPUT_Y-N','volume scan mode (OK/No)?');
+%     answer = inputdlg(prompt,dlg_title,num_lines,def);
+    if isempty(answer)
+        return
+    end
+    %check input consistency
+    if strcmp(answer,'Yes') 
+            ParamOut.NbSlice=1;% set NbSlice to 1 ( for i index)
+            ParamOut.ActionInput.CheckVolume=1;
+    end
     return
 end
 
@@ -247,160 +262,181 @@ if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','
        disp_uvmat('WARNING','automatic bin size for histograms, select aver_stat again to set the value',checkrun)
     end
 end
-%%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
-    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        break
-    end
+
+%% set volume scan
+NbSlice_j=1;
+index_series=1:size(filecell,2);
+first_j_out=first_j;
+last_j_out=last_j;
+if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'CheckVolume') ...
+        && Param.ActionInput.CheckVolume
+   index_j=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+   NbSlice_j=numel(index_j);
+   index_i=index_series(1:NbSlice_j:end);
+end
+
+%%% loop on slices (volume scan)
+for islice=index_j
+    if NbSlice_j>1
+    first_j_out=islice;
+    last_j_out=islice;
     
-    %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-    for iview=1:NbView
-        % reading input file(s)
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
-        if ~isempty(errormsg)
-            errormsg=['error of input reading: ' errormsg];
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+    for index=index_i+index_j(islice)
+        update_waitbar(WaitbarHandle,index/NbField)
+        if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+            disp('program stopped by user')
             break
         end
-        if ~isempty(NbSlice_calib)
-            Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-        end
-    end
-    %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
-    %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
-    % EDIT FROM HERE
-    
-    if isempty(errormsg)
-        Field=Data{1}; % default input field structure
-        nbfiles=nbfiles+1; %increment the file counter
-        %% coordinate transform (or other user defined transform)
-        if ~isempty(transform_fct)
-            switch nargin(transform_fct)
-                case 4
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 3
-                    if length(Data)==2
-                        Field=transform_fct(Data{1},XmlData{1},Data{2});
-                    else
-                        Field=transform_fct(Data{1},XmlData{1});
-                    end
-                case 2
-                    Field=transform_fct(Data{1},XmlData{1});
-                case 1
-                    Field=transform_fct(Data{1});
-            end
-        end
         
-        %% field projection on an object
-        if Param.CheckObject
-            if strcmp(Param.ProjObject.ProjMode,'interp_tps')
-                Field=tps_coeff_field(Field,check_proj_tps);% calculate tps coefficients if needed
-            end
-            [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
+        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        for iview=1:NbView
+            % reading input file(s)
+            %InputFile=fullfile_uvmat(RootPath{iview},SubDir{iview},RootFile{iview},FileExt{iview},NomType{iview},first_i,last_i,first_j_out,last_j_out);
+            [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             if ~isempty(errormsg)
-                disp_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg],checkrun)
-                return
+                errormsg=['error of input reading: ' errormsg];
+                break
+            end
+            if ~isempty(NbSlice_calib)
+                Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
         end
-             
-        %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-        if nbfiles==1 %first field
-            time_1=[];
-            if isfield(Field,'Time')
-                time_1=Field.Time(1);
-            end
-            DataOut=Field;%outcome reproduces the first (projected) field by default
-            DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files         
-            if isfield(Param,'ProjObject')&& ismember(Param.ProjObject.ProjMode,{'inside','outside'})%case of histograms
-                for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
-                    VarName=Field.ListVarName{ivar};
-                    if isfield(Data{1},VarName)
-                        DataOut.(VarName)=Field.(VarName);
-                        DataOut.([VarName 'Histo'])=zeros(size(DataOut.(VarName)));
-                        VarMesh=DataOut.(VarName)(2)-DataOut.(VarName)(1);
-                    end
+        %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
+        
+        if isempty(errormsg)
+            Field=Data{1}; % default input field structure
+            nbfiles=nbfiles+1; %increment the file counter
+            %% coordinate transform (or other user defined transform)
+            if ~isempty(transform_fct)
+                switch nargin(transform_fct)
+                    case 4
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 3
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 2
+                        Field=transform_fct(Data{1},XmlData{1});
+                    case 1
+                        Field=transform_fct(Data{1});
                 end
-                disp(['mesh for histogram = ' num2str(VarMesh)])
-            else
-                errorvar=zeros(numel(Field.ListVarName));%index of errorflag associated to each variable
-                if isfield(Field,'VarAttribute')
-                    for ivar=1:numel(Field.ListVarName)
+            end
+            
+            %% field projection on an object
+            if Param.CheckObject
+                if strcmp(Param.ProjObject.ProjMode,'interp_tps')
+                    Field=tps_coeff_field(Field,check_proj_tps);% calculate tps coefficients if needed
+                end
+                [Field,errormsg]=proj_field(Field,Param.ProjObject,VarMesh);
+                if ~isempty(errormsg)
+                    disp_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg],checkrun)
+                    return
+                end
+            end
+            
+            %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+            if nbfiles==1 %first field
+                time_1=[];
+                if isfield(Field,'Time')
+                    time_1=Field.Time(1);
+                end
+                DataOut=Field;%outcome reproduces the first (projected) field by default
+                DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files
+                if isfield(Param,'ProjObject')&& ismember(Param.ProjObject.ProjMode,{'inside','outside'})%case of histograms
+                    for ivar=1:numel(Field.ListVarName)% list of variable names before projection (histogram)
                         VarName=Field.ListVarName{ivar};
-                        DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
-                        NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
-                        
-                        for iivar=1:length(Field.VarAttribute)
-                            if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
-                                    && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
-                                errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
-                            end
+                        if isfield(Data{1},VarName)
+                            DataOut.(VarName)=Field.(VarName);
+                            DataOut.([VarName 'Histo'])=zeros(size(DataOut.(VarName)));
+                            VarMesh=DataOut.(VarName)(2)-DataOut.(VarName)(1);
                         end
                     end
-                    DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-                    DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
-                    DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                    disp(['mesh for histogram = ' num2str(VarMesh)])
                 else
-                                   for ivar=1:numel(Field.ListVarName)
-                                       VarName=Field.ListVarName{ivar};
-                        DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
-                        NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
-                                   end
-                end
-                
-            end
-        end   %current field
-        for ivar=1:length(DataOut.ListVarName)
-            VarName=DataOut.ListVarName{ivar};
-            sizmean=size(DataOut.(VarName));
-            siz=size(Field.(VarName));
-            if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
-                if isfield(Data{1},VarName)
-                    MaxValue=max(DataOut.(VarName));% current max of histogram absissa
-                    MinValue=min(DataOut.(VarName));% current min of histogram absissa
-%                     VarMesh=Field.VarAttribute{ivar}.Mesh;
-                    MaxIndex=round(MaxValue/VarMesh);
-                    MinIndex=round(MinValue/VarMesh);
-                    MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
-                    MinIndex_new=round(min(Field.(VarName)/VarMesh));
-                    if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
-                        DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
-                        DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(1,MaxIndex_new-MaxIndex)]; % append the new histo values                    
-                    end
-                    if MinIndex_new <= MinIndex-1
-                        DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
-                        DataOut.([VarName 'Histo'])=[zeros(1,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
-                        ind_start=1;
+                    errorvar=zeros(numel(Field.ListVarName));%index of errorflag associated to each variable
+                    if isfield(Field,'VarAttribute')
+                        for ivar=1:numel(Field.ListVarName)
+                            VarName=Field.ListVarName{ivar};
+                            DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
+                            NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
+                            
+                            for iivar=1:length(Field.VarAttribute)
+                                if isequal(Field.VarDimName{iivar},Field.VarDimName{ivar})&& isfield(Field.VarAttribute{iivar},'Role')...
+                                        && strcmp(Field.VarAttribute{iivar}.Role,'errorflag')
+                                    errorvar(ivar)=iivar; % index of the errorflag variable corresponding to ivar
+                                end
+                            end
+                        end
+                        DataOut.ListVarName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                        DataOut.VarDimName(errorvar(errorvar~=0))=[]; %remove errorflag from result
+                        DataOut.VarAttribute(errorvar(errorvar~=0))=[]; %remove errorflag from result
                     else
-                        ind_start=MinIndex_new-MinIndex+1;
+                        for ivar=1:numel(Field.ListVarName)
+                            VarName=Field.ListVarName{ivar};
+                            DataOut.(VarName)=zeros(size(DataOut.(VarName)));% initiate each field to zero
+                            NbData.(VarName)=zeros(size(DataOut.(VarName)));% initiate the nbre of good data to zero
+                        end
                     end
-                    DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
-                        DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);   
+                    
                 end
-            elseif ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                disp_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
-                return
-            else
-                if errorvar(ivar)==0
-                    check_bad=isnan(Field.(VarName));%=0 for NaN data values, 1 else
+            end   %current field
+            for ivar=1:length(DataOut.ListVarName)
+                VarName=DataOut.ListVarName{ivar};
+                sizmean=size(DataOut.(VarName));
+                siz=size(Field.(VarName));
+                if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+                    if isfield(Data{1},VarName)
+                        MaxValue=max(DataOut.(VarName));% current max of histogram absissa
+                        MinValue=min(DataOut.(VarName));% current min of histogram absissa
+                        %                     VarMesh=Field.VarAttribute{ivar}.Mesh;
+                        MaxIndex=round(MaxValue/VarMesh);
+                        MinIndex=round(MinValue/VarMesh);
+                        MaxIndex_new=round(max(Field.(VarName)/VarMesh));% max of the current field
+                        MinIndex_new=round(min(Field.(VarName)/VarMesh));
+                        if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
+                            DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
+                            DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(1,MaxIndex_new-MaxIndex)]; % append the new histo values
+                        end
+                        if MinIndex_new <= MinIndex-1
+                            DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
+                            DataOut.([VarName 'Histo'])=[zeros(1,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
+                            ind_start=1;
+                        else
+                            ind_start=MinIndex_new-MinIndex+1;
+                        end
+                        DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)=...
+                            DataOut.([VarName 'Histo'])(ind_start:ind_start+MaxIndex_new-MinIndex_new)+Field.([VarName 'Histo']);
+                    end
+                elseif ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
+                    disp_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
+                    return
                 else
-                    check_bad=isnan(Field.(VarName)) | Field.(Field.ListVarName{errorvar(ivar)})~=0;%=0 for NaN or error flagged data values, 1 else
+                    if errorvar(ivar)==0
+                        check_bad=isnan(Field.(VarName));%=0 for NaN data values, 1 else
+                    else
+                        check_bad=isnan(Field.(VarName)) | Field.(Field.ListVarName{errorvar(ivar)})~=0;%=0 for NaN or error flagged data values, 1 else
+                    end
+                    Field.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
+                    DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
+                    NbData.(VarName)=NbData.(VarName)+ ~check_bad;% records the number of data for each point
                 end
-                Field.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
-                DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
-                NbData.(VarName)=NbData.(VarName)+ ~check_bad;% records the number of data for each point
             end
+            %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+        else
+            disp(errormsg)
         end
-        %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-    else
-        disp(errormsg)
     end
-end
-%%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
+
 if ~(isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'}))
     for ivar=1:length(Field.ListVarName)
         VarName=Field.ListVarName{ivar};
@@ -425,7 +461,7 @@ else  % time from ImaDoc prevails if it exists
 end
 
 %% writing the result file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
 if strcmp(FileExtOut,'.png') %case of images
     if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
         DataOut.A=uint16(DataOut.A);
@@ -443,6 +479,7 @@ else %case of netcdf  file , determine global attributes
         disp(['error in writting result file: ' errormsg])
     end
 end  % end averaging  loop
+end
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun

@@ -1652,20 +1652,26 @@ for icell=1:length(CellInfo)
                     summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
                     Mrot=rodrigues(PlaneAngle);
                     newsummit=zeros(3,8);% initialize the rotated summit coordinates
-                    ObjectData.Coord=[ObjectData.Coord(1,1); ObjectData.Coord(1,2); 0];%TODO: set in set_object
+                    ObjectData.Coord=ObjectData.Coord';
+                    if size(ObjectData.Coord,2)<3
+                    ObjectData.Coord=[ObjectData.Coord; 0];%add z origin at z=0 by default
+                    end
                     for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)
                         newsummit(:,isummit)=Mrot*(summit(:,isummit)-(ObjectData.Coord));
                     end
-                    coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));
+                    coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));% set of coordinqtes in the projection plane
                     coord_y_proj=min(newsummit(2,:)):InterpMesh: max(newsummit(2,:));
-                    coord_z_proj=-width:InterpMesh:width;
-                    Mrot_inverse=rodrigues(-PlaneAngle);
+                    coord_z_proj=-width:width;
+                    Mrot_inverse=rodrigues(-PlaneAngle);% inverse rotation matrix
                     Origin=Mrot_inverse*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
-                    ix=Mrot_inverse*[coord_x_proj(end)-coord_x_proj(1);0;0];% unit vector along the new x coordinates
-                    iy=Mrot_inverse*[0;coord_y_proj(end)-coord_y_proj(1);0];% unit vector y coordinates
-                    iz=Mrot_inverse*[0;0;coord_z_proj(end)-coord_z_proj(1)];% x unit vector z coordinates
-                    [Grid_x,Grid_y,Grid_z]=meshgrid(1:numel(coord_x_proj),1:numel(coord_y_proj),1:numel(coord_z_proj));
-                    if ismatrix(Grid_x)
+                    npx=numel(coord_x_proj);
+                    npy=numel(coord_y_proj);
+                    npz=numel(coord_z_proj);
+                    ix=Mrot_inverse*[coord_x_proj(end)-coord_x_proj(1);0;0]/(npx-1);% unit vector along the new x coordinates
+                    iy=Mrot_inverse*[0;coord_y_proj(end)-coord_y_proj(1);0]/(npy-1);% unit vector y coordinates
+                    iz=Mrot_inverse*[0;0;coord_z_proj(end)-coord_z_proj(1)]/(npz-1);% x unit vector z coordinates
+                    [Grid_x,Grid_y,Grid_z]=meshgrid(0:npx-1,0:npy-1,0:npz-1);
+                    if ismatrix(Grid_x)% add a singleton in case of a single z value
                         Grid_x=shiftdim(Grid_x,-1);
                         Grid_y=shiftdim(Grid_y,-1);
                         Grid_z=shiftdim(Grid_z,-1);
@@ -1680,9 +1686,14 @@ for icell=1:length(CellInfo)
                     for ivar=VarIndex
                             VarName=FieldData.ListVarName{ivar};
                             ListVarName=[ListVarName VarName];
+                            VarDimName=[VarDimName {{'coord_y','coord_x'}}];
                             VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
                             FieldData.(VarName)=permute(FieldData.(VarName),[2 3 1]);
-                            ProjData.(VarName)=interp3(X,Y,Z,double(FieldData.(VarName)),XI,YI,ZI);
+                            ProjData.coord_x=coord_x_proj;
+                            ProjData.coord_y=coord_y_proj;
+                            ProjData.(VarName)=interp3(X,Y,Z,double(FieldData.(VarName)),XI,YI,ZI,'*linear');
+                            ProjData.(VarName)=nanmean(ProjData.(VarName),3);
+                            ProjData.(VarName)=squeeze(ProjData.(VarName));
                     end
                 end
             end
