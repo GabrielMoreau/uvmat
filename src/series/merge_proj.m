@@ -110,25 +110,23 @@ if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
 
-%% root input file type
+%% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
+
+hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
+% gives the series of input file names and indices set by the input parameters:
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-%%%%%%%%%%%%
-% The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
+%        fileindex: file index with i and j reshaped as a 1D array
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-%%%%%%%%%%%%
-% NbSlice=1;%default
-% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-%     NbSlice=Param.IndexRange.NbSlice;
-% end
+if ~isempty(hdisp),delete(hdisp),end;%end the waiting display
+
 NbView=numel(i1_series);%number of input file series (lines in InputTable)
 NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 NbField_i=size(i1_series{1},2); %nb of fields for the i index
