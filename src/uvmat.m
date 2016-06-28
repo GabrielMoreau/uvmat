@@ -441,7 +441,7 @@ set(handles.PlotAxes,'Units','normalized')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %------------------------------------------------------------------------
-% --- Executes on the menu Open/Browse...
+% --- Executes on the menu Open/Browse...fill_GUI
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
@@ -451,7 +451,7 @@ if isempty(oldfile) %loads the previously stored file name and set it as default
 end
 fileinput=uigetfile_uvmat('pick an input file',oldfile);
 hh=dir(fileinput);
-if numel(hh)>1
+if numel(hh)>1fill_GUI
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
 else
 
@@ -464,7 +464,7 @@ else
 end
 
 % -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_1
+% --- Open again the file whose name has been recorded in MenuFile
 function MenuFile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(hObject,'Label');
@@ -1694,7 +1694,12 @@ i1=str2num(get(handles.i1,'String'));
 i2=str2num(get(handles.i2,'String'));
 j1=str2num(get(handles.j1,'String'));
 j2=str2num(get(handles.j2,'String'));
+NomType=get(hObject,'String');
+if strcmp(NomType,'level')
+    FileIndex=str2num(get(handles.i1,'String'));
+else
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType,'String'),i1,i2,j1,j2);
+end
 set(handles.FileIndex,'String',FileIndex)
 % refresh the current settings and refresh the field view
 RootPath_Callback(hObject,eventdata,handles)
@@ -1707,7 +1712,12 @@ i1=str2num(get(handles.i1,'String'));
 i2=str2num(get(handles.i2,'String'));
 j1=str2num(get(handles.j1,'String'));
 j2=str2num(get(handles.j2,'String'));
+NomType=get(hObject,'String');
+if strcmp(NomType,'level')
+    FileIndex=str2num(get(handles.i1,'String'));
+else
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType_1,'String'),i1,i2,j1,j2);
+end
 set(handles.FileIndex_1,'String',FileIndex)
 % inputfilerefresh the current settings and inputfilerefresh the field view
 RootPath_1_Callback(hObject,eventdata,handles)
@@ -1857,12 +1867,20 @@ switch FileType
         editxml(fileinput);
     otherwise
         set(handles_RootPath,'String',RootPath);
-        rootname=fullfile(RootPath,SubDir,RootFile);
         set(handles_SubDir,'String',['/' SubDir]);
         set(handles_RootFile,'String',['/' RootFile]); %display the separator
-        indices=fileinput(length(rootname)+1:end);
-        indices(end-length(FileExt)+1:end)=[]; %remove extension
-        set(handles_FileIndex,'String',indices);
+        if strcmp(NomType,'level')
+            rootname=fullfile(RootPath,SubDir,'level');
+            rr=regexp(fileinput,['^' rootname '(?<j>\d+)/' RootFile '(?<i>\d+)' FileExt '$'],'names');
+            if ~isempty(rr)
+                set(handles_FileIndex,'String',rr.i);
+            end
+        else
+            rootname=fullfile(RootPath,SubDir,RootFile);
+            indices=fileinput(length(rootname)+1:end);
+            indices(end-length(FileExt)+1:end)=[]; %remove extension
+            set(handles_FileIndex,'String',indices);
+        end
         set(handles_NomType,'String',NomType);
         set(handles_FileExt,'String',FileExt);
         if index==1
@@ -2044,35 +2062,35 @@ if ~isempty(XmlFileName)
         ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
         if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
             TimeUnit=XmlDataRead.TimeUnit;
-        end    
+        end
         if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
             XmlData.Time=XmlDataRead.Time;
-             if XmlDataRead.Time(1,:)==XmlDataRead.Time(2,:)% case starting with index 1
-            sizDti=size(XmlDataRead.Time,1)-1;%size of the time vector explicitly defined in the xml file
-            ind_start=1;
-        else
-            sizDti=size(XmlDataRead.Time,1);% case starting with index 0
-            ind_start=0;
-        end
+            if XmlDataRead.Time(1,:)==XmlDataRead.Time(2,:)% case starting with index 1
+                sizDti=size(XmlDataRead.Time,1)-1;%size of the time vector explicitly defined in the xml file
+                ind_start=1;
+            else
+                sizDti=size(XmlDataRead.Time,1);% case starting with index 0
+                ind_start=0;
+            end
             % complement the input if the whole time series is not defined
-%             if size(i1_series,3)>size(XmlDataRead.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series            
-%                 Dti_total=XmlDataRead.Time(end)-XmlDataRead.Time(1);%total time interval covered by the time vector
-%                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
-%                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
-%                 time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
-%                 for j=1:size(XmlDataRead.Time,2)
-%                     XmlData.Time(missing_indices,j)=XmlDataRead.Time(time_indices,j)+repeat_nbre'*Dti_total;
-%                 end
-%                 % update the xml file with NbDti
-%                 t=xmltree(XmlFileName);
-%                 uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
-%                 if isempty(uid_NbDti)
-%                     uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
-%                     [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
-%                 end
-%                 [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
-%                 save(t,XmlFileName)
-%             end
+            %             if size(i1_series,3)>size(XmlDataRead.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series
+            %                 Dti_total=XmlDataRead.Time(end)-XmlDataRead.Time(1);%total time interval covered by the time vector
+            %                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
+            %                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
+            %                 time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
+            %                 for j=1:size(XmlDataRead.Time,2)
+            %                     XmlData.Time(missing_indices,j)=XmlDataRead.Time(time_indices,j)+repeat_nbre'*Dti_total;
+            %                 end
+            %                 % update the xml file with NbDti
+            %                 t=xmltree(XmlFileName);
+            %                 uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
+            %                 if isempty(uid_NbDti)
+            %                     uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
+            %                     [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
+            %                 end
+            %                 [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
+            %                 save(t,XmlFileName)
+            %             end
         end
         set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
@@ -2353,10 +2371,11 @@ update_ij(handles,4)
 function update_ij(handles,index_rank)
     
 NomType=get(handles.NomType,'String');
-indices=get(handles.FileIndex,'String');
+
 if strcmp(NomType,'level')
     indices=get(handles.i1,'String');
 else
+    indices=get(handles.FileIndex,'String');
     [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(indices);% the indices for the second series taken from FileIndex
     switch index_rank
         case 1
