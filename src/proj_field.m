@@ -1641,6 +1641,7 @@ for icell=1:length(CellInfo)
                 else   %projection of structured coordinates on oblique plane 
                     % determine the boundaries of the projected field,
                     % first find the 8 summits of the initial volume in the
+                    Angle=ObjectData.Angle*pi/180;
                     % new coordinates
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});%initial z coordinates
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});%initial y coordinates
@@ -1650,26 +1651,42 @@ for icell=1:length(CellInfo)
                     summit(2,1:4)=[Coord{2}(1) Coord{2}(1) Coord{2}(end) Coord{2}(end)];% square at z= Coord{1}(1)
                     summit(1:2,5:8)=summit(1:2,1:4);
                     summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
-                    Mrot=rodrigues(PlaneAngle);
+                    %Mrot_inv=rodrigues(-PlaneAngle);
                     newsummit=zeros(3,8);% initialize the rotated summit coordinates
                     ObjectData.Coord=ObjectData.Coord';
                     if size(ObjectData.Coord,2)<3
                     ObjectData.Coord=[ObjectData.Coord; 0];%add z origin at z=0 by default
                     end
+                    M2=[cos(Angle(2)) sin(Angle(2)) 0;-sin(Angle(2)) cos(Angle(2)) 0;0 0 1];
+                    M1=[1 0 0;0 cos(Angle(1)) sin(Angle(1));0 -sin(Angle(1)) cos(Angle(1))];
+                    M=M1*M2;
+                    M_inv=inv(M);
+                    
                     for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)
-                        newsummit(:,isummit)=Mrot*(summit(:,isummit)-(ObjectData.Coord));
+                        newsummit(:,isummit)=M*(summit(:,isummit)-(ObjectData.Coord));
                     end
                     coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));% set of coordinqtes in the projection plane
                     coord_y_proj=min(newsummit(2,:)):InterpMesh: max(newsummit(2,:));
                     coord_z_proj=-width:width;
-                    Mrot_inverse=rodrigues(-PlaneAngle);% inverse rotation matrix
-                    Origin=Mrot_inverse*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
+                    %Mrot=rodrigues(PlaneAngle);% inverse rotation matrix
+                    Origin=M_inv*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
                     npx=numel(coord_x_proj);
                     npy=numel(coord_y_proj);
                     npz=numel(coord_z_proj);
-                    ix=Mrot_inverse*[coord_x_proj(end)-coord_x_proj(1);0;0]/(npx-1);% unit vector along the new x coordinates
-                    iy=Mrot_inverse*[0;coord_y_proj(end)-coord_y_proj(1);0]/(npy-1);% unit vector y coordinates
-                    iz=Mrot_inverse*[0;0;coord_z_proj(end)-coord_z_proj(1)]/(npz-1);% x unit vector z coordinates
+                    
+                    %modangle=sqrt(PlaneAngle(1)*PlaneAngle(1)+PlaneAngle(2)*PlaneAngle(2));
+%                     cosphi=PlaneAngle(1)/modangle;
+%                     sinphi=PlaneAngle(2)/modangle;
+                    iX=[coord_x_proj(end)-coord_x_proj(1);0;0]/(npx-1);
+                    iY=[0;coord_y_proj(end)-coord_y_proj(1);0]/(npy-1);
+                    iZ=[0;0;coord_z_proj(end)-coord_z_proj(1)]/(npz-1);
+%                     iX(1:2)=[cosphi -sinphi;sinphi cosphi]*iX(1:2);
+%                     iY(1:2)=[-cosphi -sinphi;sinphi cosphi]*iY(1:2);
+                    
+                    ix=M_inv*iX;%  vector along the new x coordinates transformed into old coordinates
+                    iy=M_inv*iY;% vector along y coordinates
+                    iz=M_inv*iZ;% vector along z coordinates
+
                     [Grid_x,Grid_y,Grid_z]=meshgrid(0:npx-1,0:npy-1,0:npz-1);
                     if ismatrix(Grid_x)% add a singleton in case of a single z value
                         Grid_x=shiftdim(Grid_x,-1);
@@ -1679,10 +1696,7 @@ for icell=1:length(CellInfo)
                     XI=Origin(1)+ix(1)*Grid_x+iy(1)*Grid_y+iz(1)*Grid_z;
                     YI=Origin(2)+ix(2)*Grid_x+iy(2)*Grid_y+iz(2)*Grid_z;
                     ZI=Origin(3)+ix(3)*Grid_x+iy(3)*Grid_y+iz(3)*Grid_z;
-                   [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});
-%                     X=permute(X,[3 1 2]);
-%                     Y=permute(Y,[3 1 2]);
-%                     Z=permute(Z,[3 1 2]);
+                   [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});% mesh in the initial coordinates
                     for ivar=VarIndex
                             VarName=FieldData.ListVarName{ivar};
                             ListVarName=[ListVarName VarName];

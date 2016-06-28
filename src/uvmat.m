@@ -990,9 +990,9 @@ if isfield(UvData,'Field')
                 data.RangeX=UvData.Field.CoordMesh;
                 data.RangeY=UvData.Field.CoordMesh;
             case 'plane_z'
-                data.Angle=[0 0 0];
-                data.DX=10*UvData.Field.CoordMesh;
-                data.DY=10*UvData.Field.CoordMesh;
+                data.Angle=[90 0];
+                data.DX=UvData.Field.CoordMesh;
+                data.DY=UvData.Field.CoordMesh;
                 data.RangeZ=UvData.Field.CoordMesh;
             otherwise
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
@@ -2354,23 +2354,23 @@ function update_ij(handles,index_rank)
     
 NomType=get(handles.NomType,'String');
 indices=get(handles.FileIndex,'String');
-[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(indices);% the indices for the second series taken from FileIndex
-switch index_rank
-    case 1
-        indices=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
-%        set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
-    case 2
-        indices=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
-%        set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
-    case 3
-        indices=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
-%        set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
-    case 4
-        indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
-%        set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+if strcmp(NomType,'level')
+    indices=get(handles.i1,'String');
+else
+    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(indices);% the indices for the second series taken from FileIndex
+    switch index_rank
+        case 1
+            indices=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
+        case 2
+            indices=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
+        case 3
+            indices=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
+        case 4
+            indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
+    end
 end
 set(handles.FileIndex,'String',indices)
-%set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+
 % update the second index if relevant
 if strcmp(get(handles.FileIndex_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
@@ -2943,7 +2943,11 @@ if isempty(errormsg)
     else
         set(handles.j2,'String',num2stra(j2,NomType,2));
     end
+    if strcmp(NomType,'level')
+       indices=num2str(i1); 
+    else
     indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
+    end
     set(handles.FileIndex,'String',indices);
     if ~isempty(filename_1)
         indices_1=fullfile_uvmat('','','','',InputFile.NomType_1,i1_1,i2_1,j1_1,j2_1);
@@ -3150,7 +3154,12 @@ drawnow
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(FileIndex);% check back the indices used
 if isempty(i2), set(handles.i2,'String',''); end % suppress the second i index display if not used
 if isempty(j2), set(handles.j2,'String',''); end % suppress the second j index display if not used
+if strcmp(get(handles.NomType,'String'),'level')
+    jindex=str2num(get(handles.j1,'String'));
+    filename=[fullfile(RootPath,SubDir,['level' num2str(jindex)],RootFile) FileIndex FileExt];% build the input file name (first line)
+else
 filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
+end
 filename_1='';%default second file name
 FileIndex_1='';
 if get(handles.SubField,'Value')% if a second file is introduced

@@ -162,7 +162,7 @@ if exist('data','var')
 %     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
          set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
          set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
-         set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
+%         set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
 %     end
 end
 set(get(handles.set_object,'children'),'enable','off')
@@ -287,7 +287,7 @@ test3D=strcmp(ObjectStyle,'plane_z'); %TODO: generalize
 %default setting
 set(handles.num_Angle_1,'Visible','off')
 set(handles.num_Angle_2,'Visible','off')
-set(handles.num_Angle_3,'Visible','off')
+%set(handles.num_Angle_3,'Visible','off')
 set(handles.num_RangeX_1,'Visible','off')
 set(handles.num_RangeX_2,'Visible','off')
 set(handles.num_RangeY_1,'Visible','off')
@@ -328,7 +328,7 @@ switch ObjectStyle
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
     case {'plane','plane_z'}  
-        set(handles.num_Angle_3,'Visible','on')
+%        set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
@@ -337,6 +337,8 @@ switch ObjectStyle
         if test3D
             set(handles.num_Angle_2,'Visible','on')
             set(handles.num_Angle_1,'Visible','on')
+            set(handles.num_Angle_1,'String','90')
+            set(handles.Coord,'Data',[0 0 0])
             set(handles.num_RangeZ_2,'Visible','on')
         end
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
