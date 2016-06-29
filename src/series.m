@@ -623,8 +623,13 @@ for iview=1:nbview
         i1_series=[];
         RootFile='';
     else %scan the input folder
-        [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
-            find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
+        if strcmp(InputTable{iview,4},'level')
+            [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
+                find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2},'level0'),[InputTable{iview,3} '0' InputTable{iview,5}]);
+        else
+            [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
+                find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
+        end
     end
     % if no file is found, open a browser
     if isempty(RootFile)&& isempty(i1_series)
