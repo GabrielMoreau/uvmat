@@ -720,21 +720,26 @@ sin_om=0;
 
 PlaneAngle(1)=str2double(get(handles.num_Angle_1,'String'));%first  angle in degrees
 PlaneAngle(2)=str2double(get(handles.num_Angle_2,'String'));%second  angle in degrees
-PlaneAngle(3)=str2double(get(handles.num_Angle_3,'String'));%second  angle in degrees
+%PlaneAngle(3)=str2double(get(handles.num_Angle_3,'String'));%second  angle in degrees
 PlaneAngle=(pi/180)*PlaneAngle;
-om=norm(PlaneAngle);%norm of rotation angle in radians
-if isequal(om,0)
-    norm_plane=[0 0 1];
-else
-    OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-    cos_om=cos(om);
-    sin_om=sin(om);
-    coeff=OmAxis(3)*(1-cos_om);
-    %components of the unity vector norm_plane normal to the projection plane
-    norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-    norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-    norm_plane(3)=OmAxis(3)*coeff+cos_om;
-end
+M2=[cos(PlaneAngle(2)) sin(PlaneAngle(2)) 0;-sin(PlaneAngle(2)) cos(PlaneAngle(2)) 0;0 0 1];
+M1=[1 0 0;0 cos(PlaneAngle(1)) sin(PlaneAngle(1));0 -sin(PlaneAngle(1)) cos(PlaneAngle(1))];
+M=M1*M2;
+norm_plane=M*[0 0 1]';
+
+% om=norm(PlaneAngle);%norm of rotation angle in radians
+% if isequal(om,0)
+%     norm_plane=[0 0 1];
+% else
+%     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+%     cos_om=cos(om);
+%     sin_om=sin(om);
+%     coeff=OmAxis(3)*(1-cos_om);
+%     %components of the unity vector norm_plane normal to the projection plane
+%     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+%     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+%     norm_plane(3)=OmAxis(3)*coeff+cos_om;
+% end
 Coord=get(handles.Coord,'Data');
 Coord(3)=Z_value;
 set(handles.Coord,'Data',Coord)

@@ -55,6 +55,9 @@ fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 checkfileindexing=0;
 if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
     [RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
+    if ~isempty(regexp(SubDir,'^level\d+$')) && exist([RootPath '.xml'],'file')
+        NomType='level';
+    end
     i1_series=zeros(1,1,1);
     i2_series=zeros(1,1,1);
     j1_series=zeros(1,1,1);
@@ -175,7 +178,7 @@ if checkfileindexing
              wd=pwd;%current working directory
             cd (FilePath)% move to the local dir to save time in the operation dir.
             dirpair=dir(star_string);% look for relevant files in the file directory
-            cd(wd)
+            cd(wd)% back to the working directory
             nbpair=numel(dirpair);
             i1_series=zeros(1,nbpair);
             if nbpair==0% no detected file
@@ -189,9 +192,10 @@ if checkfileindexing
                 end
             end
             % look for the list of subfolders level#
-            cd (fullfile(RootPath,SubDir))% move to the local dir to save time in the operation dir.
-            dirpair=dir('level*');% look for relevant files in the file directory
+            cd (RootPath)% move to the local dir to save time in the operation dir.
+            dirpair=dir('level*');% look for relevant subfolders named with leve#
             cd(wd)
+            [RootPath,SubDir]=fileparts(RootPath);
             nbpair=numel(dirpair);
             jfile=0;
             for ifile=1:nbpair
@@ -201,9 +205,9 @@ if checkfileindexing
                     j1_series(jfile)=str2num(rr.i1);              
                 end
             end
-            [i1_series,j1_series]=meshgrid(i1_series,j1_series);
-            i1_series=reshape(i1_series,1,[]);
-            j1_series=reshape(j1_series,1,[]);
+            [j1_series,i1_series]=meshgrid(j1_series,i1_series);
+%             i1_series=reshape(i1_series,1,[]);
+%             j1_series=reshape(j1_series,1,[]);
         else
             detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
             %find the string used to extract the relevant files with the command dir

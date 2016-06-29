@@ -963,19 +963,25 @@ test90y=0;%=1 for 90 degree rotation alround y axis
 %     ObjectData.Angle(2)=90*Delta_y/Delta_mod;
 % end   
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
-    test90y=isequal(ObjectData.Angle,[0 90 0]);
+    test90y=0;%isequal(ObjectData.Angle,[0 90 0]);
     PlaneAngle=(pi/180)*ObjectData.Angle;
-    om=norm(PlaneAngle);%norm of rotation angle in radians
-    OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-    cos_om=cos(om);
-    sin_om=sin(om);
-    coeff=OmAxis(3)*(1-cos_om);
-    %components of the unity vector norm_plane normal to the projection plane
-    norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-    norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-    norm_plane(3)=OmAxis(3)*coeff+cos_om;
+%     om=norm(PlaneAngle);%norm of rotation angle in radians
+%     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+%     cos_om=cos(om);
+%     sin_om=sin(om);
+%     coeff=OmAxis(3)*(1-cos_om);
+%     %components of the unity vector norm_plane normal to the projection plane
+%     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+%     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+%     norm_plane(3)=OmAxis(3)*coeff+cos_om;
+    
+M2=[cos(PlaneAngle(2)) sin(PlaneAngle(2)) 0;-sin(PlaneAngle(2)) cos(PlaneAngle(2)) 0;0 0 1];
+M1=[1 0 0;0 cos(PlaneAngle(1)) sin(PlaneAngle(1));0 -sin(PlaneAngle(1)) cos(PlaneAngle(1))];
+M=M1*M2;
+norm_plane=M*[0 0 1]';
+    
 end
-testangle=~isequal(PlaneAngle,[0 0 0])||~isequal(ObjectData.Coord(1:2),[0 0 ]) ;% && ~test90y && ~test90x;%=1 for slanted plane
+testangle=~isequal(PlaneAngle,[0 0])||~isequal(ObjectData.Coord(1:2),[0 0 ]) ;% && ~test90y && ~test90x;%=1 for slanted plane
 
 %% mesh sizes DX and DY
 DX=[];
@@ -1223,7 +1229,7 @@ for icell=1:length(CellInfo)
             %rotate coordinates if needed: coord_X,coord_Y= = coordinates in the new plane
             Psi=PlaneAngle(1);
             Theta=PlaneAngle(2);
-            Phi=PlaneAngle(3);
+           % Phi=PlaneAngle(3);
             if testangle && ~test90y && ~test90x;%=1 for slanted plane
                 coord_X=(coord_x *cos(Phi) + coord_y* sin(Phi));
                 coord_Y=(-coord_x *sin(Phi) + coord_y *cos(Phi))*cos(Theta);
@@ -1364,7 +1370,7 @@ for icell=1:length(CellInfo)
                 %rotate coordinates if needed: coord_X,coord_Y= = coordinates in the new plane
                 Psi=PlaneAngle(1);
                 Theta=PlaneAngle(2);
-                Phi=PlaneAngle(3);
+               % Phi=PlaneAngle(3);
                 if testangle && ~test90y && ~test90x;%=1 for slanted plane
                     new_XI=XI*cos(Phi) - YI*sin(Phi)+ObjectData.Coord(1);
                     YI=XI *sin(Phi) + YI *cos(Phi)+ObjectData.Coord(2);
