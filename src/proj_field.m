@@ -948,7 +948,7 @@ function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
 %-----------------------------------------------------------------
 
 %% rotation angles
-PlaneAngle=[0 0 0];
+PlaneAngle=[0 0];
 norm_plane=[0 0 1];
 %cos_om=1;
 %sin_om=0;
@@ -962,7 +962,7 @@ test90y=0;%=1 for 90 degree rotation alround y axis
 %     ObjectData.Angle(1)=90*Delta_x/Delta_mod;
 %     ObjectData.Angle(2)=90*Delta_y/Delta_mod;
 % end   
-if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
+if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 2])&& ~isequal(ObjectData.Angle,[0 0])
     test90y=0;%isequal(ObjectData.Angle,[0 90 0]);
     PlaneAngle=(pi/180)*ObjectData.Angle;
 %     om=norm(PlaneAngle);%norm of rotation angle in radians

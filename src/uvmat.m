@@ -3748,7 +3748,7 @@ else
             UvData.ProjObject{1}.NbDim=3;%test for 3D objects
             UvData.ProjObject{1}.RangeZ=UvData.Field.CoordMesh;%main plotting plane
             UvData.ProjObject{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
-            UvData.ProjObject{1}.Angle=[0 0 0];
+            UvData.ProjObject{1}.Angle=[0 0];
         elseif isfield(UvData,'Z')
             %multilevel case (single menuplane in a 3D space)
             if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
@@ -5660,6 +5660,10 @@ if check_view %activate set_object
         return
     end
     ZBounds=0; % default
+    if  ~isfield(UvData,'Field')
+        disp('an input field needs to be introduced')
+        return
+    end
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider

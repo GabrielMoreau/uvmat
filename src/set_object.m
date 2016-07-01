@@ -157,7 +157,7 @@ if exist('data','var')
         end
     end  
     if ~isfield(data,'Angle')
-        data.Angle=[0 0 0];
+        data.Angle=[0 0];
     end
 %     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
          set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
@@ -361,7 +361,7 @@ switch ObjectStyle
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
         set(handles.num_Angle_1,'Visible','on')
         set(handles.num_Angle_2,'Visible','on')
-        set(handles.num_Angle_3,'Visible','on')
+        %set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeZ_1,'Visible','on')
         set(handles.num_RangeZ_2,'Visible','on')
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
@@ -411,7 +411,7 @@ function update_slider(hObject, eventdata,handles)
 %rotation angles
 PlaneAngle(1)=str2num(get(handles.num_Angle_1,'String'));%first  angle in degrees
 PlaneAngle(2)=str2num(get(handles.num_Angle_2,'String'));%second  angle in degrees
-PlaneAngle(3)=str2num(get(handles.num_Angle_3,'String'));%second  angle in degrees
+%PlaneAngle(3)=str2num(get(handles.num_Angle_3,'String'));%second  angle in degrees
 om=norm(PlaneAngle);%norm of rotation angle in radians
 OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
 cos_om=cos(pi*om/180);
@@ -713,7 +713,7 @@ function z_slider_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
 Z_value=get(handles.z_slider,'Value');
 %rotation angles
-PlaneAngle=[0 0 0]; 
+PlaneAngle=[0 0]; 
 norm_plane=[0 0 1];
 cos_om=1;
 sin_om=0;
@@ -763,19 +763,19 @@ if ~isempty(eventdata.Indices)
 end
 
 
-function num_Angle_3_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-% --- Executes on key press with selection of a uicontrol
-%------------------------------------------------------------------------
-function KeyPressFcn(hObject, eventdata, handles)
-set(handles.REFRESH,'BackgroundColor',[1 0 1])% se REFRESH to magenta color, indicates that refresh needs to be done
-if strcmp(get(hObject,'Tag'),'num_Angle_3')
-    set(handles.num_RangeX_1,'String','')
-    set(handles.num_RangeX_2,'String','')
-        set(handles.num_RangeY_1,'String','')
-    set(handles.num_RangeY_2,'String','')
-end
+% function num_Angle_3_Callback(hObject, eventdata, handles)
+% 
+% %------------------------------------------------------------------------
+% % --- Executes on key press with selection of a uicontrol
+% %------------------------------------------------------------------------
+% function KeyPressFcn(hObject, eventdata, handles)
+% set(handles.REFRESH,'BackgroundColor',[1 0 1])% se REFRESH to magenta color, indicates that refresh needs to be done
+% if strcmp(get(hObject,'Tag'),'num_Angle_3')
+%     set(handles.num_RangeX_1,'String','')
+%     set(handles.num_RangeX_2,'String','')
+%         set(handles.num_RangeY_1,'String','')
+%     set(handles.num_RangeY_2,'String','')
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on key press with focus on Coord and none of its controls.
