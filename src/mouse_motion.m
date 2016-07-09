@@ -376,10 +376,19 @@ if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
         set(hCurrentFig,'Pointer','arrow');
         return
     end
+    if numel(UvData.ProjObject)<PlotData.IndexObj
+        return
+    end
     ObjectData=UvData.ProjObject{PlotData.IndexObj};
     if isequal(hObject,huvmat)% if the mouse ifs over the GUI uvmat
+        if numel(UvData.ProjObject)<get(hhuvmat.ListObject_1,'Value')
+            return
+        end
         ProjObject=UvData.ProjObject{get(hhuvmat.ListObject_1,'Value')};
     else
+        if numel(UvData.ProjObject)<get(hhuvmat.ListObject,'Value')
+            return
+        end
         ProjObject=UvData.ProjObject{get(hhuvmat.ListObject,'Value')};
     end
     XYData=AxeData.CurrentOrigin;

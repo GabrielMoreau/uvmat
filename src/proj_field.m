@@ -551,7 +551,7 @@ if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
     return
 end
-CellInfo=CellInfo(NbDim==2); %keep only the 2D cells
+CellInfo=CellInfo(NbDim>=2); %keep only the 2D cells
 %%%%%% TODO: treat 1D fields: project as identity so that P o P=P for projection operation
 cell_select=true(size(CellInfo));
 
@@ -675,14 +675,6 @@ for icell=1:length(CellInfo)
     end
     VarIndex=find(check_proj);% indices of the variables to be projected
     
-    %% identify vector components
-    %testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors
-    %     if testU
-    %         UName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
-    %         VName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
-    %         vector_x=FieldData.(UName);
-    %         vector_y=FieldData.(VName);
-    %     end
     %identify error flag
     errorflag=0; %default, no error flag
     if isfield(CellInfo{icell},'VarIndex_errorflag');% test for error flag
@@ -700,8 +692,8 @@ for icell=1:length(CellInfo)
     switch CellInfo{icell}.CoordType
         %case of unstructured coordinates
         case 'scattered'
-%             XName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-%             YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            %             XName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+            %             YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
             coord_x=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)});
             coord_y=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
             
@@ -812,17 +804,19 @@ for icell=1:length(CellInfo)
             
         case 'grid'   %case of structured coordinates
             if ~isequal(ObjectData.Type,'line')% exclude polyline
-                errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates']; %
+                errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates'];
+                return
+            end%
+            test_interp2=0;%default
+            AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+            AX=FieldData.(AXName);% set of x positions
+            AY=FieldData.(AYName);% set of y positions
+            AName=FieldData.ListVarName{VarIndex(1)};
+            npxy=size(FieldData.(AName));
+            if max(NbDim)==3 % 3D case
+                
             else
-                test_Amat=1;%image or 2D matrix
-                test_interp2=0;%default
-                AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-                AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-                eval(['AX=FieldData.' AXName ';']);% set of x positions
-                eval(['AY=FieldData.' AYName ';']);% set of y positions
-                AName=FieldData.ListVarName{VarIndex(1)};
-                eval(['A=FieldData.' AName ';']);% scalar
-                npxy=size(A);
                 npx=npxy(2);
                 npy=npxy(1);
                 if numel(AX)==2
@@ -920,11 +914,12 @@ for icell=1:length(CellInfo)
                 end
             end
     end
-    if ~isempty(ivar_U) && ~isempty(ivar_V)
-        vector_x =ProjData.(ProjData.ListVarName{ivar_U});
-        ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-        ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-    end
+end
+if ~isempty(ivar_U) && ~isempty(ivar_V)
+    vector_x =ProjData.(ProjData.ListVarName{ivar_U});
+    ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+    ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+end
 end
 
 % %shotarter case for horizontal or vertical line (A FAIRE 
@@ -960,25 +955,25 @@ test90y=0;%=1 for 90 degree rotation alround y axis
 %     Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);
 %     ObjectData.Angle=[0 0 0];
 %     ObjectData.Angle(1)=90*Delta_x/Delta_mod;
-%     ObjectData.Angle(2)=90*Delta_y/Delta_mod;
+%     ObjectData.0(2)=90*Delta_y/Delta_mod;
 % end   
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 2])&& ~isequal(ObjectData.Angle,[0 0])
     test90y=0;%isequal(ObjectData.Angle,[0 90 0]);
     PlaneAngle=(pi/180)*ObjectData.Angle;
-%     om=norm(PlaneAngle);%norm of rotation angle in radians
-%     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-%     cos_om=cos(om);
-%     sin_om=sin(om);
-%     coeff=OmAxis(3)*(1-cos_om);
-%     %components of the unity vector norm_plane normal to the projection plane
-%     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-%     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-%     norm_plane(3)=OmAxis(3)*coeff+cos_om;
+    %     om=norm(PlaneAngle);%norm of rotation angle in radians
+    %     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+    %     cos_om=cos(om);
+    %     sin_om=sin(om);
+    %     coeff=OmAxis(3)*(1-cos_om);
+    %     %components of the unity vector norm_plane normal to the projection plane
+    %     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+    %     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+    %     norm_plane(3)=OmAxis(3)*coeff+cos_om;
     
-M2=[cos(PlaneAngle(2)) sin(PlaneAngle(2)) 0;-sin(PlaneAngle(2)) cos(PlaneAngle(2)) 0;0 0 1];
-M1=[1 0 0;0 cos(PlaneAngle(1)) sin(PlaneAngle(1));0 -sin(PlaneAngle(1)) cos(PlaneAngle(1))];
-M=M1*M2;
-norm_plane=M*[0 0 1]';
+    M1=[cos(PlaneAngle(1)) sin(PlaneAngle(1)) 0;-sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
+    M2=[1 0 0;0 cos(PlaneAngle(2)) sin(PlaneAngle(2));0 -sin(PlaneAngle(2)) cos(PlaneAngle(2))];
+    M=M2*M1;% first rotate in the x,y plane with angle PlaneAngle(1), then slant around the new x axis0 with angle PlaneAngle(2)
+    norm_plane=M*[0 0 1]';
     
 end
 testangle=~isequal(PlaneAngle,[0 0])||~isequal(ObjectData.Coord(1:2),[0 0 ]) ;% && ~test90y && ~test90x;%=1 for slanted plane
@@ -1647,7 +1642,7 @@ for icell=1:length(CellInfo)
                 else   %projection of structured coordinates on oblique plane 
                     % determine the boundaries of the projected field,
                     % first find the 8 summits of the initial volume in the
-                    Angle=ObjectData.Angle*pi/180;
+                    PlaneAngle=ObjectData.Angle*pi/180;
                     % new coordinates
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});%initial z coordinates
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});%initial y coordinates
@@ -1659,13 +1654,14 @@ for icell=1:length(CellInfo)
                     summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
                     %Mrot_inv=rodrigues(-PlaneAngle);
                     newsummit=zeros(3,8);% initialize the rotated summit coordinates
-                    ObjectData.Coord=ObjectData.Coord';
-                    if size(ObjectData.Coord,2)<3
+                    ObjectData.Coord=ObjectData.Coord';% set ObjectData.Coord as a vertical vector
+                    if size(ObjectData.Coord,1)<3
                     ObjectData.Coord=[ObjectData.Coord; 0];%add z origin at z=0 by default
                     end
-                    M2=[cos(Angle(2)) sin(Angle(2)) 0;-sin(Angle(2)) cos(Angle(2)) 0;0 0 1];
-                    M1=[1 0 0;0 cos(Angle(1)) sin(Angle(1));0 -sin(Angle(1)) cos(Angle(1))];
-                    M=M1*M2;
+                
+                    M1=[cos(PlaneAngle(1)) sin(PlaneAngle(1)) 0;-sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
+                    M2=[1 0 0;0 cos(PlaneAngle(2)) sin(PlaneAngle(2));0 -sin(PlaneAngle(2)) cos(PlaneAngle(2))];
+                    M=M2*M1;
                     M_inv=inv(M);
                     
                     for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)

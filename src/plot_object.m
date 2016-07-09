@@ -151,18 +151,10 @@ if test_line
             yline=[yline; ObjectData.Coord(1,2)];
         case {'plane','plane_z','volume'}
             if ~isfield(ObjectData,'Angle')
-                ObjectData.Angle=[0 0 0];
+                ObjectData.Angle=[0 0];
             end
-            if strcmp(ObjectData.Type,'plane_z')
-                Angle_1=ObjectData.Angle(1);
-                Angle_2=ObjectData.Angle(2);
-                norm_angle=sqrt(Angle_1*Angle_1+Angle_2*Angle_2);
-                cosphi=Angle_1/norm_angle;%angle in radians
-                sinphi=Angle_2/norm_angle;%angle in radians
-            else
-                cosphi=cos(ObjectData.Angle(3)*pi/180);%angle in radians
-                sinphi=sin(ObjectData.Angle(3)*pi/180);%angle in radians
-            end
+            cosphi=cos(ObjectData.Angle(1)*pi/180);%angle in radians
+            sinphi=sin(ObjectData.Angle(1)*pi/180);%angle in radians
             x0=xline(1); y0=yline(1);
             xlim=get(haxes,'XLim');
             ylim=get(haxes,'YLim');

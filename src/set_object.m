@@ -37,7 +37,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 16-Jun-2015 00:33:59
+% Last Modified by GUIDE v2.5 09-Jul-2016 20:25:37
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -817,3 +817,23 @@ end
 
 
 function num_RangeInterp_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on key press with focus on num_Angle_1 and none of its controls.
+function num_Angle_1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to num_Angle_1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on key press with focus on num_Angle_2 and none of its controls.
+function num_Angle_2_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to num_Angle_2 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)

@@ -435,13 +435,10 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
     if strcmp(ObjectData.Type,'plane_z')&& ~isempty(ObjectData.Coord)
         Delta_x=(xy(1,1)-ObjectData.Coord(1,1));%displacement along x
         Delta_y=(xy(1,2)-ObjectData.Coord(1,2));%displacement along y
-        Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);%modulus of displacement
-        ObjectData.Angle(1)=90*Delta_x/Delta_mod;
-        ObjectData.Angle(2)=90*Delta_y/Delta_mod;
-        ObjectData.Angle(3)=0;% plane rotated by 90 ° along the axis of mouse displacement since the origin
+        ObjectData.Angle(1)=(180/pi)*angle(Delta_x+i*Delta_y);
+        ObjectData.Angle(2)=90;       
         set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
         set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
-        set(hh_set_object.num_Angle_3,'String',num2str(ObjectData.Angle(3)))
         drawing_status='off';
     else
         ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object

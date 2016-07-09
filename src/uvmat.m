@@ -990,7 +990,7 @@ if isfield(UvData,'Field')
                 data.RangeX=UvData.Field.CoordMesh;
                 data.RangeY=UvData.Field.CoordMesh;
             case 'plane_z'
-                data.Angle=[90 0];
+                data.Angle=[0 90];
                 data.DX=UvData.Field.CoordMesh;
                 data.DY=UvData.Field.CoordMesh;
                 data.RangeZ=UvData.Field.CoordMesh;
