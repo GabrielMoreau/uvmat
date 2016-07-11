@@ -100,8 +100,11 @@ set(hObject,'DeleteFcn',{@closefcn})
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-    if isfield(data,'Coord') &&size(data.Coord,2)==3
+    if isfield(data,'Coord')
+        set(handles.Coord,'Data',data.Coord)
+        if size(data.Coord,2)==3
         set(handles.z_slider,'Visible','on')
+        end
     else
         set(handles.z_slider,'Visible','off')
     end
@@ -338,7 +341,7 @@ switch ObjectStyle
             set(handles.num_Angle_2,'Visible','on')
             set(handles.num_Angle_1,'Visible','on')
             set(handles.num_Angle_1,'String','90')
-            set(handles.Coord,'Data',[0 0 0])
+            %set(handles.Coord,'Data',[0 0 0])
             set(handles.num_RangeZ_2,'Visible','on')
         end
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')

@@ -913,7 +913,7 @@ for icell=1:length(CellInfo)
                     ProjData.VarDimName{end}={AXName,'rgb'};
                 end
             end
-    end
+
 end
 if ~isempty(ivar_U) && ~isempty(ivar_V)
     vector_x =ProjData.(ProjData.ListVarName{ivar_U});

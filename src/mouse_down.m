@@ -439,12 +439,13 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
         ObjectData.Angle(2)=90;       
         set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
         set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
-        drawing_status='off';
+         drawing_status='off';
     else
         ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
         set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
         drawing_status='create';
     end
+    drawing_status='create';
     %TODO replace 0 by z coord for 3D
     hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(CurrentGUI_tag);
     if isempty(hobject)

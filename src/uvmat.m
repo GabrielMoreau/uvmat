@@ -994,6 +994,7 @@ if isfield(UvData,'Field')
                 data.DX=UvData.Field.CoordMesh;
                 data.DY=UvData.Field.CoordMesh;
                 data.RangeZ=UvData.Field.CoordMesh;
+                data.Coord=[];
             otherwise
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
