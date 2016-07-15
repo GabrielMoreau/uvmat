@@ -3817,7 +3817,7 @@ else
             if ~isfield(UvData.ProjObject{iobj},'RangeZ')
             UvData.ProjObject{iobj}.RangeZ=UvData.Field.CoordMesh;%main plotting plane
             end
-            if ~(isfield(UvData.ProjObject{iobj},'Coord') && UvData.ProjObject{iobj}.Coord(1,3)<UvData.Field.ZMax && UvData.ProjObject{iobj}.Coord(1,3)>UvData.Field.ZMin)
+            if iobj==1 && ~(isfield(UvData.ProjObject{iobj},'Coord') && size(UvData.ProjObject{iobj}.Coord,2)>=3 && UvData.ProjObject{iobj}.Coord(1,3)<UvData.Field.ZMax && UvData.ProjObject{iobj}.Coord(1,3)>UvData.Field.ZMin)
                  UvData.ProjObject{iobj}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
             end          
         end
