@@ -142,14 +142,14 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 FileInfo=get_file_info(filecell{1,1});
 if strcmp(FileInfo.FileType,'rdvision')
     if ~isequal(FileInfo.NumberOfFrames,nbfield)
-        msgbox_uvmat('ERROR',['the whole series of ' num2str(FileInfo.NumberOfFrames) ' images must be extracted at once'])
+        disp_uvmat('WARNING',['the whole series of ' num2str(FileInfo.NumberOfFrames) ' images must be extracted at once'],checkrun)
         %rmfield(OutputDir)
 %         return
     end
     %% interactive input of specific parameters (for RDvision system)
     display('converting images from RDvision system...')
 else
-    msgbox_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened')
+    disp_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened',checkrun)
     return
 end
 t=xmltree;
@@ -510,7 +510,7 @@ save(t,newxml)
 [success,errormsg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users
 if success==0
     disp({['warning: unable to set group write access to ' newxml ':']; errormsg});%error message for directory creation
-    msg=erromsg;
+    msg=errormsg;
 end
 
 
