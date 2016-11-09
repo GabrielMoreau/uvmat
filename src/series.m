@@ -2721,11 +2721,19 @@ TimeValue=[];
 DtValue=[];
 if isequal(FileInfo.FileType,'civdata')
     if ismember(TimeName,{'civ1','filter1'})
+        if isfield(Data,'Civ1_Time')
         TimeValue=Data.Civ1_Time;
+        end
+        if isfield(Data,'Civ1_Dt')
         DtValue=Data.Civ1_Dt;
+        end
     else
+        if isfield(Data,'Civ2_Time')
         TimeValue=Data.Civ2_Time;
+        end
+        if isfield(Data,'Civ2_Dt')
         DtValue=Data.Civ2_Dt;
+        end
     end
 else
     if ~isempty(TimeName)&& isfield(Data,TimeName)

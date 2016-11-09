@@ -66,6 +66,17 @@ for icell=1:length(A)
         if isfield(Calib,'SliceCoord') %.Z= index of plane
            SliceCoord=Calib.SliceCoord(ZIndex,:);
            zphys=SliceCoord(3); %to generalize for non-parallel planes
+           
+%         if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
+%                     om=norm(Calib.SliceAngle);%norm of rotation angle in radians
+%                     OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
+%                     cos_om=cos(pi*om/180);
+%                     sin_om=sin(pi*om/180);
+%                     pos=[xy(1,1) xy(1,2) 0];
+%                     pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+%                 end
+           
+           
 %            if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
 %                 H=Calib.InterfaceCoord(3);
 %                 if H>zphys

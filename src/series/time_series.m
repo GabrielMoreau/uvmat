@@ -171,14 +171,14 @@ NbField=NbField_j*NbField_i; %total number of fields
 %% determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
-FileType=cell(1,nbview);
-FileInfo=cell(1,nbview);
-MovieObject=cell(1,nbview);
-CheckImage=cell(1,nbview);
-CheckNc=cell(1,nbview);
-frame_index=cell(1,nbview);
+FileType=cell(1,NbView);
+FileInfo=cell(1,NbView);
+MovieObject=cell(1,NbView);
+CheckImage=cell(1,NbView);
+CheckNc=cell(1,NbView);
+frame_index=cell(1,NbView);
 
-for iview=1:nbview
+for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
@@ -232,7 +232,7 @@ if ~CheckImage{1}&&~CheckNc{1}
     disp_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
-if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
+if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
     disp_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
 end
@@ -251,12 +251,12 @@ end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
-if nbview==2
+if NbView==2
     InputFields{2}=[];%default (case of images)
 end
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
-    if nbview==2
+    if NbView==2
         InputFields{2}=Param.InputFields;%default
         if isfield(Param.InputFields,'FieldName_1')
             InputFields{2}.FieldName=Param.InputFields.FieldName_1;
@@ -310,17 +310,17 @@ if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','
 end
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-for index=1:nbfield
-    update_waitbar(WaitbarHandle,index/nbfield)
+for index=1:NbField
+    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break % leave the loop if stop is ordered
     end
-    Data=cell(1,nbview);%initiate the set Data;
+    Data=cell(1,NbView);%initiate the set Data;
     nbtime=0;
     dt=[];
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-    for iview=1:nbview
+    for iview=1:NbView
         % reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
         if ~isempty(errormsg)
@@ -406,7 +406,7 @@ for index=1:nbfield
                     end
                     testsum(ivar)=1;
                     DataOut.(VarName)=Field.(VarName);
-                    DataOut.([VarName 'Histo'])=zeros([nbfield numel(DataOut.(VarName))]);
+                    DataOut.([VarName 'Histo'])=zeros([NbField numel(DataOut.(VarName))]);
                     VarMesh=Field.(VarName)(2)-Field.(VarName)(1);
                 end
             end
@@ -443,7 +443,7 @@ for index=1:nbfield
                 if testsum(ivar)==2
                     VarName=Field.ListVarName{ivar};
                     siz=size(Field.(VarName));
-                    DataOut.(VarName)=zeros([nbfield siz]);
+                    DataOut.(VarName)=zeros([NbField siz]);
                 end
             end
         end
@@ -465,11 +465,11 @@ for index=1:nbfield
                 MinIndex_new=round(min(Field.(VarName)/VarMesh));
                 if MaxIndex_new>MaxIndex% the variable max for the current field exceeds the previous one
                     DataOut.(VarName)=[DataOut.(VarName) VarMesh*(MaxIndex+1:MaxIndex_new)];% append the new variable values
-                    DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(nbfield,MaxIndex_new-MaxIndex)]; % append the new histo values
+                    DataOut.([VarName 'Histo'])=[DataOut.([VarName 'Histo']) zeros(NbField,MaxIndex_new-MaxIndex)]; % append the new histo values
                 end
                 if MinIndex_new <= MinIndex-1
                     DataOut.(VarName)=[VarMesh*(MinIndex_new:MinIndex-1) DataOut.(VarName)];% insert the new variable values
-                    DataOut.([VarName 'Histo'])=[zeros(nbfield,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
+                    DataOut.([VarName 'Histo'])=[zeros(NbField,MinIndex-MinIndex_new) DataOut.([VarName 'Histo'])];% insert the new histo values
                     ind_start=1;
                 else
                     ind_start=MinIndex_new-MinIndex+1;
@@ -559,7 +559,7 @@ DataOut.VarDimName=[{'Time'} DataOut.VarDimName];
 DataOut.Action=Param.Action;%name of the processing programme
 test_time=diff(DataOut.Time)>0;% test that the readed time is increasing (not constant)
 if ~test_time
-    DataOut.Time=1:nbfield;
+    DataOut.Time=1:NbField;
 end
 
 % %case of histograms

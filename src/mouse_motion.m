@@ -214,9 +214,9 @@ if strcmp(htype,'axes')
                 end
                 text_displ_1=[xName '=' num2str(xy(1,1),4) ', ' yName '=' num2str(xy(1,2),4) ','];
             end
-            %display the z coordinate if defined by the projection plane
+            %display the original phys x,y,z coordinates if defined by the projection plane
             if isfield(Field,'ProjObjectType') && strcmp(Field.ProjObjectType,'plane') && isfield(Field,'ProjObjectCoord') && length(Field.ProjObjectCoord)>=3
-                pos=[xy(1,1) xy(1,2) 0];
+                pos=[xy(1,1) xy(1,2) 0];%coordinates on the graph
                 if isfield(Field,'ProjObjectAngle')&&~isequal(Field.ProjObjectAngle,[0 0 0])
                     om=norm(Field.ProjObjectAngle);%norm of rotation angle in radians
                     OmAxis=Field.ProjObjectAngle/om; %unit vector marking the rotation axis
