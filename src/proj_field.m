@@ -18,7 +18,9 @@
 % ObjectData: structure characterizing the projection object
 %    .Type : type of projection object
 %    .ProjMode=mode of projection ;
-%    .CoordUnit: 'px', 'cm' units for the coordinates defining the object
+%    .CoordUnit: 'px', 'cm' units for the coordinates defining the
+%    objectuvmat
+
 %    .Angle (  angles of rotation (=[0 0 0] by default)
 %    .ProjAngle=angle of projection;
 %    .DX,.DY,.DZ=increments along each coordinate
@@ -1573,8 +1575,8 @@ for icell=1:length(CellInfo)
                     ProjData.(AYName)=[coord_y_proj(1) coord_y_proj(end)]; %record the new (projected ) y coordinates
                     ProjData.(AXName)=[coord_x_proj(1) coord_x_proj(end)]; %record the new (projected ) x coordinates
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
-                    XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
-                    YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
+                    XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(2))-YI*sin(PlaneAngle(1));%corresponding coordinates in the original system
+                    YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(2))+YI*cos(PlaneAngle(1));
                     if numel(Coord{1})==2% x coordiante defiend by its bounds, get the whole set
                         Coord{1}=linspace(Coord{1}(1),Coord{1}(2),CellInfo{icell}.CoordSize(1));
                     end

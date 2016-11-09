@@ -129,7 +129,7 @@ for ilist=2:numel(ListFile)
     rank=regexprep(ListFile{ilist},'.tif$','');
     rank=regexprep(rank,['^' RootName '@'],'');
     if ~isequal(str2num(rank),ilist-1)
-        disp('error in the list of input files')
+        disp(['error in the list of input file # ' num2str(ilist-1)])
         return
     end
 end
@@ -177,7 +177,7 @@ end
 XmlInput.Camera.CameraName='PCO';
 t=struct2xml(XmlInput.Camera);
 t=set(t,1,'name','ImaDoc');
-save(fullfile(Param.InputTable{1,1},'PCO.xml'),t)
+save(t,fullfile(Param.InputTable{1,1},'PCO.xml'))
 
 %% remove initial files if transfer OK
     if i_index== (size(XmlInput.Time,1)-1)
