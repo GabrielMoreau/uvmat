@@ -2713,6 +2713,7 @@ if isequal(field,'get_field...')
     end
 end
 
+
 function [TimeValue,DtValue]=get_time(ref_i,ref_j,PairString,InputTable,FileInfo,TimeName,DtName)
 [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
 FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
@@ -3485,7 +3486,7 @@ set(hObject,'Pointer','arrow');
 
 
 % --- Executes on button press in SetPairs.
-function SetPairs_Callback(hObject, iview, handles)
+function SetPairs_Callback(hObject, eventdata, handles)
 
 %% delete previous occurrence of 'set_pairs'
 hfig=findobj(allchild(0),'Tag','set_pairs');
@@ -3509,6 +3510,7 @@ TimeUnit=get(handles.TimeUnit,'String');
 PairString=get(handles.PairString,'Data');
 ListViewLines=find(cellfun('isempty',PairString)==0);%find list of non empty pairs
 ListViewMenu=cell(numel(ListViewLines),1);
+iview=get(handles.PairString,'Value');
 for ilist=1:numel(ListViewLines)
     ListViewMenu{ilist}=num2str(ListViewLines(ilist));
 end

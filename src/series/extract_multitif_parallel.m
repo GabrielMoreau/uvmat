@@ -58,13 +58,13 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=extract_multitif(Param)
+function ParamOut=ima2netcdf(Param)
 
 %%%%%%%%%%%%%%%%%    INPUT PREPARATION MODE (no RUN)    %%%%%%%%%%%%%%%%%
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice=1; % impose calculation in a single process (no parallel processing to avoid 'holes'))
+    ParamOut.NbSlice='off'; % impose calculation in a single process (no parallel processing to avoid 'holes'))
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -72,7 +72,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.png';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-     ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+      ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     %% root input file(s) and type
     % check the existence of the first file in the series
         first_j=[];% note that the function will propose to cover the whole range of indices
@@ -110,56 +110,73 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 else
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+    hseries=findobj(allchild(0),'Tag','series');
+    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
 
 %% list of input images
-DirImages=fullfile(Param.InputTable{1,1},Param.InputTable{1,2});
-ListStruct=dir(DirImages);   
-ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
-check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-ListFile=ListCells(1,find(~check_dir & ~check_bad));
+% DirImages=fullfile(Param.InputTable{1,1},Param.InputTable{1,2});
+% ListStruct=dir(DirImages);
+% ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+% check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
+% check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+% ListFile=ListCells(1,find(~check_dir & ~check_bad));
 
 %% check file names
-RootName=regexprep(ListFile{1},'.tif$','')
-for ilist=2:numel(ListFile)
-    rank=regexprep(ListFile{ilist},'.tif$','');
-    rank=regexprep(rank,['^' RootName '@'],'');
-    if ~isequal(str2num(rank),ilist-1)
-        disp(['error in the list of input file # ' num2str(ilist-1)])
-        return
-    end
-end
+% RootName=regexprep(ListFile{1},'.tif$','')
+% rank(1)=1;
+% for ilist=2:numel(ListFile)
+%     rank_str=regexprep(ListFile{ilist},'.tif$','');
+%     rank(ilist)=regexprep(rank_str,['^' RootName '@'],'');
+% %     if ~isequal(str2num(rank),ilist-1)
+% %         disp(['error in the list of input file # ' num2str(ilist-1)])
+% %         return
+% %     end
+% end
 
 %% output directory
- OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
- 
-%% Timing 
+OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
+
+%% Timing
 XmlInputFile=fullfile(Param.InputTable{1,1},[Param.ActionInput.XmlFile '.xml'])
 XmlInput=imadoc2struct(XmlInputFile,'Camera');
 
 %% Main loop
 
 ImagesPerLevel=size(XmlInput.Time,2)-1;%100;
-count=0;
+% count=0;
 %count=316;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 4684 images -> start at 316 start 67->_11_1
 %count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 3066 images
-%% loop on the files  
-for ifile=1:numel(ListFile)
-    update_waitbar(WaitbarHandle,ifile/numel(ListFile))
-    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        break
-    end
-    ImageName=fullfile(DirImages,ListFile{ifile});
+%% loop on the files
+%for ifile=1:numel(ListFile)
+%     update_waitbar(WaitbarHandle,ifile/numel(ListFile))
+%     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+%         disp('program stopped by user')
+%         break
+%     end
+%    ImageName=fullfile(DirImages,ListFile{ifile});
+%   NbFrames=numel(imfinfo(ImageName));
+% loop on the frames within the tiff file
+if Param.IndexRange.first_i==1% first slice of processing
+    firstindex=0;
+    count=0;
+else
+    firstindex=Param.IndexRange.first_i;
+    ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
     NbFrames=numel(imfinfo(ImageName));
-    % loop on the frames within the tiff file
-    for iframe=1:NbFrames       
+    count=Param.IndexRange.first_i*NbFrames;
+end
+for ifile=firstindex:Param.IndexRange.last_i
+    if firstindex==0 && ifile==0% first slice of processing
+            ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif')
+    else
+        ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},['im@' num2str(ifile,'%04d') '.tif'])
+    end
+    NbFrames=numel(imfinfo(ImageName));
+    for iframe=1:NbFrames
+        iframe
         if isequal(ImagesPerLevel,1)% mode series
-            i_index=count+1;
             OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
         else % indices i and j
             i_index=fix(count/ImagesPerLevel)+1;
@@ -176,6 +193,7 @@ for ifile=1:numel(ListFile)
         count=count+1;
     end
 end
+    %end
 
 % for ifile=1:numel(ListFile)
 %     update_waitbar(WaitbarHandle,ifile/numel(ListFile))
@@ -203,10 +221,10 @@ end
 % end
 
 %% create the xml file of PCO camera
-XmlInput.Camera.CameraName='PCO';
-t=struct2xml(XmlInput.Camera);
-t=set(t,1,'name','ImaDoc');
-save(t,fullfile(Param.InputTable{1,1},'PCO.xml'))
+% XmlInput.Camera.CameraName='PCO';
+% t=struct2xml(XmlInput.Camera);
+% t=set(t,1,'name','ImaDoc');
+% save(t,fullfile(Param.InputTable{1,1},'PCO.xml'))
 
 %% remove initial files if transfer OK
 %     if i_index== (size(XmlInput.Time,1)-1)

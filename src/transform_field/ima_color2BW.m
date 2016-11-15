@@ -29,6 +29,6 @@ function DataOut=ima_color2BW(DataIn)
 
 DataOut=DataIn; %default
 if ndims(DataOut.A)==3
-    DataOut.A=uint16(sum(double(DataOut.A,3)));%sum on color components, transform in 16 bit BW images
+    DataOut.A=uint16(sum(double(DataOut.A),3));%sum on color components, transform in 16 bit BW images
 end
  

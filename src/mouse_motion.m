@@ -223,9 +223,15 @@ if strcmp(htype,'axes')
                     cos_om=cos(pi*om/180);
                     sin_om=sin(pi*om/180);
                     pos=[xy(1,1) xy(1,2) 0];
-                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                    %pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                    coeff=OmAxis(3)*(1-cos_om);
+                    norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+                    norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+                    norm_plane(3)=OmAxis(3)*coeff+cos_om;
+                    %Z0=norm_plane*Field.ProjObjectCoord'/norm_plane(3);
+                    pos(3)=-(norm_plane(1)*pos(1)-norm_plane(2)*pos(2))/norm_plane(3);                               
                 end
-               pos=pos+Field.ProjObjectCoord;
+                pos=pos+Field.ProjObjectCoord;
                 text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
             end
             % case of PIV correlation display

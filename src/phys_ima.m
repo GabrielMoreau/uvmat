@@ -60,29 +60,32 @@ for icell=1:length(A)
         Rangy=[npy-0.5 0.5];
         [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
         [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,ZIndex);
-    else         
+    else
         % the image needs to be interpolated to the new coordinates
         zphys=0; %default
         if isfield(Calib,'SliceCoord') %.Z= index of plane
-           SliceCoord=Calib.SliceCoord(ZIndex,:);
-           zphys=SliceCoord(3); %to generalize for non-parallel planes
-           
-%         if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
-%                     om=norm(Calib.SliceAngle);%norm of rotation angle in radians
-%                     OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
-%                     cos_om=cos(pi*om/180);
-%                     sin_om=sin(pi*om/180);
-%                     pos=[xy(1,1) xy(1,2) 0];
-%                     pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-%                 end
-           
-           
-%            if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
+            SliceCoord=Calib.SliceCoord(ZIndex,:);
+            zphys=SliceCoord(3); %to generalize for non-parallel planes
+            if isfield(Calib, 'SliceAngle') && ~isequal(Calib.SliceAngle,[0 0 0]) && ~isequal(Calib.SliceAngle(ZIndex,:),[0 0 0])
+                testangle=1;
+                om=norm(Calib.SliceAngle(ZIndex,:));%norm of rotation angle in radians
+                OmAxis=Calib.SliceAngle(ZIndex,:)/om; %unit vector marking the rotation axis
+                cos_om=cos(pi*om/180);
+                sin_om=sin(pi*om/180);
+                coeff=OmAxis(3)*(1-cos_om);
+                norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+                norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+                norm_plane(3)=OmAxis(3)*coeff+cos_om;
+                %Z0=norm_plane*Calib.SliceCoord(ZIndex,:)'/norm_plane(3);
+                Z0=Calib.SliceCoord(ZIndex,3);
+                zphys=Z0-(norm_plane(1)*X-norm_plane(2)*Y)/norm_plane(3);
+            end
+%             if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
 %                 H=Calib.InterfaceCoord(3);
 %                 if H>zphys
 %                     zphys=H-(H-zphys)/Calib.RefractionIndex; %corrected z (virtual object)
 %                 end
-%            end
+%             end
         end
         xima=0.5:npx(icell)-0.5;%image coordinates of corners
         yima=npy(icell)-0.5:-1:0.5;

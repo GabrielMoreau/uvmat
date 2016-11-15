@@ -40,10 +40,10 @@ if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(C
         norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
         norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
         norm_plane(3)=OmAxis(3)*coeff+cos_om;
-        Z0=norm_plane*Calib.SliceCoord(Zindex,:)'/norm_plane(3);
-    else
-        Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
+%         Z0=norm_plane*Calib.SliceCoord(Zindex,:)'/norm_plane(3);
     end
+        Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
+%     end
     Z0virt=Z0;
     if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
         H=Calib.InterfaceCoord(3);

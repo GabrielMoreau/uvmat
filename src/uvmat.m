@@ -1176,9 +1176,9 @@ uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 2*
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
     'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination around the x axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination around the x axis');%edit box
+    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination around the x axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination around the y axis');%edit box
+    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination around the y axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
     'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination around the y axis');%edit box
 
@@ -1269,6 +1269,8 @@ end
 uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
 set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
 
+delete(hset_slice)
+
 %------------------------------------------------------------------------
 % function called by pressing REPLICATE in the GUI  set_slices
 function set_slice_REPLICATE_Callback(hObject,eventdata)
@@ -1337,8 +1339,8 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' n
 % function called by pressing Cancel in the GUI  set_slices
 function set_slice_Cancel_Callback(hObject,eventdata)
 %------------------------------------------------------------------------
-hfig=get(hObject,'parent');
-delete(hfig)
+hset_slice=get(hObject,'parent');
+delete(hset_slice)
 
 %-----------------------------------------------------------------------
 function MenuLIFCalib_Callback(hObject, eventdata, handles)
