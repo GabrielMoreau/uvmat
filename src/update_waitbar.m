@@ -27,8 +27,11 @@ if ishandle(hwaitbar)
 set(hwaitbar,'Units','pixels')
 pos=get(hwaitbar,'Position');%read waitbar position in pixels
 set(hwaitbar,'Units','normalized')%set back to normalize(the waitbar scales with the GUI)
-CData=ones(floor(pos(4)),floor(pos(3)),3);
-CData(:,:,3)=0 ;% initial color yellow (rgb=[1 1 0])
+% CData=ones(floor(pos(4)),floor(pos(3)),3);
+% CData(:,:,3)=0 ;% initial color yellow (rgb=[1 1 0])
+CData=zeros(floor(pos(4)),floor(pos(3)),3);
+CData(:,:,3)=1 ;% initial color blue(rgb=[1 1 0])
+
 CData(:,1:floor(advance_ratio*size(CData,2)),2)=0; % advancement part in red (suppress the second color component green)
 set(hwaitbar,'CData',CData)
 drawnow

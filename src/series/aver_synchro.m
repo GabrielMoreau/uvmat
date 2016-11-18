@@ -199,10 +199,12 @@ sigma2=4*pi/Param.ActionInput.WavePeriod;%harmonic 2
 sigma3=6*pi/Param.ActionInput.WavePeriod;%harmonic 3
 sigma_sub=pi/Param.ActionInput.WavePeriod;%subharmonic
 sinsub_V=0;
+NbField=0;
 vec_C=0;
  
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
+    index
     update_waitbar(WaitbarHandle,index/nbfield)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -219,6 +221,10 @@ for index=1:nbfield
         Data.ZIndex=mod(i1_series{1}(index)-1,NbSlice_calib{1})+1;%Zindex for phys transform
     end
     %update average
+    FF=isnan(Data.U)|isnan(Data.V);% chceck NaN values
+    Data.U(FF)=0;% set to zero the NaN values
+    Data.V(FF)=0;
+    NbField=NbField+~FF;%count the NaN values
     MeanU=MeanU+Data.U;
     MeanV=MeanV+Data.V;
     MaxU=(MaxU>=Data.U).*MaxU+(MaxU<Data.U).*Data.U;
@@ -247,41 +253,44 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 Data.ListVarName={'coord_x','coord_y','MeanU','MeanV','cos1_U','cos1_V','a1_U','a1_V','a2_U','a2_V','a3_U','a3_V','asub_U','asub_V',...
-    'phase1_U','phase1_V','phase2_U','phase2_V','phase3_U','phase3_V'};
+    'phase1_U','phase1_V','phase2_U','phase2_V','phase3_U','phase3_V','phasesub_U','phasesub_V'};
 %Data.ListVarName=[{'coord_y','coord_x'} Data.ListVarName];
 %Data.VarDimName={'coord_y', 'coord_x'};
 for ilist=1:numel(Data.ListVarName)-2
     Data.VarDimName{ilist+2}={'coord_y','coord_x'};
  %   Data.VarDimName{ilist}='nb_vectors';
 end
-Data.MeanU=MeanU/nbfield;
-Data.MeanV=MeanV/nbfield;
-Data.cos1_U=cos1_U/nbfield;
-Data.cos1_V=cos1_V/nbfield;
-sin1_U=sin1_U/nbfield;
-sin1_V=sin1_V/nbfield;
-cos2_U=cos2_U/nbfield;
-cos2_V=cos2_V/nbfield;
-sin2_U=sin2_U/nbfield;
-sin2_V=sin2_V/nbfield;
-cos3_U=cos3_U/nbfield;
-cos3_V=cos3_V/nbfield;
-sin3_U=sin3_U/nbfield;
-sin3_V=sin3_V/nbfield;
-cossub_U=cossub_U/nbfield;
-cossub_V=cossub_V/nbfield;
-sinsub_U=sinsub_U/nbfield;
-sinsub_V=sinsub_V/nbfield;
-Data.a1_U=sqrt(2)*sqrt(Data.cos1_U.*Data.cos1_U+sin1_U.*sin1_U);
-Data.a1_V=-sqrt(2)*sqrt(Data.cos1_V.*Data.cos1_V+sin1_V.*sin1_V);
+Data.MeanU=MeanU./NbField;
+Data.MeanV=MeanV./NbField;
+cos1_U=cos1_U./NbField;
+cos1_V=cos1_V./NbField;
+sin1_U=sin1_U./NbField;
+sin1_V=sin1_V./NbField;
+cos2_U=cos2_U./NbField;
+cos2_V=cos2_V./NbField;
+sin2_U=sin2_U./NbField;
+sin2_V=sin2_V./NbField;
+cos3_U=cos3_U./NbField;
+cos3_V=cos3_V./NbField;
+sin3_U=sin3_U./NbField;
+sin3_V=sin3_V./NbField;
+cossub_U=cossub_U./NbField;
+cossub_V=cossub_V./NbField;
+sinsub_U=sinsub_U./NbField;
+sinsub_V=sinsub_V./NbField;
+Data.cos1_U=cos1_U;
+Data.cos1_V=cos1_V;
+Data.a1_U=sqrt(2)*sqrt(cos1_U.*cos1_U+sin1_U.*sin1_U);
+Data.a1_V=-sqrt(2)*sqrt(cos1_V.*cos1_V+sin1_V.*sin1_V);
 Data.a2_U=sqrt(2)*sqrt(cos2_U.*cos2_U+sin2_U.*sin2_U);
 Data.a2_V=-sqrt(2)*sqrt(cos2_V.*cos2_V+sin2_V.*sin2_V);
 Data.a3_U=sqrt(2)*sqrt(cos3_U.*cos3_U+sin3_U.*sin3_U);
 Data.a3_V=-sqrt(2)*sqrt(cos3_V.*cos3_V+sin3_V.*sin3_V);
 Data.asub_U=sqrt(2)*sqrt(cossub_U.*cossub_U+sinsub_U.*sinsub_U);
 Data.asub_V=-sqrt(2)*sqrt(cossub_V.*cossub_V+sinsub_V.*sinsub_V);
-clear i
+% clear i
 Data.phase1_U=(angle(cos1_U+i*sin1_U));
+
 Data.phase1_V=angle(cos1_V+i*sin1_V);
 Data.phase2_U=(angle(cos2_U+i*sin2_U));
 Data.phase2_V=(angle(cos2_V+i*sin2_V));

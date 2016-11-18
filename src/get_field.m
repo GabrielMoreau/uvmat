@@ -157,6 +157,7 @@ else
     set(handles.SwitchVarIndexTime,'Value',1);
 end
 set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
+set(handles.SwitchVarIndexTime,'UserData',ListSwitchVarIndexTime); % keep string in memory for check3D
 set(handles.get_field,'UserData',Field);% record the finput field structure
 SwitchVarIndexTime_Callback([], [], handles)
 
@@ -1044,24 +1045,31 @@ if get(handles.Check3D,'Value')% 3D fields
     status='on';
 else% fields studied as 2D
     status='off';
- 
 end
+
 set(handles.Coord_z,'Visible',status)
 % set(handles.CheckDimensionZ,'Visible',status)
 set(handles.Z_title,'Visible',status)
 set(handles.vector_z,'Visible',status)
-set(handles.W_title,'Visible',status)   
-if strcmp(status,'on')
-   Field=get(handles.get_field,'UserData');
-    if Field.MaxDim>=3% for 3D fields, propose to use the third variable as time
+set(handles.W_title,'Visible',status)
+if strcmp(status,'on')% ask for 3D input    
+    Field=get(handles.get_field,'UserData');
+    if Field.MaxDim>3% for 4D fields, propose to use the fourth variable as time
+        %set(handles.Time,'Visible','on')
         menu=get(handles.SwitchVarIndexTime,'String');
         val=find(strcmp('variable',menu));
         if ~isempty(val)
             set(handles.SwitchVarIndexTime,'Value',val)
-            SwitchVarIndexTime_Callback(handles.SwitchVarIndexTime,[], handles)
         end
+    else
+        set(handles.SwitchVarIndexTime,'Value',1)
+        set(handles.SwitchVarIndexTime,'String',{'file index'})
     end
-end 
+else
+   set(handles.SwitchVarIndexTime,'String',get(handles.SwitchVarIndexTime,'UserData'))
+end
+SwitchVarIndexTime_Callback(handles.SwitchVarIndexTime,[], handles)
+
 %------------------------------------------------------------------------
 % --- Executes on button press in OK.
 %------------------------------------------------------------------------
