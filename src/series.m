@@ -1582,7 +1582,7 @@ switch RunMode
 %             end
 %             extra_oar='';
  %       else
-            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'16',''});
             if isempty(answer)
                                 errormsg='Action launch interrupted by user';
                 return
@@ -3668,9 +3668,7 @@ set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta co
 
 % --- Executes on button press in MonitorCluster.
 function MonitorCluster_Callback(hObject, eventdata, handles)
-web('https://www.legi.grenoble-inp.fr/servload/monika')
-
-
+web('https://www.legi.grenoble-inp.fr/servfill/monika')
 
 function OutputSubDir_Callback(hObject, eventdata, handles)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])

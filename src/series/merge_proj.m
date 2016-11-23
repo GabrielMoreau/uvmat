@@ -295,7 +295,7 @@ for index=1:NbField
             Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
         end
         % get the time defined in the current file if not already defined from the xml file
-        if ~isempty(time) && isfield(Data{iview},'Time')
+        if isempty(time) && isfield(Data{iview},'Time')
             timeread(iview)=Data{iview}.Time;
         end
         if ~isempty(NbSlice_calib)

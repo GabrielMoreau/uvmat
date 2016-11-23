@@ -160,12 +160,14 @@ ImagesPerLevel=size(XmlInput.Time,2)-1;%100;
 % loop on the frames within the tiff file
 if Param.IndexRange.first_i==1% first slice of processing
     firstindex=0;
-    count=0;
+   count=0;
+%     count=3;
 else
     firstindex=Param.IndexRange.first_i;
     ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
     NbFrames=numel(imfinfo(ImageName));
-    count=Param.IndexRange.first_i*NbFrames;
+   count=Param.IndexRange.first_i*NbFrames;
+ %   count=Param.IndexRange.first_i*NbFrames+3;
 end
 for ifile=firstindex:Param.IndexRange.last_i
     if firstindex==0 && ifile==0% first slice of processing
