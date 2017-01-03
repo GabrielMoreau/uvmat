@@ -10,7 +10,7 @@
 % ver : svn version in case this is a  svn repository
 
 %=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %

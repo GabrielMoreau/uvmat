@@ -12,7 +12,7 @@
 % varargin: optional list of strings to restrict the reading to a selection of subtrees, for instance 'GeometryCalib' (save reading time) 
 
 %=======================================================================
-% Copyright 2008-2016, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France/.fsnet/project/coriolis/2016/16CIRCUMPOLAR/EXP07/2016-03-08T
+% Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France/.fsnet/project/coriolis/2016/16CIRCUMPOLAR/EXP07/2016-03-08T
 
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
