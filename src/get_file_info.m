@@ -58,6 +58,13 @@ switch FileExt
             FileInfo.FileType='pivdata_fluidimage';
             FileInfo.CivStage=6; % A MODIFIER
         end
+    case '.cine'
+        [FileInfo,BitmapInfoHeader, CameraSetup]=readCineHeader(fileinput);
+        FileInfo.FileType='cine_phantom';
+        FileInfo.NumberOfFrames=FileInfo.ImageCount;
+        FileInfo.FrameRate=CameraSetup.FrameRate;
+        FileInfo.Height=BitmapInfoHeader.biHeight;
+        FileInfo.Width=BitmapInfoHeader.biWidth;
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension

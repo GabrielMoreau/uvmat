@@ -45,22 +45,24 @@ end
 A=[];
 ObjectOut=VideoObject;%default
 switch FileType
-         case 'video'
-            if strcmp(class(VideoObject),'VideoReader')
-                A=read(VideoObject,num);
-            else
-                ObjectOut=VideoReader(FileName);
-                A=read(ObjectOut,num);
-            end
-        case 'mmreader'
-            if strcmp(class(VideoObject),'mmreader')
-                A=read(VideoObject,num);
-            else
-                ObjectOut=mmreader(FileName);
-                A=read(ObjectOut,num);
-            end
+    case 'video'
+        if strcmp(class(VideoObject),'VideoReader')
+            A=read(VideoObject,num);
+        else
+            ObjectOut=VideoReader(FileName);
+            A=read(ObjectOut,num);
+        end
+    case 'mmreader'
+        if strcmp(class(VideoObject),'mmreader')
+            A=read(VideoObject,num);
+        else
+            ObjectOut=mmreader(FileName);
+            A=read(ObjectOut,num);
+        end
+    case 'cine_phantom'
+        A = read_cine_phantom(FileName,num );
     case 'multimage'
         A=imread(FileName,num);
-    case 'image'    
+    case 'image'
         A=imread(FileName);
 end

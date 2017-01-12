@@ -1821,9 +1821,9 @@ for iprocess=1:NbProcess
                 switch computer
                     case {'PCWIN','PCWIN64'} %Windows system
                         filexml=regexprep(filexml,'\\','\\\\');% add '\' so that '\' are left as characters
-                        system([ActionFullName ' ' RunTime ' ' filexml]);% TODO: adapt to DOS system
+                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);% TODO: adapt to DOS system
                     case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-                        system([ActionFullName ' ' RunTime ' ' filexml]);
+                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);
                 end
         end
     end
