@@ -251,6 +251,8 @@ switch FileType
         A=imread(FileName);
     case 'rdvision'
         [A,FileInfo,timestamps]=read_rdvision(FileName,num);
+    case 'cine_phantom'
+        [A,FileInfo] = read_cine_phantom(FileName,num );
     otherwise
         errormsg=[ FileType ': invalid input file type for uvmat'];
 end

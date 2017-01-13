@@ -20,6 +20,10 @@ for ii=1:Nf
     %% Read image from Cine file
     
     fseek(fid, imageLocations( frames(ii) ), 'bof');
+    if ~BitmapInfoHeader.biCompression
+        imTemp = fread(fid, [BitmapInfoHeader.biWidth BitmapInfoHeader.biHeight],'uint16');
+        imMat(:,:,ii) = imTemp';
+    else
     imTemp = fread(fid, [BitmapInfoHeader.biWidth BitmapInfoHeader.biHeight], 'ubit10','b');
     im = imTemp';
     im( im < 1 ) = 1;
@@ -38,7 +42,7 @@ for ii=1:Nf
      lenDispStr = length( dispStr );
      dispStr = ['Reading is ' num2str( round( 100*ii/Nf ) ) '% complete'];
      disp( [char(8)*ones(1,lenDispStr+1) dispStr] )
-       
+    end
     end
 end
 disp( ['Reading time = ' num2str(toc) ] )
@@ -46,7 +50,7 @@ fclose(fid);
 end
 
 function lookupTable = lookupTablePackedFun() 
-
+% function to transform the compressed 10 bit images back, close to the 12 bit camera images
 lookupTable = [ 2,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,  17,  17,  18,...
 19,  20,  21,  22, 23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  33,...
 34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  48,...
