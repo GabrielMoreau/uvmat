@@ -231,9 +231,9 @@ for field_index=1:NbField
     idtemp=0;
     % get the surface shape corresponding to the PIV measurements
     for indextemp=field_index:field_index+1;%TODO: generalise to field index intervals>1 for PIV
-        idtemp=idtemp+1;
-        InputFile_3=fullfile(Param.InputTable{3,1},Param.InputTable{3,2},[Param.InputTable{3,3} '_' int2str(first_img+indextemp-1) '.nc']);
+        idtemp=idtemp+1;        
         if NbView==3 % if there is only 1 stereo folder (2 cameras only), extract directly Xphys,Yphys and Zphys  
+            InputFile_3=fullfile(Param.InputTable{3,1},Param.InputTable{3,2},[Param.InputTable{3,3} '_' int2str(first_img+indextemp-1) '.nc']);
             % Data{1}: =raw PIV camera 1 only
             % Data{2}: =raw PIV camera 2 only
             % Data{3}: =correlation between camera 1 and 2 
@@ -320,8 +320,9 @@ for field_index=1:NbField
             error(tempind)=[];
             
         end
-        
+        if NbView>2
         ZItemp(:,:,idtemp)=griddata(Xphys,Yphys,Zphys,XI,YI); %interpolation on the choosen grid
+        end
         
     end
     ZI=mean(ZItemp,3); %mean between two the two times used for surface measurement

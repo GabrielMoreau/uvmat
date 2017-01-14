@@ -301,7 +301,7 @@ if iview_A~=0
             end
         end
     end
-    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
+    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
         Time=zeros(FileInfo_A.NumberOfFrames+1,2);
         Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
         TimeSource='video';
