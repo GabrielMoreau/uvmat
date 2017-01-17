@@ -3297,7 +3297,7 @@ switch UvData.FileType{1}
                 ParamIn.ColorVar= list_code{index_code}; % selected field
             end
         end
-    case {'video','mmreader','rdvision'}
+    case {'video','mmreader','rdvision','cine_phantom'}
         ParamIn=UvData.MovieObject{1}; % movie object     
         if strcmp(NomType,'*')
             frame_index=num_i1;%frame index from a single movies or multimage
@@ -3395,7 +3395,7 @@ if ~isempty(FileName_1)
                     ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display                  
                 end
             end
-        case {'video','mmreader'}
+        case {'video','mmreader','cine_phantom'}
             ParamIn_1=UvData.MovieObject{2};
             if ~strcmp(NomType_1,'*')
                 frame_index_1=j1_1;%frame index for movies or multimage
