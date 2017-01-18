@@ -334,7 +334,7 @@ for field_index=1:NbField
     
     for iview=1:2
         %% reading PIV input file(s)
-        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,field_index},{'vec(U,V)'},'*');
+        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,field_index},{'vec(U,V)'},Param.InputFields.VelType);
         if ~isempty(errormsg)
             disp_uvmat('ERROR',['ERROR in civ2vel_3C/read_field/' errormsg],checkrun)
             return

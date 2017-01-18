@@ -243,7 +243,7 @@ maskname='';%default
 check_civx=0;%default
 
 %% get timing from input video
-if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
+if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
     time=zeros(FileInfo_A.NumberOfFrames+1,2);
     time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
     TimeSource='video';

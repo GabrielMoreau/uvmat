@@ -124,7 +124,7 @@ nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
@@ -527,7 +527,7 @@ izero=find(Integ==0); %indices of zero elements
 inonzero=find(Integ);
 Integ(izero)=min(Integ(inonzero));
 aa=log(Integ);%initial guess for a coeff
-spli=spline4(aa,mini,nbb);  %appel à la fonction spline4
+spli=spline4(aa,mini,nbb);  %appel ï¿½ la fonction spline4
 histsmooth=exp(spli);
 
 S=(sum(reshape(histsmooth,nbb,nint)))/nbb;% integral of the fit histsmooth on ]i-1/2 i+1/2[
@@ -580,14 +580,14 @@ a4=[1 -D(4,4)];
 b4=[F(4)];
 
 %data
-% n=10;% résolution de la pdf: nbre de points par unite de u
+% n=10;% rï¿½solution de la pdf: nbre de points par unite de u
 % mini=-10.0;%general mini=uint16(min(values)-1 CHOOSE maxi-mini+1 EVEN
 % maxi=9.0; % general maxi=uint16(max(values))+1
 %nint=double(maxi-mini+1); % nombre d'intervals entiers EVEN!
 siz=size(aa);
 nint=siz(2);
 maxi=mini+nint-1;
-npdf=nint*n;% nbre total d'intervals à introduire dans la pdf: hist(u,npdf)
+npdf=nint*n;% nbre total d'intervals ï¿½ introduire dans la pdf: hist(u,npdf)
 %simulation de pdf
 xfin=[mini-0.5+1/(2*n):(1/n):maxi+0.5-(1/(2*n))];% valeurs d'interpolation: we take n values in each integer interval
 %histolin=exp(-(xfin-1).*(xfin-1)).*(2+cos(10*(xfin-1)));% simulation d'une pdf

@@ -3519,24 +3519,24 @@ if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
 end
 %put W as background image by default if NbDim=2:
-if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W) && ~isequal(Field{1}.NbDim,3);
-        set(handles.SubField,'Value',1);
-        set(handles.RootPath_1,'String','"')
-        set(handles.RootFile_1,'String','"')
-        set(handles.SubDir_1,'String','"');
-         indices=fullfile_uvmat('','','','',NomType,num_i1,num_i2,num_j1,num_j2);
-        set(handles.FileIndex_1,'String',indices)
-        set(handles.FileExt_1,'String','"');
-        set(handles.FieldName_1,'Visible','on');
-        set(handles.FieldName_1,'Visible','on');
-        set(handles.RootPath_1,'Visible','on')
-        set(handles.RootFile_1,'Visible','on')
-        set(handles.SubDir_1,'Visible','on');
-        set(handles.FileIndex_1,'Visible','on');
-        set(handles.FileExt_1,'Visible','on');
-        set(handles.FieldName_1,'Visible','on');
-        Field{1}.AName='w';
-end           
+% if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W) && ~isequal(Field{1}.NbDim,3);
+%         set(handles.SubField,'Value',1);
+%         set(handles.RootPath_1,'String','"')
+%         set(handles.RootFile_1,'String','"')
+%         set(handles.SubDir_1,'String','"');
+%          indices=fullfile_uvmat('','','','',NomType,num_i1,num_i2,num_j1,num_j2);
+%         set(handles.FileIndex_1,'String',indices)
+%         set(handles.FileExt_1,'String','"');
+%         set(handles.FieldName_1,'Visible','on');
+%         set(handles.FieldName_1,'Visible','on');
+%         set(handles.RootPath_1,'Visible','on')
+%         set(handles.RootFile_1,'Visible','on')
+%         set(handles.SubDir_1,'Visible','on');
+%         set(handles.FileIndex_1,'Visible','on');
+%         set(handles.FileExt_1,'Visible','on');
+%         set(handles.FieldName_1,'Visible','on');
+%         Field{1}.AName='w';
+% end           
 
 %% display time value of the current file
 abstime=[];%default inputs

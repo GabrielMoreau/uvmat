@@ -113,7 +113,7 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')

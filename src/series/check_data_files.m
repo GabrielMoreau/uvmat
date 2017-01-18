@@ -107,7 +107,7 @@ nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     [FileInfo{iview},Object{iview}]=get_file_info(filecell{iview,1});

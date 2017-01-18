@@ -106,7 +106,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
 
     %% check the validity of  input file types
-    ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
+    ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};%allowed input file types(images)
     FileInfo=get_file_info(FirstFileName);
     FileType=FileInfo.FileType;
     CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images

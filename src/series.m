@@ -154,15 +154,17 @@ if isequal(s,0)
     set(handles.num_CPUTime,'Visible','on'); % make visible button for access to Monika
     set(handles.CPUTime_txt,'Visible','on'); % make visible button for access to Monika
 end
-[s,w]=system('qstat --version');% look for cluster system 'sge'
+[s,w]=system('qstat -help');% look for cluster system 'sge'
 if isequal(s,0)
     if regexp(w,'^pbs')
         RunModeList=[RunModeList;{'cluster_pbs'}];
-    else
+    elseif regexp(w,'^SGE')
         RunModeList=[RunModeList;{'cluster_sge'}];
+    else
+        RunModeList=[RunModeList;{'cluster_qstat_unknown'}];
     end
 end
-set(handles.RunMode,'String',RunModeList)
+set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
 
 %% list of builtin transform functions in the menu TransformName
 TransformList={'';'sub_field';'phys';'phys_polar'};% WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
@@ -1501,7 +1503,7 @@ end
 if strcmp(ActionExt,'.sh')
     if exist(xmlfile,'file')
         s=xml2struct(xmlfile);
-        if strcmp(RunMode,'cluster_oar') && isfield(s,'BatchParam')
+        if (strcmp(RunMode,'cluster_oar') || strcmp(RunMode, 'cluster_pbs') || strcmp(RunMode, 'cluster_sge')) && isfield(s,'BatchParam')
             if isfield(s.BatchParam,'NbCore')
                 NbCore=s.BatchParam.NbCore;
             end
@@ -1590,7 +1592,7 @@ switch RunMode
             NbCore=str2double(answer{1});
             extra_oar=answer{2};
  %       end
-    case 'cluster_pbs'
+    case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1;% one core used only (limitation of Matlab licences)
             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
@@ -1600,8 +1602,9 @@ switch RunMode
             end
             extra_oar='';
         else
-            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+            answer=inputdlg({'Number of jobs (max 1000)','Queue'},'qsub parameters',1,{'100','piv_debian'});
             NbCore=str2double(answer{1});
+            qstat_Queue=answer{2};
             %extra_oar=answer{2};%TODO : fix this for LMFA cluster. Maybe
             %extrs_oar and extra_pbs are not the best names
         end
@@ -1728,7 +1731,7 @@ nbfield_j=numel(ref_j); % number of j indices
 BlockLength=numel(ref_i);% by default, job involves the full set of i field indices
 NbProcess=1;
 switch RunMode
-    case {'cluster_oar','cluster_pbs'}
+    case {'cluster_oar','cluster_pbs','cluster_sge','cluster_qstat_unknown'}
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
             BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
             BlockLength=max(BlockLength,ceil(numel(ref_i)/500));% possibly increase the BlockLength to have less than 500 jobs
@@ -2058,13 +2061,13 @@ switch RunMode
         end
         fclose(fid);
         system(['chmod +x ' filename_joblist]);% set the file to executable
-        pbs_command=['qstat -n CIVX '...
+        pbs_command=['qsub -n CIVX '...
             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
             '-l /core=' num2str(NbCore) ','...
             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
             '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
-            extra_oar ' '...
+            extra_qstat ' '...
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"'];
         filename_oarcommand=fullfile(DirPBS,'pbs_command');
@@ -2074,6 +2077,65 @@ switch RunMode
         fprintf(pbs_command);% display in command line
         %system(pbs_command);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
+
+     case 'cluster_sge' % for PSMN
+        % Au PSMN, on ne crée pas 1 job avec plusieurs cœurs, mais N jobs de 1 cœurs
+        % où N < 1000.
+        %create subdirectory for pbs command and log files
+
+        DirSGE=fullfile(OutputDir,'0_SGE');
+        if exist(DirSGE,'dir')% delete the content of the dir 0_LOG to allow new input
+            curdir=pwd;
+            cd(DirSGE)
+            delete('*')
+            cd(curdir)
+        else
+            [tild,msg1]=mkdir(DirSGE);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' DirSGE ': ' msg1];%error message for directory creation
+                return
+            end
+        end
+        maxImgsPerJob = ceil(length(batch_file_list)/NbCore);
+        disp(['Max number of jobs: ' num2str(NbCore)])
+        disp(['Images per job: ' num2str(maxImgsPerJob)])
+        
+        iprocess = 1;
+        imgsInJob = [];
+        currJobIndex = 1;
+        done = 0;
+        while(~done)
+            if(iprocess <= length(batch_file_list))
+                imgsInJob = [imgsInJob, iprocess];
+            end
+            if((numel(imgsInJob) >= maxImgsPerJob) || (iprocess == length(batch_file_list)))
+                cmd=['#!/bin/sh \n'...
+                     '#$ -cwd \n'...
+                     'hostname && date\n']
+                for ii=1:numel(imgsInJob)
+                    cmd=[cmd ActionFullName ' /softs/matlab ' filexml{imgsInJob(ii)} '\n'];
+                end
+                [fid, message] = fopen([DirSGE '/job' num2str(currJobIndex) '.sh'], 'w');
+                fprintf(fid, cmd);
+                fclose(fid);
+                system(['chmod +x ' DirSGE '/job' num2str(currJobIndex) '.sh'])
+                sge_command=['qsub -N civ_' num2str(currJobIndex) ' '...
+                    '-q ' qstat_Queue ' '...
+                    '-e ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
+                    '-o ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
+                    fullfile([DirSGE '/job' num2str(currJobIndex) '.sh'])];
+                fprintf(sge_command);% display in command line
+                [status, result] = system(sge_command);
+                fprintf(result);
+                currJobIndex = currJobIndex + 1;
+                imgsInJob = [];
+            end
+            if(iprocess == length(batch_file_list))
+                done = 1;
+            end
+            iprocess = iprocess + 1;
+        end
+        msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
     case 'python'
         command = [
             'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
@@ -2355,6 +2417,8 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 set(handles.Coord_z,'String','')
             end
         end
+    else
+        set(handles.FieldName,'Visible','off')
     end
     
     set(handles_coord,'Visible','on')
@@ -2381,7 +2445,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 warn_coord=1;
             end
             if warn_coord
-                msgbox_uvmat('WARNING','coordiante names do not exist in the second netcdf input file')
+                msgbox_uvmat('WARNING','coordinate names do not exist in the second netcdf input file')
             end
             
             set(handles.FieldName_1,'Visible','on')

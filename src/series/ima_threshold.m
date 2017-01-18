@@ -153,7 +153,7 @@ end
 %% check the input file type  
 [FileInfo,VideoObject]=get_file_info(filecell{1,1});
 FileType=FileInfo.FileType;
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 if isempty(find(strcmp(FileType,ImageTypeOptions)))
     disp('input file not images')
     return

@@ -59,7 +59,7 @@
 function ParamOut=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
@@ -140,7 +140,7 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video'};
+ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
