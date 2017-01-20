@@ -164,7 +164,7 @@ ListVarNameSub=Field_1.ListVarName;
 ListVarNameNew=ListVarNameSub;
 check_rename=zeros(size(ListVarNameSub));
 check_remove=zeros(size(ListVarNameSub));
-VarDimNameSub={};
+VarDimNameSub=Field_1.VarDimName;
 VarAttributeSub={};
 if isfield(Field_1,'VarAttribute')&&~isempty(Field_1.VarAttribute)
     for ilist=1:numel(ListVarNameSub)

@@ -91,6 +91,7 @@ if ~isfield(Param,'InputTable')
     return
 end
 [tild,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+time=[];
 for iview=1:size(Param.InputTable,1)
     XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},Param.InputTable{iview,5});
     if isempty(XmlFileName)
@@ -134,24 +135,28 @@ PairCiv2='';
 i1_series_Civ1=i1_series{1};i1_series_Civ2=i1_series{1};
 i2_series_Civ1=i1_series{2};i2_series_Civ2=i1_series{2};
 if isempty(j1_series{1})
+        FrameIndex_A_Civ1=i1_series_Civ1;
+    FrameIndex_B_Civ1=i2_series_Civ1;
     j1_series_Civ1=ones(size(i1_series{1}));
     j2_series_Civ1=ones(size(i1_series{2}));
 else
     j1_series_Civ1=j1_series{1};
     j2_series_Civ1=j1_series{2};
+     FrameIndex_A_Civ1=j1_series_Civ1;
+    FrameIndex_B_Civ1=j2_series_Civ1;
 end
 j1_series_Civ2=j1_series_Civ1;
 j2_series_Civ2=j2_series_Civ1;
-NomTypeNc=NomType_A;
-if isempty(j1_series_Civ1)
-    FrameIndex_A_Civ1=i1_series_Civ1;
-    FrameIndex_B_Civ1=i2_series_Civ1;
-    j1_series_Civ1=ones(size(i1_series_Civ1));
-    j2_series_Civ1=ones(size(i1_series_Civ1));
-else
-    FrameIndex_A_Civ1=j1_series_Civ1;
-    FrameIndex_B_Civ1=j2_series_Civ1;
-end
+
+% if isempty(j1_series_Civ1)
+%     FrameIndex_A_Civ1=i1_series_Civ1;
+%     FrameIndex_B_Civ1=i2_series_Civ1;
+%     j1_series_Civ1=ones(size(i1_series_Civ1));
+%     j2_series_Civ1=ones(size(i1_series_Civ1));
+% else
+%     FrameIndex_A_Civ1=j1_series_Civ1;
+%     FrameIndex_B_Civ1=j2_series_Civ1;
+% end
 if isempty(PairCiv2)
     FrameIndex_A_Civ2=FrameIndex_A_Civ1;
     FrameIndex_B_Civ2=FrameIndex_B_Civ1;
@@ -230,7 +235,11 @@ catch ME
         return
     end
 end
-
+if ismember(FileType_A,{'mmreader','video','cine_phantom'})
+    NomTypeNc='_1';
+else
+    NomTypeNc=NomType_A;
+end
 
 %% Output directory
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
@@ -243,7 +252,7 @@ maskname='';%default
 check_civx=0;%default
 
 %% get timing from input video
-if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
+if isempty(time) && ismember(FileType_A,{'mmreader','video','cine_phantom'})% case of video input
     time=zeros(FileInfo_A.NumberOfFrames+1,2);
     time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
     TimeSource='video';
@@ -280,11 +289,11 @@ for ifield=1:NbField
        
     Civ1Dir=OutputDir;
 
-        ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,[RootFile_A,'_All'],'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
-            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+%         ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,[RootFile_A,'_All'],'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+%             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
         
         
-        ncfile2=fullfile_uvmat(RootPath_A,Civ1Dir,[RootFile_A,'_Light'],'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+        ncfile2=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
         
      if (~CheckOverwrite && exist(ncfile,'file')) || (~CheckOverwrite && exist(ncfile2,'file')) 
@@ -823,16 +832,16 @@ end
       
     
     %% write result in a netcdf file if requested
-    if LSM ~= 1 % store all data
-        if exist('ncfile','var')
-            errormsg=struct2nc(ncfile,Data);
-            if isempty(errormsg)
-                disp([ncfile ' written'])
-            else
-                disp(errormsg)
-            end
-        end
-    else
+%     if LSM ~= 1 % store all data
+%         if exist('ncfile','var')
+%             errormsg=struct2nc(ncfile,Data);
+%             if isempty(errormsg)
+%                 disp([ncfile ' written'])
+%             else
+%                 disp(errormsg)
+%             end
+%         end
+%     else
        % store only phys data
         Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys','Error'};
         Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
@@ -855,7 +864,7 @@ end
             end
        end
        
-    end
+%     end
 end
 disp(['ellapsed time for the loop ' num2str(toc) ' s'])
 tic

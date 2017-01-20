@@ -2337,7 +2337,7 @@ if ~isempty(filexml)
     end
     check_input=0;
     if isfield(Param,'ActionInput')
-        if isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'civ_series')
+        if isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'stereo_civ')
             fill_GUI(Param.ActionInput,handles.civ_input)% fill the elements of the GUI series with the input parameters
             set(handles.ConfigSource,'String',filexml)
             check_input=1;
