@@ -176,15 +176,15 @@ time=mean(time,1); %averaged time taken for the merged field
 %% coordinate transform or other user defined transform
 transform_fct='';%default fct handle
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-        currentdir=pwd;
-        cd(Param.FieldTransform.TransformPath)
-        transform_fct=str2func(Param.FieldTransform.TransformName);
-        cd (currentdir)
-        if isfield(Param,'TransformInput')
-            for iview=1:NbView
+    currentdir=pwd;
+    cd(Param.FieldTransform.TransformPath)
+    transform_fct=str2func(Param.FieldTransform.TransformName);
+    cd (currentdir)
+    if isfield(Param,'TransformInput')
+        for iview=1:NbView
             XmlData{iview}.TransformInput=Param.TransformInput;
-            end
-        end       
+        end
+    end       
 end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
