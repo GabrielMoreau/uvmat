@@ -106,7 +106,7 @@ for ifield=1:numel(fields)
                                 input_string=input_data;
                             end
                             set(hh(ibox),'String',input_string)
-                        case{'listbox','popupmenu'}
+                        case {'listbox','popupmenu'}
                             if isnumeric(input_data)
                                 input_data=num2str(input_data,4);
                             end

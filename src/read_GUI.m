@@ -69,7 +69,7 @@ for ichild=1:numel(hchild)
                                 set(hchild(ichild),'String',num2str(input))
                             end
                         end                        
-                    case{'listbox','popupmenu'}
+                    case {'listbox','popupmenu'}
                         listinput=get(hchild(ichild),'String');
                         value=get(hchild(ichild),'Value');
                         if ~isempty(listinput)

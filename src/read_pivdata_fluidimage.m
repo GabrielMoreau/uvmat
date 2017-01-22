@@ -88,7 +88,7 @@ ProjModeRequest='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
         switch FieldNames{ilist}
-            case{'U','V','norm(U,V)'}
+            case {'U','V','norm(U,V)'}
                 if ~strcmp(FieldNames{1},'vec(U,V)')% if the scalar is not used as color of vectors
                 ProjModeRequest='interp_lin';
                 end
@@ -167,7 +167,7 @@ Field.FF=zeros(size(Field.U)); Field.FF(Data.errors.keys + 1)=1;
 %      return
 % end
 switch VelTypeOut
-    case{'civ1','filter1'}
+    case {'civ1','filter1'}
         if isfield(Field,'Patch1_SubDomain')
             Field.SubDomain=Field.Patch1_SubDomain;
             Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
@@ -178,7 +178,7 @@ switch VelTypeOut
         if isfield(Field,'Civ1_Time')
             Field.Time=Field.Civ1_Time;
         end
-    case{'civ2','filter2'}
+    case {'civ2','filter2'}
         if isfield(Field,'Patch2_SubDomain')
             Field.SubDomain=Field.Patch2_SubDomain;
             Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];

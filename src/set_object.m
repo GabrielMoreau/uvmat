@@ -233,7 +233,7 @@ Coord=get(handles.Coord,'Data');
 
 %% set the number of lines in the Coord table depending on object type
 switch Type
-    case{'line'}
+    case {'line'}
         if size(Coord,1)<2
             if isequal(size(Coord,2),3)
                 Coord=[Coord; 0 0 0];%add a line for edition (3D case)
@@ -243,7 +243,7 @@ switch Type
         else
             Coord=Coord(1:2,:);
         end
-    case{'rectangle','ellipse','plane','volume'}
+    case {'rectangle','ellipse','plane','volume'}
         Coord=Coord(1,:);
 end
 set(handles.Coord,'Data',Coord)
