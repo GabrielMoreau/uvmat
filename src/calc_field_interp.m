@@ -82,7 +82,7 @@ for ilist=1:numel(FieldName)
                     Data.strain=Data.DjUi(:,1,2)+Data.DjUi(:,2,1);
             end
             InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
-        else % case  'norm' for instance
+        else % case 'norm' for instance
             UName{ilist}=r.UName;
             VName{ilist}=r.VName;
             if isempty(find(strcmp(r.UName,InputVarList)));

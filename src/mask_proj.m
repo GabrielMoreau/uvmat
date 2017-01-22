@@ -52,7 +52,7 @@ for icell=1:numel(CellInfo)
             check_new_error_flag=1;
         end
         switch CellInfo{icell}.CoordType;
-            case  'scattered'   
+            case 'scattered'   
                 XName=FieldData.ListVarName{CellInfo{icell}.Coord_x};
                 YName=FieldData.ListVarName{CellInfo{icell}.Coord_y};
                 DX=(MaskData.Coord_x(2)-MaskData.Coord_x(1))/(Npx-1);
@@ -73,7 +73,7 @@ for icell=1:numel(CellInfo)
                     ProjData.VarDimName=[FieldData.VarDimName FieldData.VarDimName(CellInfo{icell}.VarIndex(1))];
                 end
                 ProjData.(FFName)(checkfalse)=1;% update the existing error flag             
-            case  'grid'
+            case 'grid'
                 XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)};
                 YName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)};
                 Var1Name=FieldData.ListVarName{CellInfo{icell}.VarIndex(1)};
