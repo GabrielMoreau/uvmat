@@ -52,6 +52,9 @@ switch FileExt
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}
         [A,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
+%         %%%%%
+%         FileInfo.NumberOfFrame=24000;
+%         %%%%%%%%
     case '.h5'
         hinfo=hdf5info(fileinput);
         if strcmp(hinfo.GroupHierarchy.Attributes(1).Value.Data,'MultipassPIVResults')
@@ -65,6 +68,7 @@ switch FileExt
         FileInfo.FrameRate=CameraSetup.FrameRate;
         FileInfo.Height=BitmapInfoHeader.biHeight;
         FileInfo.Width=BitmapInfoHeader.biWidth;
+         FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension

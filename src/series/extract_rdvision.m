@@ -63,24 +63,24 @@ function ParamOut=extract_rdvision(Param) %default output=relabel_i_j(Param)
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice=1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
-    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';...%can use a transform function
-    ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-     ParamOut.OutputDirExt='.extract';%set the output dir extension
+        ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+        ParamOut.NbSlice=1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
+        ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+        ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        ParamOut.FieldTransform = 'off';...%can use a transform function
+        ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
+        ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+        ParamOut.OutputDirExt='.extract';%set the output dir extension
     ParamOut.OutputSubDirMode='one'; %output folder given by the folder name of the first input line
-     % detect the set of image folder
+    % detect the set of image folder
     RootPath=Param.InputTable{1,1};
-    ListStruct=dir(RootPath);   
+    ListStruct=dir(RootPath);
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
     check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
     ListDir=ListCells(1,find(check_dir & ~check_bad));
-%     InputTable=cell(numel(ListDir),5);
-%     InputTable(:,2)=ListDir';
+    %     InputTable=cell(numel(ListDir),5);
+    %     InputTable(:,2)=ListDir';
     isel=0;
     InputTable=Param.InputTable;
     for ilist=1:numel(ListDir)
@@ -89,22 +89,22 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         detect_seq=regexp(ListCellSub(1,:),'.seq$');
         seq_index=find(~cellfun('isempty',detect_seq),1);
         if ~isempty(seq_index)
-%             msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
-%         else
-           isel=isel+1;
-           InputTable{isel,1}=RootPath;
-           InputTable{isel,2}=ListDir{ilist};
+            %             msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
+            %         else
+            isel=isel+1;
+            InputTable{isel,1}=RootPath;
+            InputTable{isel,2}=ListDir{ilist};
             RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
             InputTable{isel,3}=RootFile;
-        InputTable{isel,4}='*';
-        InputTable{isel,5}='.seq';
-    end
+            InputTable{isel,4}='*';
+            InputTable{isel,5}='.seq';
+        end
     end
     hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
     hhseries=guidata(hseries); %handles of the elements in 'series'
     set(hhseries.InputTable,'Data',InputTable)
     ParamOut.ActionInput.LogPath=RootPath;% indicate the path for the output info: 0_LOG ....
-return
+    return
 end
 
 ParamOut=[];
@@ -238,8 +238,8 @@ for iview=1:size(Param.InputTable,1)
     if isempty(SeqData.binrepertoire)%used when binrepertoire empty, strange feature of rdvision
         SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
         SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
-        [tild,binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
-        SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
+        [tild,SeqData.binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
+        %SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
     end
    
     
@@ -252,19 +252,20 @@ for iview=1:size(Param.InputTable,1)
         'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
     
     %%%%%%%BRICOLAGE in case of unreadable .sqb file: remplace lecture du fichier
-    %         ind=[111 114:211];%indices of bin files
-    %         w=1024;%w=width of images in pixels
-    %         h=1024;%h=height of images in pixels
-    %         bpp=2;% nbre of bytes per pixel
-    %         lengthimage=w*h*bpp;% lengthof an image record on the binary file
-    %         nbimages=32; %nbre of images of each camera in a bin file
-    %         for ii=1:32*numel(ind)
-    %             data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
-    %             %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
-    %             data(ii).file_idx=ind(ceil(ii/32));
-    %             data(ii).timestamp=0.2*(ii-1);
-    %         end
-    %         m.Data=data;
+%             ind=[8356 8356:8672];%indices of bin files
+%             w=2432;%w=width of images in pixels
+%             h=864;%h=height of images in pixels
+%             bpp=2;% nbre of bytes per pixel
+%             lengthimage=w*h*bpp;% lengthof an image record on the binary file
+%             nbimages=15; %nbre of images of each camera in a bin file
+%             for ii=1:15*numel(ind)
+%                 %data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+%                 %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
+%                 %data(ii).file_idx=ind(ceil(ii/32));
+%                 data(ii).file_idx=ind(ceil(ii/15));
+%                 data(ii).timestamp=0.005*(ii-1);
+%             end
+%             m.Data=data;
     %%%%%%%
     timestamp=zeros(1,numel(m.Data));
     for ii=1: numel(m.Data)
@@ -280,6 +281,10 @@ for iview=1:size(Param.InputTable,1)
     [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
     if ~isempty(errormsg)
         disp(errormsg)
+        return
+    end
+    if ~isequal(size(XmlData.Time(2:end,2:end)),size(reshape(timestamp(1:end),nbfield2,[])'))
+        disp(['size of record ' num2str(size(XmlData.Time(2:end,2:end))) ' does not fit with timestamp size ' num2str(size(reshape(timestamp(1:end),nbfield2,[])'))])
         return
     end
     difftime=XmlData.Time(2:end,2:end)-(reshape(timestamp(1:end),nbfield2,[]))';
@@ -326,8 +331,8 @@ end
     if ~checkpreserve
         for iview=1:size(Param.InputTable,1)
          fullfile(RootPath,Param.InputTable{iview,2})
-
-        [SUCCESS,MESSAGE]=rmdir(fullfile(RootPath,Param.InputTable{iview,2}),'s')
+         source_dir=fullfile(RootPath,Param.InputTable{iview,2});
+        [SUCCESS,MESSAGE]=rmdir(source_dir,'s')
         end
     end
 delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
@@ -367,6 +372,13 @@ classname=sprintf('uint%d',SeqData.bytesperpixel*8);
 
 classname=['*' classname];
 BitDepth=8*SeqData.bytesperpixel;%needed to write images (8 or 16 bits)
+%%%%
+% SeqData.binrepertoire='2017-01-26T11.59.57';
+%SeqData.binrepertoire='2017-01-26T16.57.27';
+%SeqData.binrepertoire='2017-01-26T19.28.05';
+%SeqData.binrepertoire='2017-01-27T09.51.34';
+%SeqData.binrepertoire='2017-01-27T14.21.47'
+%%%%
 binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
 FileDir=SeqData.sequencename;
 FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'

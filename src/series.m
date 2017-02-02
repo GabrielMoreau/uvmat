@@ -625,13 +625,8 @@ for iview=1:nbview
         i1_series=[];
         RootFile='';
     else %scan the input folder
-        if strcmp(InputTable{iview,4},'level')
-            [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
-                find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2},'level0'),[InputTable{iview,3} '0' InputTable{iview,5}]);
-        else
             [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
                 find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
-        end
     end
     % if no file is found, open a browser
     if isempty(RootFile)&& isempty(i1_series)
@@ -653,6 +648,7 @@ set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
 MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
 set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
+
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
@@ -2080,8 +2076,8 @@ switch RunMode
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
 
      case 'cluster_sge' % for PSMN
-        % Au PSMN, on ne crée pas 1 job avec plusieurs cœurs, mais N jobs de 1 cœurs
-        % où N < 1000.
+        % Au PSMN, on ne cr??e pas 1 job avec plusieurs c??urs, mais N jobs de 1 c??urs
+        % o?? N < 1000.
         %create subdirectory for pbs command and log files
 
         DirSGE=fullfile(OutputDir,'0_SGE');
@@ -3736,7 +3732,9 @@ set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta co
 
 % --- Executes on button press in MonitorCluster.
 function MonitorCluster_Callback(hObject, eventdata, handles)
-web('https://www.legi.grenoble-inp.fr/servfill/monika')
+disp('format: R/W=run/wait, time lapsed, R=nbre of cores,W=walltime')
+system('oarstat |grep N=UVmat')% check the list of jobs launched with uvmat
+
 
 function OutputSubDir_Callback(hObject, eventdata, handles)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])

@@ -58,7 +58,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=ima2netcdf(Param)
+function ParamOut=extract_multitif_parallel(Param)
 
 %%%%%%%%%%%%%%%%%    INPUT PREPARATION MODE (no RUN)    %%%%%%%%%%%%%%%%%
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -141,6 +141,12 @@ OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]
 %% Timing
 XmlInputFile=fullfile(Param.InputTable{1,1},[Param.ActionInput.XmlFile '.xml'])
 XmlInput=imadoc2struct(XmlInputFile,'Camera');
+
+%% create the xml file of PCO camera
+XmlInput.Camera.CameraName='PCO';
+t=struct2xml(XmlInput.Camera);
+t=set(t,1,'name','ImaDoc');
+save(t,fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']))
 
 %% Main loop
 

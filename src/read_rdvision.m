@@ -17,26 +17,26 @@
 %=======================================================================
 
 function [A,FileInfo,timestamps,errormsg]=read_rdvision(filename,frame_idx)
-% BINREAD_RDV Permet de lire les fichiers bin g�n�r�s par Hiris � partir du
-% fichier seq associ�.
+% BINREAD_RDV Permet de lire les fichiers bin g???n???r???s par Hiris ??? partir du
+% fichier seq associ???.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
-%   l'image d'indice FRAME_IDX de la s�quence FILENAME.
+%   l'image d'indice FRAME_IDX de la s???quence FILENAME.
 %
-%   Entr�es
+%   Entr???es
 %   -------
-%   FILENAME  : Nom du fichier s�quence (.seq).
-%   FRAME_IDX : Indice de l'image � lire. Si FRAME_IDX vaut -1 alors la
-%   s�quence est enti�rement lue. Si FRAME_IDX est un tableau d'indices
+%   FILENAME  : Nom du fichier s???quence (.seq).
+%   FRAME_IDX : Indice de l'image ??? lire. Si FRAME_IDX vaut -1 alors la
+%   s???quence est enti???rement lue. Si FRAME_IDX est un tableau d'indices
 %   alors toutes les images d'incides correspondant sont lues. Si FRAME_IDX
 %   est un tableau vide alors aucune image n'est lue mais le nombre
-%   d'images et tous les timestamps sont renvoy�s. Les indices commencent �
-%   1 et se termines � NB_FRAMES.
+%   d'images et tous les timestamps sont renvoy???s. Les indices commencent ???
+%   1 et se termines ??? NB_FRAMES.
 %
 %   Sorties
 %   -------
 %   IMGS        : Images de sortie.
 %   TIMESTAMPS  : Timestaps des images lues.
-%   NB_FRAMES   : Nombres d'images dans la s�quence.
+%   NB_FRAMES   : Nombres d'images dans la s???quence.
 
 errormsg='';
 if nargin<2% no frame indices specified
@@ -118,9 +118,10 @@ if ~isempty(frame_idx)
             binrepertoire=regexprep(FileInfo.bindirectory,'\\$','');%tranform Windows notation to Linux
             binrepertoire=regexprep(binrepertoire,'\','/');
             [tild,binrepertoire,DirExt]=fileparts(binrepertoire);
-            binrepertoire=[binrepertoire DirExt];
+            binrepertoire=[binrepertoire DirExt];     
         end 
       %  binrepertoire='2014-07-04T10.48.46'% case FJORD5a %%%%%%%%%%%%%%%%%%%%%%%%%
+       binrepertoire='2017-01-19T22.12.182'% EXP14 %%%%%%%%%%%%%%%%%%%%%%%%%
         binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);
