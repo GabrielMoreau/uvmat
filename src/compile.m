@@ -24,7 +24,7 @@
 %=======================================================================
 
 function compile (FctName,SubfctPath)
-hh=[];% handles of message display window
+hh=[]; % handles of message display window
 if isempty(which('mcc'))
     msgbox_uvmat('ERROR','no Matlab compiler toolbox mcc installed')
     return
@@ -40,19 +40,19 @@ if ~exist('bin','dir')
     end
 end
 if ~isempty(SubfctPath)
-    SubfctPath=['-I ' SubfctPath];%string indicating the option of including the path SubfctPath
+    SubfctPath=['-I ' SubfctPath]; % string indicating the option of including the path SubfctPath
 end
 [mcrmajor, mcrminor] = mcrversion;   
 MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
 FctNameVersion=[FctName,'_',MCRROOT];
 %hver=ver('MATLAB');
-%FctNameVersion=[FctName '_MCRROOT' regexprep(hver.Version,'\.','')];%suppress the dot in version number
+%FctNameVersion=[FctName '_MCRROOT' regexprep(hver.Version,'\.','')]; % suppress the dot in version number
 try
     disp(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])
     eval(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])% compile the source file [FctName .m], which produces a binary file FctName and a cmd file [run_' FctName '.sh]
-    system(['mv -f ' FctName ' bin/']);%move the binary file FctName to the subdir /bin
-    system(['sed -e ''''s#/' FctName '#/bin/' FctName '#'''' run_' FctName '.sh > ' FctNameVersion '.sh']);%modify the cmd file and copy it to [FctName '.sh']
-    system(['rm run_' FctName '.sh']);% remove the initial cmd file [run_' FctName '.sh]
+    system(['mv -f ' FctName ' bin/']); % move the binary file FctName to the subdir /bin
+    system(['sed -e ''''s#/' FctName '#/bin/' FctName '#'''' run_' FctName '.sh > ' FctNameVersion '.sh']); % modify the cmd file and copy it to [FctName '.sh']
+    system(['rm run_' FctName '.sh']); % remove the initial cmd file [run_' FctName '.sh]
     system(['chmod +x ' FctNameVersion '.sh']); % set the cmd file to 'executable'
 catch ME
     hh=msgbox_uvmat('ERROR',ME.message);

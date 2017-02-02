@@ -71,9 +71,9 @@ guidata(hObject, handles);
 %% initial settings
 % position and  size of the GUI at opening
 set(0,'Unit','points')
-ScreenSize=get(0,'ScreenSize');%size of the current screen, in points (1/72 inch)
-Width=900;% prefered width of the GUI in points (1/72 inch)
-Height=624;% prefered height of the GUI in points (1/72 inch)
+ScreenSize=get(0,'ScreenSize'); % size of the current screen, in points (1/72 inch)
+Width=900; % prefered width of the GUI in points (1/72 inch)
+Height=624; % prefered height of the GUI in points (1/72 inch)
 %adjust to screen size (reduced by a min margin)
 RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
 if RescaleFactor>1
@@ -81,7 +81,7 @@ if RescaleFactor>1
 end
 Width=Width*RescaleFactor;
 Height=Height*RescaleFactor;
-LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
+LeftX=80*RescaleFactor; % position of the left fig side, in pixels (put to the left side, with some margin)
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Units','points')
 set(hObject,'Position',[LeftX LowY Width Height])% position and size of the GUI at opening
@@ -128,33 +128,33 @@ set(hObject,'DeleteFcn',{@closefcn})%
 
 % check default input data
 if ~exist('Param','var')
-    Param=[]; %default
+    Param=[]; % default
 end 
 
 %% list of builtin functions in the mebu ActionName
-ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
+ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'}; % WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
-[path_series,name,ext]=fileparts(which('series'));% path to the GUI series
-path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
+[path_series,name,ext]=fileparts(which('series')); % path to the GUI series
+path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
 [code, message] = system...
     ('LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') |... [s for s in p if ''matlab'' not in s] | '':''.join(p)") python -c "import fluidimage"'); 
 if code==0
-    ActionExtList={'.m';'.sh';'.py (in dev.)'};% default choice of extensions (Matlab fct .m or compiled version .sh
+    ActionExtList={'.m';'.sh';'.py (in dev.)'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 else
     ActionExtList={'.m';'.sh'};  % python options not installed
 end
-ActionPathList=cell(NbBuiltinAction,1);%initiate the cell matrix of Action fct paths
-ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
-RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
-[s,w]=system('oarstat');% look for cluster system 'oar'
+ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
+ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
+RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
+[s,w]=system('oarstat'); % look for cluster system 'oar'
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster_oar'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
     set(handles.num_CPUTime,'Visible','on'); % make visible button for access to Monika
     set(handles.CPUTime_txt,'Visible','on'); % make visible button for access to Monika
 end
-[s,w]=system('qstat -help');% look for cluster system 'sge'
+[s,w]=system('qstat -help'); % look for cluster system 'sge'
 if isequal(s,0)
     if regexp(w,'^pbs')
         RunModeList=[RunModeList;{'cluster_pbs'}];
@@ -167,11 +167,11 @@ end
 set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
 
 %% list of builtin transform functions in the menu TransformName
-TransformList={'';'sub_field';'phys';'phys_polar'};% WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
+TransformList={'';'sub_field';'phys';'phys_polar'}; % WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
 NbBuiltinTransform=numel(TransformList);
 path_transform_fct=fullfile(path_series,'transform_field');
-TransformPathList=cell(NbBuiltinTransform,1);%initiate the cell matrix of Action fct paths
-TransformPathList(:)={path_transform_fct}; %set the default path to series fcts to all list members
+TransformPathList=cell(NbBuiltinTransform,1); % initiate the cell matrix of Action fct paths
+TransformPathList(:)={path_transform_fct}; % set the default path to series fcts to all list members
 
 %% get the user defined functions stored in the personal file uvmat_perso.mat 
 dir_perso=prefdir;
@@ -207,11 +207,11 @@ if exist(profil_perso,'file')
 end
 
 %% selection of the input Action fct
-ActionCheckExist=true(size(ActionList));%initiate the check of the path to the listed action fct
+ActionCheckExist=true(size(ActionList)); % initiate the check of the path to the listed action fct
 for ilist=NbBuiltinAction+1:numel(ActionList)%check  the validity of the path of the user defined Action fct
     ActionCheckExist(ilist)=exist(fullfile(ActionPathList{ilist},[ActionList{ilist} '.m']),'file');
 end
-ActionPathList=ActionPathList(ActionCheckExist,:);% suppress the menu options which are not valid anymore
+ActionPathList=ActionPathList(ActionCheckExist,:); % suppress the menu options which are not valid anymore
 ActionList=ActionList(ActionCheckExist);
 set(handles.ActionName,'String',[ActionList;{'more...'}])
 set(handles.ActionName,'UserData',ActionPathList)
@@ -248,8 +248,8 @@ set(handles.TransformPath,'String',TransformPathList{TransformIndex})
    
 %% fields input initialisation
 if isfield(Param,'list_fields')&& isfield(Param,'index_fields') &&~isempty(Param.list_fields) &&~isempty(Param.index_fields)
-    set(handles.FieldName,'String',Param.list_fields);% list menu fields
-    set(handles.FieldName,'Value',Param.index_fields);% selected string index
+    set(handles.FieldName,'String',Param.list_fields); % list menu fields
+    set(handles.FieldName,'Value',Param.index_fields); % selected string index
 end
 if isfield(Param,'Coordinates')
     if isfield(Param.Coordinates,'Coord_x')
@@ -263,10 +263,10 @@ if isfield(Param,'Coordinates')
     end
 end
 % if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
-%         set(handles.Coord_x,'String',Param.Coord_x_str);% list menu fields
+%         set(handles.Coord_x,'String',Param.Coord_x_str); % list menu fields
 % end
 % if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
-%         set(handles.Coord_y,'String',Param.Coord_y_str);% list menu fields
+%         set(handles.Coord_y,'String',Param.Coord_y_str); % list menu fields
 % end
 
 %% introduce the input file name(s) if defined from input Param,
@@ -275,7 +275,7 @@ if isfield(Param,'InputFile')
     
     %% fill the list of file series
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
-    if isempty(find(cellfun('isempty',InputTable)==0));% if there is no input file, do not introduce input info
+    if isempty(find(cellfun('isempty',InputTable)==0)); % if there is no input file, do not introduce input info
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
         return
     end
@@ -294,7 +294,7 @@ if isfield(Param,'InputFile')
     if isempty(i2)
         i2=i1;
     end
-    ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
+    ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
     % set(handles.num_ref_i,'String',num2str(ref_i));
     if isempty(j1)
         j1=1;
@@ -302,7 +302,7 @@ if isfield(Param,'InputFile')
     if isempty(j2)
         j2=j1;
     end
-    ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
+    ref_j=floor((j1+j2)/2); % reference image number corresponding to the file
     SeriesData.ref_i=ref_i;
     SeriesData.ref_j=ref_j;
     set(handles.series,'UserData',SeriesData)
@@ -443,7 +443,7 @@ if ~isempty(errormsg)
     MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
         {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
     str_find=strcmp(get(hObject,'Label'),MenuFile);
-    MenuFile(str_find)=[];% suppress the input file to the list
+    MenuFile(str_find)=[]; % suppress the input file to the list
     for ifile=1:numel(MenuFile)
         set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
     end
@@ -482,7 +482,7 @@ else
     end
 end
 
-OutPut=browse_data(oldfile,'on','on');% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
 NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
 icount=0;
 for iexp=1:numel(OutPut.Experiment)
@@ -523,7 +523,7 @@ REFRESH_Callback(hObject, eventdata, handles)
 function MenuCampaign_Callback(hObject, eventdata, handles)
 % -------------------------------------------------------------------- 
 
-OutPut=browse_data(get(hObject,'Label'),'on','on');% open the GUI browse_data to get select a campaign dir, experiment and device
+OutPut=browse_data(get(hObject,'Label'),'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
@@ -580,14 +580,14 @@ set(handles.InputLine,'String',num2str(iline));
 function InputTable_KeyPressFcn(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 set(handles.OutputSubDir,'BackgroundColor',[1 0 1])% set edit box OutputSubDir to magenta color to indicate that refresh may be needed
-xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
+xx=double(get(handles.series,'CurrentCharacter')); % get the keyboard character
 if ~isempty(xx)
     switch xx
         case 31 %downward arrow
             InputTable=get(handles.InputTable,'Data');
             iline=str2double(get(handles.InputLine,'String'));
             if isequal(iline,size(InputTable,1))% arrow downward
-                InputTable=[InputTable;InputTable(iline,:)];% create a new line as a copy of the last one
+                InputTable=[InputTable;InputTable(iline,:)]; % create a new line as a copy of the last one
                 set(handles.InputTable,'Data',InputTable);
             end
         case 127  %key 'Suppress'
@@ -608,12 +608,12 @@ for iline=1:size(InputTable,1)
     empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));
 end
 if ~isempty(find(empty_line));
-    InputTable(empty_line,:)=[];%remove empty lines
+    InputTable(empty_line,:)=[]; % remove empty lines
     set(handles.InputTable,'Data',InputTable)
     ListTable={'MinIndex_i','MaxIndex_i','MinIndex_j','MaxIndex_j','PairString','TimeTable'};
     for ilist=1:numel(ListTable)
         Table=get(handles.(ListTable{ilist}),'Data');
-        Table(empty_line,:)=[];%remove empty lines
+        Table(empty_line,:)=[]; % remove empty lines
         set(handles.(ListTable{ilist}),'Data',Table);
     end
     set(handles.series,'UserData',[])%refresh the stored info
@@ -643,18 +643,18 @@ for iview=1:nbview
 end
 
 %% update MinIndex_i and MaxIndex_i if the input table content has been reduced in line nbre
-MinIndex_i_table=get(handles.MinIndex_i,'Data');%retrieve the min indices in the table MinIndex
+MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
-MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
+MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
-MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
+MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
-MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
+MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
-PairString=get(handles.PairString,'Data');%retrieve the min indices in the table MinIndex
+PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.PairString,'Data',PairString(1:nbview,:));
-TimeTable=get(handles.TimeTable,'Data');%retrieve the min indices in the table MinIndex
+TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
 
 %% enable field and veltype menus, in accordance with the current action
@@ -679,7 +679,7 @@ function errormsg=display_file_name(handles,Param,iview)
   
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
-errormsg='';%default
+errormsg=''; % default
 if ischar(Param)
     fileinput=Param; 
 else% input set when series is opened (called by the GUI uvmat)
@@ -740,10 +740,10 @@ drawnow
 InputTable=get(handles.InputTable,'Data');
 SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
-    iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
+    iview=size(InputTable,1)+1; % the next line in InputTable becomes the current line
 %     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 elseif strcmp(iview,'one') % refresh the list of  input  file series
-    iview=1; %the first line in InputTable becomes the current line
+    iview=1; % the first line in InputTable becomes the current line
     InputTable={'','','','',''};
 %     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{''},{[]},{[]},{[]},{[]}])
@@ -752,7 +752,7 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     set(handles.MinIndex_j,'Data',[])
     set(handles.MaxIndex_j,'Data',[])
     set(handles.PairString,'Data',{''})
-    SeriesData.CheckPair=0;%reset the list of input lines with pairs
+    SeriesData.CheckPair=0; % reset the list of input lines with pairs
     SeriesData.i1_series={};
     SeriesData.i2_series={};
     SeriesData.j1_series={};
@@ -783,7 +783,7 @@ end
 if isempty(i2)
     i2=i1;
 end
-ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
+ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
 % set(handles.num_ref_i,'String',num2str(ref_i));
 if isempty(j1)
     j1=1;
@@ -791,7 +791,7 @@ end
 if isempty(j2)
     j2=j1;
 end
-ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
+ref_j=floor((j1+j2)/2); % reference image number corresponding to the file
 SeriesData.ref_i=ref_i;
 SeriesData.ref_j=ref_j;
 
@@ -823,7 +823,7 @@ MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};..
     {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
 str_find=strcmp(fileinput,MenuFile);
 if isempty(find(str_find,1))
-    MenuFile=[{fileinput};MenuFile];%insert the current file if not already in the list
+    MenuFile=[{fileinput};MenuFile]; % insert the current file if not already in the list
 end
 for ifile=1:min(length(MenuFile),5)
     eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
@@ -831,12 +831,12 @@ end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
+    save (profil_perso,'MenuFile','-append'); % store the file names for future opening of uvmat
 else
-    save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
+    save (profil_perso,'MenuFile','-V6'); % store the file names for future opening of uvmat
 end
 % save the opened file to initiate future opening
-SeriesData.RefFile{iview}=fileinput;% reference opening file for line iview
+SeriesData.RefFile{iview}=fileinput; % reference opening file for line iview
 SeriesData.Ref_i1=i1;
 SeriesData.Ref_i2=i2;
 SeriesData.Ref_j1=j1;
@@ -864,13 +864,13 @@ InputTable=get(handles.InputTable,'Data');
 
 %% display the min and max indices for the whole file series
 if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
-    MinIndex_j=1;% index j set to 1 by default
+    MinIndex_j=1; % index j set to 1 by default
     MaxIndex_j=1;
-    MinIndex_i=find(i1_series(1,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
-    MaxIndex_i=find(i1_series(1,2,:),1,'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series) 
+    MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
+    MaxIndex_i=find(i1_series(1,2,:),1,'last' )-1; % max ref index i detected in the series (corresponding to the last non-zero value of i1_series) 
 else
-    ref_i=squeeze(max(i1_series(1,:,:),[],2));% select ref_j index for each ref_i
-    ref_j=squeeze(max(j1_series(1,:,:),[],3));% select ref_i index for each ref_j
+    ref_i=squeeze(max(i1_series(1,:,:),[],2)); % select ref_j index for each ref_i
+    ref_j=squeeze(max(j1_series(1,:,:),[],3)); % select ref_i index for each ref_j
      MinIndex_i=min(find(ref_i))-1;
      MaxIndex_i=max(find(ref_i))-1;
      MaxIndex_j=max(find(ref_j))-1;
@@ -890,10 +890,10 @@ end
 if isequal(MinIndex_j,-1)
     MinIndex_j=0;
 end
-MinIndex_i_table=get(handles.MinIndex_i,'Data');%retrieve the min indices in the table MinIndex
-MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
-MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
-MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
+MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
+MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
+MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 if ~isempty(MinIndex_i)&&~isempty(MaxIndex_i)
     MinIndex_i_table(iview,1)=MinIndex_i;
     MaxIndex_i_table(iview,1)=MaxIndex_i;
@@ -910,18 +910,18 @@ SeriesData=get(handles.series,'UserData');
 
 %% adjust the first and last indices for the selected series, only if requested by the bounds
 % i index, compare input to min index i
-first_i=str2num(get(handles.num_first_i,'String'));%retrieve previous first i
-% ref_i=str2num(get(handles.num_ref_i,'String'));%index i given by the input field
+first_i=str2num(get(handles.num_first_i,'String')); % retrieve previous first i
+% ref_i=str2num(get(handles.num_ref_i,'String')); % index i given by the input field
 ref_i=1;
 if isfield(SeriesData,'ref_i')
     ref_i=SeriesData.ref_i;
 end
 if isempty(first_i)
-    first_i=ref_i;% first_i updated by the input value
+    first_i=ref_i; % first_i updated by the input value
 elseif first_i < MinIndex_i
     first_i=MinIndex_i; % first_i set to the min i index (restricted by oter input lines)
 elseif first_i >MaxIndex_i
-    first_i=MaxIndex_i;% first_i set to the max i index (restricted by oter input lines)
+    first_i=MaxIndex_i; % first_i set to the max i index (restricted by oter input lines)
 end
 % j index,  compare input to min index j
 first_j=str2num(get(handles.num_first_j,'String'));
@@ -930,7 +930,7 @@ if isfield(SeriesData,'ref_j')
     ref_j=SeriesData.ref_j;
 end
 if isempty(first_j)
-    first_j=ref_j;% first_j updated by the input value
+    first_j=ref_j; % first_j updated by the input value
 elseif first_j<MinIndex_j
     first_j=MinIndex_j; % first_j set to the min j index (restricted by oter input lines)
 elseif first_j >MaxIndex_j
@@ -960,7 +960,7 @@ set(handles.num_last_i,'String',num2str(last_i));
 set(handles.num_last_j,'String',num2str(last_j));
 
 %% number of slices set by default
-NbSlice=[];%default
+NbSlice=[]; % default
 % read  value set by the first series for the append mode (iwiew >1)
 if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2double(get(handles.num_NbSlice,'String'));
@@ -973,7 +973,7 @@ if iview>1
     TimeUnit=get(handles.TimeUnit,'String');
 end
 TimeName='';
-Time=[];%default
+Time=[]; % default
 TimeMin=[];
 TimeFirst=[];
 TimeLast=[];
@@ -993,17 +993,17 @@ if ~isempty(XmlFileName)
         Time=XmlData.Time;
         TimeName='xml';
 %                         if XmlData.Time(1,:)==XmlData.Time(2,:)% case starting with index 1
-%                     sizDti=size(XmlData.Time,1)-1;%size of the time vector explicitly defined in the xml file
+%                     sizDti=size(XmlData.Time,1)-1; % size of the time vector explicitly defined in the xml file
 %                     ind_start=1;
 %                 else 
-%                     sizDti=size(XmlData.Time,1);% case starting with index 0
+%                     sizDti=size(XmlData.Time,1); % case starting with index 0
 %                     ind_start=0;
 %                 end
 %         % complement the input if the whole time series is not defined
 %             if size(i1_series,3)>size(XmlData.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series
-%                 Dti_total=XmlData.Time(end)-XmlData.Time(1);%total time interval covered by the time vector
-%                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
-%                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
+%                 Dti_total=XmlData.Time(end)-XmlData.Time(1); % total time interval covered by the time vector
+%                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1; % remaining set of frame indices for which time needs to be found
+%                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1)); % number of repetitions of Dti
 %                 time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
 %                 for j=1:size(XmlData.Time,2)
 %                 Time(missing_indices,j)=XmlData.Time(time_indices,j)+repeat_nbre'*Dti_total;
@@ -1024,7 +1024,7 @@ if ~isempty(XmlFileName)
         %             if iview>1 && ~isempty(NbSlice) && ~strcmp(NbSlice,XmlData.Camera.NbSlice)
         %                 msgbox_uvmat('WARNING','inconsistent number of slices with the first field series');
         %             end
-        %             NbSlice=XmlData.Camera.NbSlice;% Nbre of slices from camera
+        %             NbSlice=XmlData.Camera.NbSlice; % Nbre of slices from camera
         %         end
         if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
             if iview>1 && ~isempty(TimeUnit) && ~strcmp(TimeUnit,XmlData.Camera.TimeUnit)
@@ -1063,7 +1063,7 @@ end
 %% read timing  from the current file (prioritary)
 if ~isempty(VideoObject)% case of movies
     imainfo=get(VideoObject);
-    if isempty(j1_series); %frame index along i
+    if isempty(j1_series); % frame index along i
         Time=zeros(imainfo.NumberOfFrames+1,2);
         Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
     else
@@ -1122,7 +1122,7 @@ if CheckPair% if pairs need to be display for line iview
     Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),FileInfo);
     PairString{iview,1}=Menu{1};
 else
-    PairString{iview,1}='';%no pair for #iview
+    PairString{iview,1}=''; % no pair for #iview
 end
 set(handles.PairString,'Data',PairString)
 if isempty(find(cellfun('isempty',get(handles.PairString,'Data'))==0, 1))% if all lines of pairs are empty
@@ -1141,14 +1141,14 @@ set(handles.FileStatus,'Units','normalized')
 %xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
 j_max=cell(1,nbview);
-MaxIndex_i=ones(1,nbview);%default
-MinIndex_i=ones(1,nbview);%default
+MaxIndex_i=ones(1,nbview); % default
+MinIndex_i=ones(1,nbview); % default
 for iline=1:nbview
-    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); %max on pair index
-    j_max{iline}=max(pair_max,[],1);%max on j index
+    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); % max on pair index
+    j_max{iline}=max(pair_max,[],1); % max on j index
     if ~isempty(j_max{iline})
-    MaxIndex_i(iline)=max(find(j_max{iline}))-1;% max ref index i
-    MinIndex_i(iline)=min(find(j_max{iline}))-1;% min ref index i
+    MaxIndex_i(iline)=max(find(j_max{iline}))-1; % max ref index i
+    MinIndex_i(iline)=min(find(j_max{iline}))-1; % min ref index i
     end
 end
 MinIndex_i=min(MinIndex_i);
@@ -1157,7 +1157,7 @@ range_index=MaxIndex_i-MinIndex_i+1;
 range_y=max(1,floor(Position(4)/nbview));
 npx=floor(Position(3));
 file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
-CData=zeros(nbview*range_y,npx);% initiate the image representing the existing files
+CData=zeros(nbview*range_y,npx); % initiate the image representing the existing files
 for iline=1:nbview
     ind_y=1+(iline-1)*range_y:iline*range_y;
     LineData=zeros(size(file_indices));
@@ -1166,7 +1166,7 @@ for iline=1:nbview
     LineData(ind_select)=j_max{iline}(file_select)~=0;
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
 end
-CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));%make color images r=0,g,b=0
+CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
 
 %-----------------------------------------------------------guide -------------
@@ -1186,13 +1186,13 @@ if isempty(j2_series)% no j pair
         ModeMenu={'series(Di)'}; % pair menu with only option Di
     end
 else %existence of j pairs
-    pair_max=squeeze(max(i1_series,[],1)); %max on pair index
+    pair_max=squeeze(max(i1_series,[],1)); % max on pair index
     j_max=max(pair_max,[],1);
-    MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i
-    MinIndex_i=find(j_max, 1 )-1;% min ref index i
+    MaxIndex_i=find(j_max, 1, 'last' )-1; % max ref index i
+    MinIndex_i=find(j_max, 1 )-1; % min ref index i
     i_max=max(pair_max,[],2);
-    MaxIndex_j=find(i_max, 1, 'last' )-1;% max ref index i
-    MinIndex_j=find(i_max, 1 )-1;% min ref index i
+    MaxIndex_j=find(i_max, 1, 'last' )-1; % max ref index i
+    MinIndex_j=find(i_max, 1 )-1; % min ref index i
     if MaxIndex_j==MinIndex_j
         ModeValue=1;
         ModeMenu={'bursts'};
@@ -1202,7 +1202,7 @@ else %existence of j pairs
     else
         ModeMenu={'bursts';'series(Dj)'};
         if (MaxIndex_j-MinIndex_j)>10
-            ModeValue=2;%set mode to series(Dj) if more than 10 j values
+            ModeValue=2; % set mode to series(Dj) if more than 10 j values
         else
             ModeValue=1;
         end
@@ -1229,7 +1229,7 @@ switch mode
                 pair_string=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
                 if ~isempty(time)
                     if ref_i<=floor(ipair/2)
-                        ref_i=floor(ipair/2)+1;% shift ref_i to get the first pair
+                        ref_i=floor(ipair/2)+1; % shift ref_i to get the first pair
                     end
                     Dt=time(ref_i+ceil(ipair/2),ref_j)-time(ref_i-floor(ipair/2),ref_j);
                     pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
@@ -1253,7 +1253,7 @@ switch mode
                 pair_string=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
                 if ~isempty(time)
                     if ref_j<=floor(ipair/2)
-                        ref_j=floor(ipair/2)+1;% shift ref_i to get the first pair
+                        ref_j=floor(ipair/2)+1; % shift ref_i to get the first pair
                     end
                     Dt=time(ref_i,ref_j+ceil(ipair/2))-time(ref_i,ref_j-floor(ipair/2));
                     pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
@@ -1327,13 +1327,13 @@ displ_time(handles);
 % ---- find the times corresponding to the first and last indices of a series
 function displ_time(handles)
 %------------------------------------------------------------------------
-SeriesData=get(handles.series,'UserData');%
+SeriesData=get(handles.series,'UserData'); %
 if ~isfield(SeriesData,'Time')
     return
 end
 PairString=get(handles.PairString,'Data');
-ref_i_1=str2num(get(handles.num_first_i,'String'));%first reference index
-ref_i_2=str2num(get(handles.num_last_i,'String'));%last reference index
+ref_i_1=str2num(get(handles.num_first_i,'String')); % first reference index
+ref_i_2=str2num(get(handles.num_last_i,'String')); % last reference index
 ref_j_1=[];ref_j_2=[];
 if strcmp(get(handles.num_first_j,'Visible'),'on')
 ref_j_1=str2num(get(handles.num_first_j,'String'));
@@ -1360,8 +1360,8 @@ for iview=1:size(TimeTable,1)
             time_first=(SeriesData.Time{iview}(i1_1+1,j1_1+1)+SeriesData.Time{iview}(i2_1+1,j2_1+1))/2;
             time_last=(SeriesData.Time{iview}(i1_2+1,j1_2+1)+SeriesData.Time{iview}(i2_2+1,j2_1+1))/2;
         end
-        TimeTable{iview,3}=time_first; %TODO: take into account pairs
-        TimeTable{iview,4}=time_last; %TODO: take into account pairs
+        TimeTable{iview,3}=time_first; % TODO: take into account pairs
+        TimeTable{iview,4}=time_last; % TODO: take into account pairs
     end
 end
 set(handles.TimeTable,'Data',TimeTable)
@@ -1373,10 +1373,10 @@ pos_first=(ref_i_1-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
 pos_last=(ref_i_2-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
 if isempty(pos_first), pos_first=0; end
 if isempty(pos_last), pos_last=1; end
-Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
+Position=get(handles.Waitbar,'Position'); % position of the waitbar:= [ x,y, width, height]
 Position_status=get(handles.FileStatus,'Position');
 Position(1)=Position_status(1)+Position_status(3)*pos_first;
-Position(3)=max(Position_status(3)*(pos_last-pos_first),0.001);% width must remain positive
+Position(3)=max(Position_status(3)*(pos_last-pos_first),0.001); % width must remain positive
 set(handles.Waitbar,'Position',Position)
 update_waitbar(handles.Waitbar,0)
 
@@ -1417,7 +1417,7 @@ set(handles.MaxIndex_j,'Visible',state)
 function RUN_Callback(hObject, eventdata, handles)
 
 %% settings of the button RUN
-set(handles.RUN,'BusyAction','queue');% activation of STOP button will set BusyAction to 'cancel'
+set(handles.RUN,'BusyAction','queue'); % activation of STOP button will set BusyAction to 'cancel'
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
 set(handles.RUN,'BackgroundColor',[1 1 0])%show activation of RUN by yellow color
 drawnow
@@ -1440,11 +1440,11 @@ set(handles.RUN, 'Value',0)
 % --- called by RUN_Callback
 %------------------------------------------------------------------------
 function errormsg=launch_action(handles)
-errormsg='';%default
+errormsg=''; % default
 
 %% read the data on the GUI series
-Param=read_GUI_series(handles);%displayed parameters
-SeriesData=get(handles.series,'UserData');%hidden parameters
+Param=read_GUI_series(handles); % displayed parameters
+SeriesData=get(handles.series,'UserData'); % hidden parameters
 if isfield(SeriesData,'TransformInput')
     Param.TransformInput=SeriesData.TransformInput;
 end
@@ -1458,15 +1458,15 @@ if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequ
 end
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
-RunMode='local';%default (needed for first opening of the GUI series)
+RunMode='local'; % default (needed for first opening of the GUI series)
 if isfield(Param.Action,'RunMode')
     RunMode=Param.Action.RunMode;
-    Param.Action=rmfield(Param.Action,'RunMode');%remove from the recorded xml file to avoid interference during ImportConfig
+    Param.Action=rmfield(Param.Action,'RunMode'); % remove from the recorded xml file to avoid interference during ImportConfig
 end
-ActionExt='.m';%default
+ActionExt='.m'; % default
 if isfield(Param.Action,'ActionExt')
-    ActionExt=Param.Action.ActionExt;% '.m', '.sh' (compiled)  or '.py' (Python)
-    Param.Action=rmfield(Param.Action,'ActionExt');%remove from the recorded xml file to avoid interference during ImportConfig
+    ActionExt=Param.Action.ActionExt; % '.m', '.sh' (compiled)  or '.py' (Python)
+    Param.Action=rmfield(Param.Action,'ActionExt'); % remove from the recorded xml file to avoid interference during ImportConfig
 end
 ActionName=Param.Action.ActionName;
 ActionPath=Param.Action.ActionPath;
@@ -1491,7 +1491,7 @@ if strcmp(RunMode,'local')
 end
 
 %% Get  PARAM.xml (not used at this stage)
-errormsg='';%default error message
+errormsg=''; % default error message
 xmlfile=fullfile(path_series,'PARAM.xml');
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
@@ -1568,11 +1568,11 @@ end
 % NbProcess is the number of independent processes in which the required calculation is split. 
 switch RunMode
     case {'local','background'}
-        NbCore=1;% no need to split the calculation
+        NbCore=1; % no need to split the calculation
     case 'cluster_oar'
         %%%%% TEST A REMETTRE%%%%%
  %       if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-%             NbCore=1;% one core used only (limitation of Matlab licences)
+%             NbCore=1; % one core used only (limitation of Matlab licences)
 %             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
 %             if ~strcmp(answer,'Yes')
 %                 errormsg='Action launch interrupted by user';
@@ -1590,7 +1590,7 @@ switch RunMode
  %       end
     case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-            NbCore=1;% one core used only (limitation of Matlab licences)
+            NbCore=1; % one core used only (limitation of Matlab licences)
             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
             if ~strcmp(answer,'Yes')
                 errormsg='Action launch interrupted';
@@ -1601,7 +1601,7 @@ switch RunMode
             answer=inputdlg({'Number of jobs (max 1000)','Queue'},'qsub parameters',1,{'100','piv_debian'});
             NbCore=str2double(answer{1});
             qstat_Queue=answer{2};
-            %extra_oar=answer{2};%TODO : fix this for LMFA cluster. Maybe
+            %extra_oar=answer{2}; % TODO : fix this for LMFA cluster. Maybe
             %extrs_oar and extra_pbs are not the best names
         end
 end
@@ -1614,8 +1614,8 @@ OutputDir='';
 if isfield(Param,'OutputSubDir')
     SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
     SubDirOutNew=SubDirOut;
-    detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
-    check_create=1; %need to create the result directory by default
+    detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
+    check_create=1; % need to create the result directory by default
     CheckOverwrite=1;
     if isfield(Param,'CheckOverwrite')
         CheckOverwrite=Param.CheckOverwrite;
@@ -1633,24 +1633,24 @@ if isfield(Param,'OutputSubDir')
             detect=0;
             check_create=0;
         else
-            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
             if isempty(r)
                 r(1).root=[SubDirOutNew '_'];
                 r(1).num1='0';
             end
-            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
-            detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exists
+            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
+            detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exists
             check_create=1;
         end
     end
     Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
-    Param.OutputRootFile=Param.InputTable{1,3};% the first sorted RootFile taken for output
+    Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
     set(handles.OutputDirExt,'String',Param.OutputDirExt)
-    OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);% full name (with path) of output directory
+    OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
     if check_create    % create output directory if it does not exist
         [tild,msg1]=mkdir(OutputDir);
         if ~strcmp(msg1,'')
-            errormsg=['cannot create ' OutputDir ': ' msg1];%error message for directory creation
+            errormsg=['cannot create ' OutputDir ': ' msg1]; % error message for directory creation
             return
         end
     end
@@ -1662,19 +1662,19 @@ DirXml=fullfile(OutputDir,'0_XML');
 if ~exist(DirXml,'dir')
     [~,msg1]=mkdir(DirXml);
     if ~strcmp(msg1,'')
-        errormsg=['cannot create ' DirXml ': ' msg1];%error message for directory creation
+        errormsg=['cannot create ' DirXml ': ' msg1]; % error message for directory creation
         return
     end
 end
-OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
+OutputNomType=nomtype2pair(Param.InputTable{1,4}); % nomenclature for output files
 
 %% get the set of reference input field indices 
-first_i=1;% first i index to process
-last_i=1;% last i index to process
-incr_i=1;% increment step in i index
-first_j=1;% first j index to process
-last_j=1;% last j index to process
-incr_j=1;% increment step in j index
+first_i=1; % first i index to process
+last_i=1; % last i index to process
+incr_i=1; % increment step in i index
+first_j=1; % first j index to process
+last_j=1; % last j index to process
+incr_j=1; % increment step in j index
 if isfield(Param.IndexRange,'first_i')
     first_i=Param.IndexRange.first_i;
     incr_i=Param.IndexRange.incr_i;
@@ -1719,26 +1719,26 @@ else
         ref_j=first_j:incr_j:last_j;
     end
 end
-CPUTime=1;% job time estimated at 1 min per iteration (on index i and j) by default
+CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
 if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
-    CPUTime=Param.Action.CPUTime;%Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+    CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
 end
 nbfield_j=numel(ref_j); % number of j indices
-BlockLength=numel(ref_i);% by default, job involves the full set of i field indices
+BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
 NbProcess=1;
 switch RunMode
     case {'cluster_oar','cluster_pbs','cluster_sge','cluster_qstat_unknown'}
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
-            BlockLength= ceil(20/(CPUTime*nbfield_j));% short iterations are grouped such that the minimum time of a process is 20 min.
-            BlockLength=max(BlockLength,ceil(numel(ref_i)/500));% possibly increase the BlockLength to have less than 500 jobs
+            BlockLength= ceil(20/(CPUTime*nbfield_j)); % short iterations are grouped such that the minimum time of a process is 20 min.
+            BlockLength=max(BlockLength,ceil(numel(ref_i)/500)); % possibly increase the BlockLength to have less than 500 jobs
             NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
         else
-            NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
-            NbCore=min(NbCore,NbProcess);% reduces the number of cores if it exceeds the number of processes
+            NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
+            NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
         end
     otherwise
         if ~isempty(Param.IndexRange.NbSlice)
-            NbProcess=Param.IndexRange.NbSlice;% the parameter NbSlice sets the nbre of run processes
+            NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
         end
 end
 
@@ -1771,7 +1771,7 @@ end
 
 
 %% direct processing on the current Matlab session or creation of command files
-filexml=cell(1,NbProcess);% initialisation of the names of the files containing the processing parameters
+filexml=cell(1,NbProcess); % initialisation of the names of the files containing the processing parameters
 extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
 for iprocess=1:NbProcess
     extxml{iprocess}='.xml';
@@ -1784,7 +1784,7 @@ for iprocess=1:NbProcess
     if isempty(Param.IndexRange.NbSlice)
         Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
         if Param.IndexRange.first_i>last_i
-            NbProcess=iprocess-1;% leave the loop, we are at the end of the calculation
+            NbProcess=iprocess-1; % leave the loop, we are at the end of the calculation
             break
         end
         Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
@@ -1793,7 +1793,7 @@ for iprocess=1:NbProcess
         Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
     end
     for ilist=1:size(Param.InputTable,1)
-        Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/');%correct path name for PCWIN system
+        Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/'); % correct path name for PCWIN system
     end
     
     if isfield(Param,'OutputSubDir')
@@ -1803,7 +1803,7 @@ for iprocess=1:NbProcess
             Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
         filexml{iprocess}=fullfile(OutputDir,'0_XML',extxml{iprocess});
         try
-            save(t, filexml{iprocess});% save the xml file containing the processing parameters
+            save(t, filexml{iprocess}); % save the xml file containing the processing parameters
         catch ME
             if ~strcmp (RunMode,'local')
                 errormsg=['error writting ' filexml{iprocess} ': ' ME.message];
@@ -1814,13 +1814,13 @@ for iprocess=1:NbProcess
     if strcmp (RunMode,'local')
         switch ActionExt
             case '.m'
-                h_fun(Param);% direct launching
+                h_fun(Param); % direct launching
                 
             case '.sh'
                 switch computer
                     case {'PCWIN','PCWIN64'} %Windows system
-                        filexml=regexprep(filexml,'\\','\\\\');% add '\' so that '\' are left as characters
-                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);% TODO: adapt to DOS system
+                        filexml=regexprep(filexml,'\\','\\\\'); % add '\' so that '\' are left as characters
+                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]); % TODO: adapt to DOS system
                     case {'GLNX86','GLNXA64','MACI64'}%Linux  system
                         system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);
                 end
@@ -1830,8 +1830,8 @@ end
 
 if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     %% processing on a different session of the same computer (background) or cluster, create executable files
-    batch_file_list=cell(NbProcess,1);% initiate the list of executable files
-    DirExe=fullfile(OutputDir,'0_EXE');%directory name for executable files
+    batch_file_list=cell(NbProcess,1); % initiate the list of executable files
+    DirExe=fullfile(OutputDir,'0_EXE'); % directory name for executable files
     switch computer
         case {'PCWIN','PCWIN64'} %Windows system
             ExeExt='.bat';
@@ -1842,7 +1842,7 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     if ~exist(DirExe,'dir')
         [tild,msg1]=mkdir(DirExe);
         if ~strcmp(msg1,'')
-            errormsg=['cannot create ' DirExe ': ' msg1];%error message for directory creation
+            errormsg=['cannot create ' DirExe ': ' msg1]; % error message for directory creation
             return
         end
     end
@@ -1851,7 +1851,7 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
     if ~exist(DirLog,'dir')
         [tild,msg1]=mkdir(DirLog);
         if ~strcmp(msg1,'')
-            errormsg=['cannot create ' DirLog ': ' msg1];%error message for directory creation
+            errormsg=['cannot create ' DirLog ': ' msg1]; % error message for directory creation
             return
         end
     end
@@ -1903,9 +1903,9 @@ switch RunMode
                             cmd=[cmd '' Param.Action.ActionName  '( ''' filexml{iprocess} '''); \n'];
                         end
                         cmd=[cmd  'exit \n' 'END_MATLAB \n'];
-                        fprintf(fid,cmd);%fill the executable file with the  char string cmd
-                        fclose(fid);% close the executable file
-                        system(['chmod +x ' file_exe_global]);% set the file to executable
+                        fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                        fclose(fid); % close the executable file
+                        system(['chmod +x ' file_exe_global]); % set the file to executable
                     case {'PCWIN','PCWIN64'}
                         cmd=['matlab -automation -logfile ' regexprep(filelog{iprocess},'\\','\\\\')...
                             ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
@@ -1914,15 +1914,15 @@ switch RunMode
                             cmd=[cmd '' Param.Action.ActionName  '( ''' regexprep(filexml{iprocess},'\\','\\\\') ''');']
                         end
                         cmd=[cmd ';exit"'];
-                        fprintf(fid,cmd);%fill the executable file with the  char string cmd
-                        fclose(fid);% close the executable file
+                        fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                        fclose(fid); % close the executable file
                 end
                 system([file_exe_global ' &'])% directly execute the command file
             case '.sh' % compiled Matlab function
                 for iprocess=1:NbProcess
                     switch computer
                         case {'GLNX86','GLNXA64','MACI64'}
-                            [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
+                            [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
                             if isequal(fid,-1)
                                 errormsg=['creation of .bat file: ' message];
                                 return
@@ -1931,10 +1931,10 @@ switch RunMode
                                 '#$ -cwd \n '...
                                 'hostname && date \n '...
                                 'umask 002 \n'...
-                                ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
-                            fprintf(fid,cmd);%fill the executable file with the  char string cmd
-                            fclose(fid);% close the executable file
-                            system(['chmod +x ' batch_file_list{iprocess}]);% set the file to executable
+                                ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
+                            fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                            fclose(fid); % close the executable file
+                            system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
                             system([batch_file_list{iprocess} ' &'])% directly execute the command file
                         case {'PCWIN','PCWIN64'}
                             msgbox_uvmat('ERROR','option for compiled Matlab functions not implemented for Windows system')
@@ -1947,7 +1947,7 @@ switch RunMode
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar commands
         for iprocess=1:NbProcess
-            [fid,message]=fopen(batch_file_list{iprocess},'w');% create the executable file
+            [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
             if isequal(fid,-1)
                 errormsg=['creation of .bat file: ' message];
                 return
@@ -1957,7 +1957,7 @@ switch RunMode
                     '#$ -cwd \n '...
                     'hostname && date \n '...
                     'umask 002 \n'...
-                    ActionFullName ' ' RunTime ' ' filexml{iprocess}];%allow writting access to created files for user group
+                    ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
             else
                 matlab_ver = ver('MATLAB');
                 matlab_version = matlab_ver.Version;
@@ -1972,9 +1972,9 @@ switch RunMode
                     'exit \n'...
                     'END_MATLAB \n'];
             end
-            fprintf(fid,cmd);%fill the executable file with the  char string cmd
-            fclose(fid);% close the executable file
-            system(['chmod +x ' batch_file_list{iprocess}]);% set the file to executable
+            fprintf(fid,cmd); % fill the executable file with the  char string cmd
+            fclose(fid); % close the executable file
+            system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
         end
         DirOAR=fullfile(OutputDir,'0_OAR');
         if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
@@ -1985,21 +1985,21 @@ switch RunMode
         else
             [tild,msg1]=mkdir(DirOAR);
             if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirOAR ': ' msg1];%error message for directory creation
+                errormsg=['cannot create ' DirOAR ': ' msg1]; % error message for directory creation
                 return
             end
         end
         % create file containing the list of jobs
-        filename_joblist=fullfile(DirOAR,'job_list.txt');% name of the file containing the list of executables
-        fid=fopen(filename_joblist,'w');%open it for writting
+        filename_joblist=fullfile(DirOAR,'job_list.txt'); % name of the file containing the list of executables
+        fid=fopen(filename_joblist,'w'); % open it for writting
         for iprocess=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{iprocess} '\n']);% write list of exe files
+            fprintf(fid,[batch_file_list{iprocess} '\n']); % write list of exe files
         end
         fclose(fid);
-        system(['chmod +x ' filename_joblist]);% set the file to executable
+        system(['chmod +x ' filename_joblist]); % set the file to executable
         
-        filename_log=fullfile(DirLog,'job_list.stdout');%file for output messages of the master oar process
-        filename_errors=fullfile(DirLog,'job_list.stderr');%file for error messages of the master oar process
+        filename_log=fullfile(DirLog,'job_list.stdout'); % file for output messages of the master oar process
+        filename_errors=fullfile(DirLog,'job_list.stderr'); % file for error messages of the master oar process
         % the command job_list.txt contains the list of NbProcess independent individual jobs
         % in which the total calculation has been split. Those are written as executable files .sh in the folder /O_EXE.
         %  These individual jobs are grouped by the system as oar jobs on the NbCore processors.
@@ -2007,12 +2007,12 @@ switch RunMode
         %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are
         % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration,
         %  the oar job restarts when an individual job ends.
-        JobTime=CPUTime*BlockLength*nbfield_j;% estimated time for one individual job (in minutes)
+        JobTime=CPUTime*BlockLength*nbfield_j; % estimated time for one individual job (in minutes)
         % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
         WallTimeTotal=min(23,4*JobTime/60);
         %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
         % estimated time of an individual job (in min), with a margin of error
-        WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2);% estimated max time of an individual job for checkpoint
+        WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2); % estimated max time of an individual job for checkpoint
         disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
         oar_command=['oarsub -n UVmat_' ActionFullName ' '...
             '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
@@ -2025,18 +2025,18 @@ switch RunMode
             '"oar-parexec -s -f ' filename_joblist ' '...
             '-l ' filename_joblist '.log"'];
         
-        fprintf(oar_command);% display  system command on the Matlab command window
+        fprintf(oar_command); % display  system command on the Matlab command window
         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
-        filename_oarcommand=fullfile(DirOAR,'0_oar_command');% keep track of the command in file '0-OAR/0_oar_command'
+        filename_oarcommand=fullfile(DirOAR,'0_oar_command'); % keep track of the command in file '0-OAR/0_oar_command'
         fid=fopen(filename_oarcommand,'w');
         fprintf(fid,oar_command); % store the command
-        fprintf(fid,result);% store the result (job ID number)
+        fprintf(fid,result); % store the result (job ID number)
         fclose(fid);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
         
     case 'cluster_pbs' % for LMFA Kepler machine
         %create subdirectory for pbs command and log files
-        DirPBS=fullfile(OutputDir,'0_PBS'); %todo : common name OAR/PBS
+        DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
         if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
             curdir=pwd;
             cd(DirPBS)
@@ -2045,19 +2045,19 @@ switch RunMode
         else
             [tild,msg1]=mkdir(DirPBS);
             if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirPBS ': ' msg1];%error message for directory creation
+                errormsg=['cannot create ' DirPBS ': ' msg1]; % error message for directory creation
                 return
             end
         end
         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
         walltime_onejob=1800; % seconds, max estimated time for asingle file index value
-        filename_joblist=fullfile(DirPBS,'job_list.txt');%create name of the global executable file
+        filename_joblist=fullfile(DirPBS,'job_list.txt'); % create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for iprocess=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{iprocess} '\n']);% list of exe files
+            fprintf(fid,[batch_file_list{iprocess} '\n']); % list of exe files
         end
         fclose(fid);
-        system(['chmod +x ' filename_joblist]);% set the file to executable
+        system(['chmod +x ' filename_joblist]); % set the file to executable
         pbs_command=['qsub -n CIVX '...
             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
             '-l /core=' num2str(NbCore) ','...
@@ -2071,7 +2071,7 @@ switch RunMode
         fid=fopen(filename_oarcommand,'w');
         fprintf(fid,pbs_command);
         fclose(fid);
-        fprintf(pbs_command);% display in command line
+        fprintf(pbs_command); % display in command line
         %system(pbs_command);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
 
@@ -2089,7 +2089,7 @@ switch RunMode
         else
             [tild,msg1]=mkdir(DirSGE);
             if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirSGE ': ' msg1];%error message for directory creation
+                errormsg=['cannot create ' DirSGE ': ' msg1]; % error message for directory creation
                 return
             end
         end
@@ -2121,7 +2121,7 @@ switch RunMode
                     '-e ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
                     '-o ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
                     fullfile([DirSGE '/job' num2str(currJobIndex) '.sh'])];
-                fprintf(sge_command);% display in command line
+                fprintf(sge_command); % display in command line
                 [status, result] = system(sge_command);
                 fprintf(result);
                 currJobIndex = currJobIndex + 1;
@@ -2143,9 +2143,9 @@ end
 if exist(OutputDir,'dir')
     [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir)
     if MESSAGE.GroupWrite~=1
-    [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+    [success,msg] = fileattrib(OutputDir,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
     if success==0
-        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg});%error message for directory creation
+        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg}); % error message for directory creation
     end
     end
 end
@@ -2168,7 +2168,7 @@ Param=read_GUI(handles.series);
 
 %% clean the output structure by removing unused information 
 if isfield(Param,'Pairs')
-    Param=rmfield(Param,'Pairs'); %info Pairs not needed for output
+    Param=rmfield(Param,'Pairs'); % info Pairs not needed for output
 end
 if isfield(Param,'InputLine')
     Param=rmfield(Param,'InputLine');
@@ -2206,8 +2206,8 @@ end
 drawnow
 
 %% get Action name and path
-NbBuiltinAction=get(handles.Action,'UserData'); %nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
-ActionList=get(handles.ActionName,'String');% list menu fields
+NbBuiltinAction=get(handles.Action,'UserData'); % nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
+ActionList=get(handles.ActionName,'String'); % list menu fields
 ActionIndex=get(handles.ActionName,'Value');
 if ~isequal(ActionIndex,1)% if we are not just opening series 
     InputTable=get(handles.InputTable,'Data');
@@ -2217,7 +2217,7 @@ if ~isequal(ActionIndex,1)% if we are not just opening series
     end
 end
 ActionName= ActionList{get(handles.ActionName,'Value')}; % selected function name
-ActionPathList=get(handles.ActionName,'UserData');%list of recorded paths to functions of the list ActionName
+ActionPathList=get(handles.ActionName,'UserData'); % list of recorded paths to functions of the list ActionName
 
 %% add a new function to the menu if 'more...' has been selected in the menu ActionName
 if isequal(ActionName,'more...')
@@ -2232,14 +2232,14 @@ if isequal(ActionName,'more...')
     [tild,ActionName,ActionExt]=fileparts(FileName);
     
     % insert the choice in the menu ActionName
-    ActionIndex=find(strcmp(ActionName,ActionList),1);% look for the selected function in the menu Action
+    ActionIndex=find(strcmp(ActionName,ActionList),1); % look for the selected function in the menu Action
     PathName=regexprep(PathName,'/$','');
     if ~isempty(ActionIndex) && ~strcmp(ActionPathList{ActionIndex},PathName)%compare the path to the existing fct
         ActionIndex=[]; % the selected path is different than the recorded one
     end
     if isempty(ActionIndex)%the qselected fct (with selected path) does not exist in the menu
         ActionIndex= length(ActionList);
-        ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)];% the selected function is appended in the menu, before the last item 'more...'
+        ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)]; % the selected function is appended in the menu, before the last item 'more...'
          ActionPathList=[ActionPathList; PathName];
     end
     
@@ -2251,7 +2251,7 @@ if isequal(ActionName,'more...')
     end
 
     % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
-    if length(ActionList)>NbBuiltinAction+5; %nb_builtin_ACTION=nbre of functions always remaining in the initial menu
+    if length(ActionList)>NbBuiltinAction+5; % nb_builtin_ACTION=nbre of functions always remaining in the initial menu
         nbremove=length(ActionList)-NbBuiltinAction-5;
         ActionList(NbBuiltinAction+1:end-5)=[];
         ActionPathList(NbBuiltinAction+1:end-4,:)=[];
@@ -2283,8 +2283,8 @@ if isequal(ActionName,'more...')
 end
 
 %% check the current ActionPath to the selected function
-ActionPath=ActionPathList{ActionIndex};%current recorded path
-set(handles.ActionPath,'String',ActionPath); %show the path to the senlected function
+ActionPath=ActionPathList{ActionIndex}; % current recorded path
+set(handles.ActionPath,'String',ActionPath); % show the path to the senlected function
 
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
@@ -2294,7 +2294,7 @@ if ~exist(ActionPath,'dir')
     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
     return
 end
-current_dir=pwd;%current working dir
+current_dir=pwd; % current working dir
 cd(ActionPath)
 h_fun=str2func(ActionName);
 cd(current_dir)
@@ -2303,7 +2303,7 @@ cd(current_dir)
 % checkaddpath=0;
 % path_series=which('series');
 % %eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
-% spath=fileparts(which(ActionName)); %spath = current path of the selected function ACTION
+% spath=fileparts(which(ActionName)); % spath = current path of the selected function ACTION
 % if ~exist(ActionPath,'dir')
 %     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
 %     return
@@ -2323,8 +2323,8 @@ cd(current_dir)
 % end
 
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
-Param=read_GUI_series(handles);% read the parameters from the GUI series
-ParamOut=h_fun(Param);%run the selected Action function to get the relevant input
+Param=read_GUI_series(handles); % read the parameters from the GUI series
+ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
 
 %% Put the first line of the selected Action fct as tooltip help
 try
@@ -2336,8 +2336,8 @@ end
 
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
-VelTypeRequest=1;%VelType requested by default
-VelTypeRequest_1=1;%VelType requested by default
+VelTypeRequest=1; % VelType requested by default
+VelTypeRequest_1=1; % VelType requested by default
 if isfield(ParamOut,'VelType')
     VelTypeRequest=ismember(ParamOut.VelType,{'on','one','two'});
     VelTypeRequest_1=strcmp( ParamOut.VelType,'two');
@@ -2350,15 +2350,15 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-SeriesData=get(handles.series,'UserData');% info on the input file series
+SeriesData=get(handles.series,'UserData'); % info on the input file series
 iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
-iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));% all nc files, icluding civ
-FieldList=get(handles.FieldName,'String');% previous list as default
+iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)); % all nc files, icluding civ
+FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
-FieldList_1=get(handles.FieldName_1,'String');% previous list as default
+FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
 if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
-%CheckList=0;% indicate whether FieldName has been updated
-CheckList_1=1;% indicate whether FieldName_1 has been updated
+%CheckList=0; % indicate whether FieldName has been updated
+CheckList_1=1; % indicate whether FieldName_1 has been updated
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
@@ -2366,18 +2366,18 @@ if VelTypeRequest && numel(iview_civ)>=1
     set(handles.VelType,'String',[{'*'};menu])
     set(handles.VelType,'Visible','on')
     set(handles.VelType_title,'Visible','on')
-    FieldList=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
+    FieldList=[set_field_list('U','V');{'C'};{'get_field...'}]; % standard menu for civx data
     %CheckList=1;
-    set(handles.FieldName,'Value',1); %velocity vector choice by default
+    set(handles.FieldName,'Value',1); % velocity vector choice by default
     if  VelTypeRequest_1 && numel(iview_civ)>=2
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
         set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
         set(handles.VelType_1,'Visible','on')
         set(handles.VelType_title_1,'Visible','on')
-        FieldList_1=[set_field_list('U','V');{'C'};{'get_field...'}];%standard menu for civx data
+        FieldList_1=[set_field_list('U','V');{'C'};{'get_field...'}]; % standard menu for civx data
         CheckList_1=1;
-        set(handles.FieldName_1,'Value',1); %velocity vector choice by default
+        set(handles.FieldName_1,'Value',1); % velocity vector choice by default
     else
         set(handles.VelType_1,'Visible','off')
         set(handles.VelType_title_1,'Visible','off')
@@ -2393,10 +2393,10 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
     if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         set(handles.FieldName,'Visible','on')
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
-        ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
+        ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
         for ilist=1:numel(ind_var)
             if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
-                FieldList={};% previous choice not consistent with new input field
+                FieldList={}; % previous choice not consistent with new input field
                 set(handles.FieldName,'Value',1)
                 break
             end
@@ -2424,10 +2424,10 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         set(handles.FieldName_1,'Visible','on')
         if CheckList_1==0        % not civ input made
             ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
-            ind_var=get(handles.FieldName,'Value');%indices of previously selected variables
+            ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
             for ilist=1:numel(ind_var)
                 if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
-                    FieldList_1={};% previous choice not consistent with new input field
+                    FieldList_1={}; % previous choice not consistent with new input field
                     set(handles.FieldName_1,'Value',1)
                     break
                 end
@@ -2471,7 +2471,7 @@ end
 
 %% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
-    [tild,iview]=sort(InputTable(:,2)); %subdirectories sorted in alphabetical order
+    [tild,iview]=sort(InputTable(:,2)); % subdirectories sorted in alphabetical order
     set(handles.InputTable,'Data',InputTable(iview,:));
     MinIndex_i=get(handles.MinIndex_i,'Data');
     MinIndex_j=get(handles.MinIndex_j,'Data');
@@ -2514,14 +2514,14 @@ else  % check index ranges
 end
 
 %% enable or desable j index visibility
-status_j='on';%default
+status_j='on'; % default
 if isfield(ParamOut,'Desable_j_index')&&isequal(ParamOut.Desable_j_index,'on')
     status_j='off';
 end
 if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
     status_j='off'; % no j index needed
 elseif strcmp(get(handles.PairString,'Visible'),'on')
-    check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j'));%=0 for burst case, 1 otherwise
+    check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j')); % =0 for burst case, 1 otherwise
     if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
         status_j='off'; % no j index needed for bust case
     end
@@ -2530,7 +2530,7 @@ enable_j(handles,status_j) % no j index needed
 
 
 %% NbSlice visibility
-%NbSliceVisible='off';%default
+%NbSliceVisible='off'; % default
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')
@@ -2588,22 +2588,22 @@ set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
 if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))
-    OutputDirExt='.series'; %default
+    OutputDirExt='.series'; % default
     if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
         OutputDirExt=ParamOut.OutputDirExt;
     end
     set(handles.OutputDirExt,'String',OutputDirExt)
 end
 OutputDirVisible='off';
-OutputSubDirMode='auto';%default
+OutputSubDirMode='auto'; % default
 SubDirOut='';
 if isfield(ParamOut,'OutputSubDirMode')
     OutputSubDirMode=ParamOut.OutputSubDirMode;
 end
 switch OutputSubDirMode
-    case 'auto';%default
+    case 'auto'; % default
         OutputDirVisible='on';
-        SubDir=InputTable(1:end,2); %set of subdirectories
+        SubDir=InputTable(1:end,2); % set of subdirectories
         SubDirOut=SubDir{1};
         if numel(SubDir)>1
             for ilist=2:numel(SubDir)
@@ -2612,17 +2612,17 @@ switch OutputSubDirMode
         end
     case 'one'
         OutputDirVisible='on';
-        SubDirOut=InputTable{1,2}; %use the first subdir name (+OutputDirExt) as output  subdirectory
+        SubDirOut=InputTable{1,2}; % use the first subdir name (+OutputDirExt) as output  subdirectory
     case 'two'
         OutputDirVisible='on';   
-        SubDir=InputTable(1:2,2); %set of subdirectories
+        SubDir=InputTable(1:2,2); % set of subdirectories
         SubDirOut=SubDir{1};
         if numel(SubDir)>1
                 SubDirOut=[SubDirOut '-' regexprep(SubDir{2},'^/','')];
         end
     case 'last'
         OutputDirVisible='on';
-        SubDirOut=InputTable{end,2}; %use the last subdir name (+OutputDirExt) as output  subdirectory
+        SubDirOut=InputTable{end,2}; % use the last subdir name (+OutputDirExt) as output  subdirectory
 end
 set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
@@ -2630,12 +2630,12 @@ set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
 %set(handles.CheckOverwrite,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
-SeriesData.ActionName=ActionName;%record ActionName for next use
+SeriesData.ActionName=ActionName; % record ActionName for next use
 
 
 %% visibility of the run mode (local or background or cluster)
 if strcmp(OutputSubDirMode,'none')
-    RunModeVisible='off';% only local mode available if no output file is produced
+    RunModeVisible='off'; % only local mode available if no output file is produced
 else
     RunModeVisible='on';
 end
@@ -2675,7 +2675,7 @@ field=field_str{field_index(1)};
 if isequal(field,'get_field...')
     SeriesData=get(handles.series,'UserData');
     % input line for which the field choice is relevant
-    iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'}));% all nc files, icluding civ
+    iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
@@ -2683,8 +2683,8 @@ if isequal(field,'get_field...')
     Param=read_GUI(handles.series);
     InputTable=Param.InputTable(iview,:);
     % check the existence of the first file in the series
-    first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1;%default setting for index j
-    if isfield(Param.IndexRange,'first_j');% if index j is used     
+    first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1; % default setting for index j
+    if isfield(Param.IndexRange,'first_j'); % if index j is used     
         first_j=Param.IndexRange.first_j;
         last_j=Param.IndexRange.last_j;
         MinIndex_j=Param.IndexRange.MinIndex_j(iview);
@@ -2886,24 +2886,24 @@ end
 %%%%%%%%%%%%%
 function [ind_remove]=find_pairs(dirpair,ind_i,last_i)
 indsel=ind_i;
-indiff=diff(ind_i); %test index increment to detect multiplets (several pairs with the same index ind_i) and holes in the series
-indiff=[1 indiff last_i-ind_i(end)+1];%for testing gaps with the imposed bounds
+indiff=diff(ind_i); % test index increment to detect multiplets (several pairs with the same index ind_i) and holes in the series
+indiff=[1 indiff last_i-ind_i(end)+1]; % for testing gaps with the imposed bounds
 if ~isempty(indiff)
     indiff2=diff(indiff);
     indiffp=[indiff2 1];
     indiffm=[1 indiff2];
-    ind_multi_m=find((indiff==0)&(indiffm<0))-1;%indices of first members of multiplets
-    ind_multi_p=find((indiff==0)&(indiffp>0));%indices of last members of multiplets
+    ind_multi_m=find((indiff==0)&(indiffm<0))-1; % indices of first members of multiplets
+    ind_multi_p=find((indiff==0)&(indiffp>0)); % indices of last members of multiplets
     %for each multiplet, select the most recent file
     ind_remove=[];
     for i=1:length(ind_multi_m)
         ind_pairs=ind_multi_m(i):ind_multi_p(i);
         for imulti=1:length(ind_pairs)
-            datepair(imulti)=datenum(dirpair(ind_pairs(imulti)).date);%dates of creation
+            datepair(imulti)=datenum(dirpair(ind_pairs(imulti)).date); % dates of creation
         end
-        [datenew,indsort2]=sort(datepair); %sort the multiplet by creation date
-        ind_s=indsort2(1:end-1);%
-        ind_remove=[ind_remove ind_pairs(ind_s)];%remove these indices, leave the last one
+        [datenew,indsort2]=sort(datepair); % sort the multiplet by creation date
+        ind_s=indsort2(1:end-1); %
+        ind_remove=[ind_remove ind_pairs(ind_s)]; % remove these indices, leave the last one
     end
 end
 
@@ -2911,7 +2911,7 @@ end
 % --- determine the list of index pairstring of processing file 
 function [num_i1,num_i2,num_j1,num_j2,num_i_out,num_j_out]=find_file_indices(num_i,num_j,ind_shift,NomType,mode)
 %------------------------------------------------------------------------
-num_i1=num_i;% set of first image numbers by default
+num_i1=num_i; % set of first image numbers by default
 num_i2=num_i;
 num_j1=num_j;
 num_j2=num_j;
@@ -2919,7 +2919,7 @@ num_i_out=num_i;
 num_j_out=num_j;
 % if isequal (NomType,'_1-2_1') || isequal (NomType,'_1-2')
 if isequal(mode,'series(Di)')
-    num_i1_line=num_i+ind_shift(3);% set of first image numbers
+    num_i1_line=num_i+ind_shift(3); % set of first image numbers
     num_i2_line=num_i+ind_shift(4);
     % adjust the first and last field number
         indsel=find(num_i1_line >= 1);
@@ -2935,7 +2935,7 @@ elseif isequal (mode,'series(Dj)')||isequal (mode,'bursts')
         num_j1=ind_shift(1)*ones(size(num_i));
         num_j2=ind_shift(2)*ones(size(num_i));
     else
-        num_j1_col=num_j+ind_shift(1);% set of first image numbers
+        num_j1_col=num_j+ind_shift(1); % set of first image numbers
         num_j2_col=num_j+ind_shift(2);
         % adjust the first field number
         indsel=find((num_j1_col >= 1));   
@@ -2951,7 +2951,7 @@ end
 % --- Executes on button press in CheckObject.
 function CheckObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
+hset_object=findobj(allchild(0),'tag','set_object'); % find the set_object interface handle
 if get(handles.CheckObject,'Value')
     SeriesData=get(handles.series,'UserData');
     if isfield(SeriesData,'ProjObject') && ~isempty(SeriesData.ProjObject)
@@ -2982,11 +2982,11 @@ if get(handles.CheckObject,'Value')
             if ~isfield(data,'ProjMode')
                 data.ProjMode='none';
             end
-            hset_object=set_object(data);% call the set_object interface
+            hset_object=set_object(data); % call the set_object interface
             set(hset_object,'Name','set_object_series')% name to distinguish from set_object used with uvmat
         end
         ProjObject=read_GUI(hset_object);
-        set(handles.ProjObject,'String',ProjObject.Name);%display the object name
+        set(handles.ProjObject,'String',ProjObject.Name); % display the object name
         SeriesData=get(handles.series,'UserData');
         SeriesData.ProjObject=ProjObject;
         set(handles.series,'UserData',SeriesData);
@@ -3062,23 +3062,23 @@ function CheckMask_Callback(hObject, eventdata, handles)
 if get(handles.CheckMask,'Value')
     InputTable=get(handles.InputTable,'Data');
     nbview=size(InputTable,1);
-    MaskTable=cell(nbview,1);%default
-    ListMask=cell(nbview,1);%default
+    MaskTable=cell(nbview,1); % default
+    ListMask=cell(nbview,1); % default
     MaskData=get(handles.MaskTable,'Data');
-    MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1);%complement if undefined lines
+    MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1); % complement if undefined lines
     for iview=1:nbview
         ListMask{iview,1}=num2str(iview);
         RootPath=InputTable{iview,1};
         if ~isempty(RootPath)
             if isempty(MaskData{iview})
                 SubDir=InputTable{iview,2};
-                MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']);%take the root part of SubDir, before the first dot '.'
+                MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']); % take the root part of SubDir, before the first dot '.'
                 if exist(MaskPath,'dir')
-                    ListStruct=dir(MaskPath);%look for a mask file
-                    ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-                    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-                    ListFiles=ListCells(1,:);%list of file and dri names
-                    ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
+                    ListStruct=dir(MaskPath); % look for a mask file
+                    ListCells=struct2cell(ListStruct); % transform dir struct to a cell arrray
+                    check_dir=cell2mat(ListCells(4,:)); % =1 for directories, =0 for files
+                    ListFiles=ListCells(1,:); % list of file and dri names
+                    ListFiles=ListFiles(~check_dir); % list of file names (excluding dir)
                     mdetect=0;
                     if ~isempty(ListFiles)
                         for ifile=1:numel(ListFiles)
@@ -3088,7 +3088,7 @@ if get(handles.CheckMask,'Value')
                                 MaskName=ListFiles{ifile};
                             end
                             if ~strcmp(MaskFile{ifile},MaskFile{1})
-                                mdetect=0;% cancel detection test in case of multiple masks, use the brower for selection
+                                mdetect=0; % cancel detection test in case of multiple masks, use the brower for selection
                                 break
                             end
                         end
@@ -3147,7 +3147,7 @@ function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 
 
-% path_to_uvmat=which ('uvmat');% check the path of uvmat
+% path_to_uvmat=which ('uvmat'); % check the path of uvmat
 % pathelp=fileparts(path_to_uvmat);
 % helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
 % if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
@@ -3170,24 +3170,24 @@ if isequal(TransformName,'more...');
     if isempty(FileName)
         return     %browser closed without choice
     end
-    [TransformPath,TransformName,TransformExt]=fileparts(FileName);% removes extension .m
+    [TransformPath,TransformName,TransformExt]=fileparts(FileName); % removes extension .m
     if ~strcmp(TransformExt,'.m')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
     end
      % insert the choice in the menu
-    TransformIndex=find(strcmp(TransformName,TransformList),1);% look for the selected function in the menu Action
+    TransformIndex=find(strcmp(TransformName,TransformList),1); % look for the selected function in the menu Action
     if isempty(TransformIndex)%the input string does not exist in the menu
         TransformIndex= length(TransformList);
-        TransformList=[TransformList(1:end-1);{TransformName};TransformList(end)];% the selected function is appended in the menu, before the last item 'more...'
+        TransformList=[TransformList(1:end-1);{TransformName};TransformList(end)]; % the selected function is appended in the menu, before the last item 'more...'
         set(handles.TransformName,'String',TransformList)
         TransformPathList=[TransformPathList;{TransformPath}];
     else% the input function already exist, we update its path (possibly new)
-        TransformPathList{TransformIndex}=TransformPath;% 
+        TransformPathList{TransformIndex}=TransformPath; % 
         set(handles.TransformName,'Value',TransformIndex)
     end
    % save the new menu in the personal file 'uvmat_perso.mat' 
-   dir_perso=prefdir;%personal Matalb directory
+   dir_perso=prefdir; % personal Matalb directory
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
    if exist(profil_perso,'file')
        for ilist=nb_builtin_transform+1:numel(TransformPathList)
@@ -3196,12 +3196,12 @@ if isequal(TransformName,'more...');
        end 
        TransformPathListUser=TransformPathListUser';
        TransformListUser=TransformListUser';
-       save (profil_perso,'TransformPathListUser','TransformListUser','-append'); %store the root name for future opening of uvmat
+       save (profil_perso,'TransformPathListUser','TransformListUser','-append'); % store the root name for future opening of uvmat
    end 
 end
 
 %display the current function path
-set(handles.TransformPath,'String',TransformPathList{TransformIndex}); %show the path to the senlected function
+set(handles.TransformPath,'String',TransformPathList{TransformIndex}); % show the path to the senlected function
 set(handles.TransformName,'UserData',TransformPathList);
 
 %% create the function handle of the selected fct
@@ -3210,12 +3210,12 @@ if ~isempty(TransformName)
         msgbox_uvmat('ERROR',['The prescribed transform function path ' TransformPathList{TransformIndex} ' does not exist']);
         return
     end
-    current_dir=pwd;%current working dir
+    current_dir=pwd; % current working dir
     cd(TransformPathList{TransformIndex})
     transform_handle=str2func(TransformName);
     cd(current_dir)
-    Field.Action.RUN=0;% indicate that the transform fct is called only to get input param
-    DataOut=feval(transform_handle,Field,[]);% execute the transform fct to get the required conditions
+    Field.Action.RUN=0; % indicate that the transform fct is called only to get input param
+    DataOut=feval(transform_handle,Field,[]); % execute the transform fct to get the required conditions
     if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
         SeriesData=get(handles.series,'UserData');
         SeriesData.TransformInput=DataOut.TransformInput;
@@ -3233,7 +3233,7 @@ Param=read_GUI_series(handles);
 evalin('base','global Param')%make CurData global in the workspace
 display('current series config :')
 evalin('base','Param') %display CurData in the workspace
-commandwindow; %brings the Matlab command window to the front
+commandwindow; % brings the Matlab command window to the front
 
 %------------------------------------------------------------------------
 % --- fct activated by the upper bar menu InportConfig: import
@@ -3243,7 +3243,7 @@ function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 %% use a browser to choose the xml file containing the processing config
 InputTable=get(handles.InputTable,'Data');
-oldfile=InputTable{1,1};%current path in InputTable
+oldfile=InputTable{1,1}; % current path in InputTable
 if isempty(oldfile)
     % use a file name stored in prefdir
     dir_perso=prefdir;
@@ -3255,11 +3255,11 @@ if isempty(oldfile)
         end
     end
 end
-filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
+filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml'); % get the xml file containing processing parameters
 if isempty(filexml), return, end % quit function if an xml file has not been opened
 
 %% fill the GUI series with the content of the xml file
-Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+Param=xml2struct(filexml); % read the input xml file as a Matlab structure
 
 % ask to stop current Action if button RUN is in action (another process is already running)
 if isequal(get(handles.RUN,'Value'),1)
@@ -3270,7 +3270,7 @@ if isequal(get(handles.RUN,'Value'),1)
         return
     end
 end
-Param.Action.RUN=0; %desactivate the input RUN=1
+Param.Action.RUN=0; % desactivate the input RUN=1
 
 fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
 SeriesData=get(handles.series,'UserData');
@@ -3284,7 +3284,7 @@ end
 if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
     set(handles.ActionInput,'Visible','on')
     set(handles.ActionInput,'Value',0)
-    Param.ActionInput.ConfigSource=filexml;% record the source of config for future info
+    Param.ActionInput.ConfigSource=filexml; % record the source of config for future info
     SeriesData.ActionInput=Param.ActionInput;
 end
 if isfield(Param,'TransformInput')%  introduce  parameters specific to a transform fct
@@ -3306,7 +3306,7 @@ else
     set(handles.EditObject,'Visible','off')
     set(handles.DeleteObject,'Visible','off')     
 end     
-set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
+set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magenta to indicate that it should be activated
 
 
 %------------------------------------------------------------------------
@@ -3368,7 +3368,7 @@ if get(handles.status,'Value')
         set(handles.status,'BackgroundColor',[0 1 0])
         return
     end
-    OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+    OutputSubDir=[Param.OutputSubDir Param.OutputDirExt]; % subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
     if exist(OutputDir,'dir')
         uigetfile_uvmat('status_display',OutputDir)
@@ -3445,14 +3445,14 @@ ListFiles=dir(OutputDir{1});
 if numel(ListFiles)<1
     return
 end
-ListFiles(1)=[];%removes the first line ='.'
+ListFiles(1)=[]; % removes the first line ='.'
 ListDisplay=cell(numel(ListFiles),1);
 testrecent=0;
 datnum=zeros(numel(ListDisplay),1);
 for ilist=1:numel(ListDisplay)
     ListDisplay{ilist}=ListFiles(ilist).name;
       if ~ListFiles(ilist).isdir && isfield(ListFiles(ilist),'datenum')
-            datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
+            datnum(ilist)=ListFiles(ilist).datenum; % only available in recent matlab versions
             testrecent=1;
        end
 end
@@ -3460,7 +3460,7 @@ set(hlist,'String',ListDisplay)
 
 %% Look at date of creation
 ListDisplay=ListDisplay(datnum~=0);
-datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+datnum=datnum(datnum~=0); % keep the non zero values corresponding to existing files
 NbOutputFile=[];
 if isempty(datnum)
     if testrecent
@@ -3562,32 +3562,32 @@ end
 
 %% create the GUI set_pairs
 set(0,'Unit','points')
-ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=220;% fig width in points (1/72 inch)
+ScreenSize=get(0,'ScreenSize'); % get the size of the screen, to put the fig on the upper right
+Width=220; % fig width in points (1/72 inch)
 Height=min(0.8*ScreenSize(4),300);
-Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
-Bottom=ScreenSize(4)-Height-40; %put fig at top right
+Left=ScreenSize(3)- Width-40; % right edge close to the right, with margin=40
+Bottom=ScreenSize(4)-Height-40; % put fig at top right
 hfig=findobj(allchild(0),'Tag','set_slice');
-if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+if ~isempty(hfig),delete(hfig), end; % delete existing version of the GUI 
 hfig=figure('name','set_pairs','tag','set_pairs','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
 BackgroundColor=get(hfig,'Color');
 SeriesData=get(handles.series,'UserData');
 TimeUnit=get(handles.TimeUnit,'String');
 PairString=get(handles.PairString,'Data');
-ListViewLines=find(cellfun('isempty',PairString)==0);%find list of non empty pairs
+ListViewLines=find(cellfun('isempty',PairString)==0); % find list of non empty pairs
 ListViewMenu=cell(numel(ListViewLines),1);
 iview=get(handles.PairString,'Value');
 for ilist=1:numel(ListViewLines)
     ListViewMenu{ilist}=num2str(ListViewLines(ilist));
 end
 if isempty(iview)
-    ListViewValue=numel(ListViewLines);% we work by default on the pair option for the last line which requires pairs
+    ListViewValue=numel(ListViewLines); % we work by default on the pair option for the last line which requires pairs
     iview=ListViewLines(end);
 else
     ListViewValue=find(ListViewLines==iview);
 end
 ref_i=str2num(get(handles.num_first_i,'String'));
-ref_j=1;%default
+ref_j=1; % default
 if strcmp(get(handles.num_first_j,'String'),'Visible')
     ref_j=str2num(get(handles.num_first_j,'String'));
 end
@@ -3596,24 +3596,24 @@ displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{ivie
                                                      SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo{iview});
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
-    'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+    'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right'); % title
 uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'BackgroundColor',[1 1 1],...
     'Callback',@(hObject,eventdata)ListView_Callback(hObject,eventdata),'String',ListViewMenu,'Value',ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','ListView','TooltipString','''ListView'':choice of the file series w for pair display');
 % second raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.79 0.7 0.1],'BackgroundColor',BackgroundColor,...
-    'String','mode of index pairing:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
+    'String','mode of index pairing:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left'); % title
 uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.05 0.62 0.9 0.2],'BackgroundColor',[1 1 1],...
     'Callback',@(hObject,eventdata)Mode_Callback(hObject,eventdata),'String',ModeMenu,'Value',ModeValue,'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','Mode','TooltipString','''Mode'': choice of the image pair mode');
 % third raw
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.6 0.7 0.1],'BackgroundColor',BackgroundColor,...
-    'String','pair choice:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');%title
+    'String','pair choice:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left'); % title
 uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.42 0.9 0.2],'BackgroundColor',[1 1 1],...
     'Callback',@(hObject,eventdata)ListPair_Callback(hObject,eventdata),'String',displ_pair,'Value',1,'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','ListPair','TooltipString','''ListPair'': menu for selecting the image pair');
 uicontrol('Style','text','Units','normalized', 'Position', [0.1 0.22 0.8 0.1],'BackgroundColor',BackgroundColor,...
-    'String','ref_i           ref_j','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+    'String','ref_i           ref_j','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center'); % title
 uicontrol('Style','edit','Units','normalized', 'Position', [0.15 0.17 0.3 0.08],'BackgroundColor',[1 1 1],...
     'Callback',@(hObject,eventdata)num_ref_i_Callback(hObject,eventdata),'String',num2str(ref_i),'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','num_ref_i','TooltipString','''num_ref_i'': reference field index i used to display dt in ''list_pair_civ''');
@@ -3635,8 +3635,8 @@ Mode_Callback(hObject,eventdata)
 %------------------------------------------------------------------------    
 function Mode_Callback(hObject,eventdata)
 %% get input info
-hseries=findobj(allchild(0),'tag','series');%handles of the GUI series
-hhseries=guidata(hseries);%handles of the elements in the GUI series
+hseries=findobj(allchild(0),'tag','series'); % handles of the GUI series
+hhseries=guidata(hseries); % handles of the elements in the GUI series
 TimeUnit=get(hhseries.TimeUnit,'String');
 SeriesData=get(hseries,'UserData');
 mode_list=get(hObject,'String');
@@ -3649,11 +3649,11 @@ j1_series=SeriesData.j1_series{iview};
 j2_series=SeriesData.j2_series{iview};
 
 %% enable j index visibility after the new choice
-status_j='on';%default
+status_j='on'; % default
 if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
     status_j='off'; % no j index needed
 elseif strcmp(get(handles.PairString,'Visible'),'on')
-    check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
+    check_burst=cellfun(@isempty,regexp(PairString,'^j')); % =0 for burst case, 1 otherwise
     if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
         status_j='off'; % no j index needed for bust case
     end
@@ -3684,12 +3684,12 @@ ListPair_Callback(hlist_pairs,[])% apply the default choice in ListPair
 % --- Executes on selection in ListPair.
 function ListPair_Callback(hObject,eventdata)
 %------------------------------------------------------------
-list_pair=get(hObject,'String');%get the menu of image pairs
+list_pair=get(hObject,'String'); % get the menu of image pairs
 if isempty(list_pair)
     string='';
 else
     string=list_pair{get(hObject,'Value')};
-   % string=regexprep(string,',.*','');%removes time indication (after ',')
+   % string=regexprep(string,',.*',''); % removes time indication (after ',')
 end
 hseries=findobj(allchild(0),'tag','series');
 hPairString=findobj(hseries,'tag','PairString');
@@ -3724,7 +3724,7 @@ function ClearLine_Callback(hObject, eventdata, handles)
 InputTable=get(handles.InputTable,'Data');
 iline=str2double(get(handles.InputLine,'String'));
 if size(InputTable,1)>1
-    InputTable(iline,:)=[];% suppress the current line if not the first
+    InputTable(iline,:)=[]; % suppress the current line if not the first
     set(handles.InputTable,'Data',InputTable);
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refr
