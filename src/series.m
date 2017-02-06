@@ -131,10 +131,30 @@ if ~exist('Param','var')
     Param=[]; % default
 end 
 
-%% list of builtin functions in the mebu ActionName
+%% Read the parameter file series.xml, or created from series.xml.default if it does not exist
+[path_series,name,ext]=fileparts(which('series'));% path to the GUI series
+xmlfile=fullfile(path_series,'series.xml');
+if ~exist(xmlfile,'file')
+    [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
+end
+if exist(xmlfile,'file')
+    SeriesData.SeriesParam=xml2struct(xmlfile);
+%     if ismember(RunMode,{'cluster_oar','cluster_pbs','cluster_sge'}) && isfield(s,'BatchParam')
+%         if isfield(s.BatchParam,'NbCoreDefault')
+%             NbCoreDefault=s.BatchParam.NbCoreDefault;
+%         end
+%     elseif ismember(RunMode,{'background','local'}) && isfield(s,'RunParam')
+%         if isfield(s.RunParam,'NbCore')
+%             NbCoreDefault=s.RunParam.NbCoreDefault;
+%         end
+%     end
+end
+
+%% list of builtin functions in the menu ActionName
 ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'}; % WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
+path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [path_series,name,ext]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
 [code, message] = system...
@@ -1490,26 +1510,8 @@ if strcmp(RunMode,'local')
     end
 end
 
-%% Get  PARAM.xml (not used at this stage)
+%% Get  parameters from series.xml 
 errormsg=''; % default error message
-xmlfile=fullfile(path_series,'PARAM.xml');
-if ~exist(xmlfile,'file')
-    [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
-end
-if strcmp(ActionExt,'.sh')
-    if exist(xmlfile,'file')
-        s=xml2struct(xmlfile);
-        if (strcmp(RunMode,'cluster_oar') || strcmp(RunMode, 'cluster_pbs') || strcmp(RunMode, 'cluster_sge')) && isfield(s,'BatchParam')
-            if isfield(s.BatchParam,'NbCore')
-                NbCore=s.BatchParam.NbCore;
-            end
-        elseif (strcmp(RunMode,'background')||strcmp(RunMode,'local')) && isfield(s,'RunParam')
-            if isfield(s.RunParam,'NbCore')
-                NbCore=s.RunParam.NbCore;
-            end
-        end
-    end
-end
 ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 
 %% If a compiled version has been selected (ext .sh) check wether it needs to be recompiled
@@ -1570,6 +1572,7 @@ switch RunMode
     case {'local','background'}
         NbCore=1; % no need to split the calculation
     case 'cluster_oar'
+        NbCoreDefault=SeriesData.SeriesParam.ClusterParam{1}.NbCoreDefault;%proposed number of cores (for cluster)
         %%%%% TEST A REMETTRE%%%%%
  %       if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
 %             NbCore=1; % one core used only (limitation of Matlab licences)
@@ -1580,7 +1583,7 @@ switch RunMode
 %             end
 %             extra_oar='';
  %       else
-            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'16',''});
+            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{num2str(NbCoreDefault),''});
             if isempty(answer)
                                 errormsg='Action launch interrupted by user';
                 return
@@ -2515,9 +2518,6 @@ end
 
 %% enable or desable j index visibility
 status_j='on'; % default
-if isfield(ParamOut,'Desable_j_index')&&isequal(ParamOut.Desable_j_index,'on')
-    status_j='off';
-end
 if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
     status_j='off'; % no j index needed
 elseif strcmp(get(handles.PairString,'Visible'),'on')
@@ -2527,7 +2527,18 @@ elseif strcmp(get(handles.PairString,'Visible'),'on')
     end
 end
 enable_j(handles,status_j) % no j index needed
-
+if isfield(ParamOut,'j_index_1')&& isfield(ParamOut,'j_index_2')%strcmp(ParamOut.Desable_j_index,'on')
+    %status_j='off';
+    set(handles.num_first_j,'String',num2str(ParamOut.j_index_1))
+    set(handles.num_last_j,'String',num2str(ParamOut.j_index_2))
+    set(handles.num_first_j,'enable','off')
+    set(handles.num_last_j,'enable','off')
+    set(handles.num_incr_j,'visible','off')
+else
+    set(handles.num_first_j,'enable','on')
+    set(handles.num_last_j,'enable','on')
+    set(handles.num_incr_j,'visible',status_j)
+end
 
 %% NbSlice visibility
 %NbSliceVisible='off'; % default
@@ -3214,10 +3225,16 @@ if ~isempty(TransformName)
     cd(TransformPathList{TransformIndex})
     transform_handle=str2func(TransformName);
     cd(current_dir)
+    Field.Action.RUN=0;% indicate that the transform fct is called only to get input param
+    SeriesData=get(handles.series,'UserData');
+    ParamIn=[];
+    if isfield(SeriesData,'TransformInput')
+        ParamIn.TransformInput=SeriesData.TransformInput;
+    end
+    DataOut=feval(transform_handle,Field,ParamIn);% execute the transform fct to get the required conditions
     Field.Action.RUN=0; % indicate that the transform fct is called only to get input param
     DataOut=feval(transform_handle,Field,[]); % execute the transform fct to get the required conditions
     if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
-        SeriesData=get(handles.series,'UserData');
         SeriesData.TransformInput=DataOut.TransformInput;
         set(handles.series,'UserData',SeriesData)
     end
@@ -3743,8 +3760,6 @@ set(handles.OutputSubDir,'BackgroundColor',[1 1 1])
 % --- Executes on button press in CheckOverwrite.
 function CheckOverwrite_Callback(hObject, eventdata, handles)
 
-
-
 % --- Executes on button press in TestCPUTime.
 function TestCPUTime_Callback(hObject, eventdata, handles)
 % hObject    handle to TestCPUTime (see GCBO)
@@ -3752,6 +3767,6 @@ function TestCPUTime_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-
-
-
+% --- Executes on button press in DiskQuota.
+function DiskQuota_Callback(hObject, eventdata, handles)
+system('quota -s -g -A')
