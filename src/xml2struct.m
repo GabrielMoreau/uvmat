@@ -63,8 +63,12 @@ if nargin>1
         end
     end
 else
+    try
     ss=convert(t);%transform the xmltree object into a Matlab structure.
     s=convert_string(ss);
+    catch ME
+        errormsg=ME.message;
+    end
 end
 
 

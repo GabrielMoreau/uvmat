@@ -223,70 +223,60 @@ if CheckInputFile
     end
     
     %% check the first image pair
-    try
+%     try
         if Param.ActionInput.CheckCiv1% Civ1 is performed
-            first_ima=1;
-            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1),[],j1_series_Civ1(1));
-            if checkrun 
-                if ~exist(ImageName_A,'file')
-                disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
-                return
-                end
-            else
-%                 for ifile=1:numel(i1_series_Civ1)
-%                     if 
-            end
-            [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
-            FileType_A=FileInfo_A.FileType;
-            if strcmp(FileInfo_A.FileType,'netcdf')
-                FieldName_A=Param.InputFields.FieldName;
-                [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
-                par_civ1.ImageA=DataIn.(FieldName_A);
-            else
-                [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
-            end
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
-            if ~exist(ImageName_B,'file')
-                disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
-                return
-            end
-            [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-            FileType_B=FileInfo_B.FileType;
-            if strcmp(FileInfo_B.FileType,'netcdf')
-                FieldName_B=Param.InputFields.FieldName;
-                [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
-                par_civ1.ImageB=DataIn.(FieldName_B);
-            else
-                [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
-            end
+%             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1),[],j1_series_Civ1(1));
+%             [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+%             FileType_A=FileInfo_A.FileType;
+%             if strcmp(FileInfo_A.FileType,'netcdf')
+%                 FieldName_A=Param.InputFields.FieldName;
+%                 [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
+%                 par_civ1.ImageA=DataIn.(FieldName_A);
+%             else
+%                 [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
+%             end
+%             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
+%             if ~exist(ImageName_B,'file')
+%                 disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
+%                 return
+%             end
+%             [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
+%             FileType_B=FileInfo_B.FileType;
+%             if strcmp(FileInfo_B.FileType,'netcdf')
+%                 FieldName_B=Param.InputFields.FieldName;
+%                 [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
+%                 par_civ1.ImageB=DataIn.(FieldName_B);
+%             else
+%                 [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
+%             end
             NbField=numel(i1_series_Civ1);
         elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
-            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(1),[],j1_series_Civ2(1));
-            if ~exist(ImageName_A,'file')
-                disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
-                return
-            end
-            [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
-            FileType_A=FileInfo_A.FileType;
-            [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
-            if ~exist(ImageName_B,'file')
-                disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
-                return
-            end
-            [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-            FileType_B=FileInfo_B.FileType;
-            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
+%             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(1),[],j1_series_Civ2(1));
+%             if ~exist(ImageName_A,'file')
+%                 disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
+%                 return
+%             end
+%             [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+%             FileType_A=FileInfo_A.FileType;
+%             [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
+%             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
+%             if ~exist(ImageName_B,'file')
+%                 disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
+%                 return
+%             end
+%             [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
+%             FileType_B=FileInfo_B.FileType;
+%             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
             NbField=numel(i1_series_Civ2);
         else
             NbField=numel(i1_series_Civ1);% no image used (only fix or patch) TO CHECK
         end
-    catch ME
-        if ~isempty(ME.message)
-            disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
-            return
-        end
-    end
+%     catch ME
+%         if ~isempty(ME.message)
+%             disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
+%             return
+%         end
+%     end
     
     
     %% Output directory
@@ -325,37 +315,20 @@ if iview_A~=0
             end
         end
     end
-    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
-        Time=zeros(FileInfo_A.NumberOfFrames+1,2);
-        Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
-        TimeSource='video';
-        ColorType='truecolor';
-    end
-    if isempty(Time)% Time = index i +0.001 index j by default
-        %MinIndex_i=min(i1_series_Civ1);
-        MaxIndex_i=max(i2_series_Civ1);
-        %MinIndex_j=min(j1_series_Civ1);
-        MaxIndex_j=max(j2_series_Civ1);
-        Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
-        Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
-        Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
-        Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
-    end
-    
-    if length(FileInfo_A) >1 %case of image with multiple frames
-        nbfield=length(FileInfo_A);
-        nbfield_j=1;
-    end
+   
+
 end
 
 %%%%% MAIN LOOP %%%%%%
 maskname='';% initiate the mask name
-tic;
+FileType_A='';
+FileType_B='';
 CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
 for ifield=1:NbField
+    tic
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
         if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -381,7 +354,7 @@ for ifield=1:NbField
                     j1_series_Civ1(ifield),j2_series_Civ1(ifield));
             end
         end
-        ncfile_out=ncfile;% by default 
+        ncfile_out=ncfile;% by default
         if isfield (Param.ActionInput,'Civ2')
             i1_civ2=i1_series_Civ2(ifield);
             i2_civ2=i1_civ2;
@@ -411,25 +384,55 @@ for ifield=1:NbField
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
         if CheckInputFile
-        disp('civ1 started')
+            disp('civ1 started')
         end
         par_civ1=Param.ActionInput.Civ1;
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             try
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
-                if strcmp(FileInfo_A.FileType,'netcdf')% case of input images in format netcdf
+                if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
                     FieldName_A=Param.InputFields.FieldName;
                     [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
                     par_civ1.ImageA=DataIn.(FieldName_A);
                 else % usual image formats for image A
+                    if isempty(FileType_A)
+                        [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+                        FileType_A=FileInfo_A.FileType;
+                        if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
+                            Time=zeros(FileInfo_A.NumberOfFrames+1,2);
+                            Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+                            TimeSource='video';
+                            ColorType='truecolor';
+                        end
+                        if ~isempty(FileType_A) && isempty(Time)% Time = index i +0.001 index j by default
+                            MaxIndex_i=max(i2_series_Civ1);
+                            MaxIndex_j=max(j2_series_Civ1);
+                            Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
+                            Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
+                            Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
+                            Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
+                        end
+                    end
+                    if ~exist(ImageName_A,'file')
+                        disp([ImageName_A ' missing'])
+                        continue
+                    end
                     [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
                 end
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-                if strcmp(FileInfo_B.FileType,'netcdf') % case of input images in format netcdf
+                if strcmp(FileExt_B,'.nc') % case of input images in format netcdf
                     FieldName_B=Param.InputFields.FieldName;
                     [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
                     par_civ1.ImageB=DataIn.(FieldName_B);
                 else % usual image formats for image B
+                    if isempty(FileType_B)
+                        [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
+                        FileType_B=FileInfo_B.FileType;
+                    end
+                    if ~exist(ImageName_B,'file')
+                        disp([ImageName_B ' missing'])
+                        continue
+                    end
                     [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
                 end
             catch ME % display errors in reading input images
@@ -464,8 +467,8 @@ for ifield=1:NbField
                 Data.Civ1_Time=Time(i2+1,j2+1);% the Time is the Time of the secodn image
                 Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
             else
-            Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
-            Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
+                Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
+                Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
             end
             for ilist=1:length(list_param)
                 Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
@@ -554,7 +557,7 @@ for ifield=1:NbField
     
     %% Fix1
     if isfield (Param.ActionInput,'Fix1')
-         disp('fix1 started')
+        disp('fix1 started')
         if ~isfield (Param.ActionInput,'Civ1')% if we use existing Civ1, remove previous data beyond Civ1
             Fix1_attr=find(strcmp('Fix1',Data.ListGlobalAttribute));
             Data.ListGlobalAttribute(Fix1_attr)=[];
@@ -629,19 +632,19 @@ for ifield=1:NbField
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             par_civ2.ImageA=[];
             par_civ2.ImageB=[];
-%             i1_civ2=i1_series_Civ2(ifield);
-%             i2_civ2=i1_civ2;
-%             if ~isempty(i2_series_Civ2)
-%                 i2_civ2=i2_series_Civ2(ifield);
-%             end
-%             j1_civ2=1;
-%             if ~isempty(j1_series_Civ2)
-%                 j1_civ2=j1_series_Civ2(ifield);
-%             end
-%             j2_civ2=i1_civ2;
-%             if ~isempty(j2_series_Civ2)
-%                 j2_civ2=j2_series_Civ2(ifield);
-%             end
+            %             i1_civ2=i1_series_Civ2(ifield);
+            %             i2_civ2=i1_civ2;
+            %             if ~isempty(i2_series_Civ2)
+            %                 i2_civ2=i2_series_Civ2(ifield);
+            %             end
+            %             j1_civ2=1;
+            %             if ~isempty(j1_series_Civ2)
+            %                 j1_civ2=j1_series_Civ2(ifield);
+            %             end
+            %             j2_civ2=i1_civ2;
+            %             if ~isempty(j2_series_Civ2)
+            %                 j2_civ2=j2_series_Civ2(ifield);
+            %             end
             ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
             
             if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
@@ -655,11 +658,11 @@ for ifield=1:NbField
             else
                 [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
             end
-%             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
-%             else % displacement
-%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2,[],j2);
-%             end
+            %             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+            %                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1,i2,j1,j2);
+            %             else % displacement
+            %                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2,[],j2);
+            %             end
             par_civ2.ImageWidth=FileInfo_A.Width;
             par_civ2.ImageHeight=FileInfo_A.Height;
             if isfield(par_civ2,'Grid')% grid points set as input file
@@ -783,13 +786,13 @@ for ifield=1:NbField
         if exist('ImageName_A','var')
             Data.Civ2_ImageA=ImageName_A;
             Data.Civ2_ImageB=ImageName_B;
-             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+            if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 Data.Civ2_Time=Time(i2_civ2+1,j2_civ2+1);% the Time is the Time of the secodn image
                 Data.Civ2_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
-             else
-            Data.Civ2_Time=(Time(i2_civ2+1,j2_civ2+1)+Time(i1_civ2+1,j1_civ2+1))/2;
-            Data.Civ2_Dt=Civ2_Dt;
-             end
+            else
+                Data.Civ2_Time=(Time(i2_civ2+1,j2_civ2+1)+Time(i1_civ2+1,j1_civ2+1))/2;
+                Data.Civ2_Dt=Civ2_Dt;
+            end
         end
         for ilist=1:length(list_param)
             Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
@@ -821,7 +824,7 @@ for ifield=1:NbField
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
-            end         
+            end
         elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
             Data.ListGlobalAttribute={};
             Data.ListVarName={};
@@ -892,8 +895,8 @@ for ifield=1:NbField
         Data.VarAttribute{nbvar+5}.Role='coord_tps';
         Data.VarAttribute{nbvar+6}.Role='vector_x';
         Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ2_U_smooth=Data.Civ2_U; 
-        Data.Civ2_V_smooth=Data.Civ2_V; 
+        Data.Civ2_U_smooth=Data.Civ2_U;
+        Data.Civ2_V_smooth=Data.Civ2_V;
         if isfield(Data,'Civ2_FF')
             ind_good=find(Data.Civ2_FF==0);
         else
@@ -1033,8 +1036,8 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
         return
     end
     check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
-%     par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
-%     par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
+    %     par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
+    %     par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors

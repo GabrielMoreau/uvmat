@@ -51,6 +51,7 @@
 
 function ParamOut=check_data_files(Param)
 
+ParamOut=[];
 %% input preparation mode (no RUN)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)

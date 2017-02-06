@@ -1454,6 +1454,19 @@ set(handles.RUN, 'Value',0)
 %------------------------------------------------------------------------
 % --- called by RUN_Callback
 %------------------------------------------------------------------------
+% The calculations are launched in three different ways:
+% RunMode='local': calculation on the local Matlab session, will prevent other actions during that time.
+% RunMode='background': calculation on the local computer, but in a new Matlab session (with no graphic output).
+% RunMode='cluster': calculations dispatched in a cluster, using a managing system, 'oar, 'sge, or 'sgb'.
+% In the latter case, the calculation is split in 'packets' of i index (all j indices are contained in a single packet).
+% This splitting is possible only if the different calculations in the series are independent. Otherwise the action 
+% function imposes a number of processes NbSlice in input, for instance NbSlice=1 for a time series.
+% If NbSlice is not imposed, the splitting in packets (jobs) is determined
+% so that a job is optimum length AdvisedJobCPUTime), and the total job number in any case smaller
+% than MaxJobNumber (these parameters are defined in the file series.xml in
+% accordance with the management strategy for the cluster). The jobs are
+% dispatched in parallel into NbCore processors by the cluster managing system. 
+
 function errormsg=launch_action(handles)
 errormsg=''; % default
 
@@ -1567,20 +1580,21 @@ switch RunMode
     case {'local','background'}
         NbCore=1; % no need to split the calculation
     case 'cluster_oar'
-        NbCoreDefault=SeriesData.OarParam.NbCoreDefault;%proposed number of cores (for cluster)
-            if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+        %proposed number of cores to reserve in the cluster
+        NbCoreAdvised=SeriesData.SeriesParam.OarParam.NbCoreAdvised;
+        NbCoreMax=SeriesData.SeriesParam.OarParam.NbCoreMax;
+        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             warning_string=', preferably use .sh option to save Matlab licences';
-            else
-                warning_string='';
-            end
-            answer=inputdlg({['Number of cores (max 36)' warning_string],'extra oar options'},'oarsub parameter',1,{num2str(NbCoreDefault),''});
-            if isempty(answer)
-                                errormsg='Action launch interrupted by user';
-                return
-            end
-            NbCore=str2double(answer{1});
-            extra_oar=answer{2};
- %       end
+        else
+            warning_string=')';
+        end
+        answer=inputdlg({['Number of cores (max ' num2str(NbCoreMax) warning_string],'extra oar options'},'oarsub parameter',1,{num2str(NbCoreAdvised),''});
+        if isempty(answer)
+            errormsg='Action launch interrupted by user';
+            return
+        end
+        NbCore=str2double(answer{1});
+        extra_oar=answer{2};
     case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             NbCore=1; % one core used only (limitation of Matlab licences)
@@ -1721,14 +1735,16 @@ BlockLength=numel(ref_i); % by default, job involves the full set of i field ind
 NbProcess=1;
 switch RunMode
     case {'cluster_oar','cluster_pbs','cluster_sge','cluster_qstat_unknown'}
+        JobNumberMax=SeriesData.SeriesParam.OarParam.JobNumberMax;
+        JobCPUTimeAdvised=SeriesData.SeriesParam.OarParam.JobCPUTimeAdvised;
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
-            BlockLength= ceil(20/(CPUTime*nbfield_j)); % short iterations are grouped such that the minimum time of a process is 20 min.
-            BlockLength=max(BlockLength,ceil(numel(ref_i)/500)); % possibly increase the BlockLength to have less than 500 jobs
+            BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is MinJobNumber.
+            BlockLength=max(BlockLength,ceil(numel(ref_i)/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
             NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
         else
             NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
-            NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
         end
+        NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
     otherwise
         if ~isempty(Param.IndexRange.NbSlice)
             NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
@@ -1857,15 +1873,12 @@ if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
         first_i,last_i,first_j,last_j);
     filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
 
-    for iprocess=1:NbProcess
-        
-        %create the executable file
-        
+    for iprocess=1:NbProcess    
+        %create the executable file       
         batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
         
         % set the log file name
-        filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));
-        
+        filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));      
     end
 end
 
@@ -2000,9 +2013,10 @@ switch RunMode
         %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are
         % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration,
         %  the oar job restarts when an individual job ends.
-        JobTime=CPUTime*BlockLength*nbfield_j; % estimated time for one individual job (in minutes)
+        WallTimeMax=SeriesData.SeriesParam.OarParam.WallTimeMax;
+        JobTime=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual job (in minutes)
         % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
-        WallTimeTotal=min(23,4*JobTime/60);
+        WallTimeTotal=min(WallTimeMax,4*JobTime/60);
         %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
         % estimated time of an individual job (in min), with a margin of error
         WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2); % estimated max time of an individual job for checkpoint
@@ -2313,6 +2327,7 @@ cd(current_dir)
 
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles); % read the parameters from the GUI series
+Param.Action.RUN=0;
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
 
 
@@ -2526,7 +2541,7 @@ else
     set(handles.num_NbSlice,'Visible','off')
     set(handles.NbSlice_title,'Visible','off')
 end
-if isnumeric(ParamOut.NbSlice)
+if isfield(ParamOut,'NbSlice') && isnumeric(ParamOut.NbSlice)
     set(handles.num_NbSlice,'String',num2str(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Enable','off'); % NbSlice set by the activation of the Action function
 else
