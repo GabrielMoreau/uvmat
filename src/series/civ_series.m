@@ -8,7 +8,7 @@
 %
 %OUTPUT
 % Data=structure containing the PIV results and information on the processing parameters
-% errormsg=error message char string, default=''
+% errormsg=error message char string, decd ..fault=''
 % resul_conv: image inter-correlation function for the last grid point (used for tests)
 %
 %INPUT:
