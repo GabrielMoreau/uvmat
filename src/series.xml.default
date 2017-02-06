@@ -1,15 +1,12 @@
 <?xml version="1.0"?>
 <SeriesParam>
-<ClusterParam>
-<Name>cluster_oar</Name>!-- Cluster name to be displayed in the menu 
-<CheckString>s=system('oarstat')</CheckString>!-- Matlab command for detecting the cluster
-<NbCoreDefault>16</NbCoreDefault>!-- proposed number of cores by default
-</ClusterParam>
-<ClusterParam>
-<Name>cluster_pbs</Name>!-- Cluster name to be displayed in the menu 
-</ClusterParam>
-<ClusterParam>
-<Name>cluster_sge</Name>!-- Cluster name to be displayed in the menu 
-CheckString>[s,w]=system('oarstat')</CheckString>
-</ClusterParam>
+   <DiskQuotaCmd>quota -s -g -A</DiskQuotaCmd> 
+<OarParam>
+   <NbCoreDefault>16</NbCoreDefault><!--proposed default number of parallel cores for a job -->
+   <MinEstimatedCPUTime unit="minute">20</MinEstimatedCPUTime><!--used to group the iterations into jobs of sufficient CPU time-->
+   <MaxJobNumber>500</MaxJobNumber><!--maximum number of jobs allowed (will group the iterations to fit in)-->
+   <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd>   
+</OarParam>
+<SgeParam>
+</SgeParam>
 </SeriesParam>

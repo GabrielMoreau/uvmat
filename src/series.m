@@ -132,6 +132,7 @@ if ~exist('Param','var')
 end 
 
 %% Read the parameter file series.xml, or created from series.xml.default if it does not exist
+SeriesData=[];
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 xmlfile=fullfile(path_series,'series.xml');
 if ~exist(xmlfile,'file')
@@ -139,15 +140,6 @@ if ~exist(xmlfile,'file')
 end
 if exist(xmlfile,'file')
     SeriesData.SeriesParam=xml2struct(xmlfile);
-%     if ismember(RunMode,{'cluster_oar','cluster_pbs','cluster_sge'}) && isfield(s,'BatchParam')
-%         if isfield(s.BatchParam,'NbCoreDefault')
-%             NbCoreDefault=s.BatchParam.NbCoreDefault;
-%         end
-%     elseif ismember(RunMode,{'background','local'}) && isfield(s,'RunParam')
-%         if isfield(s.RunParam,'NbCore')
-%             NbCoreDefault=s.RunParam.NbCoreDefault;
-%         end
-%     end
 end
 
 %% list of builtin functions in the menu ActionName
@@ -290,7 +282,7 @@ end
 % end
 
 %% introduce the input file name(s) if defined from input Param,
-set(handles.series,'UserData',[])% initiate Userdata
+set(handles.series,'UserData',SeriesData)% initiate Userdata
 if isfield(Param,'InputFile')
     
     %% fill the list of file series
@@ -592,7 +584,6 @@ if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);
 end
 set(handles.InputLine,'String',num2str(iline));
-% set(handles.InputTable,'UserData',iline);
 
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
@@ -677,14 +668,14 @@ set(handles.PairString,'Data',PairString(1:nbview,:));
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
 
-%% enable field and veltype menus, in accordance with the current action
-ActionName_Callback([],[], handles)
-
 %% set length of waitbar
 displ_time(handles)
-
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
+
+%% enable field and veltype menus, in accordance with the current action
+ActionInput_Callback([],[], handles)
+
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
@@ -1437,6 +1428,10 @@ set(handles.MaxIndex_j,'Visible',state)
 function RUN_Callback(hObject, eventdata, handles)
 
 %% settings of the button RUN
+if ~isequal(get(handles.ActionInput,'BackgroundColor'),[1 0 0])
+    msgbox_uvmat('ERROR','first activate the button ActionInput')
+    return
+end
 set(handles.RUN,'BusyAction','queue'); % activation of STOP button will set BusyAction to 'cancel'
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
 set(handles.RUN,'BackgroundColor',[1 1 0])%show activation of RUN by yellow color
@@ -1572,18 +1567,13 @@ switch RunMode
     case {'local','background'}
         NbCore=1; % no need to split the calculation
     case 'cluster_oar'
-        NbCoreDefault=SeriesData.SeriesParam.ClusterParam{1}.NbCoreDefault;%proposed number of cores (for cluster)
-        %%%%% TEST A REMETTRE%%%%%
- %       if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-%             NbCore=1; % one core used only (limitation of Matlab licences)
-%             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
-%             if ~strcmp(answer,'Yes')
-%                 errormsg='Action launch interrupted by user';
-%                 return
-%             end
-%             extra_oar='';
- %       else
-            answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{num2str(NbCoreDefault),''});
+        NbCoreDefault=SeriesData.OarParam.NbCoreDefault;%proposed number of cores (for cluster)
+            if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+            warning_string=', preferably use .sh option to save Matlab licences';
+            else
+                warning_string='';
+            end
+            answer=inputdlg({['Number of cores (max 36)' warning_string],'extra oar options'},'oarsub parameter',1,{num2str(NbCoreDefault),''});
             if isempty(answer)
                                 errormsg='Action launch interrupted by user';
                 return
@@ -1683,7 +1673,7 @@ if isfield(Param.IndexRange,'first_i')
     incr_i=Param.IndexRange.incr_i;
     last_i=Param.IndexRange.last_i;
 end
-if isfield(Param.IndexRange,'first_j')
+if isfield(Param.IndexRange,'incr_j')
     first_j=Param.IndexRange.first_j;
     last_j=Param.IndexRange.last_j;
     incr_j=Param.IndexRange.incr_j;
@@ -2144,7 +2134,7 @@ switch RunMode
         system(command, '-echo');
 end
 if exist(OutputDir,'dir')
-    [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir)
+    [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);
     if MESSAGE.GroupWrite~=1
     [success,msg] = fileattrib(OutputDir,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
     if success==0
@@ -2292,7 +2282,26 @@ set(handles.ActionPath,'String',ActionPath); % show the path to the senlected fu
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
 
+%% Put the first line of the selected Action fct as tooltip help
+try
+    [fid,errormsg] =fopen([ActionName '.m']);
+    InputText=textscan(fid,'%s',1,'delimiter','\n');
+    fclose(fid);
+    set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
+end
+set(handles.ActionName,'BackgroundColor',[1 1 1])
+set(handles.ActionInput,'BackgroundColor',[1 0 1])% set ActionInput button to magenta color to indicate that input refr
+
+
+% --- Executes on button press in ActionInput.
+function ActionInput_Callback(hObject, eventdata, handles)
+
+set(handles.ActionInput,'BackgroundColor',[1 1 0])
+
 %% create the function handle for Action
+ActionPath=get(handles.ActionPath,'String');
+ActionList=get(handles.ActionName,'String');
+ActionName= ActionList{get(handles.ActionName,'Value')}; % selected function name
 if ~exist(ActionPath,'dir')
     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
     return
@@ -2302,40 +2311,9 @@ cd(ActionPath)
 h_fun=str2func(ActionName);
 cd(current_dir)
 
-% 
-% checkaddpath=0;
-% path_series=which('series');
-% %eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
-% spath=fileparts(which(ActionName)); % spath = current path of the selected function ACTION
-% if ~exist(ActionPath,'dir')
-%     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
-%     return
-% end
-% if ~strcmp(spath,ActionPath)
-%     if strcmp(pwd,spath)
-%         msgbox_uvmat('ERROR',[ 'a function called ' ActionName ' on your working space oversets the selected one']);
-%         return
-%     else
-%         addpath(ActionPath)% add the prescribed path if not the current one
-%         checkaddpath=1;
-%     end
-% end
-% eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
-% if checkaddpath && ~isequal(ActionPath,path_series)
-%     rmpath(ActionPath)% add the prescribed path if not the current one
-% end
-
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles); % read the parameters from the GUI series
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
-
-%% Put the first line of the selected Action fct as tooltip help
-try
-    [fid,errormsg] =fopen([ActionName '.m']);
-    InputText=textscan(fid,'%s',1,'delimiter','\n');
-    fclose(fid);
-    set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
-end
 
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
@@ -2541,16 +2519,12 @@ else
 end
 
 %% NbSlice visibility
-%NbSliceVisible='off'; % default
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')
 else
     set(handles.num_NbSlice,'Visible','off')
     set(handles.NbSlice_title,'Visible','off')
-    %     set(handles.num_NbProcess,'String',get(handles.num_NbSlice,'String'))% the nbre of processes is imposed as the nbre of slices
-    % else
-    %     set(handles.num_NbProcess,'String','')% free nbre of processes
 end
 if isnumeric(ParamOut.NbSlice)
     set(handles.num_NbSlice,'String',num2str(ParamOut.NbSlice))
@@ -2558,10 +2532,6 @@ if isnumeric(ParamOut.NbSlice)
 else
     set(handles.num_NbSlice,'Enable','on'); % NbSlice can be modified on the GUI series
 end
-% set(handles.num_NbSlice,'Visible',NbSliceVisible)
-% set(handles.NbSlice_title,'Visible',NbSliceVisible)
-
-
 
 %% Visibility of FieldTransform menu
 FieldTransformVisible='off';  %hidden by default
@@ -2611,6 +2581,7 @@ SubDirOut='';
 if isfield(ParamOut,'OutputSubDirMode')
     OutputSubDirMode=ParamOut.OutputSubDirMode;
 end
+InputTable=get(handles.InputTable,'Data');
 switch OutputSubDirMode
     case 'auto'; % default
         OutputDirVisible='on';
@@ -2664,17 +2635,17 @@ end
 
 %% definition of an additional parameter set, determined by an ancillary GUI
 if isfield(ParamOut,'ActionInput')
-    set(handles.ActionInput,'Visible','on')
+%     set(handles.ActionInput,'Visible','on')
     ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
     SeriesData.ActionInput=ParamOut.ActionInput;
 else
-    set(handles.ActionInput,'Visible','off')
+%     set(handles.ActionInput,'Visible','off')
     if isfield(SeriesData,'ActionInput')
         SeriesData=rmfield(SeriesData,'ActionInput');
     end
 end
 set(handles.series,'UserData',SeriesData)
-set(handles.ActionName,'BackgroundColor',[1 1 1])
+set(handles.ActionInput,'BackgroundColor',[1 0 0])
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldName.
@@ -3299,8 +3270,8 @@ if isfield(Param,'InputFields')
      set(handles.FieldName,'Visible','on')
 end       
 if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-    set(handles.ActionInput,'Visible','on')
-    set(handles.ActionInput,'Value',0)
+%     set(handles.ActionInput,'Visible','on')
+%     set(handles.ActionInput,'Value',0)
     Param.ActionInput.ConfigSource=filexml; % record the source of config for future info
     SeriesData.ActionInput=Param.ActionInput;
 end
@@ -3769,4 +3740,8 @@ function TestCPUTime_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in DiskQuota.
 function DiskQuota_Callback(hObject, eventdata, handles)
-system('quota -s -g -A')
+SeriesData=get(handles.series,'UserData');
+system(SeriesData.SeriesParam.DiskQuotaCmd)
+
+
+

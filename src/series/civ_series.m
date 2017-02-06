@@ -438,8 +438,8 @@ for ifield=1:NbField
                     continue
                 end
             end
-            par_civ1.ImageWidth=size(par_civ1.ImageA,2);%FileInfo_A.Width;
-            par_civ1.ImageHeight=size(par_civ1.ImageA,1);%FileInfo_A.Height;
+            par_civ1.ImageWidth=size(par_civ1.ImageA,2);
+            par_civ1.ImageHeight=size(par_civ1.ImageA,1);
             list_param=(fieldnames(Param.ActionInput.Civ1))';
             list_param(strcmp('TestCiv1',list_param))=[];% remove the parameter TestCiv1 from the list
             Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
