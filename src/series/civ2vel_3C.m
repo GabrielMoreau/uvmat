@@ -357,31 +357,43 @@ end
             return
         end
     end
-    %remove wrong vector
-    temp=find(Data{1}.FF==0);
-    X1=Data{1}.X(temp);
-    Y1=Data{1}.Y(temp);
-    U1=Data{1}.U(temp);
-    V1=Data{1}.V(temp);
-    
+    %remove wrong vector  
+    if isfield(Data{1},'FF')
+        temp=find(Data{1}.FF==0);
+        X1=Data{1}.X(temp);
+        Y1=Data{1}.Y(temp);
+        U1=Data{1}.U(temp);
+        V1=Data{1}.V(temp);
+    else
+        X1=Data{1}.X;
+        Y1=Data{1}.Y;
+        U1=Data{1}.U;
+        V1=Data{1}.V;
+    end
     Ua=griddata(X1,Y1,U1,Xa,Ya);
     Va=griddata(X1,Y1,V1,Xa,Ya);
-    
-    [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X 
+    [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
     [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
     
-    %remove wrong vector
-    temp=find(Data{2}.FF==0);
-    X2=Data{2}.X(temp);
-    Y2=Data{2}.Y(temp);
-    U2=Data{2}.U(temp);
-    V2=Data{2}.V(temp);
+    %remove wrong vector  
+    if isfield(Data{1},'FF')
+        temp=find(Data{2}.FF==0);
+        X2=Data{2}.X(temp);
+        Y2=Data{2}.Y(temp);
+        U2=Data{2}.U(temp);
+        V2=Data{2}.V(temp);
+    else
+        X2=Data{2}.X;
+        Y2=Data{2}.Y;
+        U2=Data{2}.U;
+        V2=Data{2}.V;
+    end
     Ub=griddata(X2,Y2,U2,Xb,Yb);
     Vb=griddata(X2,Y2,V2,Xb,Yb);
-
-    [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X 
+    [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X
+    
     [B]=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,XI,YI,ZI); %get coef B~
-   
+    
     
     % System to solve
     S=ones(size(XI,1),size(XI,2),3);

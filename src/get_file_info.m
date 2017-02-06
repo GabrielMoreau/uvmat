@@ -145,6 +145,6 @@ switch FileExt
         end
 end
 switch FileInfo.FileType
-    case {'image','multimage','mmreader','video','netcdf','civdata'}
+    case {'image','multimage','mmreader','cine_phantom','video','netcdf','civdata'}
         FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 end

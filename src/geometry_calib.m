@@ -855,7 +855,7 @@ grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid,CalibData.grid.CheckWhite]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+[T,CalibData.grid,CalibData.grid.CheckWhite,CalibData.grid.FilterWindow]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
 Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
@@ -906,6 +906,30 @@ if CalibData.grid.CheckWhite
 else
     Amod=-double(Amod);%case of black grid markers: will look for image minima
 end
+
+%%%%%%filterfor i;proved detection of dots
+if ~isequal(CalibData.grid.FilterWindow,0)
+    %definition of the cos shape matrix filter
+    FilterBoxSize_x=CalibData.grid.FilterWindow;
+    FilterBoxSize_y=CalibData.grid.FilterWindow;
+    ix=1/2-FilterBoxSize_x/2:-1/2+FilterBoxSize_x/2;%
+    iy=1/2-FilterBoxSize_y/2:-1/2+FilterBoxSize_y/2;%
+    %del=np/3;
+    %fct=exp(-(ix/del).^2);
+    fct2_x=cos(ix/((FilterBoxSize_x-1)/2)*pi/2);
+    fct2_y=cos(iy/((FilterBoxSize_y-1)/2)*pi/2);
+    %Mfiltre=(ones(5,5)/5^2);
+    Mfiltre=fct2_y'*fct2_x;
+    Mfiltre=Mfiltre/(sum(sum(Mfiltre)));%normalize filter
+    
+    if ndims(Amod)==3
+        Amod=filter2(Mfiltre,sum(Amod,3));%filter the input image, after summation on the color component (for color images)
+    else
+        Amod=filter2(Mfiltre,Amod);
+    end
+end
+%%%%%%%%%%%%%%
+
 
 %% detection of local image extrema in each direction
 Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space

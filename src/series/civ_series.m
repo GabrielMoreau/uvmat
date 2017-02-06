@@ -59,9 +59,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.Program=mfilename;%gives the name of the current function
     Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices')&& strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-        Data.Desable_j_index='on';% hide the j index in series (set by the pair choice in civ_input)
-    end
+    %     if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices')&& strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+    %         Data.Desable_j_index='on';% hide the j index in series (set by the pair choice in civ_input)
+    %     end
     Data.NbSlice='off'; %nbre of slices ('off' by default)
     Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     Data.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -72,6 +72,24 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    if isequal(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+        if isfield(Data.ActionInput.PairIndices,'ListPairCiv2')
+            str_civ=Data.ActionInput.PairIndices.ListPairCiv2;
+        else
+            str_civ=Data.ActionInput.PairIndices.ListPairCiv1;
+        end
+        r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
+        if isempty(r)
+            r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+            if isempty(r)
+                r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+            end
+        end
+        if ~isempty(r)
+            Data.j_index_1=stra2num(r.num1);
+            Data.j_index_2=stra2num(r.num2);
+        end
+    end
     return
 end
 
@@ -199,7 +217,7 @@ if CheckInputFile
             end
         end
         if isempty(i1_series_Civ1)||(~isempty(PairCiv2) && isempty(i1_series_Civ2))
-            disp_uvmat('ERROR','no image pair fo civ in the input file index range',checkrun)
+            disp_uvmat('ERROR','no image pair for civ in the input file index range',checkrun)
             return
         end
     end
@@ -207,10 +225,16 @@ if CheckInputFile
     %% check the first image pair
     try
         if Param.ActionInput.CheckCiv1% Civ1 is performed
+            first_ima=1;
             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1),[],j1_series_Civ1(1));
-            if ~exist(ImageName_A,'file')
+            if checkrun 
+                if ~exist(ImageName_A,'file')
                 disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
                 return
+                end
+            else
+%                 for ifile=1:numel(i1_series_Civ1)
+%                     if 
             end
             [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
             FileType_A=FileInfo_A.FileType;
@@ -411,7 +435,7 @@ for ifield=1:NbField
             catch ME % display errors in reading input images
                 if ~isempty(ME.message)
                     disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
-                    return
+                    continue
                 end
             end
             par_civ1.ImageWidth=size(par_civ1.ImageA,2);%FileInfo_A.Width;
@@ -1154,7 +1178,7 @@ function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
 F=0;
 [npy,npx]=size(result_conv);
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
-%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
+%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
 peaky = y;
 if y < npy && y > 1
@@ -1191,11 +1215,11 @@ if (x < npx) && (y < npy) && (x > 1) && (y > 1)
     for i=-1:1
         for j=-1:1
             %following 15 lines based on
-            %H. Nobach � M. Honkanen (2005)
+            %H. Nobach ??? M. Honkanen (2005)
             %Two-dimensional Gaussian regression for sub-pixel displacement
             %estimation in particle image velocimetry or particle position
             %estimation in particle tracking velocimetry
-            %Experiments in Fluids (2005) 38: 511�515
+            %Experiments in Fluids (2005) 38: 511???515
             c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
             c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
             c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));

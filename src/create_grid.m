@@ -29,7 +29,7 @@
 
 function varargout = create_grid(varargin)
 
-% Last Modified by GUIDE v2.5 16-Dec-2010 00:17:20
+% Last Modified by GUIDE v2.5 02-Feb-2017 17:09:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -168,6 +168,10 @@ if ~isequal(handles.output,'Cancel')
     varargout{1}=[xarray yarray zarray];
     varargout{2}=T;
     varargout{3}=get(handles.white,'Value');
+    varargout{4}=0;
+    if get(handles.CheckDots,'Value')
+    varargout{4}=str2num(get(handles.FilterWindow,'String'));
+    end
 end
 
 % The figure can be deleted now
@@ -219,7 +223,6 @@ if isequal(get(hObject,'CurrentKey'),'return')
     uiresume(handles.figure1);
 end    
 
-
 % --- Executes on button press in white.
 function white_Callback(hObject, eventdata, handles)
 val=get(handles.white,'Value');
@@ -228,11 +231,6 @@ if val
 else
     set(handles.black,'Value',1)
 end
-% hObject    handle to white (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of white
 
 
 % --- Executes on button press in black.
@@ -242,5 +240,16 @@ if val
     set(handles.white,'Value',0)
 else
     set(handles.white,'Value',1)
+end
+
+% --- Executes on button press in CheckDots.
+function CheckDots_Callback(hObject, eventdata, handles)
+val=get(handles.CheckDots,'Value');
+if val
+    set(handles.FilterWindow,'Visible','on')
+    set(handles.FilterWindow_txt,'Visible','on')
+else
+    set(handles.FilterWindow,'Visible','off')
+     set(handles.FilterWindow_txt,'Visible','off')
 end
 

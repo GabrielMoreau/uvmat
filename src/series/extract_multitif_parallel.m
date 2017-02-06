@@ -94,10 +94,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('ERROR',['invalid file type input: ' FileInfo.FileType ' not an image'])
         return
     end
-    xmlinput=uigetfile_uvmat('pick xml file for timing',fileparts(fileparts(FirstFileName)),'.xml');
-    [tild,ParamOut.ActionInput.XmlFile]=fileparts(xmlinput);
-    ParamOut.ActionInput.XmlFile
-    
+    ParamOut.ActionInput.XmlFile=uigetfile_uvmat('pick xml file for timing',fileparts(fileparts(FirstFileName)),'.xml');  
     return
 end
 %%%%%%%%%%%%%%%%%    STOP HERE FOR PAMETER INPUT MODE   %%%%%%%%%%%%%%%%% 
@@ -139,45 +136,45 @@ end
 OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
 
 %% Timing
-XmlInputFile=fullfile(Param.InputTable{1,1},[Param.ActionInput.XmlFile '.xml'])
-XmlInput=imadoc2struct(XmlInputFile,'Camera');
+XmlInputFile=Param.ActionInput.XmlFile;
+[XmlInput,errormsg]=imadoc2struct(XmlInputFile,'Camera');
+if ~isempty(errormsg)
+    disp(['bad xml input file: ' errormsg])
+    return
+end
+ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
 
-%% create the xml file of PCO camera
+%% create the xml file of PCO camera if it does not exist
+Newxml=fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']);
+if ~exist(Newxml,'file')
 XmlInput.Camera.CameraName='PCO';
-t=struct2xml(XmlInput.Camera);
+XmlInput=rmfield(XmlInput,'Time');
+XmlInput=rmfield(XmlInput,'TimeUnit');
+t=struct2xml(XmlInput);
 t=set(t,1,'name','ImaDoc');
-save(t,fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']))
+save(t,Newxml);
+end
 
 %% Main loop
 
-ImagesPerLevel=size(XmlInput.Time,2)-1;%100;
+
 % count=0;
 %count=316;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 4684 images -> start at 316 start 67->_11_1
 %count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 3066 images
 %% loop on the files
-%for ifile=1:numel(ListFile)
-%     update_waitbar(WaitbarHandle,ifile/numel(ListFile))
-%     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-%         disp('program stopped by user')
-%         break
-%     end
-%    ImageName=fullfile(DirImages,ListFile{ifile});
-%   NbFrames=numel(imfinfo(ImageName));
-% loop on the frames within the tiff file
+% include the first tiff file with no index in the first iteration
 if Param.IndexRange.first_i==1% first slice of processing
     firstindex=0;
    count=0;
-%     count=3;
 else
     firstindex=Param.IndexRange.first_i;
     ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
     NbFrames=numel(imfinfo(ImageName));
    count=Param.IndexRange.first_i*NbFrames;
- %   count=Param.IndexRange.first_i*NbFrames+3;
 end
 for ifile=firstindex:Param.IndexRange.last_i
     if firstindex==0 && ifile==0% first slice of processing
-            ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif')
+        ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif')
     else
         ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},['im@' num2str(ifile,'%04d') '.tif'])
     end
@@ -201,42 +198,6 @@ for ifile=firstindex:Param.IndexRange.last_i
         count=count+1;
     end
 end
-    %end
 
-% for ifile=1:numel(ListFile)
-%     update_waitbar(WaitbarHandle,ifile/numel(ListFile))
-%     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-%         disp('program stopped by user')
-%         break
-%     end
-%     ImageName=fullfile(DirImages,ListFile{ifile});
-%     NbFrames=numel(imfinfo(ImageName));
-%     % loop on the frames within the tiff file
-%     for iframe=1:NbFrames      
-%         A=imread(ImageName,iframe);
-% 
-%         if isequal(ImagesPerLevel,1)% mode series 
-%             i_index=count+1;
-%             OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
-%         else % indices i and j 
-%             i_index=fix(count/ImagesPerLevel)+1;
-%             j_index=mod(count,ImagesPerLevel)+1;
-%             OutputFile=fullfile(OutputDir,['img_' num2str(i_index) '_' num2str(j_index) '.png']);
-%         end
-%         imwrite(A,OutputFile,'BitDepth',16)
-%         count=count+1;
-%     end
-% end
 
-%% create the xml file of PCO camera
-% XmlInput.Camera.CameraName='PCO';
-% t=struct2xml(XmlInput.Camera);
-% t=set(t,1,'name','ImaDoc');
-% save(t,fullfile(Param.InputTable{1,1},'PCO.xml'))
 
-%% remove initial files if transfer OK
-%     if i_index== (size(XmlInput.Time,1)-1)
-% 
-%         [SUCCESS,MESSAGE]=rmdir(DirImages,'s')
-%        
-%     end
