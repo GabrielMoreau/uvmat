@@ -33,33 +33,29 @@ function [omckk,Tckk,Rckk,H,x,ex,JJ] = compute_extrinsic(x_kk,X_kk,fc,cc,kc,alph
 %
 %project_points.m: Computes the 2D image projections of a set of 3D points
 
-
-
 if nargin < 8,
    thresh_cond = inf;
 end;
-
 
 if nargin < 7,
    MaxIter = 20;
 end;
 
-
 if nargin < 6,
-   alpha_c = 0;
-	if nargin < 5,
-   	kc = zeros(5,1);
-   	if nargin < 4,
-      	cc = zeros(2,1);
-      	if nargin < 3,
-         	fc = ones(2,1);
-         	if nargin < 2,
-            	error('Need 2D projections and 3D points (in compute_extrinsic.m)');
-            	return;
-         	end;
-      	end;
-   	end;
-	end;
+    alpha_c = 0;
+    if nargin < 5,
+        kc = zeros(5,1);
+        if nargin < 4,
+            cc = zeros(2,1);
+            if nargin < 3,
+                fc = ones(2,1);
+                if nargin < 2,
+                    error('Need 2D projections and 3D points (in compute_extrinsic.m)');
+                    return;
+                end;
+            end;
+        end;
+    end;
 end;
 
 % Initialization:
@@ -68,7 +64,6 @@ end;
 
 % Refinement:
 [omckk,Tckk,Rckk,JJ] = compute_extrinsic_refine(omckk,Tckk,x_kk,X_kk,fc,cc,kc,alpha_c,MaxIter,thresh_cond);
-
 
 % computation of the homography (not useful in the end)
 
@@ -80,15 +75,11 @@ x = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
 
 ex = x_kk - x;
 
-
 % Converts the homography in pixel units:
 
 KK = [fc(1) alpha_c*fc(1) cc(1);0 fc(2) cc(2); 0 0 1];
 
 H = KK*H;
-
-
-
 
 return;
 

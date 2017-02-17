@@ -33,16 +33,14 @@ function [H,Hnorm,inv_Hnorm] = compute_homography(m,M);
 %                  This function is called within the minimization loop.
 
 
-
-
 Np = size(m,2);
 
 if size(m,1)<3,
-   m = [m;ones(1,Np)];
+    m = [m;ones(1,Np)];
 end;
 
 if size(M,1)<3,
-   M = [M;ones(1,Np)];
+    M = [M;ones(1,Np)];
 end;
 
 
@@ -81,7 +79,7 @@ L(1:2:2*Np,7:9) = -((ones(3,1)*mn(1,:)).* M)';
 L(2:2:2*Np,7:9) = -((ones(3,1)*mn(2,:)).* M)';
 
 if Np > 4,
-	L = L'*L;
+    L = L'*L;
 end;
 
 [U,S,V] = svd(L);
@@ -98,68 +96,64 @@ Hrem = reshape(hh,3,3)';
 H = inv_Hnorm*Hrem;
 
 if 0,
-   m2 = H*M;
-   m2 = [m2(1,:)./m2(3,:) ; m2(2,:)./m2(3,:)];
-   merr = m(1:2,:) - m2;
+    m2 = H*M;
+    m2 = [m2(1,:)./m2(3,:) ; m2(2,:)./m2(3,:)];
+    merr = m(1:2,:) - m2;
 end;
 
 %keyboard;
- 
+
 %%% Homography refinement if there are more than 4 points:
 
 if Np > 4,
-   
-   % Final refinement:
-   hhv = reshape(H',9,1);
-   hhv = hhv(1:8);
-   
-   for iter=1:10,
-      
 
-   
-		mrep = H * M;
+    % Final refinement:
+    hhv = reshape(H',9,1);
+    hhv = hhv(1:8);
 
-		J = zeros(2*Np,8);
+    for iter=1:10,
 
-		MMM = (M ./ (ones(3,1)*mrep(3,:)));
+         mrep = H * M;
 
-		J(1:2:2*Np,1:3) = -MMM';
-		J(2:2:2*Np,4:6) = -MMM';
-		
-		mrep = mrep ./ (ones(3,1)*mrep(3,:));
+         J = zeros(2*Np,8);
 
-		m_err = m(1:2,:) - mrep(1:2,:);
-		m_err = m_err(:);
+         MMM = (M ./ (ones(3,1)*mrep(3,:)));
 
-		MMM2 = (ones(3,1)*mrep(1,:)) .* MMM;
-		MMM3 = (ones(3,1)*mrep(2,:)) .* MMM;
+         J(1:2:2*Np,1:3) = -MMM';
+         J(2:2:2*Np,4:6) = -MMM';
 
-		J(1:2:2*Np,7:8) = MMM2(1:2,:)';
-		J(2:2:2*Np,7:8) = MMM3(1:2,:)';
+         mrep = mrep ./ (ones(3,1)*mrep(3,:));
 
-		MMM = (M ./ (ones(3,1)*mrep(3,:)))';
+         m_err = m(1:2,:) - mrep(1:2,:);
+         m_err = m_err(:);
 
-		hh_innov  = inv(J'*J)*J'*m_err;
+         MMM2 = (ones(3,1)*mrep(1,:)) .* MMM;
+         MMM3 = (ones(3,1)*mrep(2,:)) .* MMM;
 
-		hhv_up = hhv - hh_innov;
+         J(1:2:2*Np,7:8) = MMM2(1:2,:)';
+         J(2:2:2*Np,7:8) = MMM3(1:2,:)';
 
-		H_up = reshape([hhv_up;1],3,3)';
+         MMM = (M ./ (ones(3,1)*mrep(3,:)))';
 
-		%norm(m_err)
-		%norm(hh_innov)
+         hh_innov  = inv(J'*J)*J'*m_err;
 
-		hhv = hhv_up;
-      H = H_up;
-      
-   end;
-   
+         hhv_up = hhv - hh_innov;
 
+         H_up = reshape([hhv_up;1],3,3)';
+
+         %norm(m_err)
+         %norm(hh_innov)
+
+         hhv = hhv_up;
+       H = H_up;
+
+    end;
 end;
 
 if 0,
-   m2 = H*M;
-   m2 = [m2(1,:)./m2(3,:) ; m2(2,:)./m2(3,:)];
-   merr = m(1:2,:) - m2;
+    m2 = H*M;
+    m2 = [m2(1,:)./m2(3,:) ; m2(2,:)./m2(3,:)];
+    merr = m(1:2,:) - m2;
 end;
 
 return;
