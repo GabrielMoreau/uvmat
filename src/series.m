@@ -3022,7 +3022,7 @@ function EditObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.EditObject,'Value')
     set(handles.ViewObject,'Value',0)
-	UserData=get(handles.series,'UserData');
+    UserData=get(handles.series,'UserData');
     hset_object=set_object(UserData.ProjObject);
     set(hset_object,'Name','edit_object_series')
     set(get(hset_object,'Children'),'Enable','on')

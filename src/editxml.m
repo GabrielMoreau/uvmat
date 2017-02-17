@@ -110,14 +110,14 @@ NewRootUid=list.uid(ind);
 heditxml=get(hObject,'Parent');
 DataIn=get(heditxml,'UserData');
 if ~isempty(xs)
-	xs_node=list.xs_uid(ind);%xs_node of the subelement #ind
-	[nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_node);
-	[element,subelem]=get_xml(t,path,xs_element,NewRootUid,xs_subelem);
-	update_list(handles,path,xs_element,element,NewRootUid,xs_subelem,subelem);
-	if xs_element.subtest     
+    xs_node=list.xs_uid(ind);%xs_node of the subelement #ind
+    [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_node);
+    [element,subelem]=get_xml(t,path,xs_element,NewRootUid,xs_subelem);
+    update_list(handles,path,xs_element,element,NewRootUid,xs_subelem,subelem);
+    if xs_element.subtest     
         DataIn.CurrentUid=[DataIn.CurrentUid NewRootUid];%record new current uid
         DataIn.xs_CurrentUid=[DataIn.xs_CurrentUid xs_node];%record the new curent schema uid
-	end
+    end
     
 %     %update the import file display
 %     if isfield(DataIn,'h_ref')&ishandle(DataIn.h_ref)
@@ -173,8 +173,8 @@ else
         test_root=1;
     else
         [xs_nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_nodeup);
-		[element,subelem]=get_xml(t,path,xs_element,nodeup,xs_subelem);
-		update_list(handles,path,xs_element,element,nodeup,xs_subelem,subelem);
+        [element,subelem]=get_xml(t,path,xs_element,nodeup,xs_subelem);
+        update_list(handles,path,xs_element,element,nodeup,xs_subelem,subelem);
         %update the import file display
         if isfield(DataIn,'h_ref')&ishandle(DataIn.h_ref)
             [ref_element,ref_subelem]=get_xml(t_ref,path,xs_element,nodeup,xs_subelem);
@@ -368,9 +368,9 @@ if isempty(xs)
     displ_xml(handles,t,1,DataIn,get(hObject,'parent'));%no associated schema, default  display of the xml file
 else
     DataIn.xs_CurrentUid=find(xs,'/xs:schema/xs:element');%uid of the root element in the schema
-	[nodeup,path,xs_element,xs_subelem]=scan_schema(xs,DataIn.xs_CurrentUid);%scan the schema at the root level
-	[element,subelem]=get_xml(t,path,xs_element,1,xs_subelem);% read the corresponding xml data
-	update_list(handles,path,xs_element,element,1,xs_subelem,subelem);%update the display of information on the interface
+    [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,DataIn.xs_CurrentUid);%scan the schema at the root level
+    [element,subelem]=get_xml(t,path,xs_element,1,xs_subelem);% read the corresponding xml data
+    update_list(handles,path,xs_element,element,1,xs_subelem,subelem);%update the display of information on the interface
 end
 set(heditxml,'UserData',DataIn);%store the new input xml file name
 
@@ -654,8 +654,8 @@ end
 %get the parent node attributes 
 up=1;
 if node>0
-	nodeup=node;
-	while up==1; 
+    nodeup=node;
+    while up==1; 
         nodeup=get(t,nodeup,'parent');%move up to the parent in the tree
         if isempty(nodeup)
             up=0;
@@ -670,8 +670,8 @@ if node>0
                 end
             end
         end
-	end
-	element.attrup=attrup;
+    end
+    element.attrup=attrup;
 end
 %find the subelement properties in the xml file
 if xs_element.subtest
@@ -1042,7 +1042,7 @@ set(handles.CurrentAttributes,'String',attr_col)
 if ~testsimple
     list_element=[];
 %      Data.CurrentUid=[Data.CurrentUid root_uid]%record new current uid
-	for iline=1:length(list_uid)
+    for iline=1:length(list_uid)
         element=get(t,list_uid(iline));
         if isfield(element,'type')&isequal(element.type,'element')
              list_element{iline,2}=element.name;
@@ -1070,11 +1070,11 @@ if ~testsimple
                 end
             end
         end
-	end
+    end
     set(handles.list_element,'Value',1)%select the first line of list_element by default
-	set(handles.list_element,'String',cell2tab(list_element,' ') )
+    set(handles.list_element,'String',cell2tab(list_element,' ') )
     list.uid=list_uid;
-	set(handles.list_element,'UserData',list)
+    set(handles.list_element,'UserData',list)
 end
 %---------------------------------------------------------
 %-------------------------------------
@@ -1414,8 +1414,8 @@ update_list(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,su
 % %get the parent node attributes 
 % up=1
 % if node>0
-% 	nodeup=node;
-% 	while up==1; 
+%     nodeup=node;
+%     while up==1; 
 %         nodeup=get(t,nodeup,'parent');%move up to the parent in the tree
 %         if isempty(nodeup)
 %             up=0;
@@ -1430,8 +1430,8 @@ update_list(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,su
 %                 end
 %             end
 %         end
-% 	end
-% 	element.attrup=attrup;
+%     end
+%     element.attrup=attrup;
 % end
 % %find the subelement properties in the xml file
 % if xs_element.subtest
