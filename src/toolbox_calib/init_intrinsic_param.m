@@ -8,7 +8,7 @@
 %
 %OUTPUT: fc: Camera focal length
 %        cc: Principal point coordinates
-%	      kc: Distortion coefficients
+%        kc: Distortion coefficients
 %        alpha_c: skew coefficient
 %        KK: The camera matrix (containing fc, cc and alpha_c)
 %
@@ -88,52 +88,52 @@ b = [];
 Sub_cc = [1 0 -c_init(1);0 1 -c_init(2);0 0 1];
 
 for kk=1:n_ima,
-    
+
     if active_images(kk),
-        
+
         eval(['Hkk = H_' num2str(kk) ';']);
-        
-        Hkk = Sub_cc * Hkk;   
-        
+
+        Hkk = Sub_cc * Hkk;
+
         % Extract vanishing points (direct and diagonals):
-        
+
         V_hori_pix = Hkk(:,1);
         V_vert_pix = Hkk(:,2);
         V_diag1_pix = (Hkk(:,1)+Hkk(:,2))/2;
         V_diag2_pix = (Hkk(:,1)-Hkk(:,2))/2;
-        
+
         V_hori_pix = V_hori_pix/norm(V_hori_pix);
         V_vert_pix = V_vert_pix/norm(V_vert_pix);
         V_diag1_pix = V_diag1_pix/norm(V_diag1_pix);
         V_diag2_pix = V_diag2_pix/norm(V_diag2_pix);
-        
+
         a1 = V_hori_pix(1);
         b1 = V_hori_pix(2);
         c1 = V_hori_pix(3);
-        
+
         a2 = V_vert_pix(1);
         b2 = V_vert_pix(2);
         c2 = V_vert_pix(3);
-        
+
         a3 = V_diag1_pix(1);
         b3 = V_diag1_pix(2);
         c3 = V_diag1_pix(3);
-        
+
         a4 = V_diag2_pix(1);
         b4 = V_diag2_pix(2);
         c4 = V_diag2_pix(3);
-        
+
         A_kk = [a1*a2  b1*b2;
             a3*a4  b3*b4];
-        
+
         b_kk = -[c1*c2;c3*c4];
-        
-        
+
+
         A = [A;A_kk];
         b = [b;b_kk];
-        
+
     end;
-    
+
 end;
 
 
@@ -147,7 +147,7 @@ if ~two_focals_init
     end;
 end;
 
-    
+
 
 if two_focals_init
     % Use a two focals estimate:
@@ -184,4 +184,4 @@ fprintf(1,'\n\nCalibration parameters after initialization:\n\n');
 fprintf(1,'Focal Length:          fc = [ %3.5f   %3.5f ]\n',fc);
 fprintf(1,'Principal point:       cc = [ %3.5f   %3.5f ]\n',cc);
 fprintf(1,'Skew:             alpha_c = [ %3.5f ]   => angle of pixel = %3.5f degrees\n',alpha_c,90 - atan(alpha_c)*180/pi);
-fprintf(1,'Distortion:            kc = [ %3.5f   %3.5f   %3.5f   %3.5f   %5.5f ]\n',kc);   
+fprintf(1,'Distortion:            kc = [ %3.5f   %3.5f   %3.5f   %3.5f   %5.5f ]\n',kc);
