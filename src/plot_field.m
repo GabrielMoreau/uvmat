@@ -695,14 +695,14 @@ for icell=1:numel(CellInfo)
             end
             vec_U=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_x});
             vec_V=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_y});
+            XName=Data.ListVarName{CellInfo{icell}.CoordIndex(end)};
+            YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
             if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates
-                XName=Data.ListVarName{CellInfo{icell}.CoordIndex(end)};
-                YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
                 vec_X=reshape(Data.(XName),[],1); %transform vectors in column matlab vectors
                 vec_Y=reshape(Data.(YName),[],1);
             elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates
-                y=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
-                x=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
+                y=Data.(YName);
+                x=Data.(XName);
                 if numel(y)==2 % y defined by first and last values on aregular mesh
                     y=linspace(y(1),y(2),size(vec_U,1));
                 end
@@ -743,8 +743,8 @@ for icell=1:numel(CellInfo)
             A=reshape(A,1,[]);
             XName=Data.ListVarName{ivar_X};
             YName=Data.ListVarName{ivar_Y};
-            eval(['Coord_x=reshape(Data.' XName ',1,[]);'])
-            eval(['Coord_y=reshape(Data.' YName ',1,[]);'])
+            Coord_x=reshape(Data.(XName),1,[]);
+            Coord_y=reshape(Data.(YName),1,[]);
             [A,Coord_x,Coord_y]=proj_grid(Coord_x',Coord_y',A',[],[],'np>256');  % interpolate on a grid
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')
@@ -756,8 +756,9 @@ for icell=1:numel(CellInfo)
             end
         elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates
             YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            XName=Data.ListVarName{CellInfo{icell}.CoordIndex(end)};
             Coord_y=Data.(YName);
-            Coord_x=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
+            Coord_x=Data.(XName);
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
             if isfield(Data,'VarAttribute')
@@ -773,7 +774,7 @@ for icell=1:numel(CellInfo)
                 DCoord_y_min=min(DCoord_y);
                 DCoord_y_max=max(DCoord_y);
                 if sign(DCoord_y_min)~=sign(DCoord_y_max);% =1 for increasing values, 0 otherwise
-                    errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(1)} ];
+                    errormsg=['errror in plot_field.m: non monotonic dimension variable ' YName ];
                     return
                 end
                 test_interp_Y=(DCoord_y_max-DCoord_y_min)> 0.0001*abs(DCoord_y_max);

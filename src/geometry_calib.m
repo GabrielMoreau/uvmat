@@ -167,11 +167,17 @@ end
 %------------------------------------------------------------------------
 % --- Executes on button press APPLY (used to launch the calibration).
 function APPLY_Callback(hObject, eventdata, handles)
+set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
+
 %------------------------------------------------------------------------
 %% look for the GUI uvmat and check for an image as input
 set(handles.APPLY,'BackgroundColor',[1 1 0])% paint APPLY button in yellow to show activation
 huvmat=findobj(allchild(0),'Name','uvmat');% look for the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
+    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
+  return
+end
 
 RootPath='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
@@ -185,7 +191,62 @@ else
     answer=inputdlg(question,'',1,def,options);
     outputfile=answer{1};
 end
-[GeometryCalib,index]=calibrate(handles,hhuvmat);% apply calibration
+
+%% read coordinates of the calibration poinnts: Coord(:,1-3) in phys, Coord(:,4-5) image
+Coord=get(handles.ListCoord,'Data');
+
+  
+%% read the type of calibration
+calib_cell=get(handles.calib_type,'String');
+val=get(handles.calib_type,'Value');
+CalibFcn=['calib_' calib_cell{val}];
+
+%% read the intrinsic parameters
+Intrinsic.Npx=str2num(get(hhuvmat.num_Npx,'String')); 
+Intrinsic.Npy=str2num(get(hhuvmat.num_Npy,'String'));
+Intrinsic.coord_files=get(handles.ListCoordFiles,'String');
+Intrinsic.f1=str2num(get(handles.fx,'String'));
+Intrinsic.f2=str2num(get(handles.fy,'String'));
+Intrinsic.k=str2num(get(handles.kc,'String'));
+Intrinsic.Cx=str2num(get(handles.Cx,'String'));
+Intrinsic.Cy=str2num(get(handles.Cy,'String'));
+if isempty(Intrinsic.k)
+    Intrinsic.k=0;
+end
+if isempty(Intrinsic.Cx)||isempty(Intrinsic.Cy)
+    Intrinsic.Cx=Intrinsic.Npx/2;
+    Intrinsic.Cy=Intrinsic.Npy/2;
+end  
+
+%% Apply calibration
+[GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+
+%% record the coordinate unit
+unitlist=get(handles.CoordUnit,'String');
+unit=unitlist{get(handles.CoordUnit,'value')};
+GeometryCalib.CoordUnit=unit;
+
+%% record the coordinates of the calibration points
+GeometryCalib.SourceCalib.PointCoord=Coord;
+
+%% display calibration results on the GUI geometry_calib
+display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
+display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameters
+%     (rotation and translation of camera with  respect to the phys coordinates)
+
+%% store the calibration data, by default in the xml file of the currently displayed image
+answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
+    ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
+    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+if strcmp(answer,'Yes') %store the calibration data
+    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
+        msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
+        GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    end   
+else
+    GeometryCalib=[];
+    index=1;
+end
 
 if isempty(GeometryCalib) % if calibration cancelled
     set(handles.APPLY,'BackgroundColor',[1 0 1])
@@ -227,11 +288,80 @@ end
 % --- Executes on button press in REPLICATE
 function REPLICATE_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
 
 %% look for the GUI uvmat and check for an image as input
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-GeometryCalib=calibrate(handles,hhuvmat);% apply calibration
+
+%% read coordinates of the calibration poinnts: Coord(:,1-3) in phys, Coord(:,4-5) image
+Coord=get(handles.ListCoord,'Data');
+  
+%% read the type of calibration
+calib_cell=get(handles.calib_type,'String');
+val=get(handles.calib_type,'Value');
+CalibFcn=['calib_' calib_cell{val}];
+
+%% read the intrinsic parameters
+Intrinsic.Npx=str2num(get(hhuvmat.num_Npx,'String'));
+Intrinsic.Npy=str2num(get(hhuvmat.num_Npy,'String'));
+Intrinsic.coord_files=get(handles.ListCoordFiles,'String');
+Intrinsic.f1=str2num(get(handles.fx,'String'));
+Intrinsic.f2=str2num(get(handles.fy,'String'));
+Intrinsic.k=str2num(get(handles.kc,'String'));
+Intrinsic.Cx=str2num(get(handles.Cx,'String'));
+Intrinsic.Cy=str2num(get(handles.Cy,'String'));
+if isempty(Intrinsic.k)
+    Intrinsic.k=0;
+end
+if isempty(Intrinsic.Cx)||isempty(Intrinsic.Cy)
+    Intrinsic.Cx=Intrinsic.Npx/2;
+    Intrinsic.Cy=Intrinsic.Npy/2;
+end
+
+%% apply to cropped images if requested
+answer=msgbox_uvmat('INPUT_Y-N','apply to cropped images?');
+if strcmp(answer,'Yes')
+    prompt = {'npy_lower'};
+    dlg_title = 'remove image the npy_lower image lines (removal of the upper linedoes not change calibration)';
+    num_lines= 1;
+    def     = {'0'};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    npy_crop=str2num(answer{1});
+    Intrinsic.Npy=Intrinsic.Npy-npy_crop; %size of the filtering window
+    Coord(:,5)=Coord(:,5)-npy_crop;% shift the image ordinates of the calibration points by removing the lower band
+end
+
+%% Apply calibration
+[GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+
+
+%% record the coordinate unit
+unitlist=get(handles.CoordUnit,'String');
+unit=unitlist{get(handles.CoordUnit,'value')};
+GeometryCalib.CoordUnit=unit;
+
+%% record the coordinates of the calibration points
+GeometryCalib.SourceCalib.PointCoord=Coord;
+
+%% display calibration results on the GUI geometry_calib
+display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
+display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameters
+%     (rotation and translation of camera with  respect to the phys coordinates)
+
+%% store the calibration data, by default in the xml file of the currently displayed image
+answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
+    ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
+    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+if strcmp(answer,'Yes') %store the calibration data
+    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
+        msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
+        GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    end   
+else
+    GeometryCalib=[];
+    index=1;
+end
 
 %% open the GUI browse_data
 CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
@@ -264,20 +394,16 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' exp
 
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
-function [GeometryCalib,index]=calibrate(handles,hhuvmat)
+function [GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic)
 %------------------------------------------------------------------------
-set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
-%% read the current calibration points
+
 index=[];
-Coord=get(handles.ListCoord,'Data');
-Coord(:,6)=[];
+
 % apply the calibration, whose type is selected in  handles.calib_type
-GeometryCalib=[];
 if ~isempty(Coord)
-    calib_cell=get(handles.calib_type,'String');
-    val=get(handles.calib_type,'Value');
-    GeometryCalib=feval(['calib_' calib_cell{val}],Coord,handles);
+    GeometryCalib=feval(CalibFcn,Coord,Intrinsic);
 else
+    GeometryCalib=[];
     msgbox_uvmat('ERROR','No calibration points, abort')
 end 
 if isempty(GeometryCalib)
@@ -305,41 +431,11 @@ if ~isempty(Coord)
         GeometryCalib.SliceCoord=[0 0 Z_plane];
     end
 end
-%set the coordinate unit
-unitlist=get(handles.CoordUnit,'String');
-unit=unitlist{get(handles.CoordUnit,'value')};
-GeometryCalib.CoordUnit=unit;
-%record the points
-GeometryCalib.SourceCalib.PointCoord=Coord;
-display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
-
-% Display extrinsinc parameters (rotation and translation of camera with  respect to the phys coordiantes)
-set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
-set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
-set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
-set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
-set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
-set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
-
-%% store the calibration data, by default in the xml file of the currently displayed image
-answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
-    ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
-    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
-if strcmp(answer,'Yes') %store the calibration data
-    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-        msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
-        GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-    end
-    
-else
-    GeometryCalib=[];
-    index=1;
-end
 
 
 %------------------------------------------------------------------------
 % --- determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
-function GeometryCalib=calib_rescale(Coord,handles)
+function GeometryCalib=calib_rescale(Coord,Intrinsic)
 %------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);% Z not used
@@ -357,7 +453,7 @@ GeometryCalib.omc=[0 0 0];
 
 %------------------------------------------------------------------------
 % --- determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
-function GeometryCalib=calib_linear(Coord,handles) 
+function GeometryCalib=calib_linear(Coord,Intrinsic) 
 %------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);% Z not used
@@ -387,7 +483,7 @@ GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
 %------------------------------------------------------------------------
 % --- determine the tsai parameters for a view normal to the grid plane
 % NOT USED
-function GeometryCalib=calib_normal(Coord,handles)
+function GeometryCalib=calib_normal(Coord,Intrinsic)
 %------------------------------------------------------------------------
 Calib.f1=str2num(get(handles.fx,'String'));
 Calib.f2=str2num(get(handles.fy,'String'));
@@ -450,14 +546,10 @@ alpha=calib_param(5);
 GeometryCalib.R=[cos(alpha) sin(alpha) 0;-sin(alpha) cos(alpha) 0;0 0 -1];
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_linear(Coord,handles)
+function GeometryCalib=calib_3D_linear(Coord,Intrinsic)
 %------------------------------------------------------------------------
-path_uvmat=which('uvmat');% check the path detected for source file uvmat
-path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-coord_files=get(handles.ListCoordFiles,'String');
-if ischar(coord_files)
+coord_files=Intrinsic.coord_files;
+if ischar(Intrinsic.coord_files)
     coord_files={coord_files};
 end
 if isempty(coord_files{1}) || isequal(coord_files,{''})
@@ -465,12 +557,9 @@ if isempty(coord_files{1}) || isequal(coord_files,{''})
 end
 %retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
 x_1=Coord(:,4:5)';%px coordinates of the ref points
-if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
-    msgbox_uvmat('ERROR','An image needs to be opened in uvmat for calibration')
-  return
-end
-nx=str2num(get(hhuvmat.num_Npx,'String'));
-ny=str2num(get(hhuvmat.num_Npy,'String'));
+
+nx=Intrinsic.Npx;
+ny=Intrinsic.Npy;
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 X_1=Coord(:,1:3)';%phys coordinates of the ref points
 n_ima=numel(coord_files)+1;
@@ -1220,14 +1309,25 @@ set(handles.Cx,'String',num2str(Cx_Cy(1),'%1.1f'))
 set(handles.Cy,'String',num2str(Cx_Cy(2),'%1.1f'))
 set(handles.kc,'String',num2str(kc,'%1.4f'))
 
+%------------------------------------------------------------------------
+% ---display calibration extrinsic parameters
+function display_extrinsic(GeometryCalib,handles)
+%------------------------------------------------------------------------
+set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
+set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
+set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
+set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
+set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
+set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
-% --- Executes when user attempts to close geometry_calib.
+%------------------------------------------------------------------------
+% --- executes when user attempts to close geometry_calib.
 function geometry_calib_CloseRequestFcn(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 delete(hObject); % closes the figure
 
 %------------------------------------------------------------------------
-% --- Executes on button press in PLOT.
+% --- executes on button press in PLOT.
 %------------------------------------------------------------------------
 function PLOT_Callback(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle

@@ -379,24 +379,26 @@ switch ObjectStyle
 end
 % set default values read in the plot of uvmat to initiate the mesh 
 if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
-            huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
+    huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
+    if ~isempty(huvmat)
         UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-    if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));     
-%         Field=UvData.Field;
-        if  isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
-            set(handles.num_DX,'String',num2str(UvData.Field.CoordMesh))
-            set(handles.num_DY,'String',num2str(UvData.Field.CoordMesh))
-            set(handles.num_RangeX_1,'String',num2str(UvData.Field.XMin))
-            set(handles.num_RangeX_2,'String',num2str(UvData.Field.XMax))
-            set(handles.num_RangeY_1,'String',num2str(UvData.Field.YMin))
-            set(handles.num_RangeY_2,'String',num2str(UvData.Field.YMax))
+        if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));
+            %         Field=UvData.Field;
+            if  isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
+                set(handles.num_DX,'String',num2str(UvData.Field.CoordMesh))
+                set(handles.num_DY,'String',num2str(UvData.Field.CoordMesh))
+                set(handles.num_RangeX_1,'String',num2str(UvData.Field.XMin))
+                set(handles.num_RangeX_2,'String',num2str(UvData.Field.XMax))
+                set(handles.num_RangeY_1,'String',num2str(UvData.Field.YMin))
+                set(handles.num_RangeY_2,'String',num2str(UvData.Field.YMax))
+            end
+            if isempty(get(handles.CoordUnit,'String'))&& isfield(UvData.Field,'CoordUnit')
+                set(handles.CoordUnit,'String',UvData.Field.CoordUnit)
+            end
         end
-        if isempty(get(handles.CoordUnit,'String'))&& isfield(UvData.Field,'CoordUnit')
-            set(handles.CoordUnit,'String',UvData.Field.CoordUnit)
-        end       
     end
     if isempty(str2num(get(handles.num_RangeInterp,'String'))) && isfield(UvData,'Field')
-     set(handles.num_RangeInterp,'String',num2str(3*UvData.Field.CoordMesh))% default interpolationlength= 3 meshes
+        set(handles.num_RangeInterp,'String',num2str(3*UvData.Field.CoordMesh))% default interpolationlength= 3 meshes
     end
 end
 

@@ -1,6 +1,6 @@
-%'aver_stat': calculate Reynolds steress components over time series
+%'turb_correlation_x': calculate the x wise correlation function at each point
 %------------------------------------------------------------------------
-% function ParamOut=turb_stat(Param)
+% function ParamOut=turb_correlation_x(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -63,12 +63,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
-    ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.staturb';%set the output dir extension
+    ParamOut.OutputDirExt='.corr_x';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
 %     filecell=get_file_series(Param);%check existence of the first input file
 %     if ~exist(filecell{1,1},'file')
@@ -186,25 +186,53 @@ nbmissing=0;
 %initialisation
 DataOut.ListGlobalAttribute= {'Conventions'};
 DataOut.Conventions= 'uvmat';
-DataOut.ListVarName={'coord_y', 'coord_x' ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','Counter'};
-DataOut.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
-    {'coord_y','coord_x'},{'coord_y','coord_x'}};
-DataOut.UMean=0;
-DataOut.VMean=0;
-DataOut.u2Mean=0;
-DataOut.v2Mean=0;
-DataOut.u2Mean_1=0;
-DataOut.v2Mean_1=0;
-DataOut.uvMean=0;
+DataOut.ListVarName={'delta_x','coord_y','coord_x','UUCorr' , 'VVCorr','UVCorr','Counter'};
+DataOut.VarDimName={'delta_x','coord_y','coord_x',...
+    {'delta_x','coord_y','coord_x'},{'delta_x','coord_y','coord_x'},{'delta_x','coord_y','coord_x'},{'delta_x','coord_y','coord_x'}};
+DataOut.UUCorr=0;
 DataOut.Counter=0;
-U2Mean=0;
-V2Mean=0;
-UVMean=0;
-U2Mean_1=0;
-V2Mean_1=0;
-Counter_1=0;
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+% First get mean values %
+disp('loop for mean started')
+for index=1:NbField
+    update_waitbar(WaitbarHandle,index/NbField)
+    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        break
+    end
+    [Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+    if index==1 %first field
+        if ~isfield(Field,'U')||~isfield(Field,'V')
+            disp_uvmat('ERROR','this function requires the velocity components U and V as input',checkrun)
+            return
+        end
+        [npy,npx]=size(Field.U);
+        UMean=zeros(npy,npx);
+        VMean=zeros(npy,npx);
+        Counter=false(npy,npx);
+                % transcripts the global attributes
+        if isfield(Field,'ListGlobalAttribute')
+            DataOut.ListGlobalAttribute= Field.ListGlobalAttribute;
+            for ilist=1:numel(Field.ListGlobalAttribute)
+                AttrName=Field.ListGlobalAttribute{ilist};
+                DataOut.(AttrName)=Field.(AttrName);
+            end
+        end
+    end
+    FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
+    Field.U(FF)=0;% set to 0 the nan values,
+    Field.V(FF)=0;
+    UMean=UMean+Field.U;
+    VMean=VMean+Field.V;
+    Counter=Counter+~FF;
+end
+UMean=UMean./Counter;
+VMean=VMean./Counter;
+
+
+%%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+disp('loop for correlation started')
 for index=1:NbField
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -215,57 +243,53 @@ for index=1:NbField
 
     %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %first field
-        DataOut=Field;
-        DataOut.coord_y=Field.coord_y;
-        DataOut.coord_x=Field.coord_x;
-        Uprev=Field.U;
-        Vprev=Field.V;
-        if isfield(Field,'FF')
-        FFprev=Field.FF;
-        else
-            FFprev=true(size(Field.U));
-        end
         [npy,npx]=size(Field.U);
-        DataOut.Ucorr=zeros(npy,npx);
+        npcorr=floor(npx/4); %nbre of points for the correlation fct on each side of 0
+        dx=(Field.coord_x(end)-Field.coord_x(1))/(numel(Field.coord_x)-1);
+        DataOut.delta_x=(-dx*npcorr:dx:dx*npcorr)';
+        DataOut.coord_x=Field.coord_x;
+        DataOut.coord_y=Field.coord_y;
+        DataOut.UUCorr=zeros(2*npcorr+1,npy,npx);
+        DataOut.VVCorr=zeros(2*npcorr+1,npy,npx);
+        DataOut.UVCorr=zeros(2*npcorr+1,npy,npx);
+        DataOut.Counter=zeros(2*npcorr+1,npy,npx);
     end
     FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
-    UMean=sum(Field.U,2);
-    UMean=sum(FF,2);
-    UMean=UMean./UMean;
-    Field.U=Field.U-ones(npy,1)*UMean;% substract mean U at each position y
-    Field.U(FF)=0;% set to 0 the nan values
+    Field.U(FF)=0;% set to 0 the nan values,'delta_x'
     Field.V(FF)=0;
-    Ucorr=zeros(npy,npx);
-    for ishift=-(npx-1):(npx-1)% calculate the field U shifted 
-        U_shift=shiftdim(Field.U,[0 -ishift]);
+    Field.U=Field.U-UMean;
+    Field.V=Field.V-VMean;
+    UUCorr=zeros(2*npcorr+1,npy,npx);
+    VVCorr=zeros(2*npcorr+1,npy,npx);
+    UVCorr=zeros(2*npcorr+1,npy,npx);
+    FFCorr=false(2*npcorr+1,npy,npx);
+    for ishift=-npcorr:npcorr% calculate the field U shifted
+        U_shift=circshift(Field.U,[0 -ishift]); %shift U by ishift along the index x
+        V_shift=circshift(Field.V,[0 -ishift]); %shift U by ishift along the index x
+        FF_shift=circshift(FF,[0 -ishift]); %shift U by ishift along the index x
         if ishift<0
-        U_shift(:,1:-ishift)=0;
-        FF_shift(:,1:-ishift)=1;
+            U_shift(:,1:-ishift)=0;
+            V_shift(:,1:-ishift)=0;
+            FF_shift(:,1:-ishift)=1;
         elseif ishift>0
             U_shift(:,end-ishift:end)=0;
-            FF_shift(:,1:end-ishift:end)=1;
+            V_shift(:,end-ishift:end)=0;
+            FF_shift(:,end-ishift:end)=1;
         end
-        UCorr(:,ishift+npx)=sum(Field.U.*U_shift,2);
-        nonNaNcounter=sum(~FF.*~FF_shift,2);
-        UCorr(:,ishift+npx)=UCorr(:,ishift+npx)./nonNaNcounter;
+        UUCorr(ishift+npcorr+1,:,:)=Field.U.*U_shift;
+        VVCorr(ishift+npcorr+1,:,:)=Field.V.*V_shift;
+        UVCorr(ishift+npcorr+1,:,:)=Field.U.*V_shift;
+        FFCorr(ishift+npcorr+1,:,:)=FF | FF_shift;      
     end
-    DataOut.UCorr=DataOut.UCorr+UCorr;
-    
-    %% continuer
-    
-    DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
-    DataOut.VMean=DataOut.VMean+Field.V; %increment the sum
-    U2Mean=U2Mean+(Field.U).*(Field.U); %increment the U squared sum
-    V2Mean=V2Mean+(Field.V).*(Field.V); %increment the V squared sum
-    UVMean=UVMean+(Field.U).*(Field.V); %increment the sum
-    U2Mean_1=U2Mean_1+(Field.U).*Uprev; %increment the U squared sum
-    V2Mean_1=V2Mean_1+(Field.V).*Vprev; %increment the V squared sum
-    Uprev=Field.U; %store for next iteration
-    Vprev=Field.V;
-    FFprev=FF;
+    DataOut.UUCorr=DataOut.UUCorr+UUCorr;
+    DataOut.VVCorr=DataOut.VVCorr+VVCorr;
+    DataOut.UVCorr=DataOut.UVCorr+UVCorr;
+    DataOut.Counter=DataOut.Counter+~FFCorr;
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-DataOut.UCorr=DataOut.UCorr/NbField;
+DataOut.UUCorr=DataOut.UUCorr./DataOut.Counter;
+DataOut.VVCorr=DataOut.VVCorr./DataOut.Counter;
+DataOut.VUVCorr=DataOut.UVCorr./DataOut.Counter;
 %DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
 % DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
 % DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
@@ -274,7 +298,7 @@ DataOut.UCorr=DataOut.UCorr/NbField;
 % UVMean=UVMean./DataOut.Counter; % normalize the mean
 % U2Mean_1=U2Mean_1./Counter_1; % normalize the mean
 % V2Mean_1=V2Mean_1./Counter_1; % normalize the mean
-% DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the mean
+% DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the meanFFCorr
 % DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
 % DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \
 % DataOut.u2Mean_1=U2Mean_1-DataOut.UMean.*DataOut.UMean; % normalize the mean

@@ -421,9 +421,9 @@ set(handles.Vectors,'Position',pos_5)
 
 %% reset position and scale of axis
 pos(1)=0.2*size_fig(3)+35;
-pos(2)=35;
+pos(2)=50;
 pos(3)=0.77*size_fig(3)-1.2*ColumnWidth;
-pos(4)=size_fig(4)-60;
+pos(4)=size_fig(4)-100;
 set(handles.PlotAxes,'Units','pixels')
 set(handles.PlotAxes,'Position',pos)
 set(handles.PlotAxes,'Units','normalized')

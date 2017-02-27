@@ -66,8 +66,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
     ParamOut.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'on';%can use a transform function
-    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
+    ParamOut.FieldTransform = {'phys','phys_polar'};%can use a transform function, proposed list (needed for compilation)
+    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)    
+    if 1==2 % loop used to enforce compilation of transform fct, never entered.
+        phys
+        phys_polar
+    end
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.tseries';%set the output dir extension
@@ -216,9 +220,9 @@ end
 %% coordinate transform or other user defined transform
 transform_fct=[];%default
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-    addpath(Param.FieldTransform.TransformPath)
+    %addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
-    rmpath(Param.FieldTransform.TransformPath)
+    %rmpath(Param.FieldTransform.TransformPath)
     if isfield(Param,'TransformInput')
         XmlData{1}.TransformInput=Param.TransformInput;
     end

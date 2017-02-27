@@ -151,7 +151,7 @@ switch FileType
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
             [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
             if numel(num)~=1
-                NbCoord=NbCoord+1;% adds time coordinate, except if q single time hqs been selected
+                NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
             end
         else
             [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
@@ -159,7 +159,8 @@ switch FileType
         if ~isempty(errormsg)
             return
         end
-        %scan all the variables beyond the two first ones, ParamIn.Coord_x and ParamIn.Coord_y.
+        CheckStructured=1;
+        %scan all the variables beyond the two first NbCoord ones describing the coordinates.
         for ilist=NbCoord+1:numel(Field.VarDimName)
             if isequal(Field.VarDimName{1},Field.VarDimName{ilist}) % if a variable has the same dimension as the coordinate, it denotes a field with unstructured coordinates
                 Field.VarAttribute{1}.Role='coord_x';%unstructured coordinates
@@ -167,9 +168,23 @@ switch FileType
                 if NbCoord>=3
                     Field.VarAttribute{3}.Role='coord_z';
                 end
+                CheckUnstructured=0;
                 break
             end
         end
+        if CheckStructured
+            for ilist=NbCoord+1:numel(Field.VarDimName)
+                rank(1)=find(strcmp(ParamIn.Coord_x,Field.VarDimName{ilist}));
+                rank(2)=find(strcmp(ParamIn.Coord_y,Field.VarDimName{ilist}));
+                if NbCoord==3
+                rank(3)=find(strcmp(ParamIn.Coord_z,Field.VarDimName{ilist}));
+                end
+                rank=flip(rank);
+                VarName=Field.ListVarName{ilist};
+                Field.(VarName)=permute(Field.(VarName),rank);
+                Field.VarDimName{ilist}=Field.VarDimName{ilist}(rank);% permute the order of dimensions
+            end
+        end             
         NormName='';
         UName='';
         VName='';
@@ -224,6 +239,7 @@ switch FileType
                 end
                 Field.VarAttribute=[cell(1,numel(Field.ListDimName)) Field.VarAttribute];
             end
+            
         end
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')

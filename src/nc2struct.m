@@ -1,3 +1,4 @@
+
 %'nc2struct': transform a NetCDF file in a corresponding matlab structure
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted

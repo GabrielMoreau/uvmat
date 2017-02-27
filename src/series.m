@@ -1,3 +1,6 @@
+
+
+
 %'series': master function associated to the GUI series.m for analysis field series  
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
@@ -184,6 +187,7 @@ NbBuiltinTransform=numel(TransformList);
 path_transform_fct=fullfile(path_series,'transform_field');
 TransformPathList=cell(NbBuiltinTransform,1); % initiate the cell matrix of Action fct paths
 TransformPathList(:)={path_transform_fct}; % set the default path to series fcts to all list members
+SeriesData.TransformPath=path_transform_fct;% store the standard path for trqnsform functions (needed for compilation)
 
 %% get the user defined functions stored in the personal file uvmat_perso.mat 
 dir_perso=prefdir;
@@ -1525,8 +1529,21 @@ ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 %% If a compiled version has been selected (ext .sh) check wether it needs to be recompiled
 if strcmp(ActionExt,'.sh')
     TransformPath='';
-    if ~isempty(get(handles.ActionExt,'UserData'))
-        TransformPath=get(handles.ActionExt,'UserData');
+    if isfield(SeriesData,'TransformPath')
+        TransformPath=SeriesData.TransformPath;
+        if isfield(SeriesData,'TransformList')
+            TransformList=get(handles.TransformName,'String');
+            TransformIndex=get(handles.TransformName,'Value');
+            TransformName=TransformList{TransformIndex};
+            if ~ismember(TransformName,SeriesData.TransformList)
+                TransformPath='';
+            end
+        end
+    end
+    if ~isempty(TransformPath)&&...
+          ~strcmp(TransformPath,get(handles.TransformPath,'String'))% if the transform is not in paths set for compilation
+        msgbox_uvmat('ERROR', 'compilation not available for this transform function, select .m')
+        return
     end
     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
@@ -2551,14 +2568,19 @@ end
 %% Visibility of FieldTransform menu
 FieldTransformVisible='off';  %hidden by default
 if isfield(ParamOut,'FieldTransform')
-    FieldTransformVisible=ParamOut.FieldTransform;  
+    if ~strcmp(ParamOut.FieldTransform,'off')
+    FieldTransformVisible='on';  
+    end
+    if iscell(ParamOut.FieldTransform)
+        SeriesData.TransformList=ParamOut.FieldTransform;
+    end
     TransformName_Callback([],[], handles)
 end
 set(handles.FieldTransform,'Visible',FieldTransformVisible)
-if isfield(ParamOut,'TransformPath')
-    set(handles.ActionExt,'UserData',ParamOut.TransformPath)
+if isfield(ParamOut,'TransformPath');% record the path of transform function requested for compilation
+    set(handles.TransformPath,'UserData',ParamOut.TransformPath)
 else
-    set(handles.ActionExt,'UserData',[])
+    set(handles.TransformPath,'UserData',[])
 end
 
 %% Visibility of projection object
