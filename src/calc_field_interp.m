@@ -81,7 +81,7 @@ for ilist=1:numel(FieldName)
                     UName{ilist}='strain';
                     Data.strain=Data.DjUi(:,1,2)+Data.DjUi(:,2,1);
             end
-            InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
+            InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if iTriScatteredInterpt is not already in the list
         else % case 'norm' for instance
             UName{ilist}=r.UName;
             VName{ilist}=r.VName;

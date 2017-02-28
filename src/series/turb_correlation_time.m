@@ -56,13 +56,13 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=turb_stat(Param)
+function ParamOut=turb_correlation_time(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.NbSlice=1; %nbre of slices ('off' by default)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
@@ -276,28 +276,28 @@ for index=1:NbField
         UVCorr=zeros(NpTime+1,npy,npx);
         FFCorr=false(NpTime+1,npy,npx);
     end
+    Field.U=Field.U-UMean;
+    Field.V=Field.V-VMean;
     FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
     Field.U(FF)=0;% set to 0 the nan values,'delta_x'
     Field.V(FF)=0;
-    Field.U=Field.U-UMean;
-    Field.V=Field.V-VMean;
     if index<=NpTime+1
-        U_shift(index,:,:)=Field.U;
-        V_shift(index,:,:)=Field.V;
-        FF_shift(index,:,:)=FF;
+        U_shift(NpTime+2-index,:,:)=Field.U;
+        V_shift(NpTime+2-index,:,:)=Field.V;
+        FF_shift(NpTime+2-index,:,:)=FF;
     else
-        U_shift=circshift(U_shift,[-1 0 0]); %shift U by ishift along the first index
-        V_shift=circshift(V_shift,[-1 0 0]); %shift U by ishift along the first index
-        FF_shift=circshift(FF_shift,[-1 0 0]); %shift U by ishift along the first index
-        U_shift(NpTime+1,:,:)=Field.U;
-        V_shift(NpTime+1,:,:)=Field.V;
-        FF_shift(NpTime+1,:,:)=FF;
+        U_shift=circshift(U_shift,[1 0 0]); %shift U by ishift along the first index
+        V_shift=circshift(V_shift,[1 0 0]); %shift U by ishift along the first index
+        FF_shift=circshift(FF_shift,[1 0 0]); %shift U by ishift along the first index
+        U_shift(1,:,:)=Field.U;
+        V_shift(1,:,:)=Field.V;
+        FF_shift(1,:,:)=FF;
     end
-    for ishift=1:NpTime% calculate the field U shifted
-        UUCorr(ishift,:,:)=Field.U.*U_shift(ishift,:,:);
-        VVCorr(ishift,:,:)=Field.V.*V_shift(ishift,:,:);
-        UVCorr(ishift,:,:)=Field.U.*V_shift(ishift,:,:);
-        FFCorr(ishift,:,:)=FF | FF_shift;
+    for ishift=1:NpTime+1% calculate the field U shifted
+        UUCorr(ishift,:,:)=Field.U.*squeeze(U_shift(ishift,:,:));
+        VVCorr(ishift,:,:)=Field.V.*squeeze(V_shift(ishift,:,:));
+        UVCorr(ishift,:,:)=Field.U.*squeeze(V_shift(ishift,:,:));
+        FFCorr(ishift,:,:)=FF | squeeze(FF_shift(ishift,:,:));
     end
     DataOut.UUCorr=DataOut.UUCorr+UUCorr;
     DataOut.VVCorr=DataOut.VVCorr+VVCorr;
@@ -305,10 +305,11 @@ for index=1:NbField
     DataOut.Counter=DataOut.Counter+~FFCorr;
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-% DataOut.UUCorr=DataOut.UUCorr./DataOut.Counter;
-% DataOut.VVCorr=DataOut.VVCorr./DataOut.Counter;
-% DataOut.VUVCorr=DataOut.UVCorr./DataOut.Counter;
-%DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
+DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero (to avoid NaN)
+DataOut.UUCorr=DataOut.UUCorr./DataOut.Counter;
+DataOut.VVCorr=DataOut.VVCorr./DataOut.Counter;
+DataOut.UVCorr=DataOut.UVCorr./DataOut.Counter;
+
 % DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
 % DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
 % U2Mean=U2Mean./DataOut.Counter; % normalize the mean

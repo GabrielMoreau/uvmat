@@ -56,7 +56,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=turb_stat(Param)
+function ParamOut=turb_correlation_x(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -289,7 +289,7 @@ end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
 DataOut.UUCorr=DataOut.UUCorr./DataOut.Counter;
 DataOut.VVCorr=DataOut.VVCorr./DataOut.Counter;
-DataOut.VUVCorr=DataOut.UVCorr./DataOut.Counter;
+DataOut.UVCorr=DataOut.UVCorr./DataOut.Counter;
 %DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
 % DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
 % DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean

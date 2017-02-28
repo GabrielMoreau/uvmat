@@ -729,16 +729,16 @@ for icell=1:length(CellInfo)
                     if isfield(ProjData.VarAttribute{nbvar+ivar},'Role')
                         if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x');
                             ivar_U=nbvar+ivar;
-                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');
+                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');TriScatteredInterp
                             ivar_V=nbvar+ivar;
                         end
                     end
-                    ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuous lines
+                    ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuoval(['us lines
                 end
             elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
                 if ~check_abscissa
                     XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-                    ProjData.ListVarName=[ProjData.ListVarName {XName}];
+                    ProjData.ListVarName=[ProjData.ListVarName {XName}];TriScatteredInterp
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
                     nbvar=numel(ProjData.ListVarName);
                     ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
@@ -810,15 +810,56 @@ for icell=1:length(CellInfo)
                 return
             end%
             test_interp2=0;%default
-            AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-            AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-            AX=FieldData.(AXName);% set of x positions
-            AY=FieldData.(AYName);% set of y positions
-            AName=FieldData.ListVarName{VarIndex(1)};
-            npxy=size(FieldData.(AName));
+            
             if max(NbDim)==3 % 3D case
+                AZName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+                AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+                AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-2)};
+                AX=FieldData.(AXName);% set of x positions
+                AY=FieldData.(AYName);% set of y positions
+                AZ=FieldData.(AZName);% set of z positions
+                 AName=FieldData.ListVarName{VarIndex(1)};
+                npxy=size(FieldData.(AName));
+                npz=npxy(1);
+                npy=npxy(2);
+                npx=npxy(1);
+                AXI=linspace(AX(1),AX(end), npx);%set of  x  positions for the interpolated input data
+                AYI=linspace(AY(1),AY(end), npy);%set of  x  positions for the interpolated input data
+                 AZI=linspace(AZ(1),AZ(end), npy);%set of  x  positions for the interpolated input data
+                for ivar=VarIndex
+                    VarName=FieldData.ListVarName{ivar};
+                    FieldData.(VarName)=interp3(FieldData.(AXName),FieldData.(AYName),FieldData.(AZName),FieldData.(VarName),AXI,AYI,AZI);
+
+%                     vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
+%                     if nbcolor==1
+%                         vec_B(ind_in)=vec_A(ICOMB);
+%                         vec_B(ind_out)=zeros(size(ind_out));
+%                         A_out=reshape(vec_B,npY,npX);
+%                         ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
+%                     elseif nbcolor==3
+%                         vec_B(ind_in,1:3)=vec_A(ICOMB,:);
+%                         vec_B(ind_out,1)=zeros(size(ind_out));
+%                         vec_B(ind_out,2)=zeros(size(ind_out));
+%                         vec_B(ind_out,3)=zeros(size(ind_out));
+%                         A_out=reshape(vec_B,npY,npX,nbcolor);
+%                         ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
+%                     end
+                    ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
+                    ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
+                    ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
+                end
+                
+                
+                
+                
                 
             else
+                AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+                AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+                AX=FieldData.(AXName);% set of x positions
+                AY=FieldData.(AYName);% set of y positions
+                AName=FieldData.ListVarName{VarIndex(1)};
+                npxy=size(FieldData.(AName));
                 npx=npxy(2);
                 npy=npxy(1);
                 if numel(AX)==2
@@ -859,11 +900,11 @@ for icell=1:length(CellInfo)
                 else
                     XMin=0;
                 end
-                eval(['ProjData.' AXName '=linspace(XMin,XMin+linelength,linelength/DXY_line+1);'])%abscissa of the new pixels along the line
+                ProjData.(AXName)=linspace(XMin,XMin+linelength,linelength/DXY_line+1);%abscissa of the new pixels along the line
                 y=linspace(-width,width,2*width/DXY_line+1);%ordintes of the new pixels (coordinate across the line)
-                eval(['npX=length(ProjData.' AXName ');'])
+                npX=length(ProjData.(AXName));
                 npY=length(y); %TODO: utiliser proj_grid
-                eval(['[X,Y]=meshgrid(ProjData.' AXName ',y);'])%grid in the line coordinates
+                [X,Y]=meshgrid(ProjData.(AXName),y);%grid in the line coordinates
                 XIMA=ObjectData.Coord(1,1)+(X-XMin)*cos(theta)-Y*sin(theta);
                 YIMA=ObjectData.Coord(1,2)+(X-XMin)*sin(theta)+Y*cos(theta);
                 XIMA=(XIMA-AX(1))/DX+1;%  index of the original image along x
@@ -875,7 +916,6 @@ for icell=1:length(CellInfo)
                 ind_out=find(~flagin);
                 ICOMB=(XIMA-1)*npy+YIMA;
                 ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-                nbcolor=1; %color images
                 if numel(npxy)==2
                     nbcolor=1;
                 elseif length(npxy)==3
@@ -885,7 +925,6 @@ for icell=1:length(CellInfo)
                     display(errormsg)
                     return
                 end
-                nbvar=length(ProjData.ListVarName);% number of var from previous cells
                 ProjData.ListVarName=[ProjData.ListVarName {AXName}];
                 ProjData.VarDimName=[ProjData.VarDimName {AXName}];
                 for ivar=VarIndex
@@ -915,8 +954,8 @@ for icell=1:length(CellInfo)
                     ProjData.VarDimName{end}={AXName,'rgb'};
                 end
             end
-
-end
+            
+    end
 if ~isempty(ivar_U) && ~isempty(ivar_V)
     vector_x =ProjData.(ProjData.ListVarName{ivar_U});
     ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});

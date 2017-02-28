@@ -174,17 +174,19 @@ switch FileType
         end
         if CheckStructured
             for ilist=NbCoord+1:numel(Field.VarDimName)
-                rank(1)=find(strcmp(ParamIn.Coord_x,Field.VarDimName{ilist}));
-                rank(2)=find(strcmp(ParamIn.Coord_y,Field.VarDimName{ilist}));
-                if NbCoord==3
-                rank(3)=find(strcmp(ParamIn.Coord_z,Field.VarDimName{ilist}));
+                if numel(Field.VarDimName{ilist})==NbCoord
+                    rank(1)=find(strcmp(ParamIn.Coord_x,Field.VarDimName{ilist}));
+                    rank(2)=find(strcmp(ParamIn.Coord_y,Field.VarDimName{ilist}));
+                    if NbCoord==3
+                        rank(3)=find(strcmp(ParamIn.Coord_z,Field.VarDimName{ilist}));
+                    end
+                    rank=rank(end:-1:1);
+                    VarName=Field.ListVarName{ilist};
+                    Field.(VarName)=permute(Field.(VarName),rank);
+                    Field.VarDimName{ilist}=Field.VarDimName{ilist}(rank);% permute the order of dimensions
                 end
-                rank=flip(rank);
-                VarName=Field.ListVarName{ilist};
-                Field.(VarName)=permute(Field.(VarName),rank);
-                Field.VarDimName{ilist}=Field.VarDimName{ilist}(rank);% permute the order of dimensions
             end
-        end             
+        end
         NormName='';
         UName='';
         VName='';

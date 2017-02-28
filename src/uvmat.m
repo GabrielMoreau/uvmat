@@ -976,15 +976,25 @@ if isfield(UvData,'Field')
                 data.Type='line';
                 data.RangeX=UvData.Field.XMin ;
                 data.RangeY=UvData.Field.CoordMesh;
-                data.Coord=[UvData.Field.XMin (UvData.Field.YMin +UvData.Field.YMax)/2;...
-                           UvData.Field.XMax (UvData.Field.YMin +UvData.Field.YMax)/2];% put line at the middle of the y axis
+                if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+                    Coord_z=(UvData.Field.ZMin +UvData.Field.ZMax)/2;
+                else
+                    Coord_z=0;
+                end
+                data.Coord=[UvData.Field.XMin (UvData.Field.YMin +UvData.Field.YMax)/2 Coord_z;...
+                           UvData.Field.XMax (UvData.Field.YMin +UvData.Field.YMax)/2 Coord_z];% put line at the middle of the y axis
             case 'line_y'
                 check_plot=1; %plot the line directly when set_object is opened
                 data.Type='line';
                 data.RangeX=UvData.Field.YMin ;
                 data.RangeY=UvData.Field.CoordMesh;
-                data.Coord=[(UvData.Field.XMin+UvData.Field.XMax)/2 UvData.Field.YMin;...
-                            (UvData.Field.XMin +UvData.Field.XMax)/2 UvData.Field.YMax];% put line at the middle of the y axis
+                if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+                    Coord_z=(UvData.Field.ZMin +UvData.Field.ZMax)/2;
+                else
+                    Coord_z=0;
+                end
+                data.Coord=[(UvData.Field.XMin+UvData.Field.XMax)/2 UvData.Field.YMin Coord_z;...
+                            (UvData.Field.XMin +UvData.Field.XMax)/2 UvData.Field.YMax Coord_z];% put line at the middle of the y axis
             case {'rectangle','ellipse'}
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
                 data.RangeX=UvData.Field.CoordMesh;
