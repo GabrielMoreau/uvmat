@@ -152,8 +152,9 @@ set(handles.Action,'UserData',NbBuiltinAction)
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [path_series,name,ext]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
-[code, message] = system...
-    ('LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') |... [s for s in p if ''matlab'' not in s] | '':''.join(p)") python -c "import fluidimage"'); 
+command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
+            'python -c "import fluidimage" ' ];
+[code, ~] = system(command); 
 if code==0
     ActionExtList={'.m';'.sh';'.py (in dev.)'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 else
@@ -2158,8 +2159,7 @@ switch RunMode
         end
         msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
     case 'python'
-        command = [
-            'LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "p.split('':'') | [s for s in p if ''matlab'' not in s] | '':''.join(p)") ' ...
+        command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
             'python -m fluidimage.run_from_xml ' filexml{iprocess}];
         % fprintf(['command:\n' command '\n\n'])
         system(command, '-echo');

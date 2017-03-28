@@ -150,11 +150,11 @@ switch VelType
         Field.V= double(Data.deltays);
         Field.V(isnan(Field.V)) = 0;
     case {'filter1','filter2',''}
-        Field.X= double(Data.ixvecs_grid);
-        Field.Y= double(Data.iyvecs_grid);
-        Field.U= double(Data.deltaxs_approx);
+        Field.X= double(Data.ixvecs_final);
+        Field.Y= double(Data.iyvecs_final);
+        Field.U= double(Data.deltaxs_final);
         Field.U(isnan(Field.U)) = 0;
-        Field.V= double(Data.deltays_approx);
+        Field.V= double(Data.deltays_final);
         Field.V(isnan(Field.V)) = 0;
 end
 Field.ListVarName={'X'  'Y'  'U'  'V'  'C'  'F'  'FF'};
