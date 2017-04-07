@@ -591,6 +591,8 @@ est_dist=[0;0;0;0;0];
 est_aspect_ratio=0;
 est_fc=[1;1];
 center_optim=0;
+path_uvmat=which('uvmat');% check the path detected for source file uvmat
+path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 if exist('Rc_1','var')
     GeometryCalib.CalibrationType='3D_linear';
@@ -612,7 +614,7 @@ else
 end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_quadr(Coord,handles)
+function GeometryCalib=calib_3D_quadr(Coord,Intrinsic)
 %------------------------------------------------------------------
 
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
@@ -624,7 +626,9 @@ if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
   return
 end
 % check_cond=0;
-coord_files=get(handles.ListCoordFiles,'String');
+
+coord_files=Intrinsic.coord_files;
+
 if ischar(coord_files)
     coord_files={coord_files};
 end
@@ -688,7 +692,7 @@ else
 end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_extrinsic(Coord,handles)
+function GeometryCalib=calib_3D_extrinsic(Coord,Intrinsic)
 %------------------------------------------------------------------
 path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
@@ -704,10 +708,10 @@ ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 n_ima=1;
 GeometryCalib.CalibrationType='3D_extrinsic';
-fx=str2num(get(handles.fx,'String'));
-fy=str2num(get(handles.fy,'String'));
-Cx=str2num(get(handles.Cx,'String'));
-Cy=str2num(get(handles.Cy,'String'));
+fx=str2num(get(Intrinsic.fx,'String'));
+fy=str2num(get(Intrinsic.fy,'String'));
+Cx=str2num(get(Intrinsic.Cx,'String'));
+Cy=str2num(get(Intrinsic.Cy,'String'));
 errormsg='';
 if isempty(fx)
     errormsg='focal length fx needs to be introduced';
@@ -723,11 +727,11 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-GeometryCalib.fx_fy(1)=str2num(get(handles.fx,'String'));
-GeometryCalib.fx_fy(2)=str2num(get(handles.fy,'String'));
-GeometryCalib.Cx_Cy(1)=str2num(get(handles.Cx,'String'));
-GeometryCalib.Cx_Cy(2)=str2num(get(handles.Cy,'String'));
-GeometryCalib.kc=str2num(get(handles.kc,'String'));
+GeometryCalib.fx_fy(1)=str2num(get(Intrinsic.fx,'String'));
+GeometryCalib.fx_fy(2)=str2num(get(Intrinsic.fy,'String'));
+GeometryCalib.Cx_Cy(1)=str2num(get(Intrinsic.Cx,'String'));
+GeometryCalib.Cx_Cy(2)=str2num(get(Intrinsic.Cy,'String'));
+GeometryCalib.kc=str2num(get(Intrinsic.kc,'String'));
 fct_path=fullfile(path_UVMAT,'toolbox_calib');
 addpath(fct_path)
 GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%reverse Cx_Cy(2) for calibration (inversion of px ordinate)
