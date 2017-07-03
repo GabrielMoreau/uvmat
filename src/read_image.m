@@ -65,4 +65,7 @@ switch FileType
         A=imread(FileName,num);
     case 'image'
         A=imread(FileName);
+    case 'image_DaVis'
+                Input=readimx(FileName);
+        A=Input.Frames{num}.Components{1}.Planes{1}';
 end

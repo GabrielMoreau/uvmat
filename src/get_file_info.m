@@ -55,6 +55,18 @@ switch FileExt
 %         %%%%%
 %         FileInfo.NumberOfFrame=24000;
 %         %%%%%%%%
+    case '.im7'
+        try
+             Input=readimx(fileinput);
+             Image=Input.Frames{1}.Components{1}.Planes{1};
+             FileInfo.FileType='image_DaVis';
+             FileInfo.NumberOfFrames=numel(Input.Frames);
+             FileInfo.Height=size(Image,2);
+             FileInfo.Width=size(Image,1);
+        catch ME
+            msgbox_uvmat('ERROR',ME.message)
+            return
+        end
     case '.h5'
         hinfo=hdf5info(fileinput);
         if strcmp(hinfo.GroupHierarchy.Attributes(1).Value.Data,'MultipassPIVResults')
@@ -145,6 +157,6 @@ switch FileExt
         end
 end
 switch FileInfo.FileType
-    case {'image','multimage','mmreader','cine_phantom','video','netcdf','civdata'}
+    case {'image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'}
         FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 end

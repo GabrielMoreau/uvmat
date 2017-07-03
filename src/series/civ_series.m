@@ -223,60 +223,15 @@ if CheckInputFile
     end
     
     %% check the first image pair
-%     try
         if Param.ActionInput.CheckCiv1% Civ1 is performed
-%             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1),[],j1_series_Civ1(1));
-%             [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
-%             FileType_A=FileInfo_A.FileType;
-%             if strcmp(FileInfo_A.FileType,'netcdf')
-%                 FieldName_A=Param.InputFields.FieldName;
-%                 [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
-%                 par_civ1.ImageA=DataIn.(FieldName_A);
-%             else
-%                 [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(1));
-%             end
-%             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1),[],j2_series_Civ1(1));
-%             if ~exist(ImageName_B,'file')
-%                 disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
-%                 return
-%             end
-%             [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-%             FileType_B=FileInfo_B.FileType;
-%             if strcmp(FileInfo_B.FileType,'netcdf')
-%                 FieldName_B=Param.InputFields.FieldName;
-%                 [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
-%                 par_civ1.ImageB=DataIn.(FieldName_B);
-%             else
-%                 [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(1));
-%             end
             NbField=numel(i1_series_Civ1);
         elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
-%             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(1),[],j1_series_Civ2(1));
-%             if ~exist(ImageName_A,'file')
-%                 disp_uvmat('ERROR',['first input image ' ImageName_A ' does not exist'],checkrun)
-%                 return
-%             end
-%             [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
-%             FileType_A=FileInfo_A.FileType;
-%             [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileInfo_A.FileType,VideoObject_A,FrameIndex_A_Civ2(1));
-%             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(1),[],j2_series_Civ2(1));
-%             if ~exist(ImageName_B,'file')
-%                 disp_uvmat('ERROR',['first input image ' ImageName_B ' does not exist'],checkrun)
-%                 return
-%             end
-%             [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-%             FileType_B=FileInfo_B.FileType;
-%             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(1));
+
             NbField=numel(i1_series_Civ2);
         else
             NbField=numel(i1_series_Civ1);% no image used (only fix or patch) TO CHECK
         end
-%     catch ME
-%         if ~isempty(ME.message)
-%             disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
-%             return
-%         end
-%     end
+
     
     
     %% Output directory

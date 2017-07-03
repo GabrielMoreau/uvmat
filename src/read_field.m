@@ -269,6 +269,9 @@ switch FileType
         A=imread(FileName);
     case 'rdvision'
         [A,FileInfo,timestamps]=read_rdvision(FileName,num);
+    case 'image_DaVis'
+        Input=readimx(FileName);
+        A=Input.Frames{num}.Components{1}.Planes{1}';
     case 'cine_phantom'
         [A,FileInfo] = read_cine_phantom(FileName,num );
     otherwise

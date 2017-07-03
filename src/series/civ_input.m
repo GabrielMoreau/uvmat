@@ -110,7 +110,7 @@ NomTypeNc='';
 NomTypeImaA=NomTypeInput;
 iview_image=1;%line # for the input images
 switch FileType
-    case {'image','multimage','video','mmreader','cine_phantom','netcdf'}
+    case {'image','image_DaVis','multimage','video','mmreader','cine_phantom','netcdf'}
 %         NomTypeImaA=NomTypeInput;
 %         iview_image=1;%line # for the input images
     case 'civdata'
