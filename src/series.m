@@ -2488,8 +2488,8 @@ end
 
 %% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
-    [tild,iview]=sort(InputTable(:,2)); % subdirectories sorted in alphabetical order
-    set(handles.InputTable,'Data',InputTable(iview,:));
+    [tild,iview]=sort(Param.InputTable(:,2)); % subdirectories sorted in alphabetical order
+    set(handles.InputTable,'Data',Param.InputTable(iview,:));
     MinIndex_i=get(handles.MinIndex_i,'Data');
     MinIndex_j=get(handles.MinIndex_j,'Data');
     MaxIndex_i=get(handles.MaxIndex_i,'Data');

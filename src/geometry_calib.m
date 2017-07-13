@@ -205,13 +205,13 @@ CalibFcn=['calib_' calib_cell{val}];
 Intrinsic.Npx=str2num(get(hhuvmat.num_Npx,'String')); 
 Intrinsic.Npy=str2num(get(hhuvmat.num_Npy,'String'));
 Intrinsic.coord_files=get(handles.ListCoordFiles,'String');
-Intrinsic.f1=str2num(get(handles.fx,'String'));
-Intrinsic.f2=str2num(get(handles.fy,'String'));
-Intrinsic.k=str2num(get(handles.kc,'String'));
+Intrinsic.fx=str2num(get(handles.fx,'String'));
+Intrinsic.fy=str2num(get(handles.fy,'String'));
+Intrinsic.kc=str2num(get(handles.kc,'String'));
 Intrinsic.Cx=str2num(get(handles.Cx,'String'));
 Intrinsic.Cy=str2num(get(handles.Cy,'String'));
-if isempty(Intrinsic.k)
-    Intrinsic.k=0;
+if isempty(Intrinsic.kc)
+    Intrinsic.kc=0;
 end
 if isempty(Intrinsic.Cx)||isempty(Intrinsic.Cy)
     Intrinsic.Cx=Intrinsic.Npx/2;
@@ -306,13 +306,13 @@ CalibFcn=['calib_' calib_cell{val}];
 Intrinsic.Npx=str2num(get(hhuvmat.num_Npx,'String'));
 Intrinsic.Npy=str2num(get(hhuvmat.num_Npy,'String'));
 Intrinsic.coord_files=get(handles.ListCoordFiles,'String');
-Intrinsic.f1=str2num(get(handles.fx,'String'));
-Intrinsic.f2=str2num(get(handles.fy,'String'));
-Intrinsic.k=str2num(get(handles.kc,'String'));
+Intrinsic.fx=str2num(get(handles.fx,'String'));
+Intrinsic.fy=str2num(get(handles.fy,'String'));
+Intrinsic.kc=str2num(get(handles.kc,'String'));
 Intrinsic.Cx=str2num(get(handles.Cx,'String'));
 Intrinsic.Cy=str2num(get(handles.Cy,'String'));
-if isempty(Intrinsic.k)
-    Intrinsic.k=0;
+if isempty(Intrinsic.kc)
+    Intrinsic.kc=0;
 end
 if isempty(Intrinsic.Cx)||isempty(Intrinsic.Cy)
     Intrinsic.Cx=Intrinsic.Npx/2;
@@ -485,20 +485,20 @@ GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
 % NOT USED
 function GeometryCalib=calib_normal(Coord,Intrinsic)
 %------------------------------------------------------------------------
-Calib.f1=str2num(get(handles.fx,'String'));
-Calib.f2=str2num(get(handles.fy,'String'));
-Calib.k=str2num(get(handles.kc,'String'));
+Calib.fx=str2num(get(handles.fx,'String'));
+Calib.fy=str2num(get(handles.fy,'String'));
+Calib.kc=str2num(get(handles.kc,'String'));
 Calib.Cx=str2num(get(handles.Cx,'String'));
 Calib.Cy=str2num(get(handles.Cy,'String'));
 %default
-if isempty(Calib.f1)
-    Calib.f1=25/0.012;
+if isempty(Calib.fx)
+    Calib.fx=25/0.012;
 end
-if isempty(Calib.f2)
-    Calib.f2=25/0.012;
+if isempty(Calib.fy)
+    Calib.fy=25/0.012;
 end
-if isempty(Calib.k)
-    Calib.k=0;
+if isempty(Calib.kc)
+    Calib.kc=0;
 end
 if isempty(Calib.Cx)||isempty(Calib.Cy)
     huvmat=findobj(allchild(0),'Tag','uvmat');
@@ -509,9 +509,9 @@ end
 %tsai parameters
 Calib.dpx=0.012;%arbitrary
 Calib.dpy=0.012;
-Calib.sx=Calib.f1*Calib.dpx/(Calib.f2*Calib.dpy);
-Calib.f=Calib.f2*Calib.dpy;
-Calib.kappa1=Calib.k/(Calib.f*Calib.f);
+Calib.sx=Calib.fx*Calib.dpx/(Calib.fy*Calib.dpy);
+Calib.f=Calib.fy*Calib.dpy;
+Calib.kappa1=Calib.kc/(Calib.f*Calib.f);
 
 %initial guess
 X=Coord(:,1);
@@ -692,7 +692,7 @@ else
 end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_extrinsic(Coord,Intrinsic)
+function GeometryCalib=calib_3D_extrinsic(Coord, Intrinsic)
 %------------------------------------------------------------------
 path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
@@ -708,10 +708,11 @@ ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 n_ima=1;
 GeometryCalib.CalibrationType='3D_extrinsic';
-fx=str2num(get(Intrinsic.fx,'String'));
-fy=str2num(get(Intrinsic.fy,'String'));
-Cx=str2num(get(Intrinsic.Cx,'String'));
-Cy=str2num(get(Intrinsic.Cy,'String'));
+fx=Intrinsic.fx;
+fy=Intrinsic.fy;
+Cx=Intrinsic.Cx;
+Cy=Intrinsic.Cy;
+kc=Intrinsic.kc;
 errormsg='';
 if isempty(fx)
     errormsg='focal length fx needs to be introduced';
@@ -727,11 +728,11 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-GeometryCalib.fx_fy(1)=str2num(get(Intrinsic.fx,'String'));
-GeometryCalib.fx_fy(2)=str2num(get(Intrinsic.fy,'String'));
-GeometryCalib.Cx_Cy(1)=str2num(get(Intrinsic.Cx,'String'));
-GeometryCalib.Cx_Cy(2)=str2num(get(Intrinsic.Cy,'String'));
-GeometryCalib.kc=str2num(get(Intrinsic.kc,'String'));
+GeometryCalib.fx_fy(1)=fx;
+GeometryCalib.fx_fy(2)=fy;
+GeometryCalib.Cx_Cy(1)=Cx;
+GeometryCalib.Cx_Cy(2)=Cy;
+GeometryCalib.kc=kc;
 fct_path=fullfile(path_UVMAT,'toolbox_calib');
 addpath(fct_path)
 GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%reverse Cx_Cy(2) for calibration (inversion of px ordinate)
