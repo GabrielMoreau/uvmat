@@ -452,23 +452,7 @@ for ifield=1:NbField
         Data.Civ1_V_smooth(ind_good)=Vres;
         Data.Civ1_FF(ind_good)=FFres;
         Data.CivStage=3;
-             
-        
-        
-        
-%               
-%          % get z from u and v (displacements)
-%        
-%         tempXmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ1_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-%         tempYmid=Rangy(1)+(Rangy(2)-Rangy(1))*(Data.Civ1_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-%         tempUphys=Data.Civ1_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
-%         tempVphys=Data.Civ1_V_smooth*(Rangy(2)-Rangy(1))/(Npy-1);
-%         [tempZphys,tempXphys,tempYphys,tempCiv3_E]=shift2z(tempXmid,tempYmid,tempUphys,tempVphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytemp)
-%         temp=find(Data.Civ1_FF~=0);
-%         tempXmid(temp)=[];
-%         tempYmid(temp)=[];
-%         tempZphys(temp)=[];
-%             
+               
     end
     
     %% Civ2
@@ -650,20 +634,6 @@ for ifield=1:NbField
         par_civ3=Param.ActionInput.Civ3;
         par_civ3.ImageA=par_civ1.ImageA;
         par_civ3.ImageB=par_civ1.ImageB;
-        %         if ~isfield(Param.Civ1,'ImageA')
-%         i1=i1_series_Civ3(ifield);
-%         i2=i1;
-%         if ~isempty(i2_series_Civ3)
-%             i2=i2_series_Civ3(ifield);
-%         end
-%         j1=1;
-%         if ~isempty(j1_series_Civ3)
-%             j1=j1_series_Civ3(ifield);
-%         end
-%         j2=j1;
-%         if ~isempty(j2_series_Civ3)
-%             j2=j2_series_Civ3(ifield);
-%         end
         par_civ3.ImageWidth=size(par_civ3.ImageA,2);
         par_civ3.ImageHeight=size(par_civ3.ImageA,1);
         
@@ -843,18 +813,25 @@ end
 %         end
 %     else
        % store only phys data
-        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys','Error'};
-        Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
-        temp=find(Data.Civ3_FF==0);
-        Data_light.Zphys=Data.Zphys(temp);
-        Data_light.Yphys=Data.Yphys(temp);
-        Data_light.Xphys=Data.Xphys(temp);
-        Data_light.Civ3_C=Data.Civ3_C(temp);
-        Data_light.Xmid=Data.Xmid(temp);
-        Data_light.Ymid=Data.Ymid(temp);
-        Data_light.Uphys=Data.Uphys(temp);
-        Data_light.Vphys=Data.Vphys(temp);
-        Data_light.Error=Data.Error(temp);
+       % Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys','Error'};
+       % Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
+        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','DX','DY','Error'};
+        Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
+        Data_light.VarAttribute{1}.Role='coord_x';
+         Data_light.VarAttribute{2}.Role='coord_y';
+         Data_light.VarAttribute{3}.Role='scalar';
+         Data_light.VarAttribute{5}.Role='vector_x';
+         Data_light.VarAttribute{6}.Role='vector_y';
+        ind_good=find(Data.Civ3_FF==0);
+        Data_light.Zphys=Data.Zphys(ind_good);
+        Data_light.Yphys=Data.Yphys(ind_good);
+        Data_light.Xphys=Data.Xphys(ind_good);
+        Data_light.Civ3_C=Data.Civ3_C(ind_good);
+%         Data_light.Xmid=Data.Xmid(ind_good);
+%         Data_light.Ymid=Data.Ymid(ind_good);
+        Data_light.DX=Data.Uphys(ind_good);
+        Data_light.DY=Data.Vphys(ind_good);
+        Data_light.Error=Data.Error(ind_good);
        if exist('ncfile2','var')
             errormsg=struct2nc(ncfile2,Data_light);
             if isempty(errormsg)

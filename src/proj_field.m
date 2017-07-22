@@ -729,7 +729,7 @@ for icell=1:length(CellInfo)
                     if isfield(ProjData.VarAttribute{nbvar+ivar},'Role')
                         if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x');
                             ivar_U=nbvar+ivar;
-                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');TriScatteredInterp
+                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');
                             ivar_V=nbvar+ivar;
                         end
                     end
@@ -737,8 +737,9 @@ for icell=1:length(CellInfo)
                 end
             elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
                 if ~check_abscissa
-                    XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-                    ProjData.ListVarName=[ProjData.ListVarName {XName}];TriScatteredInterp
+                    %XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+                    XName='X';
+                    ProjData.ListVarName=[ProjData.ListVarName {XName}];
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
                     nbvar=numel(ProjData.ListVarName);
                     ProjData.VarAttribute{nbvar}.long_name='abscissa along line';

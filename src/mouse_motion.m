@@ -128,6 +128,7 @@ if strcmp(htype,'axes')
     tagaxes=get(CurrentAxes,'tag'); % tag name of the current axes, for instance PlotAxes
     if isfield(FigData,tagaxes)
         Field=FigData.(tagaxes); % the current field is sought as substructure of FigData with key tagaxes
+
         if isfield(Field,'ListVarName')
             [CellInfo,NbDimArray]=find_field_cells(Field);%analyse the physical fields contained in Field
             text_displ_1='';

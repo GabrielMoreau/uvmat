@@ -641,6 +641,7 @@ for iview=1:nbview
         i1_series=[];
         RootFile='';
     else %scan the input folder
+        InputTable{iview,3}(1)=[];
             [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
                 find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end

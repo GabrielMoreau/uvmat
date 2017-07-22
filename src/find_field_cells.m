@@ -74,14 +74,14 @@ if ~isequal(numel(Data.VarDimName),nbvar), errormsg='.ListVarName and .VarDimNam
 check_var=1;
 for ilist=1:numel(Data.ListVarName)
     if ~isfield(Data,Data.ListVarName{ilist})
-        check_var=0;% dimensions of data defined, data not needed for this function
+        check_var=0;% dimensions of array defined, but the corresponding array is not given
         break
     end
 end
-if ~check_var &&  ~(isfield(Data,'ListDimName')&& isfield(Data,'DimValue')&&isequal(numel(Data.ListDimName),numel(Data.DimValue)))
-    errormsg=['missing variable or values of dimensions' Data.ListVarName{ilist}];
-    return
-end
+% if ~check_var &&  ~(isfield(Data,'ListDimName')&& isfield(Data,'DimValue')&& isequal(numel(Data.ListDimName),numel(Data.DimValue)))
+%     errormsg=['missing dimension values'];
+%     return
+% end
 
 
 %% role of variables and list of requested operations

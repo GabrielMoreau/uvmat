@@ -10,19 +10,19 @@
 %  (ref_i+1 is used to deal with the image index zero sometimes used)
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
 % FileInfo: structure containing info on the input files (assumed identical on the whole series)
-    % FileInfo.FileType: type of file, =
-    %       = 'image', usual image as recognised by Matlab
-    %       = 'multimage', image series stored in a single file
-    %       = 'civx', netcdf file with civx convention
-    %       = 'civdata', civ data with new convention
-    %       = 'netcdf' other netcdf files
-    %       = 'video': movie recognised by VideoReader (e;g. avi)
+% FileInfo.FileType: type of file, =
+%       = 'image', usual image as recognised by Matlab
+%       = 'multimage', image series stored in a single file
+%       = 'civx', netcdf file with civx convention
+%       = 'civdata', civ data with new convention
+%       = 'netcdf' other netcdf files
+%       = 'video': movie recognised by VideoReader (e;g. avi)
 % MovieObject: video object (=[] otherwise
 % i1_input,i2_input,j1_input,j2_input: indices of the input file, or of the first file in the series if the input file does not exist
 %
 %INPUT
 % FilePath: path to the directory to be scanned
-% fileinput: name (without path) of the input file sample 
+% fileinput: name (without path) of the input file sample
 % checkxml: =1(default) take into account xml file existence to possibly include indexes in RootFile
 %           =0: do not take into account xml file existence
 
@@ -52,12 +52,11 @@ fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 [FileInfo,MovieObject]=get_file_info(fullfileinput);
 
 %% check for particular file types: images, movies, civ data
-checkfileindexing=0;
 if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
     [RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
-    if ~isempty(regexp(SubDir,'^level\d+$')) && exist([RootPath '.xml'],'file')
-        NomType='level';
-    end
+    %     if ~isempty(regexp(SubDir,'^level\d+$')) && exist([RootPath '.xml'],'file')
+    %         NomType='level';
+    %     end
     i1_series=zeros(1,1,1);
     i2_series=zeros(1,1,1);
     j1_series=zeros(1,1,1);
@@ -74,6 +73,7 @@ else % no file indexing
         RootFile='';
         return
     end
+    checkfileindexing=0;
 end
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
@@ -172,147 +172,159 @@ if checkfileindexing
                 end
             end
         end
-        if strcmp(NomType,'level')
-            star_string=[RootFile '*' FileExt];
-            detect_string=['^' RootFile '(?<i1>\d+)' FileExt '$'];%string used in regexp to detect file indices
-             wd=pwd;%current working directory
-            cd (FilePath)% move to the local dir to save time in the operation dir.
-            dirpair=dir(star_string);% look for relevant files in the file directory
-            cd(wd)% back to the working directory
-            nbpair=numel(dirpair);
-            i1_series=zeros(1,nbpair);
-            if nbpair==0% no detected file
-                RootFile='';
-            end
-            % scan the list of relevant files, extract the indices
-            for ifile=1:nbpair
-                rr=regexp(dirpair(ifile).name,detect_string,'names');
-                if ~isempty(rr)
-                    i1_series(ifile)=str2num(rr.i1);                 
+        %         if strcmp(NomType,'level')
+        %             star_string=[RootFile '*' FileExt];
+        %             detect_string=['^' RootFile '(?<i1>\d+)' FileExt '$'];%string used in regexp to detect file indices
+        %             wd=pwd;%current working directory
+        %             cd (FilePath)% move to the local dir to save time in the operation dir.
+        %             dirpair=dir(star_string);% look for relevant files in the file directory
+        %             cd(wd)% back to the working directory
+        %             nbpair=numel(dirpair);
+        %             i1_series=zeros(1,nbpair);
+        %             if nbpair==0% no detected file
+        %                 RootFile='';
+        %             end
+        %             % scan the list of relevant files, extract the indices
+        %             for ifile=1:nbpair
+        %                 rr=regexp(dirpair(ifile).name,detect_string,'names');
+        %                 if ~isempty(rr)
+        %                     i1_series(ifile)=str2num(rr.i1);
+        %                 end
+        %             end
+        %             % look for the list of subfolders level#
+        %             cd (RootPath)% move to the local dir to save time in the operation dir.
+        %             dirpair=dir('level*');% look for relevant subfolders named with leve#
+        %             cd(wd)
+        %             [RootPath,SubDir]=fileparts(RootPath);
+        %             nbpair=numel(dirpair);
+        %             jfile=0;
+        %             for ifile=1:nbpair
+        %                 rr=regexp(dirpair(ifile).name,'^level(?<i1>\d+)$','names');
+        %                 if ~isempty(rr)
+        %                     jfile=jfile+1;
+        %                     j1_series(jfile)=str2num(rr.i1);
+        %                 end
+        %             end
+        %             [j1_series,i1_series]=meshgrid(j1_series,i1_series);
+        %         else
+        detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
+        %find the string used to extract the relevant files with the command dir
+        star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
+        wd=pwd;%current working directory
+        cd (FilePath)% move to the local dir to save time in the operation dir.
+        dirpair=dir(star_string);% look for relevant files in the file directory
+        cd(wd)
+        nbpair=numel(dirpair);
+        ref_i_list=zeros(1,nbpair);
+        ref_j_list=zeros(1,nbpair);
+        if nbpair==0% no detected file
+            RootFile='';
+        end
+        % scan the list of relevant files, extract the indices
+        for ifile=1:nbpair
+            rr=regexp(dirpair(ifile).name,detect_string,'names');
+            if ~isempty(rr)
+                i1=str2num(rr.i1);
+                i2=str2num(regexprep(rr.i2,'^-',''));
+                j1=stra2num(regexprep(rr.j1,'^_',''));
+                j2=stra2num(regexprep(rr.j2,'^-',''));
+                ref_i=i1;
+                if isempty(i2_input)
+                    if ~isempty(i2)% invalid file name if i2 does not exist in the input file
+                        break
+                    end
+                else
+                    ref_i=floor((i1+i2)/2);
                 end
-            end
-            % look for the list of subfolders level#
-            cd (RootPath)% move to the local dir to save time in the operation dir.
-            dirpair=dir('level*');% look for relevant subfolders named with leve#
-            cd(wd)
-            [RootPath,SubDir]=fileparts(RootPath);
-            nbpair=numel(dirpair);
-            jfile=0;
-            for ifile=1:nbpair
-                rr=regexp(dirpair(ifile).name,'^level(?<i1>\d+)$','names');
-                if ~isempty(rr)
-                    jfile=jfile+1;
-                    j1_series(jfile)=str2num(rr.i1);              
-                end
-            end
-            [j1_series,i1_series]=meshgrid(j1_series,i1_series);
-%             i1_series=reshape(i1_series,1,[]);
-%             j1_series=reshape(j1_series,1,[]);
-        else
-            detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
-            %find the string used to extract the relevant files with the command dir
-            star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
-            wd=pwd;%current working directory
-            cd (FilePath)% move to the local dir to save time in the operation dir.
-            dirpair=dir(star_string);% look for relevant files in the file directory
-            cd(wd)
-            nbpair=numel(dirpair);
-            ref_i_list=zeros(1,nbpair);
-            ref_j_list=zeros(1,nbpair);
-            if nbpair==0% no detected file
-                RootFile='';
-            end
-            % scan the list of relevant files, extract the indices
-            for ifile=1:nbpair
-                rr=regexp(dirpair(ifile).name,detect_string,'names');
-                if ~isempty(rr)
-                    i1=str2num(rr.i1);
-                    i2=str2num(regexprep(rr.i2,'^-',''));
-                    j1=stra2num(regexprep(rr.j1,'^_',''));
-                    j2=stra2num(regexprep(rr.j2,'^-',''));
-                    ref_i=i1;
-                    if isempty(i2_input)
-                        if ~isempty(i2)% invalid file name if i2 does not exist in the input file
-                            break
-                        end
+                ref_j=1;
+                if isempty(j1_input)
+                    if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
+                        break
+                    end
+                else %j1_input is not empty
+                    if isempty(j1)% the detected name does not fit with the input
+                        break
                     else
-                        ref_i=floor((i1+i2)/2);
-                    end
-                    ref_j=1;
-                    if isempty(j1_input)
-                        if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
-                            break
-                        end
-                    else %j1_input is not empty
-                        if isempty(j1)% the detected name does not fit with the input
-                            break
+                        ref_j=j1;
+                        if isempty(j2_input)
+                            if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
+                                break
+                            end
                         else
-                            ref_j=j1;
-                            if isempty(j2_input)
-                                if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
-                                    break
-                                end
-                            else
-                                ref_j=floor((j1+j2)/2);
-                            end
-                        end
-                    end
-                    % update the detected index series
-                    if ~isempty(ref_i)&&~isempty(ref_j)
-                        ref_i_list(ifile)=ref_i;
-                        ref_j_list(ifile)=ref_j;
-                        nb_pairs=0;
-                        if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
-                            if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
-                                nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
-                            end
-                        end
-                        if i1==0
-                            i1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
-                        end
-                        if j1==0
-                            j1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
-                        end
-                        i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
-                        if ~isempty(i2_input)
-                            i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
-                        end
-                        if ~isempty(j1_input)
-                            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-                        end
-                        if ~isempty(j2_input)
-                            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-                            j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+                            ref_j=floor((j1+j2)/2);
                         end
                     end
                 end
-            end
-            % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)
-            max_j=max(ref_j_list);
-            if isempty(max_j)
-                ref_ij=ref_i_list;
-            else
-                ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
-            end
-            ind_select=find(ref_ij>0);
-            
-            if ~isempty(ind_select)
-                [tild,ifile_min]=min(ref_ij(ind_select));
-                [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
-                NomType=regexprep(NomType,['^' NomTypePref],'');
-                %% update the file type if the input file does not exist (pb of 0001)
-                if isempty(FileInfo.FileType)
-                    [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,dirpair(ifile_min).name));
+                % update the detected index series
+                if ~isempty(ref_i)&&~isempty(ref_j)
+                    ref_i_list(ifile)=ref_i;
+                    ref_j_list(ifile)=ref_j;
+                    nb_pairs=0;
+                    if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
+                        if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
+                            nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
+                        end
+                    end
+                    if i1==0
+                        i1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+                    end
+                    if j1==0
+                        j1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+                    end
+                    i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
+                    if ~isempty(i2_input)
+                        i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
+                    end
+                    if ~isempty(j1_input)
+                        j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+                    end
+                    if ~isempty(j2_input)
+                        j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+                        j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+                    end
                 end
             end
         end
+        % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)
+        max_j=max(ref_j_list);
+        if isempty(max_j)
+            ref_ij=ref_i_list;
+        else
+            ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
+        end
+        ind_select=find(ref_ij>0);
+        
+        if ~isempty(ind_select)
+            [tild,ifile_min]=min(ref_ij(ind_select));
+            [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
+            NomType=regexprep(NomType,['^' NomTypePref],'');
+            %% update the file type if the input file does not exist (pb of 0001)
+            if isempty(FileInfo.FileType)
+                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,dirpair(ifile_min).name));
+            end
+        end
+        %         end
     end
-
-%% set to empty array the irrelevant index series
-if isequal(i1_series,0), i1_series=[]; end
-if isequal(i2_series,0), i2_series=[]; end
-if isequal(j1_series,0), j1_series=[]; end
-if isequal(j2_series,0), j2_series=[]; end
+    
+    %% set to empty array the irrelevant index series
+    if isequal(i1_series,0), i1_series=[]; end
+    if isequal(i2_series,0), i2_series=[]; end
+    if isequal(j1_series,0), j1_series=[]; end
+    if isequal(j2_series,0), j2_series=[]; end
+    
+    %% case of isolated input file, not member of an  indexed series
+    if isempty(i1_series)
+        [PathDir,RootFile]=fileparts(fullfileinput);
+        [RootPath,SubDir,DirExt]=fileparts(PathDir);
+        SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
+        NomType='*';
+        i2_series=[];j1_series=[];j2_series=[];
+%         i1_input=1;i2_input=[];j1_input=[];j2_input=[];
+        if ~exist(fullfileinput,'file')
+            RootFile='';
+            return
+        end
+    end
 end
 % %% detect rdvision format
 % if strcmp(FileExt,'.bin')
@@ -331,7 +343,7 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         NomType='*';
     else  % if there is a file index, j denotes the frame index while i denotes the file index
         if ~isempty(regexp(NomType,'ab$', 'once'))% recognized as a pair
-            RootFile=fullfile_uvmat('','',RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices       
+            RootFile=fullfile_uvmat('','',RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices
             i1_series=zeros(FileInfo.NumberOfFrames+1,2);% first column =0
             i1_series(:,2)=(0:FileInfo.NumberOfFrames)'; % second column=frame index -1
             j1_series=[];
@@ -387,7 +399,7 @@ elseif size(j2_series,3)>1 %pairs j1 -j2
         end
     end
 end
-i1_series=permute(i1_series,[3 2 1]);% permute dimensions 
+i1_series=permute(i1_series,[3 2 1]);% permute dimensions
 i2_series=permute(i2_series,[3 2 1]);% permute dimensions
-j1_series=permute(j1_series,[3 2 1]);% permute dimensions 
+j1_series=permute(j1_series,[3 2 1]);% permute dimensions
 j2_series=permute(j2_series,[3 2 1]);% permute dimensions

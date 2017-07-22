@@ -1747,7 +1747,7 @@ drawnow
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 errormsg='';
-if isempty(i1_series)
+if isempty(RootFile)
     fileinput=uigetfile_uvmat('pick an input file',fullfile(RootPath,SubDir));
     hh=dir(fileinput);
     if numel(hh)>1
@@ -3818,7 +3818,7 @@ else
         end
     end
 
-    %% loop on the projection objects: one or two
+    %% introduce default  projection objects in 3D
     for imap=1:numel(IndexObj)
         iobj=IndexObj(imap);
         if numel(UvData.ProjObject)<iobj
@@ -3832,6 +3832,16 @@ else
             if iobj==1 && ~(isfield(UvData.ProjObject{iobj},'Coord') && size(UvData.ProjObject{iobj}.Coord,2)>=3 && UvData.ProjObject{iobj}.Coord(1,3)<UvData.Field.ZMax && UvData.ProjObject{iobj}.Coord(1,3)>UvData.Field.ZMin)
                  UvData.ProjObject{iobj}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
             end
+        end
+    end
+   
+    set(handles.uvmat,'UserData',UvData)
+    
+    %% loop on the projection objects: one or two
+    for imap=1:numel(IndexObj)
+        iobj=IndexObj(imap);
+        if numel(UvData.ProjObject)<iobj
+            break
         end
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.ProjObject{iobj});% project field on the object
         if ~isempty(errormsg)
@@ -3871,7 +3881,7 @@ else
             ObjectData.A=flag_mask.*double(ObjectData.A);
             ObjectData.A=feval(AClass,ObjectData.A);
         end
-        set(handles.uvmat,'UserData',UvData)
+
         if ~isempty(ObjectData)
             if imap==2 && isempty(view_field_handle)
                 view_field(ObjectData)
@@ -4361,6 +4371,11 @@ switch field
                     ParamIn.vector_y='Civ2_V_smooth';
                     ParamIn.vec_color='Civ2_C';
             end
+        else
+            ParamIn.TimeAttrName=get(handles.TimeName,'String');
+            ParamIn.Coord_x=get(handles.Coord_x,'String');
+            ParamIn.Coord_y=get(handles.Coord_y,'String');
+            ParamIn.Coord_z=get(handles.Coord_z,'String');
         end
 
         % VelType menu desactivated

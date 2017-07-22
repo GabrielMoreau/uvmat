@@ -14,6 +14,14 @@
 %   .PanelScalar:
 % INPUT:
 % FileName: name (including path) of the netcdf file to open
+% ParmIn: structure containing parameters for preselecting menus:
+%   .Title: set the title of the GUI get_field
+%   .SwitchVarIndexTime='file index','variable' or 'matrix index': select the default option for 'time'
+%   .TimeAttrName: preselect the name of a global attribute for time
+%   .SeriesInput=1 if get_field is called by the GUI series,=0 otherwise (plot options provided in the latter case)
+%   .Coord_x,.Coord_y,.Coord_z, names of the variables used as the three coordinates
+%   .scalar : set the default choise of the scale variable
+%   .vector_x, .vector_y : set the default choise for the variables used for the x and y vector components
 
 %=======================================================================
 % Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -84,7 +92,7 @@ if ~isfield(Field,'ListVarName')
     return
 end
 if ~exist('ParamIn','var')
-    ParamIn=[];
+    ParamIn.Coord_z='';
 end
 
 %% look at singletons and variables with a single dimension
@@ -150,11 +158,11 @@ if isfield(ParamIn,'TimeAttrName')
 else
     time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% look for global attribute containing name 'Time'
 end
-if ~isempty(time_index)
+if isempty(time_index)
+    set(handles.SwitchVarIndexTime,'Value',1);
+else
     set(handles.SwitchVarIndexTime,'Value',2);
     set(handles.TimeName,'UserData',time_index)
-else
-    set(handles.SwitchVarIndexTime,'Value',1);
 end
 set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
 set(handles.SwitchVarIndexTime,'UserData',ListSwitchVarIndexTime); % keep string in memory for check3D
@@ -229,8 +237,13 @@ FieldOption_Callback(handles.variables,[], handles)% list the global attributes
 if isfield(CellInfo{imax},'CoordIndex')
     CoordIndex=CellInfo{imax}.CoordIndex;
     if numel(CoordIndex)==2
+        if isfield(ParamIn,'Coord_x')&& isfield(ParamIn,'Coord_y')
+            YName=ParamIn.Coord_y;
+            XName=ParamIn.Coord_x;
+        else
         YName=Field.ListVarName{CoordIndex(1)};
         XName=Field.ListVarName{CoordIndex(2)};
+        end
         ListCoord=get(handles.Coord_x,'String');
         XIndex=find(strcmp(XName,ListCoord));
         if ~isempty(XIndex)
@@ -258,7 +271,7 @@ if isfield(ParamIn,'Title')
 end
 
 %% set z coordinate menu if relevant
-if Field.MaxDim>=3 && prod(Field.DimValue)<10^8; % 3D field (with memory content smaller than 400 Mo)
+if Field.MaxDim>=3 && prod(Field.DimValue)<10^8 && ~isempty(ParamIn.Coord_z); % 3D field (with memory content smaller than 400 Mo)
     set(handles.Check3D,'Value',1)
 else
     set(handles.Check3D,'Value',0)

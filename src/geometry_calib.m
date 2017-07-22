@@ -219,7 +219,7 @@ if isempty(Intrinsic.Cx)||isempty(Intrinsic.Cy)
 end  
 
 %% Apply calibration
-[GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+[GeometryCalib,index,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
 
 %% record the coordinate unit
 unitlist=get(handles.CoordUnit,'String');
@@ -237,7 +237,8 @@ display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameter
 %% store the calibration data, by default in the xml file of the currently displayed image
 answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
-    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];
+    [num2str(numel(ind_removed)) ' points removed']});
 if strcmp(answer,'Yes') %store the calibration data
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
         msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
@@ -333,7 +334,7 @@ if strcmp(answer,'Yes')
 end
 
 %% Apply calibration
-[GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+[GeometryCalib,index,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
 
 
 %% record the coordinate unit
@@ -352,7 +353,8 @@ display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameter
 %% store the calibration data, by default in the xml file of the currently displayed image
 answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
-    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];...
+    [num2str(numel(ind_removed)) ' points removed']});
 if strcmp(answer,'Yes') %store the calibration data
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
         msgbox_uvmat('CONFIRMATION',{['The current image series is assumed by default in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be modified by MenuSetSlice in the upper bar menu of uvmat'})
@@ -394,24 +396,46 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' exp
 
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
-function [GeometryCalib,index,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic)
+function [GeometryCalib,ind_max,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic)
 %------------------------------------------------------------------------
 
 index=[];
-
+GeometryCalib=[];
 % apply the calibration, whose type is selected in  handles.calib_type
 if ~isempty(Coord)
     GeometryCalib=feval(CalibFcn,Coord,Intrinsic);
 else
-    GeometryCalib=[];
     msgbox_uvmat('ERROR','No calibration points, abort')
 end 
 if isempty(GeometryCalib)
     return
 end
 Z_plane=[];
-if ~isempty(Coord)
-    %check error
+
+% estimate calibration error rms and max
+X=Coord(:,1);
+Y=Coord(:,2);
+Z=Coord(:,3);
+x_ima=Coord(:,4);
+y_ima=Coord(:,5);
+[Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
+GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+[ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
+[ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
+[tild,ind_dim]=max(ErrorMax);
+ind_max=index(ind_dim); % mark the index with maximum deviation
+
+% detect bad calibration points, marked by indices ind_bad, if the
+% difference of actual image coordinates and those given by calibration is
+% greater than 2 pixels and greater than 4 rms.
+check_x=abs(Xpoints-x_ima)>max(2,3*GeometryCalib.ErrorRms(1));
+check_y=abs(Ypoints-y_ima)>max(2,3*GeometryCalib.ErrorRms(2));
+ind_removed=find(check_x | check_y)
+% repeat calibration without the excluded points:
+if ~isempty(ind_removed) 
+    Coord(ind_removed,:)=[];
+    GeometryCalib=feval(CalibFcn,Coord,Intrinsic);
     X=Coord(:,1);
     Y=Coord(:,2);
     Z=Coord(:,3);
@@ -419,17 +443,14 @@ if ~isempty(Coord)
     y_ima=Coord(:,5);
     [Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
     GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-    [GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-    [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
-    [tild,ind_dim]=max(GeometryCalib.ErrorMax);
-    index=index(ind_dim);
-    %set the Z position of the reference plane used for calibration
-    if isequal(max(Z),min(Z))%Z constant
-        Z_plane=Z(1);
-        GeometryCalib.NbSlice=1;
-        GeometryCalib.SliceCoord=[0 0 Z_plane];
-    end
+end
+GeometryCalib.ErrorMax=ErrorMax;
+%set the Z position of the reference plane used for calibration
+if isequal(max(Z),min(Z))%Z constant
+    Z_plane=Z(1);
+    GeometryCalib.NbSlice=1;
+    GeometryCalib.SliceCoord=[0 0 Z_plane];
 end
 
 

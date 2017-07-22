@@ -5,6 +5,7 @@
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
 %      .FileType: type of file, needed as input of read_field.m
+%      .FileIndexing='on' for data files (when series of indexed files are  expected)
 %      .Height: image height in pixels
 %      .Width:  image width in pixels
 %      .BitDepth: nbre of bits per pixel  (8 of 16)

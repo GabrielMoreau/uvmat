@@ -335,7 +335,7 @@ menu={};
 for ilist=1:numel(ListFig)
     FigName=get(ListFig(ilist),'name');
     if isempty(FigName)
-        FigName=['figure ' num2str(ListFig(ilist))];
+        FigName=['figure ' num2str(ListFig(ilist).Number)];
     end
     if ~strcmp(FigName,'uvmat')
         ListAxes=findobj(ListFig(ilist),'Type','axes');
