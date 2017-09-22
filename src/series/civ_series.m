@@ -275,7 +275,7 @@ if iview_A~=0
 end
 
 %%%%% MAIN LOOP %%%%%%
-maskname='';% initiate the mask name
+maskoldname='';% initiate the mask name
 FileType_A='';
 FileType_B='';
 CheckOverwrite=1;%default
@@ -439,12 +439,20 @@ for ifield=1:NbField
         Data.VarAttribute{3}.Role='vector_x';
         Data.VarAttribute{4}.Role='vector_y';
         Data.VarAttribute{5}.Role='warnflag';
+        % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
-            if strcmp(maskname,par_civ1.Mask)% mask exist, not already read in civ1
+            if isfield(par_civ1,'NbSlice')
+                [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
+                i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
+                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+            else
+                maskname=Param.ActionInput.Civ1.Mask;
+            end
+            if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
                 try
-                    par_civ1.Mask=imread(par_civ1.Mask);%update the mask, an store it for future use
+                    par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
                 catch ME
                     if ~isempty(ME.message)
                         errormsg=['error reading input image: ' ME.message];
@@ -453,7 +461,7 @@ for ifield=1:NbField
                     end
                 end
                 mask=par_civ1.Mask;
-                maskname=par_civ1.Mask;
+                maskoldname=maskname;
             end
         end
         if strcmp(Param.ActionInput.ListCompareMode, 'PIV volume')
@@ -703,15 +711,31 @@ for ifield=1:NbField
                 end
             end
         end
-        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)
-            if strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
+        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)        
+            if isfield(par_civ2,'NbSlice')
+                [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
+                i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
+                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+            else
+                maskname=Param.ActionInput.Civ2.Mask;
+            end
+            if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ2.Mask=mask; %use mask already opened
             else
-                par_civ2.Mask=imread(par_civ2.Mask);%update the mask, and store it for future use
+                try
+                    par_civ2.Mask=imread(maskname);%update the mask, an store it for future use
+                catch ME
+                    if ~isempty(ME.message)
+                        errormsg=['error reading input image: ' ME.message];
+                        disp_uvmat('ERROR',errormsg,checkrun)
+                        return
+                    end
+                end
                 mask=par_civ2.Mask;
-                maskname=par_civ2.Mask;
+                maskoldname=maskname;
             end
         end
+
         if CheckInputFile % else Dt given by par_civ2
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 Civ1_Dt=1;

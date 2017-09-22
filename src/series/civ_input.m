@@ -1515,7 +1515,7 @@ hparent=get(hObject,'parent');
 parent_tag=get(hparent,'Tag');
 hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','Mask');% look for the mask name box in the same panel
-
+handle_NbSlice=findobj(hchildren,'tag','num_NbSlice');% look for the mask name box in the same panel
 testmask=0;
 if value
     hseries=findobj(allchild(0),'Tag','series');
@@ -1525,25 +1525,35 @@ if value
     if strcmp(InputTable{1,5},'.nc');
         ind_A=2;
     end
-    [nbslice, flag_mask]=get_mask(InputTable{ind_A,1},handles);% look for a mask with appropriate name
-    if isequal(flag_mask,1)
-        filemask=[num2str(nbslice) 'mask'];
-        testmask=1;
-    else % browse for a mask
+%     [nbslice, flag_mask]=get_mask(InputTable{ind_A,1},handles);% look for a mask with appropriate name
+%     if isequal(flag_mask,1)
+%         filemask=[num2str(nbslice) 'mask'];
+%         testmask=1;
+%     else % browse for a mask
         filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
+        [FilePath,FileName,Ext]=fileparts(filemask);    
+        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName,Ext]);
+        if strcmp(NomType,'_1')
+           NbSlice=i1_series(1,2,end);
+           set(handle_NbSlice,'String',num2str(NbSlice))
+        end
         set(hObject,'UserData',filemask);%store for future use
         if ~isempty(filemask)
             testmask=1;
-        end
-    end
+         end
+%     end
 end
 if testmask
     set(handles.Mask,'Visible','on')
     set(handles.Mask,'String',filemask)
     set(handles.CheckMask,'Value',1)
+    if strcmp(NomType,'_1')
+        set(handles.num_NbSlice,'Visible','on')
+    end
 else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
+    set(handles.num_NbSlice,'Visible','off')
 end
 set(handles.ConfigSource,'String','NEW')
 set(handles.ConfigSource,'BackgroundColor',[1 0 1])
@@ -2373,4 +2383,27 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
     set(handles.ConfigSource,'String','NEW')% indicate that the configuration is new
     set(handles.OK,'BackgroundColor',[1 0 1])%
     drawnow
+end
+
+
+
+function num_NbSlice_Callback(hObject, eventdata, handles)
+% hObject    handle to num_NbSlice (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_NbSlice as text
+%        str2double(get(hObject,'String')) returns contents of num_NbSlice as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function num_NbSlice_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to num_NbSlice (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end

@@ -1,8 +1,9 @@
-%'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)
+%'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch). OBSOLETE: REPLACED BY civ_series
 %------------------------------------------------------------------------
 %  provides an interface for the software menucivx
 % function varargout = civ(varargin)
 % provides an interface for the software menucivx
+% OBSOLETE: REPLACED BY civ_series
 
 %=======================================================================
 % Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France

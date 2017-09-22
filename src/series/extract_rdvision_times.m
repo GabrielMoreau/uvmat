@@ -152,9 +152,9 @@ else
     disp_uvmat('ERROR','the input is not from rdvision: a .seq or .sqb file must be opened',checkrun)
     return
 end
-t=xmltree;
+%t=xmltree;
 
-save(t,fullfile(RootPath,'Running.xml'))%create an xml file to indicate that processing takes place
+%save(t,fullfile(RootPath,'Running.xml'))%create an xml file to indicate that processing takes place
 
 %% calibration data and timing: read the ImaDoc files
 mode=''; %default
@@ -296,6 +296,7 @@ for iview=1:size(Param.InputTable,1)
     
     disp ('max time difference xml and timestamps (IN SEC.)')
     max(abs(difftime))
+end
     
     
     

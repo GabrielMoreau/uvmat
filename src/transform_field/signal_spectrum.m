@@ -1,6 +1,9 @@
 % 'signal_spectrum': calculate and display power spectrum of the current field 
 %  operate on a 1D signal or the first dimension of a higher dimensional matrix (then average over other dimensions)
-%  this function aplies the Welch method and call the function of the matlab signal processing toolbox
+%  this function aplies the Welch method and calls the function  of the matlab signal processing toolbox
+%  it calculates also the cospectrum with the signal shifted by one
+%  index, to remove noise effects assumed uncorrelated from one iteration to
+%  the next.
 %
 % OUTPUT: 
 % DataOut: if DataIn.Action.RUN=0 (introducing parameters): Matlab structure containing the parameters
@@ -90,7 +93,11 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
         XName=Data.ListVarName{2};
         yindex=DataOut.TransformInput.IndexRange(2,:);
         y=Data.(YName)(yindex);
+        if size(DataOut.TransformInput.IndexRange,1)>=3
         xindex=DataOut.TransformInput.IndexRange(3,:);
+        else
+            xindex=DataOut.TransformInput.IndexRange(2,:);
+        end
         x=Data.(XName)(xindex);
         haxes=findobj(huvmat,'Tag','PlotAxes');
         axes(haxes);

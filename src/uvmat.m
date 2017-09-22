@@ -5677,7 +5677,10 @@ end
 function CheckViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 check_view=get(handles.CheckViewObject,'Value');
-
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)% delete existing version of set_object
+    end
 if check_view %activate set_object
     IndexObj=get(handles.ListObject,'Value');
     list_object=get(handles.ListObject,'String');
@@ -5712,10 +5715,10 @@ if check_view %activate set_object
         set(hhset_object.SAVE,'Enable','on')
     end
 else
-    hset_object=findobj(allchild(0),'tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)% delete existing version of set_object
-    end
+%     hset_object=findobj(allchild(0),'tag','set_object');
+%     if ~isempty(hset_object)
+%         delete(hset_object)% delete existing version of set_object
+%     end
 end
 
 
