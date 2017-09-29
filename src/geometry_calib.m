@@ -377,18 +377,20 @@ nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
     SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
     XmlName=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+    dispmessage=' created with calibration parameters';
     % copy the xml file from the old location if appropriate, then update with the calibration parameters
     if ~exist(XmlName,'file') && ~isempty(SubDirBase)
         oldxml=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},SubDirBase,[get(hhuvmat.RootFile,'String') '.xml']);
         if exist(oldxml,'file')
             [success,message]=copyfile(oldxml,XmlName);%copy the old xml file to a new one with the new convention
+            dispmessage=' updated with calibration parameters';
         end
     end
     errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     else
-        display([XmlName ' updated with calibration parameters'])
+        display([XmlName dispmessage])
         nbcalib=nbcalib+1;
     end
 end

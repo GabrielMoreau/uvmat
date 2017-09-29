@@ -52,7 +52,7 @@ fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 [FileInfo,MovieObject]=get_file_info(fullfileinput);
 
 %% check for particular file types: images, movies, civ data
-if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
+%if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
     [RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
     %     if ~isempty(regexp(SubDir,'^level\d+$')) && exist([RootPath '.xml'],'file')
     %         NomType='level';
@@ -62,19 +62,19 @@ if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
     j1_series=zeros(1,1,1);
     j2_series=zeros(1,1,1);
     checkfileindexing=1;
-else % no file indexing
-    [PathDir,RootFile]=fileparts(fullfileinput);
-    [RootPath,SubDir,DirExt]=fileparts(PathDir);
-    SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
-    NomType='*';
-    i1_series=[];i2_series=[];j1_series=[];j2_series=[];
-    i1_input=1;i2_input=[];j1_input=[];j2_input=[];
-    if exist(fullfileinput,'file')~=2
-        RootFile='';
-        return
-    end
-    checkfileindexing=0;
-end
+%else % no file indexing
+%     [PathDir,RootFile]=fileparts(fullfileinput);
+%     [RootPath,SubDir,DirExt]=fileparts(PathDir);
+%     SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
+%     NomType='*';
+%     i1_series=[];i2_series=[];j1_series=[];j2_series=[];
+%     i1_input=1;i2_input=[];j1_input=[];j2_input=[];
+%     if exist(fullfileinput,'file')~=2
+%         RootFile='';
+%         return
+%     end
+%     checkfileindexing=0;
+%end
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
@@ -172,41 +172,7 @@ if checkfileindexing
                 end
             end
         end
-        %         if strcmp(NomType,'level')
-        %             star_string=[RootFile '*' FileExt];
-        %             detect_string=['^' RootFile '(?<i1>\d+)' FileExt '$'];%string used in regexp to detect file indices
-        %             wd=pwd;%current working directory
-        %             cd (FilePath)% move to the local dir to save time in the operation dir.
-        %             dirpair=dir(star_string);% look for relevant files in the file directory
-        %             cd(wd)% back to the working directory
-        %             nbpair=numel(dirpair);
-        %             i1_series=zeros(1,nbpair);
-        %             if nbpair==0% no detected file
-        %                 RootFile='';
-        %             end
-        %             % scan the list of relevant files, extract the indices
-        %             for ifile=1:nbpair
-        %                 rr=regexp(dirpair(ifile).name,detect_string,'names');
-        %                 if ~isempty(rr)
-        %                     i1_series(ifile)=str2num(rr.i1);
-        %                 end
-        %             end
-        %             % look for the list of subfolders level#
-        %             cd (RootPath)% move to the local dir to save time in the operation dir.
-        %             dirpair=dir('level*');% look for relevant subfolders named with leve#
-        %             cd(wd)
-        %             [RootPath,SubDir]=fileparts(RootPath);
-        %             nbpair=numel(dirpair);
-        %             jfile=0;
-        %             for ifile=1:nbpair
-        %                 rr=regexp(dirpair(ifile).name,'^level(?<i1>\d+)$','names');
-        %                 if ~isempty(rr)
-        %                     jfile=jfile+1;
-        %                     j1_series(jfile)=str2num(rr.i1);
-        %                 end
-        %             end
-        %             [j1_series,i1_series]=meshgrid(j1_series,i1_series);
-        %         else
+  
         detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
         %find the string used to extract the relevant files with the command dir
         star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
