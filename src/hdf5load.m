@@ -12,9 +12,9 @@
 
 function datasets = hdf5load(filename)
 
-hinfo=hdf5info(filename);
+    hinfo=hdf5info(filename);
 
-datasets=struct;
-hinfo.GroupHierarchy;
-datasets=hdf5load_recursion(datasets,hinfo.GroupHierarchy);
-
+    datasets=struct;
+    hinfo.GroupHierarchy;
+    datasets=hdf5load_recursion(datasets,hinfo.GroupHierarchy);
+end
