@@ -1009,40 +1009,8 @@ if ~isempty(XmlFileName)
     if isfield(XmlData,'Time')
         Time=XmlData.Time;
         TimeName='xml';
-%                         if XmlData.Time(1,:)==XmlData.Time(2,:)% case starting with index 1
-%                     sizDti=size(XmlData.Time,1)-1; % size of the time vector explicitly defined in the xml file
-%                     ind_start=1;
-%                 else 
-%                     sizDti=size(XmlData.Time,1); % case starting with index 0
-%                     ind_start=0;
-%                 end
-%         % complement the input if the whole time series is not defined
-%             if size(i1_series,3)>size(XmlData.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series
-%                 Dti_total=XmlData.Time(end)-XmlData.Time(1); % total time interval covered by the time vector
-%                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1; % remaining set of frame indices for which time needs to be found
-%                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1)); % number of repetitions of Dti
-%                 time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
-%                 for j=1:size(XmlData.Time,2)
-%                 Time(missing_indices,j)=XmlData.Time(time_indices,j)+repeat_nbre'*Dti_total;
-%                 end
-%                 % update the xml file with NbDti
-%                 t=xmltree(XmlFileName);
-%                 uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
-%                 if isempty(uid_NbDti)
-%                     uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
-%                     [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
-%                 end
-%                 [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
-%                 save(t,XmlFileName)
-%             end
     end
     if isfield(XmlData,'Camera')
-        %         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
-        %             if iview>1 && ~isempty(NbSlice) && ~strcmp(NbSlice,XmlData.Camera.NbSlice)
-        %                 msgbox_uvmat('WARNING','inconsistent number of slices with the first field series');
-        %             end
-        %             NbSlice=XmlData.Camera.NbSlice; % Nbre of slices from camera
-        %         end
         if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
             if iview>1 && ~isempty(TimeUnit) && ~strcmp(TimeUnit,XmlData.Camera.TimeUnit)
                 msgbox_uvmat('WARNING','inconsistent time unit with the first field series');
@@ -1060,17 +1028,17 @@ if ~isempty(XmlFileName)
         end
     end
    
-    if isfield(XmlData,'GeometryCalib')
-        check_calib=1;
-        if isfield(XmlData.GeometryCalib,'SliceCoord')
-            siz=size(XmlData.GeometryCalib.SliceCoord);
-            if ~isempty(NbSlice)&& ~isequal(size(1),NbSlice)
-                msgbox_uvmat('WARNING','inconsistent numbers of Z indices between motor and calibration');
-            else
-                NbSlice=siz(1);
-            end
-        end
-    end
+%     if isfield(XmlData,'GeometryCalib')
+%         check_calib=1;
+%         if isfield(XmlData.GeometryCalib,'SliceCoord')
+%             siz=size(XmlData.GeometryCalib.SliceCoord);
+%             if ~isempty(NbSlice)&& ~isequal(size(1),NbSlice)
+%                 msgbox_uvmat('WARNING','inconsistent numbers of Z indices between motor and calibration');
+%             else
+%                 NbSlice=siz(1);
+%             end
+%         end
+%     end
 end
 if ~isempty(NbSlice)
 set(handles.num_NbSlice,'String',num2str(NbSlice))
@@ -1121,9 +1089,9 @@ SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileInfo.FileType;
 SeriesData.FileInfo{iview}=FileInfo;
 SeriesData.Time{iview}=Time;
-% if ~isempty(TimeName)
-%     SeriesData.TimeSource=TimeSource;
-% end
+
+SeriesData.TimeName=TimeName;
+
 if check_calib
     SeriesData.GeometryCalib{iview}=XmlData.GeometryCalib;
 end
@@ -3627,14 +3595,22 @@ ref_j=1; % default
 if strcmp(get(handles.num_first_j,'String'),'Visible')
     ref_j=str2num(get(handles.num_first_j,'String'));
 end
-[ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j2_series{iview});
-displ_pair=update_listpair(SeriesData.i1_series{iview},SeriesData.i2_series{iview},SeriesData.j1_series{iview},SeriesData.j2_series{iview},ModeMenu{ModeValue},...
-                                                     SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo{iview});
+[ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{1},SeriesData.i2_series{1},SeriesData.j2_series{1});
+InputTable=get(handles.InputTable,'Data');
+displ_pair=update_listpair(SeriesData.i1_series{1},SeriesData.i2_series{1},SeriesData.j1_series{1},SeriesData.j2_series{1},ModeMenu{ModeValue},...
+                                                 SeriesData.Time{1},TimeUnit,ref_i,ref_j,SeriesData.TimeName,InputTable,SeriesData.FileInfo{1});
+for iline=1:size(InputTable,1)
+    viewcell{iline}=num2str(iline);
+end
+viewcell=viewcell';
+ModeMenu={'bursts';'series(Dj)'};
+ModeValue=1;                                               
+                   %i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo                              
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right'); % title
 uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.54 0.8 0.3 0.2],'BackgroundColor',[1 1 1],...
-    'Callback',@(hObject,eventdata)ListView_Callback(hObject,eventdata),'String',ListViewMenu,'Value',ListViewValue,'FontUnits','points','FontSize',12,'FontWeight','bold',...
+    'Callback',@(hObject,eventdata)ListView_Callback(hObject,eventdata),'String',viewcell,'Value',1,'FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','ListView','TooltipString','''ListView'':choice of the file series w for pair display');
 % second raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.79 0.7 0.1],'BackgroundColor',BackgroundColor,...
@@ -3685,16 +3661,13 @@ j1_series=SeriesData.j1_series{iview};
 j2_series=SeriesData.j2_series{iview};
 
 %% enable j index visibility after the new choice
-status_j='on'; % default
-if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
-    status_j='off'; % no j index needed
-elseif strcmp(get(handles.PairString,'Visible'),'on')
-    check_burst=cellfun(@isempty,regexp(PairString,'^j')); % =0 for burst case, 1 otherwise
-    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
-        status_j='off'; % no j index needed for bust case
-    end
+
+if strcmp(mode,'series(Dj)')
+   status_j='on'; % default
+else
+       status_j='off'; % no j index needed for bust case
 end
-enable_j(handles,status_j) % no j index needed
+enable_j(hhseries,status_j) % no j index needed
 
 %% get the reference indices for the time interval Dt
 href_i=findobj(get(hObject,'parent'),'Tag','ref_i');
@@ -3710,7 +3683,7 @@ if isempty(ref_j)
 end
 
 %% update the menu ListPair
-Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,FileInfo);
+Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo);
 hlist_pairs=findobj(get(hObject,'parent'),'Tag','ListPair');
 set(hlist_pairs,'Value',1)% set the first choice by default in ListPair
 set(hlist_pairs,'String',Menu)% set the menu in ListPair

@@ -319,20 +319,43 @@ end
 %% set the menu and default choice of civ pairs
 if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
     set(handles.ListPairMode,'Value',1)
-    set(handles.ListPairMode,'String',{'series(Di)'})
+    PairMenu={'series(Di)'};
 elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
-    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)'})
+    PairMenu={'pair j1-j2';'series(Dj)'};
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
 else
-    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
+    PairMenu={'pair j1-j2';'series(Dj)';'series(Di)'};%multiple choice
     if strcmp(NomTypeNc,'_1-2_1')
         set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
     elseif  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
 end
+set(handles.ListPairMode,'String',PairMenu)
+
+%% set default choice of pair mode
+PairIndex=[];
+if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'PairIndices')
+    PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));
+end
+if isempty(PairIndex)
+    if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
+        PairIndex=1;
+    elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
+        if  MaxIndex_j <= 10
+            PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+        end
+    else
+        if strcmp(NomTypeNc,'_1-2_1')
+            PairIndex=3;% advise 'series(Di)'
+        elseif  MaxIndex_j <= 10
+            PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+        end
+    end
+end
+set(handles.ListPairMode,'Value',PairIndex);  
 
 %% indicate the min and max indices i and j on the GUI
 set(handles.MinIndex_i,'String',num2str(MinIndex_i))
