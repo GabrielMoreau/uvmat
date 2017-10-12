@@ -1558,7 +1558,7 @@ if value
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName,Ext]);
         if strcmp(NomType,'_1')
            NbSlice=i1_series(1,2,end);
-           set(handle_NbSlice,'String',num2str(NbSlice))
+           set(handles.NbSlice,'String',num2str(NbSlice))
         end
         set(hObject,'UserData',filemask);%store for future use
         if ~isempty(filemask)
