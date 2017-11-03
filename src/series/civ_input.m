@@ -712,8 +712,11 @@ else
     mode_list=get(handles.ListPairMode,'String');
     if ischar(mode_list)
         mode_list={mode_list};
-    end
+    end  
     mode_value=get(handles.ListPairMode,'Value');
+    if isempty(mode_value)
+        mode_value=1;
+    end
     mode=mode_list{mode_value};
 end
 % displ_num=[];%default
@@ -907,6 +910,9 @@ if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
  
     mode_list=get(handles.ListPairMode,'String');
     mode_value=get(handles.ListPairMode,'Value');
+    if isempty(mode_value)
+        mode_value=1;
+    end
     if isempty(mode_list)
         return
     end
@@ -1558,7 +1564,7 @@ if value
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName,Ext]);
         if strcmp(NomType,'_1')
            NbSlice=i1_series(1,2,end);
-           set(handles.NbSlice,'String',num2str(NbSlice))
+           set(handles.num_NbSlice,'String',num2str(NbSlice))
         end
         set(hObject,'UserData',filemask);%store for future use
         if ~isempty(filemask)

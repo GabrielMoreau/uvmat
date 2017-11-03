@@ -199,23 +199,16 @@ for iview=1:size(Param.InputTable,1)
     newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
     newxml=[newxml '.xml'];
     
-    %copyfile_modif(filexml,newxml); %copy the xml file in the upper folder
-    
-    %[XmlData,errormsg]=imadoc2struct(newxml);
-%     nbfield2=size(XmlData.Time,2)-1;
-%     if nbfield2>1
-%         NomTypeNew='_1_1';
-%     else
-%         NomTypeNew='_1';
-%     end
     %% get the names of .seq and .sqb files
     switch Param.InputTable{iview,5}
         case {'.seq','.sqb'}
             filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
             filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
+            
             logdir=[Param.OutputSubDir Param.OutputDirExt];
             [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
             [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
+            [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
         otherwise
             errormsg='input file extension must be .seq or .sqb';
     end
@@ -239,7 +232,6 @@ for iview=1:size(Param.InputTable,1)
         SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
         SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
         [tild,SeqData.binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
-        %SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
     end
    
     
@@ -270,34 +262,26 @@ for iview=1:size(Param.InputTable,1)
     timestamp=zeros(1,numel(m.Data));
     for ii=1: numel(m.Data)
         timestamp(ii)=m.Data(ii).timestamp;
-%         j1=1;
-%         if ~isequal(nbfield2,1)
-%             j1=mod(ii-1,nbfield2)+1;
-%         end
-%         i1=floor((ii-1)/nbfield2)+1;
-        %diff_time(i1,j1)= timestamp(ii)-XmlData.Time(i1+1,j1+1);
     end
-    [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+    [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
     [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
     if ~isempty(errormsg)
         disp(errormsg)
         return
     end
-    if ~isequal(size(XmlData.Time(2:end,2:end)),size(reshape(timestamp(1:end),nbfield2,[])'))
-        disp(['size of record ' num2str(size(XmlData.Time(2:end,2:end))) ' does not fit with timestamp size ' num2str(size(reshape(timestamp(1:end),nbfield2,[])'))])
-        return
-    end
-    difftime=XmlData.Time(2:end,2:end)-(reshape(timestamp(1:end),nbfield2,[]))';
+    timestamp=timestamp(1:nbfield1*nbfield2);
+    timestamp=reshape(timestamp,nbfield2,nbfield1);
+    difftime=XmlData.Time(2:end,2:end)'-timestamp;
     disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
     if max(abs(difftime))>0.01
         checkpreserve=1;% will not erase the initial files, possibility of error
     end
     
         %% checking consistency with the xml file
-    if ~isequal(SeqData.nb_frames,numel(timestamp))
-        disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
-        return
-    end    
+%     if ~isequal(SeqData.nb_frames,numel(timestamp))
+%         disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
+%         return
+%     end    
     
     if nbfield2>1
         NomTypeNew='_1_1';
@@ -328,13 +312,13 @@ for iview=1:size(Param.InputTable,1)
 end
 
 %% remove binary files if transfer OK
-    if ~checkpreserve
-        for iview=1:size(Param.InputTable,1)
-         fullfile(RootPath,Param.InputTable{iview,2})
-         source_dir=fullfile(RootPath,Param.InputTable{iview,2});
-        [SUCCESS,MESSAGE]=rmdir(source_dir,'s')
-        end
-    end
+%     if ~checkpreserve
+%         for iview=1:size(Param.InputTable,1)
+%          fullfile(RootPath,Param.InputTable{iview,2})
+%          source_dir=fullfile(RootPath,Param.InputTable{iview,2});
+%         [SUCCESS,MESSAGE]=rmdir(source_dir,'s')
+%         end
+%     end
 delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that processing is finished
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -450,25 +434,86 @@ end
 
 
 
-function [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml)
+function [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml)
 msg='';
 t=xmltree(filexml);
 
-%% correct NbDtj
-uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-uid_content=get(t,uid_NbDtj,'contents');
-t=set(t,uid_content,'value','1');% set NbDtj to 1 (correct error in the xml file)
+%% read Dtk and NbDtk
+NbDtk=1; %default
+Dtk=[]; % default
+uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
+uid_content_Dtk=get(t,uid_Dtk,'contents');
+if ~isempty(uid_content_Dtk) 
+    Dtk=str2num(get(t,uid_content_Dtk,'value'));
+    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+    uid_content_NbDtk=get(t,uid_NbDtk,'contents');
+    if ~isempty(uid_content_NbDtk)
+    NbDtk=str2num(get(t,uid_content_NbDtk,'value'));
+    end
+end
 
-%% check Dtj
+%% read Dti and NbDti
+NbDti=1; %default
+Dti=[]; % default
+uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
+uid_content_Dti=get(t,uid_Dti,'contents');
+if ~isempty(uid_content_Dti) 
+    Dti=str2num(get(t,uid_content_Dti,'value'));
+    uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
+    uid_content_NbDti=get(t,uid_NbDti,'contents');
+    if ~isempty(uid_content_NbDti)
+    NbDti=str2num(get(t,uid_content_NbDti,'value'));
+    end
+end
+
+%% read Dtj and NbDtj
+NbDtj=1; %default
+Dtj=[]; % default
 uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
-uid_content=get(t,uid_Dtj,'contents');
-Dtjstring=get(t,uid_content,'value');
-if isempty(Dtjstring)
+uid_content_Dtj=get(t,uid_Dtj,'contents');
+if ~isempty(uid_content_Dtj) 
+    Dtj=str2num(get(t,uid_content_Dtj,'value'));
+    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+    uid_content_NbDtj=get(t,uid_NbDtj,'contents');
+    if ~isempty(uid_content_NbDtj)
+    NbDtj=str2num(get(t,uid_content_NbDtj,'value'));
+    end
+end
+
+%% correct NbDtj and NbDti (error from RDvision)
+if NbDtj==numel(Dtj)% case of bursts
+    NbDtj=1;
+    uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
+    if ~isempty(uid_motor_nbslice)&& ~isempty(uid_Dtk)% case of multilevel
+        NbSlice=str2num(get(t,get(t,uid_motor_nbslice,'contents'),'value'));
+        NbDti=NbSlice-1;
+    end
+end
+
+if isempty(Dtj)% case of simple series
     timestamp=timestamp';
-    nbfield2=1;
+    t=set(t,uid_content_NbDti,'value',num2str(numel(timestamp)-1));% correct NbDti in the xml file 
 else
-    Dtj=str2num(get(t,uid_content,'value'));
-    nbfield2=numel(Dtj)+1;
+    nbfieldi=(NbDti*numel(Dti)+1);
+    nbfieldk=(NbDtk*numel(Dtk)+1);
+    nbfield1=nbfieldi*nbfieldk;
+    nbfield2=NbDtj*numel(Dtj)+1;
+    NbFrames_xml=nbfield1*nbfield2;
+   if NbFrames_xml<numel(timestamp)
+       disp(['ERROR: size from xml ' num2str(NbFrame_xml) ' smaller than timestamp size ' num2str(numel(timestamp))])
+       return
+   end
+   if NbFrames_xml>numel(timestamp)
+       nbfield1=floor(numel(timestamp)/nbfield2);
+       nbfieldk=floor(nbfield1/nbfieldi);
+       nbfield1=nbfieldi*nbfieldk;
+       NbDtk=nbfieldk-1;
+       t=set(t,uid_content_NbDtk,'value',num2str(NbDtk));% correct NbDtk in the xml file (in practice numel(Dtk)=1;
+       timestamp=timestamp(1:nbfield1*nbfield2);
+       disp(['image record stopped before end: max index i= ' num2str(nbfield1)]);
+       timestamp=reshape(timestamp,nbfield2,nbfield1);
+   end
+   % check Dtj with respect to timestamp
     timestamp=(reshape(timestamp,nbfield2,[]))';
     diff_Dtj=diff(timestamp(1,:))-Dtj;
     if max(abs(diff_Dtj))>min(Dtj)/1000
@@ -477,39 +522,20 @@ else
         disp('Dtj OK');
     end
 end
-%% correct NbDti
-NbDti=size(timestamp,1)-1; %default for series or burst
-uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
-uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-if ~isempty(uid_motor_nbslice)&& ~isempty(uid_NbDtk)
-    uid_content=get(t,uid_motor_nbslice,'contents');
-    NbSlice=str2num(get(t,uid_content,'value'));
-    NbDti=NbSlice-1;
-    uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-    uid_content=get(t,uid_NbDti,'contents');
-    t=set(t,uid_content,'value',num2str(NbDti));
-end
 
 %% adjust Dti
-uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
-uid_content=get(t,uid_Dti,'contents');
-Dti=str2num(get(t,uid_content,'value'));
 Dti_stamp=(timestamp(1+NbDti,1)-timestamp(1,1))/NbDti;
+t=set(t,uid_content_Dti,'value',num2str(Dti_stamp));%corret Dti
 if abs(Dti_stamp-Dti)>Dti/1000
     disp([msg 'Dti from xml file corrected by ' num2str(Dti_stamp-Dti) ', ']);%'
 else
     disp('Dti OK')
 end
-t=set(t,uid_content,'value',num2str(Dti_stamp));
 
 %% adjust Dtk
-uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
 if ~isempty(uid_Dtk)
-    uid_content_Dtk=get(t,uid_Dtk,'contents');
-    Dtk=str2num(get(t,uid_content_Dtk,'value'));
-    uid_content_NbDtk=get(t,uid_NbDtk,'contents');
-    NbDtk=str2num(get(t,uid_content_NbDtk,'value'));
-    Dtk_stamp=(timestamp(end-NbDti,1)-timestamp(1,1))/NbDtk;
+    Dtk_stamp=(timestamp((NbDti+1)*NbDtk+1,1)-timestamp(1,1))/NbDtk;
+    t=set(t,uid_content_Dtk,'value',num2str(Dtk_stamp));
     if abs(Dtk_stamp-Dtk)>Dtk/1000
         disp(['Dtk from xml file corrected by ' num2str(Dtk_stamp-Dtk)]);
     else
@@ -518,6 +544,7 @@ if ~isempty(uid_Dtk)
     t=set(t,uid_content_Dtk,'value',num2str(Dtk_stamp));
 end
 
+%% save the new xml file
 save(t,newxml)
 [success,errormsg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users
 if success==0
