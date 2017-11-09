@@ -143,6 +143,12 @@ if ~exist(xmlfile,'file')
 end
 if exist(xmlfile,'file')
     SeriesData.SeriesParam=xml2struct(xmlfile);
+    if ~(isfield(SeriesData.SeriesParam,'ClusterParam')&& isfield(SeriesData.SeriesParam.ClusterParam,'LaunchCmdFcn'))
+        [success,message]=copyfile(xmlfile,fullfile(path_series,'series_old.xml'));% update the file series.xml inot correctly documented
+        delete(xmlfile);
+        [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
+    end  
+    SeriesData.SeriesParam=xml2struct(xmlfile);
 end
 
 %% list of builtin functions in the menu ActionName
@@ -163,23 +169,24 @@ end
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
-[s,w]=system('oarstat'); % look for cluster system 'oar'
+[s,w]=system(SeriesData.SeriesParam.ClusterParam.ExistenceTest); % look for cluster system presence
+% [s,w]=system('oarstat'); % look for cluster system 'oar'
 if isequal(s,0)
-    RunModeList=[RunModeList;{'cluster_oar'}];
+    RunModeList=[RunModeList;{'cluster'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
     set(handles.num_CPUTime,'Visible','on'); % make visible button for access to Monika
-    set(handles.CPUTime_txt,'Visible','on'); % make visible button for access to Monika
+    set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time estimate for one ref index
 end
-[s,w]=system('qstat -help'); % look for cluster system 'sge'
-if isequal(s,0)
-    if regexp(w,'^pbs')
-        RunModeList=[RunModeList;{'cluster_pbs'}];
-    elseif regexp(w,'^SGE')
-        RunModeList=[RunModeList;{'cluster_sge'}];
-    else
-        RunModeList=[RunModeList;{'cluster_qstat_unknown'}];
-    end
-end
+% [s,w]=system('qstat -help'); % look for cluster system 'sge'
+% if isequal(s,0)
+%     if regexp(w,'^pbs')
+%         RunModeList=[RunModeList;{'cluster_pbs'}];
+%     elseif regexp(w,'^SGE')
+%         RunModeList=[RunModeList;{'cluster_sge'}];
+%     else
+%         RunModeList=[RunModeList;{'cluster_qstat_unknown'}];
+%     end
+% end
 set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
 
 %% list of builtin transform functions in the menu TransformName
@@ -1566,38 +1573,38 @@ end
 switch RunMode
     case {'local','background'}
         NbCore=1; % no need to split the calculation
-    case 'cluster_oar'
+    case 'cluster'
         %proposed number of cores to reserve in the cluster
-        NbCoreAdvised=SeriesData.SeriesParam.OarParam.NbCoreAdvised;
-        NbCoreMax=SeriesData.SeriesParam.OarParam.NbCoreMax;
+        NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
+        NbCoreMax=SeriesData.SeriesParam.ClusterParam.NbCoreMax;
         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
             warning_string=', preferably use .sh option to save Matlab licences';
         else
             warning_string=')';
         end
-        answer=inputdlg({['Number of cores (max ' num2str(NbCoreMax) warning_string],'extra oar options'},'oarsub parameter',1,{num2str(NbCoreAdvised),''});
+        answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
         if isempty(answer)
             errormsg='Action launch interrupted by user';
             return
         end
-        NbCore=str2double(answer{1});
-        extra_oar=answer{2};
-    case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
-        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-            NbCore=1; % one core used only (limitation of Matlab licences)
-            answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
-            if ~strcmp(answer,'Yes')
-                errormsg='Action launch interrupted';
-                return
-            end
-            extra_oar='';
-        else
-            answer=inputdlg({'Number of jobs (max 1000)','Queue'},'qsub parameters',1,{'100','piv_debian'});
-            NbCore=str2double(answer{1});
-            qstat_Queue=answer{2};
-            %extra_oar=answer{2}; % TODO : fix this for LMFA cluster. Maybe
-            %extrs_oar and extra_pbs are not the best names
-        end
+        NbCore=str2double(answer);
+%         extra_oar=answer{2};
+%     case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
+%         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+%             NbCore=1; % one core used only (limitation of Matlab licences)
+%             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
+%             if ~strcmp(answer,'Yes')
+%                 errormsg='Action launch interrupted';
+%                 return
+%             end
+%             extra_oar='';
+%         else
+%             answer=inputdlg({'Number of jobs (max 1000)','Queue'},'qsub parameters',1,{'100','piv_debian'});
+%             NbCore=str2double(answer{1});
+%             qstat_Queue=answer{2};
+%             %extra_oar=answer{2}; % TODO : fix this for LMFA cluster. Maybe
+%             %extrs_oar and extra_pbs are not the best names
+%         end
 end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
@@ -1721,9 +1728,9 @@ nbfield_j=numel(ref_j); % number of j indices
 BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
 NbProcess=1;
 switch RunMode
-    case {'cluster_oar','cluster_pbs','cluster_sge','cluster_qstat_unknown'}
-        JobNumberMax=SeriesData.SeriesParam.OarParam.JobNumberMax;
-        JobCPUTimeAdvised=SeriesData.SeriesParam.OarParam.JobCPUTimeAdvised;
+    case 'cluster'
+        JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
+        JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;
         if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
             BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is MinJobNumber.
             BlockLength=max(BlockLength,ceil(numel(ref_i)/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
@@ -1941,7 +1948,7 @@ switch RunMode
                 msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background: press STATUS to see results'])
         end
         
-    case 'cluster_oar' % option 'oar-parexec' used
+    case 'cluster' % option 'oar-parexec' used
         %create subdirectory for oar commands
         for iprocess=1:NbProcess
             [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
@@ -1973,112 +1980,82 @@ switch RunMode
             fclose(fid); % close the executable file
             system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
         end
-        DirOAR=fullfile(OutputDir,'0_OAR');
-        if exist(DirOAR,'dir')% delete the content of the dir 0_LOG to allow new input
+        DIR_CLUSTER=fullfile(OutputDir,'0_CLUSTER');
+        if exist(DIR_CLUSTER,'dir')% delete the content of the dir 0_LOG to allow new input
             curdir=pwd;
-            cd(DirOAR)
+            cd(DIR_CLUSTER)
             delete('*')
             cd(curdir)
         else
-            [tild,msg1]=mkdir(DirOAR);
+            [tild,msg1]=mkdir(DIR_CLUSTER);
             if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirOAR ': ' msg1]; % error message for directory creation
+                errormsg=['cannot create ' DIR_CLUSTER ': ' msg1]; % error message for directory creation
                 return
             end
         end
         % create file containing the list of jobs
-        filename_joblist=fullfile(DirOAR,'job_list.txt'); % name of the file containing the list of executables
-        fid=fopen(filename_joblist,'w'); % open it for writting
+        ListProcess=fullfile(DIR_CLUSTER,'job_list.txt'); % name of the file containing the list of executables
+        fid=fopen(ListProcess,'w'); % open it for writting
         for iprocess=1:length(batch_file_list)
             fprintf(fid,[batch_file_list{iprocess} '\n']); % write list of exe files
         end
         fclose(fid);
-        system(['chmod +x ' filename_joblist]); % set the file to executable
-        
-        filename_log=fullfile(DirLog,'job_list.stdout'); % file for output messages of the master oar process
-        filename_errors=fullfile(DirLog,'job_list.stderr'); % file for error messages of the master oar process
-        % the command job_list.txt contains the list of NbProcess independent individual jobs
-        % in which the total calculation has been split. Those are written as executable files .sh in the folder /O_EXE.
-        %  These individual jobs are grouped by the system as oar jobs on the NbCore processors.
-        %  For each processor, the oar job must stop after the walltime which has been set, which is limited to 24 h.
-        %  However, the oar job is automatically restarted (option 'idempotent') provided the individual jobs are
-        % shorter than the wall time: in the time interval 'checkpoint' (WallTimeOneJob) before the end of the allowed duration,
-        %  the oar job restarts when an individual job ends.
-        WallTimeMax=SeriesData.SeriesParam.OarParam.WallTimeMax;
-        JobTime=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual job (in minutes)
-        % wall time (in hours ) for each oar job, allowing 10 individual jobs, but limited to 23 h:
-        WallTimeTotal=min(WallTimeMax,4*JobTime/60);
-        %disp(['WallTimeTotal: ' num2str(WallTimeTotal) ' hours'])
-        % estimated time of an individual job (in min), with a margin of error
-        WallTimeOneJob=min(4*JobTime+10,WallTimeTotal*60/2); % estimated max time of an individual job for checkpoint
-        disp(['WallTimeOneJob: ' num2str(WallTimeOneJob) ' minutes'])
-        if NbProcess>=8
-            bigiojob_string=['+{type = ' char(39) 'bigiojob' char(39) '}/licence=1'];% char(39) is quote - bigiojob limit UVmat parallel launch on cluster to avoid saturation of disk access to data
-        else
-            bigiojob_string='';
-        end 
-        oar_command=['oarsub -n UVmat_' ActionFullName ' '...
-            '-t idempotent --checkpoint ' num2str(WallTimeOneJob*60) ' '...
-            '-l "/core=' num2str(NbCore)...
-            bigiojob_string... % char(39) is quote - bigiojob limit UVmat parallel launch on cluster
-            ',walltime=' datestr(WallTimeTotal/24,13) '" '...
-            '-E ' filename_errors ' '...
-            '-O ' filename_log ' '...
-            extra_oar ' '...
-            '"oar-parexec -s -f ' filename_joblist ' '...
-            '-l ' filename_joblist '.log"'];
-        
-        fprintf(oar_command); % display  system command on the Matlab command window
+        system(['chmod +x ' ListProcess]); % set the file to executable
+ 
+        CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
+        LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
+        oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
         [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
-        filename_oarcommand=fullfile(DirOAR,'0_oar_command'); % keep track of the command in file '0-OAR/0_oar_command'
+        filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
         fid=fopen(filename_oarcommand,'w');
         fprintf(fid,oar_command); % store the command
         fprintf(fid,result); % store the result (job ID number)
         fclose(fid);
         msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
         
-    case 'cluster_pbs' % for LMFA Kepler machine
-        %create subdirectory for pbs command and log files
-        DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
-        if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DirPBS)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DirPBS);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirPBS ': ' msg1]; % error message for directory creation
-                return
-            end
-        end
-        max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-        walltime_onejob=1800; % seconds, max estimated time for asingle file index value
-        filename_joblist=fullfile(DirPBS,'job_list.txt'); % create name of the global executable file
-        fid=fopen(filename_joblist,'w');
-        for iprocess=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{iprocess} '\n']); % list of exe files
-        end
-        fclose(fid);
-        system(['chmod +x ' filename_joblist]); % set the file to executable
-        pbs_command=['qsub -n CIVX '...
-            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-            '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
-            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-            '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
-            extra_qstat ' '...
-            '"oar-parexec -s -f ' filename_joblist ' '...
-            '-l ' filename_joblist '.log"'];
-        filename_oarcommand=fullfile(DirPBS,'pbs_command');
-        fid=fopen(filename_oarcommand,'w');
-        fprintf(fid,pbs_command);
-        fclose(fid);
-        fprintf(pbs_command); % display in command line
-        %system(pbs_command);
-        msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
+%     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct 
 
-     case 'cluster_sge' % for PSMN
+%         %create subdirectory for pbs command and log files
+%         DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
+%         if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
+%             curdir=pwd;
+%             cd(DirPBS)
+%             delete('*')
+%             cd(curdir)
+%         else
+%             [tild,msg1]=mkdir(DirPBS);
+%             if ~strcmp(msg1,'')
+%                 errormsg=['cannot create ' DirPBS ': ' msg1]; % error message for directory creation
+%                 return
+%             end
+%         end
+%         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
+%         walltime_onejob=1800; % seconds, max estimated time for asingle file index value
+%         ListProcess=fullfile(DirPBS,'job_list.txt'); % create name of the global executable file
+%         fid=fopen(ListProcess,'w');
+%         for iprocess=1:length(batch_file_list)
+%             fprintf(fid,[batch_file_list{iprocess} '\n']); % list of exe files
+%         end
+%         fclose(fid);
+%         system(['chmod +x ' ListProcess]); % set the file to executable
+%         pbs_command=['qsub -n CIVX '...
+%             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+%             '-l /core=' num2str(NbCore) ','...
+%             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
+%             '-E ' regexprep(ListProcess,'\.txt\>','.stderr') ' '...
+%             '-O ' regexprep(ListProcess,'\.txt\>','.log') ' '...
+%             extra_qstat ' '...
+%             '"oar-parexec -s -f ' ListProcess ' '...
+%             '-l ' ListProcess '.log"'];
+%         filename_oarcommand=fullfile(DirPBS,'pbs_command');
+%         fid=fopen(filename_oarcommand,'w');
+%         fprintf(fid,pbs_command);
+%         fclose(fid);
+%         fprintf(pbs_command); % display in command line
+%         %system(pbs_command);
+%         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
+
+     case 'cluster_sge' % for PSMN % TODO: use the standard 'cluster' config with an external fct
         % Au PSMN, on ne cr??e pas 1 job avec plusieurs c??urs, mais N jobs de 1 c??urs
         % o?? N < 1000.
         %create subdirectory for pbs command and log files
