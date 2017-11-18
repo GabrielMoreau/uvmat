@@ -59,10 +59,8 @@ handles.output = Param;
 guidata(hObject, handles); % Update handles structure
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 set(hObject,'WindowKeyPressFcn',{@keyboard_callback,handles})%set keyboard action function
-%set(hObject,'KeyPressFcn',{@KeyPressFcn,handles})%set keyboard action function
 set(handles.ref_i,'KeyPressFcn',{@ref_i_KeyPressFcn,handles})%set keyboard action function
 set(handles.ref_j,'KeyPressFcn',{@ref_i_KeyPressFcn,handles})%set keyboard action function
-%set(hObject,'WindowKeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
 hhseries=guidata(hseries); %handles of the elements in 'series'
 SeriesData=get(hseries,'UserData');% info stored in the GUI series 
@@ -219,10 +217,7 @@ if isfield(SeriesData,'Time') &&numel(SeriesData.Time')>=1 && ~isempty(SeriesDat
 end
 if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)
     TimeUnit=Param.IndexRange.TimeUnit;
-end
-% if isfield(SeriesData,'TimeSource')
-%     set(handles.TimeSource,'String',SeriesData.TimeSource)
-% end  
+end 
 if isfield(SeriesData,'GeometryCalib')
     tsai=SeriesData.GeometryCalib;
     if isfield(tsai,'fx_fy')
@@ -315,6 +310,10 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
        CheckDeformation_Callback(hObject, eventdata, handles)
     end
 end
+
+       if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+            set(handles.PairIndices,'Visible','off')
+        end
 
 %% set the menu and default choice of civ pairs
 if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
@@ -667,11 +666,9 @@ hhseries=guidata(hseries);
 InputTable=get(hhseries.InputTable,'Data');
 OriginIndex='off';
 PairIndices='off';
-DoubleInputSeries='off';
 switch option
     case 'PIV'
-        PairIndices='on';% needs to define index pairs for PIV
-        
+        PairIndices='on';% needs to define index pairs for PIV       
     case 'PIV volume'
         PairIndices='on';% needs to define index pairs for PIV
         set(handles.ListPairMode,'Value',1)
@@ -679,20 +676,17 @@ switch option
         ListPairMode_Callback(hObject, eventdata, handles)
     case 'displacement'
         OriginIndex='on';%define a frame origin for displacement
-%     case 'shift'
-%         if numel(ImageType)==1
-%             fileinput=uigetfile_uvmat('pick a second file series for synchronous shift',InputTable{check_nc+1});
-%             if ~isempty(fileinput)
-%                 series( 'display_file_name',hhseries,fileinput,'append')
-%             end
-%             
-%             
-%         end
 end
 set(handles.num_OriginIndex,'Visible',OriginIndex)
 set(handles.OriginIndex_title,'Visible',OriginIndex)
+set(handles.CheckRefFile,'Visible',OriginIndex)
+set(handles.RefFile,'Visible',OriginIndex)
 set(handles.PairIndices,'Visible',PairIndices)
-ListPairMode_Callback(hObject, eventdata, handles)
+ListPairMode_Callback(hObject,eventdata,handles)
+if strcmp(OriginIndex,'on')
+    set(handles.CheckRefFile,'Value',1)
+    CheckRefFile_Callback(hObject,eventdata,handles)
+end
         
 
 
@@ -707,7 +701,7 @@ compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
 if strcmp(compare,'displacement')||strcmp(compare,'shift')
-    mode='displacement';
+    mode_selected='displacement';
 else
     mode_list=get(handles.ListPairMode,'String');
     if ischar(mode_list)
@@ -717,7 +711,7 @@ else
     if isempty(mode_value)
         mode_value=1;
     end
-    mode=mode_list{mode_value};
+    mode_selected=mode_list{mode_value};
 end
 % displ_num=[];%default
 ref_i=str2double(get(handles.ref_i,'String'));
@@ -733,7 +727,7 @@ nbfield2=siztime(2)-1;
 %displ_num used to define the indices of the civ_input pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
-if isequal(mode,'pair j1-j2')
+if isequal(mode_selected,'pair j1-j2')
     dt=1;
     displ='';
     index=0;
@@ -763,13 +757,13 @@ if isequal(mode,'pair j1-j2')
     displ_num(3,:)=0;
     displ_num(4,:)=0;
     enable_j(handles, 'off')
-elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)')
+elseif isequal(mode_selected,'series(Dj)') %| isequal(mode,'st_series(Dj)')
     index=1:200;
     displ_num(1,index)=-floor(index/2);
     displ_num(2,index)=ceil(index/2);
     displ_num(3:4,index)=zeros(2,200);
     enable_j(handles, 'on')
-elseif isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
+elseif isequal(mode_selected,'series(Di)') %| isequal(mode,'st_series(Di)')
 %     index=1:200;
 %     displ_num(1:2,index)=zeros(2,200);
 %     displ_num(3,index)=-floor(index/2);
@@ -780,7 +774,7 @@ elseif isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
     else
         enable_j(handles, 'off')
     end
-elseif isequal(mode,'displacement')%the pairs have the same indices
+elseif isequal(mode_selected,'displacement')%the pairs have the same indices
     displ_num(1,1)=0;
     displ_num(2,1)=0;
     displ_num(3,1)=0;
@@ -854,9 +848,9 @@ function ref_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 mode_list=get(handles.ListPairMode,'String');
 mode_value=get(handles.ListPairMode,'Value');
-mode=mode_list{mode_value};
+mode_selected=mode_list{mode_value};
 errormsg=find_netcpair_civ(handles,1);% update the menu of pairs depending on the available netcdf files
-if isequal(mode,'series(Di)') || ...% we do patch2 only
+if isequal(mode_selected,'series(Di)') || ...% we do patch2 only
         (get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0)
     errormsg=find_netcpair_civ( handles,2);
 end
@@ -871,30 +865,7 @@ function ref_i_KeyPressFcn(hObject, eventdata, handles)
 set(hObject,'BackgroundColor',[1 0 1])
         
 % %------------------------------------------------------------------------
-% function ref_j_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% mode_list=get(handles.ListPairMode,'String');
-% mode_value=get(handles.ListPairMode,'Value');
-% mode=mode_list{mode_value};
-% errormsg='';
-% if isequal(get(handles.CheckCiv1,'Value'),0)|| isequal(mode,'series(Dj)')
-%     errormsg=find_netcpair_civ(handles,1);% update the menu of pairs depending on the available netcdf files
-% end
-% if isequal(mode,'series(Dj)') || ...
-%         (get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0)
-%     errormsg=find_netcpair_civ(handles,2);
-% end
-% if ~isempty(errormsg)
-%     msgbox_uvmat('ERROR',errormsg)
-% end
-% 
-% function ref_j_KeyPressFcn(hObject, eventdata, handles)
-% set(handles.ref_j,'BackgroundColor',[1 0 1])
-%------------------------------------------------------------------------
-% determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
-% the field series set by MinIndex_i, incr, last_i
-% index=1: look for pairs for civ1
-% index=2: look for pairs for civ2
+
 function errormsg=find_netcpair_civ(handles,index)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')% set the mouse pointer to 'watch' (clock)
@@ -906,6 +877,7 @@ CivInputData=get(handles.civ_input,'UserData');
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
+mode_selected='displacement';
 if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
  
     mode_list=get(handles.ListPairMode,'String');
@@ -916,7 +888,7 @@ if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
     if isempty(mode_list)
         return
     end
-    mode=mode_list{mode_value};
+    mode_selected=mode_list{mode_value};
 end
 nom_type_ima=CivInputData.NomTypeIma;
 menu_pair=get(handles.ListPairCiv1,'String');%previous menu of ListPairCiv1
@@ -934,7 +906,7 @@ PairCiv2Init=menu_pair{get(handles.ListPairCiv2,'Value')};%previous choice of pa
 %subdir_civ2=[SubDirImages get(handles.Civ2_ImageA,'String')];%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 ref_j=[];
-if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
+if isequal(mode_selected,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
 elseif strcmp(get(handles.ref_j,'Visible'),'on')
     ref_j=str2double(get(handles.ref_j,'String'));
@@ -954,7 +926,7 @@ select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 %nbpair=200; %default
 
 %% determine the menu display in .ListPairCiv1
-switch mode
+switch mode_selected
     case 'series(Di)'
         for ipair=1:nbpair
             if select(ipair)
@@ -994,8 +966,6 @@ switch mode
             end
         end
     case 'pair j1-j2'%case of pairs
-%         MinIndex_j=CivInputData.MinIndex_j;
-%         MaxIndex_j=min(CivInputData.MaxIndex_j,10);%limitate the number of pairs to 10x10
         MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
         MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
         index_pair=0;
@@ -1130,44 +1100,6 @@ if vmax<=vmin
     set(handles.num_VMax,'String', num2str(vmax))
 end   
 if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
-%     list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
-%     index=get(handles.ListPairCiv1,'Value');
-%     pair_string=list_pair{index};
-%     time=get(handles.TimeSource,'UserData'); %get the set of times
-%     pxcm=get(handles.SearchRange,'UserData');
-%     mode_list=get(handles.ListPairMode,'String');
-%     mode_value=get(handles.ListPairMode,'Value');
-%     mode=mode_list{mode_value};      
-%     if isequal (mode, 'series(Di)' )
-%         ref_i=str2double(get(handles.ref_i,'String'));
-%         num1=ref_i-floor(index/2);%  first image numbers
-%         num2=ref_i+ceil(index/2);
-%         num_a=1;
-%         num_b=1;
-%     elseif isequal (mode, 'series(Dj)')
-%         num1=1;
-%         num2=1;
-%         ref_j=str2double(get(handles.ref_j,'String'));
-%         num_a=ref_j-floor(index/2);%  first image numbers
-%         num_b=ref_j+ceil(index/2);
-%     elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)     
-%         ref_i=str2double(get(handles.ref_i,'String'));
-%         num1=ref_i;
-%         num2=ref_i;
-%                 r=regexp(pair_string,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
-%         if isempty(r)
-%             r=regexp(pair_string,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
-%         end  
-%         num_a=str2num(r.num1);
-%         num_b=str2num(r.num2);
-%     end
-%     dt=time(num2+1,num_b+1)-time(num1+1,num_a+1);
-%     ibx=str2double(get(handles.num_CorrBoxSize_1,'String'));
-%     iby=str2double(get(handles.num_CorrBoxSize_2,'String'));
-%     umin=dt*pxcm*umin;
-%     umax=dt*pxcm*umax;
-%     vmin=dt*pxcm*vmin;
-%     vmax=dt*pxcm*vmax;
     shiftx=round((umin+umax)/2);
     shifty=round((vmin+vmax)/2);
     isx=(umax+2-shiftx)*2+param_civ1.CorrBoxSize(1);
@@ -1554,11 +1486,7 @@ if value
     if strcmp(InputTable{1,5},'.nc');
         ind_A=2;
     end
-%     [nbslice, flag_mask]=get_mask(InputTable{ind_A,1},handles);% look for a mask with appropriate name
-%     if isequal(flag_mask,1)
-%         filemask=[num2str(nbslice) 'mask'];
-%         testmask=1;
-%     else % browse for a mask
+ % browse for a mask
         filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
         [FilePath,FileName,Ext]=fileparts(filemask);    
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName,Ext]);
@@ -1569,8 +1497,7 @@ if value
         set(hObject,'UserData',filemask);%store for future use
         if ~isempty(filemask)
             testmask=1;
-         end
-%     end
+        end
 end
 if testmask
     set(handles.Mask,'Visible','on')
@@ -2193,7 +2120,7 @@ end
 
 %'nomtype2pair': creates nomencalture for index pairs knowing the image nomenclature
 %---------------------------------------------------------------------
-function NomTypeNc=nomtype2pair(NomTypeIma,mode)
+function NomTypeNc=nomtype2pair(NomTypeIma,mode_selected)
 %---------------------------------------------------------------------           
 % OUTPUT:
 % NomTypeNc
@@ -2202,7 +2129,7 @@ function NomTypeNc=nomtype2pair(NomTypeIma,mode)
 % 'NomTypeIma': string defining the kind of nomenclature used for images
 
 NomTypeNc=NomTypeIma;%default
-switch mode
+switch mode_selected
     case 'pair j1-j2'      
     if ~isempty(regexp(NomTypeIma,'a$'))
         NomTypeNc=[NomTypeIma 'b'];
@@ -2231,18 +2158,18 @@ end
 
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file
-function [ind1,ind2,mode]=...
+function [ind1,ind2,mode_selected]=...
     find_pair_indices(str_civ,i_series,j_series,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
 %------------------------------------------------------------------------
 ind1='';
 ind2='';
 r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
 if ~isempty(r)
-    mode=['D' r.ind];
+    mode_selected=['D' r.ind];
     ind1=stra2num(r.num1);
     ind2=stra2num(r.num2);
 else
-    mode='burst';
+    mode_selected='burst';
     r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
     if ~isempty(r)
         NomTypeNc='_1ab';
@@ -2401,6 +2328,20 @@ end
 % --- Executes on selection change in CheckCiv3.
 function CheckCiv3_Callback(hObject, eventdata, handles)
 
+% --- Executes on button press in CheckRefFile.
+function CheckRefFile_Callback(hObject, eventdata, handles)
+
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+    InputFile=fullfile(InputTable{1,1},InputTable{1,2},[InputTable{1,3} InputTable{1,5}]);
+ % browse for a reference file for displacement
+    fileref= uigetfile_uvmat('pick a reference image file:',InputFile);
+        if ~isempty(fileref)
+    set(handles.RefFile,'String',fileref)
+    set(handles.ConfigSource,'String','NEW')
+    set(handles.ConfigSource,'BackgroundColor',[1 0 1])
+        end
 
 %------------------------------------------------------------------------
 % --- Executes on key press with selection of a uicontrol
@@ -2412,27 +2353,4 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
     set(handles.ConfigSource,'String','NEW')% indicate that the configuration is new
     set(handles.OK,'BackgroundColor',[1 0 1])%
     drawnow
-end
-
-
-
-function num_NbSlice_Callback(hObject, eventdata, handles)
-% hObject    handle to num_NbSlice (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_NbSlice as text
-%        str2double(get(hObject,'String')) returns contents of num_NbSlice as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_NbSlice_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_NbSlice (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
 end
