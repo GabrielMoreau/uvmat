@@ -310,8 +310,8 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
        CheckDeformation_Callback(hObject, eventdata, handles)
     end
 end
-
-       if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+       if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ListCompareMode')&&...
+               strcmp(Param.ActionInput.ListCompareMode,'displacement')
             set(handles.PairIndices,'Visible','off')
         end
 
