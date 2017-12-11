@@ -137,7 +137,7 @@ else% FileName ends with a letter
         NomType=get_type(r.end_string);
         RootFile=regexprep(RootFile,[r.num1 r.end_string '$'],'');
     else % case with separator '_'
-        r=regexp(RootFile,'\D(?<num1>\d+)_(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
+        r=regexp(RootFile,'\D*(?<num1>\d+)_(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
         if ~isempty(r)
             NomType=['_' get_type(r.end_string)];
             RootFile=regexprep(RootFile,[r.num1 '_' r.end_string '$'],'');

@@ -47,26 +47,31 @@ end
 InputDir=pwd;%look in the current work directory if the input file does not exist
 InputFileName='';%default
 if ischar(InputName)
-    if exist(InputName,'dir')
-        InputDir=InputName;
-        InputFileName='';
-    elseif exist(InputName,'file')
-        [InputDir,InputFileName,Ext]=fileparts(InputName);
-        if isempty(InputFileName)% if InputName is already the root
-            InputFileName=InputDir;
-            if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
-%                 InputDir=[InputDir '\'];% append '\' for a correct action of dir
-                InputFileName=[InputFileName '\'];
+    if isempty(regexp(InputName,'^http://'))%usual files
+        if exist(InputName,'dir')
+            InputDir=InputName;
+            InputFileName='';
+        elseif exist(InputName,'file')
+            [InputDir,InputFileName,Ext]=fileparts(InputName);
+            if isempty(InputFileName)% if InputName is already the root
+                InputFileName=InputDir;
+                if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
+                    %                 InputDir=[InputDir '\'];% append '\' for a correct action of dir
+                    InputFileName=[InputFileName '\'];
+                end
+            end
+            if isdir(InputName)
+                InputFileName=['+/' InputFileName Ext];
             end
         end
-        if isdir(InputName)
-            InputFileName=['+/' InputFileName Ext];
+        if  ismember(computer,{'PCWIN','PCWIN64'})%case of Windows systems
+            InputDir=[InputDir '\'];% append '\' for a correct action of dir
         end
+    else
+        [InputDir,InputFileName,Ext]=fileparts(InputName);
     end
 end
-if  ismember(computer,{'PCWIN','PCWIN64'})%case of Windows systems
-      InputDir=[InputDir '\'];% append '\' for a correct action of dir
-end
+
 hfig=findobj(allchild(0),'tag',option);
 if isempty(hfig)
     set(0,'Unit','points')
@@ -146,9 +151,6 @@ set(hObject,'backgroundColor',[1 1 0])% indicate button activation
 hfig=get(hObject,'parent');%handle of the fig
 htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
 DirName=get(htitlebox,'String');
-if isempty(regexp(DirName,'^http://'))% if the input dir is not a web site (begins by http://)
-%     FullSelectName=DirName;
-% else
 if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     hlist=findobj(hfig,'Tag','list');
     list=get(hlist,'String');
@@ -162,10 +164,14 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     if ~isempty(ind_dot)
         SelectName=SelectName(1:ind_dot-1);
     end
-    FullSelectName=fullfile(DirName,SelectName);
-    % if regexp(DirName,'^http://')% if the input dir is a web site (begins by http://)
-
-    if exist(FullSelectName,'file')
+    if isempty(regexp(DirName,'^http://'))% if the input dir is not a web site (begins by http://)
+        FullSelectName=fullfile(DirName,SelectName);
+        check_exist=exist(FullSelectName,'file');
+    else
+        FullSelectName=[DirName '/' SelectName];
+        check_exist=1;
+    end
+    if check_exist
         switch option
             case 'browser'
                 set(htitlebox,'String',FullSelectName);
@@ -184,11 +190,10 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
         end
     end
 end
-end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activation
 uiresume(get(hObject,'parent'))
 
-%------------------------------------------------------------------------   
+%------------------------------------------------------------------------
 % --- launched by refreshing the display figure
 function refresh_GUI(hObject,InputFileName,FilterExt)
 %------------------------------------------------------------------------
@@ -208,7 +213,8 @@ drawnow
 htitlebox=findobj(hfig,'tag','titlebox');
 DirName=get(htitlebox,'String');
 hsort_option=findobj(hfig,'tag','sort_option');
-if strcmp(get(hfig,'Tag'),'status_display')
+% use with GUI series
+if strcmp(get(hfig,'Tag'),'status_display') % use with GUI series
     hseries=findobj(allchild(0),'tag','series');
     hstatus=findobj(hseries,'tag','status');
     StatusData=get(hstatus,'UserData');
@@ -217,7 +223,7 @@ if strcmp(get(hfig,'Tag'),'status_display')
         TimeStart=StatusData.TimeStart;
     end
     hlist=findobj(hfig,'tag','list');
-    testrecent=0;   
+    testrecent=0;
     NbOutputFile=[];
     if isfield(StatusData,'NbOutputFile')
         NbOutputFile=StatusData.NbOutputFile;
@@ -225,14 +231,14 @@ if strcmp(get(hfig,'Tag'),'status_display')
     end
     [ListFiles,NumFiles]=list_files(DirName,1,TimeStart);% list the directory content
     
-    %% update the waitbar
+    % update the waitbar
     hwaitbar=findobj(hfig,'tag','waitbar');
     if ~isempty(NbOutputFile)
         BarPosition=get(hwaitbar,'Position');
         BarPosition(3)=0.9*max(0.01,NumFiles/NbOutputFile);% the bar width cannot be set to 0, set to 0.01 instead
         set(hwaitbar,'Position',BarPosition)
     end
-else
+else  %use as usual browser
     sort_option='name';
     if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
         sort_option='date';
@@ -280,6 +286,7 @@ index=get(hObject,'Value');
 
 htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
 DirName=get(htitlebox,'String');
+CheckSubDir=~isempty(regexp(list{index},'^\+'));
 SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
 ind_dot=regexp(SelectName,'\s*\.\.\.');%remove what is beyond  '...'
 if ~isempty(ind_dot)
@@ -288,9 +295,13 @@ end
 if strcmp(SelectName,'..')% the upward dir option has been selected
     FullSelectName=fileparts(DirName);
 else
-    FullSelectName=fullfile(DirName,SelectName);
+    if isempty(regexp(DirName,'^http://'))% usual files
+        FullSelectName=fullfile(DirName,SelectName);
+    else
+        FullSelectName=[DirName '/' SelectName];
+    end
 end
-if exist(FullSelectName,'dir')% a directory has been selected
+if CheckSubDir%exist(FullSelectName,'dir')% a directory has been selected
     set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
     drawnow
     hbackward=findobj(hfig,'Tag','backward');
@@ -314,20 +325,20 @@ set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate act
 % list the content of a directory
 function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option,filter_ext)
 %-------------------------------------------------------------------------
-ListStruct=dir(DirName);% get structure of the current directory
+ListStruct=dir_uvmat(DirName);% get structure of the current directory
 NumFiles=0; %default
 if numel(ListStruct)<1  % case of empty dir
-%     if regexp(DirName,'^http://')% if the input dir is a web site (begins by http://)
-%         web(DirName)
-%     else
     ListFiles={};
     return
-%     end
 end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+% for ilist=1:numel(check_dir)
+%     if check_dir(ilist)
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
+%     end
+% end
 if exist('filter_ext','var') && ~strcmp(filter_ext,'*') &&~strcmp(filter_ext,'uigetdir')
     if strcmp(filter_ext,'image')
         check_keep=cellfun(@isimage,ListFiles) ;

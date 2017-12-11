@@ -78,8 +78,13 @@ if ~isequal(hhh,'')
                 return
             end
         else
+            if regexp(nc,'^http://')
+                nc=netcdf.open(nc,'NC_NOWRITE');
+                testfile=1;
+            else
             errormsg=['ERROR:file ' nc ' does not exist'];
             return
+            end
         end
     else
         testfile=0;

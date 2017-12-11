@@ -37,7 +37,7 @@
 
 function [FileInfo,VideoObject]=get_file_info(fileinput)
 VideoObject=[];
-if exist(fileinput,'file')==2
+if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
 else

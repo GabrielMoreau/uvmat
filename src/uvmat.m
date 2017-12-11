@@ -445,13 +445,17 @@ set(handles.PlotAxes,'Units','normalized')
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+if isempty(regexp(RootPath,'^http://'))%usual files
 oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+else %Opendap
+    oldfile=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
+end
 if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
     oldfile=get(handles.RootPath,'UserData');
 end
 fileinput=uigetfile_uvmat('pick an input file',oldfile);
 hh=dir(fileinput);
-if numel(hh)>1fill_GUI
+if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
 else
 
@@ -1799,7 +1803,7 @@ function errormsg=display_file_name(handles,fileinput,index)
 %------------------------------------------------------------------------
 %% look for the input file existence
 errormsg='';%default
-if ~exist(fileinput,'file')
+if isempty(regexp(fileinput,'^http://')) && ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -1840,7 +1844,20 @@ drawnow
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+% if isempty(regexp(fileinput,'^http://'))
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+% else
+%     FileInfo.FileType='netcdf';
+%     [RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(fileinput);
+%     i1_series=[0 i1 i2];
+%     i2_series=[];
+%     j1_series=[0 j1 j1];
+%     j2_series=[0 j1 j1];
+%     MovieObject=[];
+% %     [RootPath,RootFile]=fileparts(fileinput);
+% %     [RootPath,SubDir]=fileparts(RootPath);
+% %     NomType='*';
+% end
 FileType=FileInfo.FileType;
 if strcmp(FileType,'txt')
     try
@@ -1882,18 +1899,22 @@ switch FileType
         set(handles_RootPath,'String',RootPath);
         set(handles_SubDir,'String',['/' SubDir]);
         set(handles_RootFile,'String',['/' RootFile]); %display the separator
-        if strcmp(NomType,'level')
-            rootname=fullfile(RootPath,SubDir,'level');
-            rr=regexp(fileinput,['^' rootname '(?<j>\d+)/' RootFile '(?<i>\d+)' FileExt '$'],'names');
-            if ~isempty(rr)
-                set(handles_FileIndex,'String',rr.i);
-            end
-        else
+%         if strcmp(NomType,'level')
+%             rootname=fullfile(RootPath,SubDir,'level');
+%             rr=regexp(fileinput,['^' rootname '(?<j>\d+)/' RootFile '(?<i>\d+)' FileExt '$'],'names');
+%             if ~isempty(rr)
+%                 set(handles_FileIndex,'String',rr.i);
+%             end
+%         else
+            if isempty(regexp(RootPath,'^http://'))
             rootname=fullfile(RootPath,SubDir,RootFile);
+            else
+                rootname=[RootPath '/' SubDir '/' RootFile];
+            end
             indices=fileinput(length(rootname)+1:end);
             indices(end-length(FileExt)+1:end)=[]; %remove extension
             set(handles_FileIndex,'String',indices);
-        end
+%         end
         set(handles_NomType,'String',NomType);
         set(handles_FileExt,'String',FileExt);
         if index==1
@@ -3186,11 +3207,14 @@ drawnow
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(FileIndex);% check back the indices used
 if isempty(i2), set(handles.i2,'String',''); end % suppress the second i index display if not used
 if isempty(j2), set(handles.j2,'String',''); end % suppress the second j index display if not used
-if strcmp(get(handles.NomType,'String'),'level')
-    jindex=str2num(get(handles.j1,'String'));
-    filename=[fullfile(RootPath,SubDir,['level' num2str(jindex)],RootFile) FileIndex FileExt];% build the input file name (first line)
-else
+% if strcmp(get(handles.NomType,'String'),'level')
+%     jindex=str2num(get(handles.j1,'String'));
+%     filename=[fullfile(RootPath,SubDir,['level' num2str(jindex)],RootFile) FileIndex FileExt];% build the input file name (first line)
+% else
+if isempty(regexp(RootPath,'^http://'))
 filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
+else
+    filename=[RootPath '/' SubDir '/' RootFile FileIndex FileExt];%
 end
 filename_1='';%default second file name
 FileIndex_1='';
@@ -3246,7 +3270,7 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat
 end
 
 %% determine the main input file information for action
-if ~exist(FileName,'file')
+if isempty(regexp(FileName,'^http://')) &&~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
 end
@@ -4339,7 +4363,11 @@ list_fields=get(handles.FieldName,'String');% list menu fields
 index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+if isempty(regexp(RootPath,'^http://'))
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+else
+    FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
+end
 [tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
 
 switch field
@@ -4384,7 +4412,11 @@ switch field
 
         %read selection from get_field
         [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+        if isempty(regexp(RootPath,'^http://'))
         FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+        else
+            FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
+        end
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
         FieldList={};
         VecColorList={''};

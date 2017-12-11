@@ -48,34 +48,21 @@ function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTy
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
+if isempty(regexp(FilePath,'^http://'))
 fullfileinput=fullfile(FilePath,fileinput);% input file name with path
+else
+  fullfileinput=[FilePath '/' fileinput];
+end
 [FileInfo,MovieObject]=get_file_info(fullfileinput);
 
 %% check for particular file types: images, movies, civ data
-%if isfield(FileInfo,'FileIndexing') && strcmp(FileInfo.FileIndexing,'on')
-    [RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
-    %     if ~isempty(regexp(SubDir,'^level\d+$')) && exist([RootPath '.xml'],'file')
-    %         NomType='level';
-    %     end
-    i1_series=zeros(1,1,1);
-    i2_series=zeros(1,1,1);
-    j1_series=zeros(1,1,1);
-    j2_series=zeros(1,1,1);
-    checkfileindexing=1;
-%else % no file indexing
-%     [PathDir,RootFile]=fileparts(fullfileinput);
-%     [RootPath,SubDir,DirExt]=fileparts(PathDir);
-%     SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
-%     NomType='*';
-%     i1_series=[];i2_series=[];j1_series=[];j2_series=[];
-%     i1_input=1;i2_input=[];j1_input=[];j2_input=[];
-%     if exist(fullfileinput,'file')~=2
-%         RootFile='';
-%         return
-%     end
-%     checkfileindexing=0;
-%end
-if ~exist(FilePath,'dir')
+[RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
+i1_series=zeros(1,1,1);
+i2_series=zeros(1,1,1);
+j1_series=zeros(1,1,1);
+j2_series=zeros(1,1,1);
+checkfileindexing=1;
+if isempty(regexp(FilePath,'^http://')) && ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
 if checkfileindexing
@@ -108,13 +95,6 @@ if checkfileindexing
                         i2_input=j2_input;
                         j1_input=[];
                         j2_input=[];
-                    elseif exist([RootPath '.xml'],'file')% new convention with j indices in sub-folders level0, 1...
-                        rj=regexp(SubDir,'^level(?<j1>\d+)$','names');
-                        if ~isempty(rj)
-                            j1_input=rj.j1;
-                            NomType='level';
-                            [RootPath,SubDir]=fileparts(RootPath);
-                        end
                     end
                 end
             end
@@ -133,7 +113,7 @@ if checkfileindexing
         j2_star='';
         %Look for cases with letter indexing for the second index
         r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<sep2>_?)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
-        if ~isempty(r)
+        if ~isempty(r) %indexing image pair with letters
             sep1=r.sep1;
             sep2=r.sep2;
             i1_str='(?<i1>\d+)';
@@ -174,13 +154,21 @@ if checkfileindexing
         end
   
         detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
+%         if isempty(regexp(FilePath,'^http://'))
         %find the string used to extract the relevant files with the command dir
-        star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
-        wd=pwd;%current working directory
-        cd (FilePath)% move to the local dir to save time in the operation dir.
-        dirpair=dir(star_string);% look for relevant files in the file directory
-        cd(wd)
-        nbpair=numel(dirpair);
+%         star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
+%         wd=pwd;%current working directory
+%         cd (FilePath)% move to the local dir to save time in the operation dir.
+%         dirpair=dir(star_string);% look for relevant files in the file directory
+%         cd(wd)
+%         else
+            ListStruct=dir_uvmat(FilePath);
+            ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+            ListFiles=ListCells(1,:);%list of file names
+            rr=regexp(ListFiles,detect_string,'names');
+%         end
+%         nbpair=numel(dirpair);
+        nbpair=numel(rr);
         ref_i_list=zeros(1,nbpair);
         ref_j_list=zeros(1,nbpair);
         if nbpair==0% no detected file
@@ -188,12 +176,12 @@ if checkfileindexing
         end
         % scan the list of relevant files, extract the indices
         for ifile=1:nbpair
-            rr=regexp(dirpair(ifile).name,detect_string,'names');
-            if ~isempty(rr)
-                i1=str2num(rr.i1);
-                i2=str2num(regexprep(rr.i2,'^-',''));
-                j1=stra2num(regexprep(rr.j1,'^_',''));
-                j2=stra2num(regexprep(rr.j2,'^-',''));
+%             rr=regexp(dirpair(ifile).name,detect_string,'names');
+            if ~isempty(rr{ifile})
+                i1=str2num(rr{ifile}.i1);
+                i2=str2num(regexprep(rr{ifile}.i2,'^-',''));
+                j1=stra2num(regexprep(rr{ifile}.j1,'^_',''));
+                j2=stra2num(regexprep(rr{ifile}.j2,'^-',''));
                 ref_i=i1;
                 if isempty(i2_input)
                     if ~isempty(i2)% invalid file name if i2 does not exist in the input file
@@ -262,11 +250,11 @@ if checkfileindexing
         
         if ~isempty(ind_select)
             [tild,ifile_min]=min(ref_ij(ind_select));
-            [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
+            [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(ListFiles{ind_select(ifile_min)});% update the representation of indices (number of 0 before the number)
             NomType=regexprep(NomType,['^' NomTypePref],'');
             %% update the file type if the input file does not exist (pb of 0001)
             if isempty(FileInfo.FileType)
-                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,dirpair(ifile_min).name));
+                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles(ifile_min)));
             end
         end
         %         end

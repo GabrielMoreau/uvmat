@@ -92,9 +92,9 @@ sep4='';
 j2_str='';
 
 %% look for NomType with pairs (separator '-' or terminasion ab or AB
-if strcmp(NomType,'level')% organisation with a sub-folder for the files of each index i
-    filename=fullfile(RootPath,SubDir,['level' num2str(j1)],[RootFile num2str(i1) FileExt]);
-else
+% if strcmp(NomType,'level')% organisation with a sub-folder for the files of each index i
+%     filename=fullfile(RootPath,SubDir,['level' num2str(j1)],[RootFile num2str(i1) FileExt]);
+% else
     if ~isempty(regexp(NomType,'^_\d'))
         sep1='_';
         NomType(1)=[];%remove '_' from the beginning of NomType
@@ -135,10 +135,14 @@ else
             end
         end
     end
+    if isempty(regexp(RootPath,'^http://'))
     filename=fullfile(RootPath,SubDir,RootFile);
+    else
+        filename=[RootPath '/' SubDir '/' RootFile];
+    end
     filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];
     filename=[regexprep(filename,'_$','') FileExt];%suppress possible '_' at the end of the string and add the extension
-end
+% end
 
 function test
 fprintf([...
