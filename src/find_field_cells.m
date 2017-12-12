@@ -299,7 +299,7 @@ CellInfo=[CellInfo NewCellInfo];
 %% suppress empty cells or cells with a single coordinate variable 
 check_remove=false(size(CellInfo));
 for icell=1:numel(check_remove)
-    if isempty(CellInfo{icell})||(numel(CellInfo{icell}.VarIndex)==1 && check_coord(icell))
+    if isempty(CellInfo{icell})||(numel(CellInfo{icell}.VarIndex)==1 && numel(check_coord)>=icell && check_coord(icell))
         check_remove(icell)=1;
     end
 end

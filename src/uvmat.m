@@ -3552,25 +3552,6 @@ end
 if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
 end
-%put W as background image by default if NbDim=2:
-% if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W) && ~isequal(Field{1}.NbDim,3);
-%         set(handles.SubField,'Value',1);
-%         set(handles.RootPath_1,'String','"')
-%         set(handles.RootFile_1,'String','"')
-%         set(handles.SubDir_1,'String','"');
-%          indices=fullfile_uvmat('','','','',NomType,num_i1,num_i2,num_j1,num_j2);
-%         set(handles.FileIndex_1,'String',indices)
-%         set(handles.FileExt_1,'String','"');
-%         set(handles.FieldName_1,'Visible','on');
-%         set(handles.FieldName_1,'Visible','on');
-%         set(handles.RootPath_1,'Visible','on')
-%         set(handles.RootFile_1,'Visible','on')
-%         set(handles.SubDir_1,'Visible','on');
-%         set(handles.FileIndex_1,'Visible','on');
-%         set(handles.FileExt_1,'Visible','on');
-%         set(handles.FieldName_1,'Visible','on');
-%         Field{1}.AName='w';
-% end
 
 %% display time value of the current file
 abstime=[];%default inputs
@@ -3728,25 +3709,17 @@ else
     end
 end
 
-%% get bounds and dimensions of the input field
-UvData.Field=find_field_bounds(UvData.Field);
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 
 
-%% calculate tps coefficients if needed
-UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
-
-%% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
-% if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
-%     set(handles.num_MinA,'String','0')
-%     set(handles.num_MaxA,'String','255')
-% end
-
-%% usual 1D (x,y) plots
-if UvData.Field.NbDim<=1
+%% usual (x,y) plot
+if strcmp(FieldName,'')
     set(handles.Objects,'Visible','off')
     set(handles.CheckFixAspectRatio,'Value',0)
+    coord_x_name=get(handles.Coord_x,'String');
+    check_x_name=find(strcmp(coord_x_name,UvData.Field.ListVarName));
+    UvData.Field.VarAttribute{check_x_name}.Role='coord_x';
     [PlotType,PlotParamOut,haxes]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     UvData.PlotAxes=UvData.Field; %store data for further plot modifications
     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
@@ -3763,9 +3736,23 @@ if UvData.Field.NbDim<=1
         delete(hlegend)
     end
     cla(handles.HistoAxes)% clear the curves and legend in histogram axes
+    UvData.Field.NbDim=1;
     set(handles.uvmat,'UserData',UvData)
+    
 %% 2D or 3D fieldname are generally projected
 else
+    UvData.Field=find_field_bounds(UvData.Field);
+
+%% get bounds and dimensions of the input field
+
+%% calculate tps coefficients if needed
+    UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
+
+%% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
+% if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
+%     set(handles.num_MinA,'String','0')
+%     set(handles.num_MaxA,'String','255')
+% end
     set(handles.Objects,'Visible','on')
 
     %% Plot the projections on the selected  projection objects
@@ -4453,6 +4440,7 @@ switch field
                 FieldList={AName};
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
+                FieldList={''};          
             case 'civdata...'%reinitiate input, return to automatic civ data reading
                 display_file_name(handles,FileName,1)
         end

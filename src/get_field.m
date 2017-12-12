@@ -195,6 +195,12 @@ else
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
     set(handles.scalar,'Max',1)
 end
+
+%% set default field options
+checknbdim=cellfun('size',Field.Display.VarDimName,2);
+if max(checknbdim)<=1
+    Field.MaxDim=1;% only 1D fields, considered as a time series by default
+end
 if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
     check_vec_input=0;
     if isfield(ParamIn,'vector_x')&& isfield(ParamIn,'vector_y')
@@ -214,6 +220,7 @@ if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
     if check_vec_input
         set(handles.FieldOption,'Value',3)% set vector selection option
     else
+        
         set(handles.FieldOption,'Value',2)% set scalar selection option
     end
 else % case of 1D fields
