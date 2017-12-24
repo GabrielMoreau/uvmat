@@ -151,6 +151,9 @@ switch FileExt
                             FileInfo.FileName=fileinput;
                             nbfield=numel(fieldnames(FileInfo));
                             FileInfo=orderfields(FileInfo,[nbfield nbfield-3 nbfield-1 nbfield-2 (1:nbfield-4)]); %reorder the fields of fileInfo for clarity
+                            if ~isfield(FileInfo,'NumberOfFrames')
+                                FileInfo.NumberOfFrames=floor(FileInfo.Duration*FileInfo.FrameRate);
+                            end
                         end
                     end
                 end
