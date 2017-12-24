@@ -78,11 +78,6 @@ for ilist=1:numel(Data.ListVarName)
         break
     end
 end
-% if ~check_var &&  ~(isfield(Data,'ListDimName')&& isfield(Data,'DimValue')&& isequal(numel(Data.ListDimName),numel(Data.DimValue)))
-%     errormsg=['missing dimension values'];
-%     return
-% end
-
 
 %% role of variables and list of requested operations
 %ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
@@ -121,7 +116,7 @@ for icell=1:numel(ivar_coord_x)
     if ischar(DimCell),DimCell={DimCell};end % transform char to cell for a single dimension
     % look for variables sharing dimension(s) with ivar_coord_x(icell)
     check_cell=zeros(numel(DimCell),nbvar);
-    for idim=1:numel(DimCell)
+    for idim=1:numel(DimCell);% for each variable with role coord_x, look at which other variables contain the same dimension
         for ivar=1:nbvar
             check_cell(idim,ivar)=max(strcmp(DimCell{idim},Data.VarDimName{ivar}));
         end

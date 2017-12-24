@@ -135,7 +135,7 @@ ind_remove=false(size(Field_1.ListVarName));
 % loop on the variables of the second field Field_1
 for ilist=1:numel(Field_1.VarAttribute)
     % case of variable with a single dimension
-    if ~isempty(Field_1.VarAttribute{ilist}) && ~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))% if variable with Role coord... is found.
+    if ~isempty(Field_1.VarAttribute{ilist}) && isfield(Field_1.VarAttribute{ilist},'Role')&&~isempty(regexp(Field_1.VarAttribute{ilist}.Role,'^coord'))% if variable with Role coord... is found.
         OldDimName=Field_1.VarDimName{ilist};
         if ischar(OldDimName), OldDimName={OldDimName}; end% transform char string to cell if relevant
         if numel(OldDimName)==1

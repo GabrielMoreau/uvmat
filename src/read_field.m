@@ -293,6 +293,9 @@ if ~isempty(A)
     Field.NbDim=2;%default
     Field.AName='image';
     Field.ListVarName={'Coord_y','Coord_x','A'}; %
+    Field.VarAttribute{1}.Unit='pixel';
+    Field.VarAttribute{2}.Unit='pixel';
+    Field.VarAttribute{3}.Role='scalar';
     if ndims(A)==3
         if Npz==1;%color
             Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x','rgb'}}; %

@@ -1112,19 +1112,20 @@ end
 %ListIndex={};
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+
 [CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
 
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
     return
 end
-check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for each field cell
 
+check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for each field cell
 ProjMode=cell(size(CellInfo));
 for icell=1:numel(CellInfo)
     ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
 end
-    icell_grid=[];% field cell index which defines the grid
+icell_grid=[];% field cell index which defines the grid
 if ~strcmp(ObjectData.ProjMode,'projection')&& ~strcmp(ObjectData.Type,'plane_z')% TODO:rationalize
     %% define the new coordinates in case of interpolation on a imposed grid
     if ~testYMin 
@@ -1153,7 +1154,7 @@ else
         if strcmp(ProjMode{icell},'interp_lin')||strcmp(ProjMode{icell},'interp_tps')
             check_grid(icell)=1;
         end
-        if strcmp(CellInfo{icell}.CoordType,'grid')&&NbDimArray(icell)>=2
+        if strcmp(CellInfo{icell}.CoordType,'grid') && NbDimArray(icell)>=2
             if ~testangle && isempty(icell_grid)% if the input gridded data is not modified, choose the first one in case of multiple gridded field cells
                 icell_grid=icell;
                 ProjMode{icell}='projection';

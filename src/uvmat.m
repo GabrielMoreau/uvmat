@@ -3332,6 +3332,7 @@ switch UvData.FileType{1}
             end
         end
     case {'video','mmreader','rdvision','cine_phantom'}
+        FieldName='image';
         ParamIn=UvData.MovieObject{1}; % movie object
         if strcmp(NomType,'*')
             frame_index=num_i1;%frame index from a single movies or multimage
@@ -3339,6 +3340,7 @@ switch UvData.FileType{1}
             frame_index=num_j1;% frame index from a set of indexed movies
         end
     case 'multimage'
+        FieldName='image';
         if ~strcmp(NomType,'*')
             MaxIndex_j_cell=get(handles.MaxIndex_j,'String');
             if num_j1>str2num(MaxIndex_j_cell{1})
@@ -3364,6 +3366,8 @@ switch UvData.FileType{1}
             errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
             return
         end
+    case 'image'
+        FieldName='image';     
 end
 if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
@@ -3371,7 +3375,7 @@ if isstruct (ParamIn)
     ParamIn.Coord_x=get(handles.Coord_x,'String');
     ParamIn.Coord_y=get(handles.Coord_y,'String');
     ParamIn.Coord_z=get(handles.Coord_z,'String');
-    ParamIn.CheckCoordIndex=strcmp(get(handles.SwitchCoordIndex,'String'),'dim');
+    %ParamIn.CheckCoordIndex=strcmp(get(handles.SwitchCoordIndex,'String'),'dim');
     TimeName=get(handles.TimeName,'String');
     r=regexp(TimeName,'^(?<type>(dim:)|(var:))','names');%look for 'var:' or 'dim:' at the beginning of time name
     if ~isempty(r)
@@ -3420,7 +3424,7 @@ if ~isempty(FileName_1)
             if isempty(FieldName_1)
                 FieldName_1=FieldName;% if blank reproduce the field name of the first field
             end
-            if ~isempty(regexp(FieldName_1,'^vel'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
+            if ~isempty(regexp(FieldName_1,'^vel', 'once'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
                 list_code=get(handles.ColorCode,'String');% list menu fields
                 index_code=get(handles.ColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
@@ -3595,7 +3599,7 @@ if isempty(abstime)
         else
             TimeUnit='';
         end
-    elseif  ~isempty(regexp(TimeName,'^var:'))
+    elseif  ~isempty(regexp(TimeName,'^var:', 'once'))
         abstime=Field{1}.(TimeName(5:end));%the time is a variale selected by get_file
         % TODO: look for time unit attribute
     elseif ~isempty(regexp(TimeName,'^dim:'))
@@ -4448,9 +4452,9 @@ switch field
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
             if isfield(GetFieldData,'Coordinates')
                 XName=GetFieldData.Coordinates.Coord_x;
-                set(handles.SwitchCoordIndex,'String','var'); % variable used as coordinate
-            else
-                set(handles.SwitchCoordIndex,'String','dim'); % matrix index used a coordinate
+%                set(handles.SwitchCoordIndex,'String','var'); % variable used as coordinate
+%             else
+%                 set(handles.SwitchCoordIndex,'String','dim'); % matrix index used a coordinate
             end
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
             switch TimeNameStr
