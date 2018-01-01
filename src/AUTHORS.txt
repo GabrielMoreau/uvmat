@@ -7,3 +7,5 @@ CONTRIBUTORS
 
  * Louis Gostiaux
  * Gabriel Moreau
+ * Pierre Augier
+ * Antoine Campagne 
