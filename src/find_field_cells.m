@@ -43,7 +43,7 @@
 %         DimIndex=Data.VarDimIndex{VarIndex(1)} % list of dimensions for each variable in the cell #icell
 
 %=======================================================================
-% Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2018, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %

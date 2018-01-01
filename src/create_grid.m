@@ -10,7 +10,7 @@
 % (defining x coordinates), .y_0,.Dy,.y_1 (defining y coordinates)
 
 %=======================================================================
-% Copyright 2008-2017, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2018, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
