@@ -148,8 +148,19 @@ Field.Display.ListGlobalAttribute=Field.ListGlobalAttribute(check_numvalue);% se
 if ~isempty(Field.Display.ListGlobalAttribute)
     ListSwitchVarIndexTime=[ListSwitchVarIndexTime; {'attribute'}];% the time can be chosen as a global attribute
 end
+
+Check_index=0;
 if Field.MaxDim>=2
     ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'matrix index'}];% the time can be chosen as a dim index
+else
+    for ilist=1:numel(Field.Display.VarDimName)
+        NbComponent=numel(Field.Display.VarDimName{ilist});
+        if NbComponent>=2% multicomponent matrices without coordinate variables (thus not considered in the fct find_field_cell)
+            ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'matrix index'}];% the time can be chosen as a dim index
+            Check_index=1;
+            break
+        end
+    end
 end
 
 %% select the Time attribute from input
@@ -219,8 +230,7 @@ if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
     end
     if check_vec_input
         set(handles.FieldOption,'Value',3)% set vector selection option
-    else
-        
+    else     
         set(handles.FieldOption,'Value',2)% set scalar selection option
     end
 else % case of 1D fields

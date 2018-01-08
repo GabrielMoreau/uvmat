@@ -46,7 +46,7 @@ if NbDim>3
     Check4D=1;
 end
 FieldOut.NbDim=NbDim;
-if  NbDim<=1; return; end% stop here for 1D fields
+%if  NbDim<=1; return; end% stop here for 1D fields
  
 %% get bounds and mesh (needed  to propose default options for projection objects)
 % if NbDim>1
@@ -65,17 +65,42 @@ for ind=1:numel(imax)
         if Check4D
             CellInfo{imax(ind)}.CoordIndex(4:end)=[];
         end
-        XName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
-        YName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
-        CoordMax(ind,NbDim)=max(max(Field.(XName)));
-        CoordMin(ind,NbDim)=min(min(Field.(XName)));
-        CoordMax(ind,NbDim-1)=max(max(Field.(YName)));
-        CoordMin(ind,NbDim-1)=min(min(Field.(YName)));
-        %         test_x=1;%test for unstructured coordinates
-        if NbDim==3
-            ZName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-            CoordMax(ind,NbDim-2)=max(max(Field.(ZName)));
-            CoordMin(ind,NbDim-2)=min(min(Field.(ZName)));
+        if isempty(CellInfo{imax(ind)}.CoordIndex)
+            FieldName=CellInfo{imax(ind)}.FieldName;
+            DimList=Field.VarDimName{imax(ind)};
+            siz=size(DimList);
+
+            FieldOut.(DimList{end})=1:siz(end);
+            FieldOut.ListVarName=[FieldOut.ListVarName DimList(end)];
+            FieldOut.VarDimName=[FieldOut.VarDimName DimList(end)];
+            CoordMax(ind,numel(siz))=siz(end);
+            if numel(siz)>=2
+                FieldOut.(DimList{end-1})=1:siz(end-1);
+                CoordMax(ind,numel(siz)-1)=siz(end-1);
+                FieldOut.ListVarName=[FieldOut.ListVarName DimList(end-1)];
+                FieldOut.VarDimName=[FieldOut.VarDimName DimList(end-1)];
+            end
+            if numel(siz)>=3
+                FieldOut.(DimList{1})=1:siz(1);
+                CoordMax(ind,1)=siz(1);
+                FieldOut.ListVarName=[FieldOut.ListVarName DimList(1)];
+                FieldOut.VarDimName=[FieldOut.VarDimName DimList(1)];
+            end
+            CoordMin(ind,1:numel(siz))=1;
+            CellInfo{imax(ind)}.CoordSize=CoordMax(ind,:);
+        else
+            XName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
+            YName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
+            CoordMax(ind,NbDim)=max(max(Field.(XName)));
+            CoordMin(ind,NbDim)=min(min(Field.(XName)));
+            CoordMax(ind,NbDim-1)=max(max(Field.(YName)));
+            CoordMin(ind,NbDim-1)=min(min(Field.(YName)));
+            %         test_x=1;%test for unstructured coordinates
+            if NbDim==3
+                ZName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
+                CoordMax(ind,NbDim-2)=max(max(Field.(ZName)));
+                CoordMin(ind,NbDim-2)=min(min(Field.(ZName)));
+            end
         end
     end
     switch CellInfo{imax(ind)}.CoordType
@@ -86,7 +111,7 @@ for ind=1:numel(imax)
         case 'grid'%structured coordinate
             NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
             if Check4D
-               NbPoints=NbPoints(1:3);
+                NbPoints=NbPoints(1:3);
             end
             Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));
     end
@@ -97,7 +122,7 @@ for ind=1:numel(imax)
         if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_lin')&& ~strcmp(FieldOut.ProjModeRequest,'interp_tps')
             FieldOut.ProjModeRequest='interp_lin';
         end
-    end  
+    end
 end
 Mesh=min(Mesh);
 FieldOut.XMax=max(CoordMax(:,end));
