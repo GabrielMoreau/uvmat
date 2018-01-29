@@ -3366,7 +3366,7 @@ switch UvData.FileType{1}
             errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
             return
         end
-    case 'image'
+    case {'image','image_DaVis'}
         FieldName='image';     
 end
 if isstruct (ParamIn)
