@@ -191,7 +191,8 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     end
 end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activation
-uiresume(get(hObject,'parent'))
+fig_struct=get(hObject,'parent');
+uiresume(fig_struct.Number)
 
 %------------------------------------------------------------------------
 % --- launched by refreshing the display figure
@@ -333,7 +334,8 @@ if numel(ListStruct)<1  % case of empty dir
 end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
-check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+index_dir=find(strcmp('isdir',fieldnames(ListStruct)));
+check_dir=cell2mat(ListCells(index_dir,:));% =1 for directories, =0 for files
 % for ilist=1:numel(check_dir)
 %     if check_dir(ilist)
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display

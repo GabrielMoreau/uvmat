@@ -216,9 +216,6 @@ if exist(profil_perso,'file')
         end
     end
     %get the menu of actions
-%     if isfield(h,'ActionExtListUser') && iscell(h.ActionExtListUser)
-%         ActionExtList=[ActionExtList; h.ActionExtListUser];
-%     end 
     if isfield(h,'ActionListUser') && iscell(h.ActionListUser) && isfield(h,'ActionPathListUser') && iscell(h.ActionPathListUser)
         ActionList=[ActionList;h.ActionListUser];
         ActionPathList=[ActionPathList;h.ActionPathListUser(:,1)];
@@ -286,12 +283,6 @@ if isfield(Param,'Coordinates')
         set(handles.Coord_z,'String',Param.Coordinates.Coord_z)
     end
 end
-% if isfield(Param,'Coord_x_str') && ischar(Param.Coord_x_str)
-%         set(handles.Coord_x,'String',Param.Coord_x_str); % list menu fields
-% end
-% if isfield(Param,'Coord_y_str')&& ischar(Param.Coord_y_str)
-%         set(handles.Coord_y,'String',Param.Coord_y_str); % list menu fields
-% end
 
 %% introduce the input file name(s) if defined from input Param,
 set(handles.series,'UserData',SeriesData)% initiate Userdata
@@ -1556,7 +1547,7 @@ if strcmp(ActionExt,'.sh')
                 currentdir=pwd;
                 cd(get(handles.ActionPath,'String'))% go to the directory of Action
                 addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
-                addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+                addpath(fullfile(path_uvmat,'transform_field'))% add the path to transform functions to run the fct 'compile'
                 compile(ActionName,TransformPath)
                 cd(currentdir)
             end
@@ -2325,7 +2316,6 @@ FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
 if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
-%CheckList=0; % indicate whether FieldName has been updated
 CheckList_1=1; % indicate whether FieldName_1 has been updated
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1
@@ -2334,7 +2324,7 @@ if VelTypeRequest && numel(iview_civ)>=1
     set(handles.VelType,'String',[{'*'};menu])
     set(handles.VelType,'Visible','on')
     set(handles.VelType_title,'Visible','on')
-    FieldList=[set_field_list('U','V');{'C'};{'get_field...'}]; % standard menu for civx data
+    FieldList=set_field_list('U','V'); % standard menu for civx data
     %CheckList=1;
     set(handles.FieldName,'Value',1); % velocity vector choice by default
     if  VelTypeRequest_1 && numel(iview_civ)>=2
@@ -2387,7 +2377,9 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
     end
     
     set(handles_coord,'Visible','on')
-    FieldList=[FieldList;{'get_field...'}];
+    if isempty(find(strcmp('get_field...',FieldList)))
+    FieldList=[FieldList;{'get_field...'}];%add 'get_field...' to the menu FieldName if it is not already
+    end
     if FieldNameRequest_1 && numel(iview_netcdf)>=2
         set(handles.FieldName_1,'Visible','on')
         if CheckList_1==0        % not civ input made
@@ -2692,17 +2684,20 @@ if isequal(field,'get_field...')
                 FieldList={['vec(' UName ',' VName ')'];...
                     ['norm(' UName ',' VName ')'];...
                     UName;VName};
+                set(handles.VelType,'Visible','off')
             case {'scalar'}
                 FieldList=GetFieldData.PanelScalar.scalar;
                 YName={GetFieldData.Coordinates.Coord_y};
                 if ischar(FieldList)
                     FieldList={FieldList};
                 end
+                set(handles.VelType,'Visible','off')
             case 'civdata...'
                 FieldList=[set_field_list('U','V') ;{'C'}];
                 set(handles.FieldName,'Value',1) % set menu to 'velocity
                 XName='X';
                 YName='y';
+                set(handles.VelType,'Visible','on')
         end
         set(handles.FieldName,'Value',1)
         set(handles.FieldName,'String',[FieldList; {'get_field...'}]);

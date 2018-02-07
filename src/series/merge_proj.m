@@ -142,6 +142,9 @@ for iview=1:NbView
     end
     [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
+    if strcmp(FileType{iview},'civdata')&&  ~isfield(Param.InputFields,'VelType')
+        FileType{iview}='netcdf';
+    end
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     if CheckImage{iview}
         ParamIn{iview}=MovieObject{iview};
@@ -312,7 +315,9 @@ for index=1:NbField
         end
         
         %% calculate tps coefficients if needed
-        check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
+
+        check_proj_tps= strcmp(FileType{iview},'civdata') && isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)...
+            && strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
         
         %% projection on object (gridded plane)
