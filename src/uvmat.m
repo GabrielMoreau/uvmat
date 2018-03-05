@@ -1010,6 +1010,7 @@ if isfield(UvData,'Field')
                 data.RangeZ=UvData.Field.CoordMesh;
                 data.Coord=[];
             otherwise
+                data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
     end
@@ -3289,7 +3290,7 @@ else
     z_index=mod(num_i1-1,nbslice)+1;
     set(handles.z_index,'String',num2str(z_index))
 end
-% inputfilerefresh menu for save_mask if relevant
+% refresh menu for save_mask if relevant
 masknumber=get(handles.masklevel,'String');
 if length(masknumber)>=z_index
     set(handles.masklevel,'Value',z_index)
@@ -5876,105 +5877,105 @@ end
 
 
 
-%TODO: use to modify fill_GUI
-%'write_plot_param': update the plotting parameters on the uvmat or view_field interface after a plotting operation
-function write_plot_param(handles,PlotParam)
-%% axes
-if isempty(PlotParam.Axes)
-    set(handles.Axes,'Visible','off')
-    set(handles.PlotAxes,'Visible','off')
-    set(handles.text_display,'Visible','off')
-    set(handles.TableDisplay,'Visible','on')
-else
-    set(handles.Axes,'Visible','on')
-    set(handles.PlotAxes,'Visible','on')
-    set(handles.text_display,'Visible','on')
-%     if isfield(handles,'TableDisplay')
-%     set(handles.TableDisplay,'Visible','off')
+% %TODO: use to modify fill_GUI
+% %'write_plot_param': update the plotting parameters on the uvmat or view_field interface after a plotting operation
+% function write_plot_param(handles,PlotParam)
+% %% axes
+% if isempty(PlotParam.Axes)
+%     set(handles.Axes,'Visible','off')
+%     set(handles.PlotAxes,'Visible','off')
+%     set(handles.text_display,'Visible','off')
+%     set(handles.TableDisplay,'Visible','on')
+% else
+%     set(handles.Axes,'Visible','on')
+%     set(handles.PlotAxes,'Visible','on')
+%     set(handles.text_display,'Visible','on')
+% %     if isfield(handles,'TableDisplay')
+% %     set(handles.TableDisplay,'Visible','off')
+% %     end
+%     Coordinates=PlotParam.Axes;
+%     if isfield(Coordinates,'CheckFixAspectRatio')
+%         if Coordinates.CheckFixAspectRatio
+%             set(handles.CheckFixAspectRatio,'Value',1)
+%         else
+%             set(handles.CheckFixAspectRatio,'Value',0)
+% 
+%         end
 %     end
-    Coordinates=PlotParam.Axes;
-    if isfield(Coordinates,'CheckFixAspectRatio')
-        if Coordinates.CheckFixAspectRatio
-            set(handles.CheckFixAspectRatio,'Value',1)
-        else
-            set(handles.CheckFixAspectRatio,'Value',0)
-
-        end
-    end
-    if isfield(Coordinates,'AspectRatio')
-        set(handles.num_AspectRatio,'String',num2str(Coordinates.AspectRatio))
-    end
-    if isfield(Coordinates,'MinX')
-        set(handles.num_MinX,'String',num2str(Coordinates.MinX,4));
-        set(handles.num_MaxX,'String',num2str(Coordinates.MaxX,4));
-        set(handles.num_MinY,'String',num2str(Coordinates.MinY,4));
-        set(handles.num_MaxY,'String',num2str(Coordinates.MaxY,4));
-    else
-        set(handles.num_MinX,'String','');
-        set(handles.num_MaxX,'String','');
-        set(handles.num_MinY,'String','');
-        set(handles.num_MaxY,'String','');
-    end
-end
-
-%% scalar or image parameters
-if isfield(PlotParam,'Scalar')
-    set(handles.Scalar,'Visible','on')
-    if isfield(PlotParam.Scalar,'MaxA')
-        set(handles.num_MaxA,'String',num2str(PlotParam.Scalar.MaxA,3));
-    end
-    if isfield(PlotParam.Scalar,'MinA')
-        set(handles.num_MinA,'String',num2str(PlotParam.Scalar.MinA,3));
-    end
-    if isfield(PlotParam.Scalar,'IncrA')
-        set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
-    end
-    set(handles.CheckBW,'Value',PlotParam.Scalar.CheckBW)
-    if isfield(PlotParam.Scalar,'Opacity')&&isfield(handles,'num_Opacity')
-        set(handles.num_Opacity,'String',num2str(PlotParam.Scalar.Opacity))
-    end
-else
-    set(handles.Scalar,'Visible','off')
-end
-
-%% parameter for vector field
-if isfield(PlotParam,'Vectors')
-    set(handles.Vectors,'Visible','on')
-    if isfield(PlotParam.Vectors,'VecScale')
-        set(handles.num_VecScale,'String',num2str(PlotParam.Vectors.VecScale,3))
-    end
-    if isfield(PlotParam.Vectors,'MinC')&& isfield(PlotParam.Vectors,'MaxC')
-        MinC=PlotParam.Vectors.MinC;
-        MaxC=PlotParam.Vectors.MaxC;
-        set(handles.num_MinVec,'String', num2str(MinC,3));
-        set(handles.num_MaxVec,'String',num2str(MaxC,3));
-        list=get(handles.ColorCode,'String');
-        ichoice=get(handles.ColorCode,'Value');
-        color_option=list{ichoice};
-        test3color=strcmp(color_option,'rgb')||strcmp(color_option,'bgr');
-        if test3color% need to update color thresholds
-            set(handles.num_ColCode1,'Visible','on')
-            set(handles.num_ColCode2,'Visible','on')
-            set(handles.Slider1,'Visible','on')
-            set(handles.Slider2,'Visible','on')
-            set(handles.num_ColCode1,'String',num2str(PlotParam.Vectors.ColCode1,3))
-            set(handles.num_ColCode2,'String',num2str(PlotParam.Vectors.ColCode2,3))
-            set(handles.Slider1,'Value',(PlotParam.Vectors.ColCode1-MinC)/(MaxC-MinC))
-            set(handles.Slider2,'Value',(PlotParam.Vectors.ColCode2-MinC)/(MaxC-MinC))
-        else
-            set(handles.num_ColCode1,'Visible','off')
-            set(handles.num_ColCode2,'Visible','off')
-            set(handles.Slider1,'Visible','off')
-            set(handles.Slider2,'Visible','off')
-        end
-    end
-else
-    set(handles.Vectors,'Visible','off')
-    if isfield(handles,'edit_vect')
-        set(handles.edit_vect,'Visible','off')
-        set(handles.record,'Visible','off')
-    end
-end
+%     if isfield(Coordinates,'AspectRatio')
+%         set(handles.num_AspectRatio,'String',num2str(Coordinates.AspectRatio))
+%     end
+%     if isfield(Coordinates,'MinX')
+%         set(handles.num_MinX,'String',num2str(Coordinates.MinX,4));
+%         set(handles.num_MaxX,'String',num2str(Coordinates.MaxX,4));
+%         set(handles.num_MinY,'String',num2str(Coordinates.MinY,4));
+%         set(handles.num_MaxY,'String',num2str(Coordinates.MaxY,4));
+%     else
+%         set(handles.num_MinX,'String','');
+%         set(handles.num_MaxX,'String','');
+%         set(handles.num_MinY,'String','');
+%         set(handles.num_MaxY,'String','');
+%     end
+% end
+% 
+% %% scalar or image parameters
+% if isfield(PlotParam,'Scalar')
+%     set(handles.Scalar,'Visible','on')
+%     if isfield(PlotParam.Scalar,'MaxA')
+%         set(handles.num_MaxA,'String',num2str(PlotParam.Scalar.MaxA,3));
+%     end
+%     if isfield(PlotParam.Scalar,'MinA')
+%         set(handles.num_MinA,'String',num2str(PlotParam.Scalar.MinA,3));
+%     end
+%     if isfield(PlotParam.Scalar,'IncrA')
+%         set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
+%     end
+%     set(handles.CheckBW,'Value',PlotParam.Scalar.CheckBW)
+%     if isfield(PlotParam.Scalar,'Opacity')&&isfield(handles,'num_Opacity')
+%         set(handles.num_Opacity,'String',num2str(PlotParam.Scalar.Opacity))
+%     end
+% else
+%     set(handles.Scalar,'Visible','off')
+% end
+% 
+% %% parameter for vector field
+% if isfield(PlotParam,'Vectors')
+%     set(handles.Vectors,'Visible','on')
+%     if isfield(PlotParam.Vectors,'VecScale')
+%         set(handles.num_VecScale,'String',num2str(PlotParam.Vectors.VecScale,3))
+%     end
+%     if isfield(PlotParam.Vectors,'MinC')&& isfield(PlotParam.Vectors,'MaxC')
+%         MinC=PlotParam.Vectors.MinC;
+%         MaxC=PlotParam.Vectors.MaxC;
+%         set(handles.num_MinVec,'String', num2str(MinC,3));
+%         set(handles.num_MaxVec,'String',num2str(MaxC,3));
+%         list=get(handles.ColorCode,'String');
+%         ichoice=get(handles.ColorCode,'Value');
+%         color_option=list{ichoice};
+%         test3color=strcmp(color_option,'rgb')||strcmp(color_option,'bgr');
+%         if test3color% need to update color thresholds
+%             set(handles.num_ColCode1,'Visible','on')
+%             set(handles.num_ColCode2,'Visible','on')
+%             set(handles.Slider1,'Visible','on')
+%             set(handles.Slider2,'Visible','on')
+%             set(handles.num_ColCode1,'String',num2str(PlotParam.Vectors.ColCode1,3))
+%             set(handles.num_ColCode2,'String',num2str(PlotParam.Vectors.ColCode2,3))
+%             set(handles.Slider1,'Value',(PlotParam.Vectors.ColCode1-MinC)/(MaxC-MinC))
+%             set(handles.Slider2,'Value',(PlotParam.Vectors.ColCode2-MinC)/(MaxC-MinC))
+%         else
+%             set(handles.num_ColCode1,'Visible','off')
+%             set(handles.num_ColCode2,'Visible','off')
+%             set(handles.Slider1,'Visible','off')
+%             set(handles.Slider2,'Visible','off')
+%         end
+%     end
+% else
+%     set(handles.Vectors,'Visible','off')
+%     if isfield(handles,'edit_vect')
+%         set(handles.edit_vect,'Visible','off')
+%         set(handles.record,'Visible','off')
+%     end
+% end
 
 % --------------------------------------------------------------------
 % --- Executes on button press in CheckTable.

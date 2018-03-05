@@ -193,7 +193,7 @@ else  %plot 2D field
 end
 
 %% 1D plot (usual graph y vs x)
-if isempty(index_1D)
+if isempty(index_1D)|| ~isempty(index_2D)
     if ~isempty(haxes)
         plot_profile([],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
     end
@@ -652,7 +652,7 @@ YName='';
 y_units='';
 
 % loop on the input field cells
-for icell=1:numel(CellInfo) 
+for icell=1:numel(CellInfo)
     if strcmp(CellInfo{icell}.CoordType,'tps') %do not plot directly tps data (used for projection only)
         continue
     end
@@ -687,7 +687,7 @@ for icell=1:numel(CellInfo)
         else
             if numel(CellInfo{icell}.VarIndex_vector_x)>1
                 errormsg='error in plot_field: attempt to plot two vector fields';
-            return
+                return
             end
             test_vec=1;
             if isfield(CellInfo{icell},'VarIndex_errorflag')
@@ -719,17 +719,13 @@ for icell=1:numel(CellInfo)
                 end
             end
             if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
-%                 if test_vec
-                    vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
-                    if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
-                        test_black=1;
-                    end
-%                 end
+                vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
+                if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
+                    test_black=1;
+                end
             end
             if ~isempty(ivar_FF_vec) %&& ~test_false
-%                 if test_vec% TODO: deal with FF for structured coordinates
-                    vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
-%                 end
+                vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
             end
         end
     elseif ~isempty(ivar_C) %scalar or image
@@ -821,8 +817,9 @@ for icell=1:numel(CellInfo)
         if isempty(y_units)
             y_units=Data.CoordUnit;
         end
-    end   
+    end
 end
+
 PlotParamOut=PlotParam; % output plot parameters equal to input by default
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1264,14 +1261,6 @@ if ~isempty(Data)
     PlotParamOut.Axes.x_units=x_units;
     PlotParamOut.Axes.y_units=y_units;
 end
-% if isfield(PlotParam,'Axes') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
-%     set(haxes,'DataAspectRatioMode','manual')
-%     if isfield(PlotParam.Axes,'AspectRatio')
-%         set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
-%     end
-% else
-%     set(haxes,'DataAspectRatioMode','auto')
-% end
 
 %-------------------------------------------------------------------
 % --- function for plotting vectors
