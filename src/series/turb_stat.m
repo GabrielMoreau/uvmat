@@ -179,6 +179,10 @@ InputFields{1}=[];%default (case of images)
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
 end
+if isempty(InputFields{1}.FieldName)
+    disp('ERROR: input fields U, V and posibly curl and div must be entered by get_field...')
+    return
+end
 
 nbfiles=0;
 nbmissing=0;
@@ -186,9 +190,9 @@ nbmissing=0;
 %initialisation
 DataOut.ListGlobalAttribute= {'Conventions'};
 DataOut.Conventions= 'uvmat';
-DataOut.ListVarName={'coord_y', 'coord_x' ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','Counter'};
+DataOut.ListVarName={'coord_y', 'coord_x' ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','CurlMean','DivMean','Curl2Mean','Div2Mean','Counter'};
 DataOut.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
-    {'coord_y','coord_x'},{'coord_y','coord_x'}};
+    {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
 DataOut.UMean=0;
 DataOut.VMean=0;
 DataOut.u2Mean=0;
@@ -197,6 +201,10 @@ DataOut.u2Mean_1=0;
 DataOut.v2Mean_1=0;
 DataOut.uvMean=0;
 DataOut.Counter=0;
+DataOut.CurlMean=0;
+DataOut.DivMean=0;
+DataOut.Curl2Mean=0;
+DataOut.Div2Mean=0;
 U2Mean=0;
 V2Mean=0;
 UVMean=0;
@@ -214,16 +222,17 @@ for index=1:NbField
     [Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
 
     %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-    if index==1 %first field
+    if index==1 %initiate the output data structure in the first field
         
         DataOut.coord_y=Field.coord_y;
         DataOut.coord_x=Field.coord_x;
-        Uprev=Field.U;
+        Uprev=Field.U;% store the current field for next iteration
         Vprev=Field.V;
         if isfield(Field,'FF')
-        FFprev=Field.FF;
+        FFprev=Field.FF;% possible flag for false data 
         else
-            FFprev=true(size(Field.U));
+            %FFprev=true(size(Field.U));
+            FFprev=isnan(Field.U);
         end
     end
     FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
@@ -241,6 +250,14 @@ for index=1:NbField
     Uprev=Field.U; %store for next iteration
     Vprev=Field.V;
     FFprev=FF;
+    if isfield(Field,'curl') && isfield(Field,'div')
+        Field.curl(FF)=0;% set to 0 the nan values
+        Field.div(FF)=0;
+        DataOut.CurlMean=DataOut.CurlMean+Field.curl;
+        DataOut.DivMean=DataOut.DivMean+Field.div;
+        DataOut.Curl2Mean=DataOut.Curl2Mean+Field.curl.*Field.curl;
+        DataOut.Div2Mean=DataOut.Div2Mean+Field.div.*Field.div;
+    end
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
 
@@ -257,7 +274,10 @@ DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
 DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \
 DataOut.u2Mean_1=U2Mean_1-DataOut.UMean.*DataOut.UMean; % normalize the mean
 DataOut.v2Mean_1=V2Mean_1-DataOut.VMean.*DataOut.VMean; % normalize the mean
-
+DataOut.CurlMean=DataOut.CurlMean./DataOut.Counter;
+DataOut.DivMean=DataOut.DivMean./DataOut.Counter;
+DataOut.Curl2Mean=DataOut.Curl2Mean./DataOut.Counter-DataOut.CurlMean.*DataOut.CurlMean;
+DataOut.Div2Mean=DataOut.Div2Mean./DataOut.Counter-DataOut.DivMean.*DataOut.DivMean;
 
 %% calculate the profiles
 % npx=numel(DataOut.coord_x);

@@ -272,6 +272,8 @@ switch FileType
     case 'image_DaVis'
         Input=readimx(FileName);
         A=Input.Frames{num}.Components{1}.Planes{1}';
+        %timestamps=double(Input.Attributes{1}.Value(2))/1000000;
+        timestamps=str2num(Input.Frames{1}.Attributes{12}.Value(1:end-3))/1000000;
     case 'cine_phantom'
         [A,FileInfo] = read_cine_phantom(FileName,num );
     otherwise
@@ -280,7 +282,7 @@ end
 
 %% case of image
 if ~isempty(A)
-    if strcmp(FileType,'rdvision')
+    if strcmp(FileType,'rdvision')||strcmp(FileType,'image_DaVis')
         Field.Time=timestamps;
     end
     if isstruct(ParamOut)

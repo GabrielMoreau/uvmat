@@ -64,8 +64,11 @@ switch FileExt
              FileInfo.NumberOfFrames=numel(Input.Frames);
              FileInfo.Height=size(Image,2);
              FileInfo.Width=size(Image,1);
+             FileInfo.TimeName='timestamp';
+             DateString=Input.Attributes{60}.Value
+             TimeString=Input.Attributes{59}.Value
         catch ME
-            msgbox_uvmat('ERROR',ME.message)
+            msgbox_uvmat('ERROR',[ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'])
             return
         end
     case '.h5'
@@ -82,6 +85,7 @@ switch FileExt
         FileInfo.Height=BitmapInfoHeader.biHeight;
         FileInfo.Width=BitmapInfoHeader.biWidth;
          FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
+         FileInfo.TimeName='video';
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -148,9 +152,10 @@ switch FileExt
                             end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';
+                            FileInfo.TimeName='video';
                             FileInfo.FileName=fileinput;
                             nbfield=numel(fieldnames(FileInfo));
-                            FileInfo=orderfields(FileInfo,[nbfield nbfield-3 nbfield-1 nbfield-2 (1:nbfield-4)]); %reorder the fields of fileInfo for clarity
+                            FileInfo=orderfields(FileInfo,[nbfield nbfield-4 nbfield-3 nbfield-1 nbfield-2 (1:nbfield-5)]); %reorder the fields of fileInfo for clarity
                             if ~isfield(FileInfo,'NumberOfFrames')
                                 FileInfo.NumberOfFrames=floor(FileInfo.Duration*FileInfo.FrameRate);
                             end

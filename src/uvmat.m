@@ -2061,11 +2061,14 @@ if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video da
     else
         XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
     end
-    if strcmp(FileInfo.FileType,'rdvision')
-        TimeName='timestamp';
-    else
-    TimeName='video';
-    end
+%     if strcmp(FileInfo.FileType,'rdvision')
+%         TimeName='timestamp';
+%     else
+%     TimeName='video';
+%     end
+end
+if isfield(FileInfo,'TimeName')
+    TimeName=FileInfo.TimeName;
 end
 if isfield(FileInfo,'ColorType')
     ColorType=FileInfo.ColorType;%='truecolor' for color images
@@ -3340,6 +3343,9 @@ switch UvData.FileType{1}
         else
             frame_index=num_j1;% frame index from a set of indexed movies
         end
+        if isempty(frame_index)
+            frame_index=1; 
+        end
     case 'multimage'
         FieldName='image';
         if ~strcmp(NomType,'*')
@@ -3368,7 +3374,8 @@ switch UvData.FileType{1}
             return
         end
     case {'image','image_DaVis'}
-        FieldName='image';     
+        FieldName='image';  
+        frame_index=num_j1;%frame index for image pairs
 end
 if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;

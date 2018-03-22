@@ -106,7 +106,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
 
     %% check the validity of  input file types
-    ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};%allowed input file types(images)
+    ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom','image_DaVis'};%allowed input file types(images)
     FileInfo=get_file_info(FirstFileName);
     FileType=FileInfo.FileType;
     CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
@@ -347,6 +347,9 @@ for j_slice=1:NbSlice_j
             C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
+            if ~isfield(FileInfo{1},'BitDepth')
+                FileInfo{1}.BitDepth=16;
+            end
             if isequal(FileInfo{1}.BitDepth,16)
                 C=uint16(Acor);
                 imwrite(C,newname,'BitDepth',16); % save the new image
@@ -378,7 +381,7 @@ for j_slice=1:NbSlice_j
                     j1=j1_series{1}(ifile);
                 end
                 filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1);
-                Aread=read_image(filename,FileType{1},MovieObject{1},i1_series{1}(ifile));
+                Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
                 if ndims(Aread)==3;%color images
                     Aread=sum(double(Aread),3);% take the sum of color components
                 end

@@ -66,6 +66,7 @@ if isfield(s.sequenceSettings,'numberoffiles')
     FileInfo.NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
     FileInfo.FrameRate=str2double(s.sequenceSettings.framepersecond);
     FileInfo.ColorType='grayscale';
+    FileInfo.TimeName='timestamp';
 else
     FileInfo.FileType='';
     return
