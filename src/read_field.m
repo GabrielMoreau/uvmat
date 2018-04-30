@@ -48,6 +48,9 @@ Field=[];
 if ~exist('num','var')
     num=1;
 end
+if isempty(num)
+    num=1;
+end
 if ~exist('ParamIn','var')
     ParamIn=[];
 end
@@ -271,9 +274,16 @@ switch FileType
         [A,FileInfo,timestamps]=read_rdvision(FileName,num);
     case 'image_DaVis'
         Input=readimx(FileName);
+        if numel(Input.Frames)==1
+            num=1;
+        end
         A=Input.Frames{num}.Components{1}.Planes{1}';
-        %timestamps=double(Input.Attributes{1}.Value(2))/1000000;
-        timestamps=str2num(Input.Frames{1}.Attributes{12}.Value(1:end-3))/1000000;
+        for ilist=1:numel(Input.Frames{1}.Attributes)
+            if strcmp(Input.Frames{1}.Attributes{ilist}.Name,'AcqTimeSeries')
+        timestamps=str2num(Input.Frames{1}.Attributes{ilist}.Value(1:end-3))/1000000;
+        break
+            end
+        end
     case 'cine_phantom'
         [A,FileInfo] = read_cine_phantom(FileName,num );
     otherwise

@@ -5,6 +5,22 @@
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
 %      .FileType: type of file, needed as input of read_field.m
+%               ='figure': Matlab figure
+%               ='xml': xml file
+%               ='xls': Excel file
+%               ='dat': text file for data,
+%               ='image': image format recognised by Matlab
+%               ='multimage': image format recognised by Matlab with  multiple frames
+%               ='video': video movie file
+%               ='mmreader': video from old versions of Matlab (<2009)
+%               ='rdvision': images in binary format from company rdvision
+%               ='image_DaVis': images from softwar DaVis (company LaVision)
+%               ='cine_phantom': images from fast camera Phantom
+%               ='bin': binary file without specific organisation
+%               ='netcdf': netcdf file 
+%               ='civdata': netcdf files provided by civ_series
+%               ='civx': netcdf files provided by the obsolete program civx (in fortran)
+%               ='pivdata_fluidimage': PIV data from software 'fluidimage'
 %      .FileIndexing='on' for data files (when series of indexed files are  expected)
 %      .Height: image height in pixels
 %      .Width:  image width in pixels
@@ -53,9 +69,6 @@ switch FileExt
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}
         [A,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
-%         %%%%%
-%         FileInfo.NumberOfFrame=24000;
-%         %%%%%%%%
     case '.im7'
         try
              Input=readimx(fileinput);
@@ -65,10 +78,16 @@ switch FileExt
              FileInfo.Height=size(Image,2);
              FileInfo.Width=size(Image,1);
              FileInfo.TimeName='timestamp';
-             DateString=Input.Attributes{60}.Value
-             TimeString=Input.Attributes{59}.Value
+             for ilist=1:numel(Input.Attributes)
+                 if strcmp(Input.Attributes{ilist}.Name,'_Date')
+                     DateString=Input.Attributes{ilist}.Value;
+                 end
+                 if strcmp(Input.Attributes{ilist}.Name,'_Time')
+                     TimeString=Input.Attributes{ilist}.Value;
+                 end
+             end
         catch ME
-            msgbox_uvmat('ERROR',[ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'])
+            msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'})
             return
         end
     case '.h5'
@@ -165,7 +184,12 @@ switch FileExt
             end
         end
 end
-switch FileInfo.FileType
-    case {'image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'}
+if ismember (FileInfo.FileType,{'image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
         FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 end
+FileInfo.FieldType=FileInfo.FileType;%default
+switch FileInfo.FileType
+    case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom'}
+    FileInfo.FieldType='image';
+end
+

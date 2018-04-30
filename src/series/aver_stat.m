@@ -166,7 +166,6 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file
-ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
@@ -175,7 +174,7 @@ for iview=1:NbView
     end
     [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    CheckImage{iview}=strcmp(FileInfo{iview}.FieldType,'image');% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
     if ~isempty(j1_series{iview})
         frame_index{iview}=j1_series{iview};

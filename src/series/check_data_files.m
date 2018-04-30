@@ -108,12 +108,11 @@ nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file
-ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     [FileInfo{iview},Object{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    CheckImage{iview}=strcmp(FileInfo{iview}.FieldType,'image');% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
 end
 

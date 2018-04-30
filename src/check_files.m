@@ -162,7 +162,7 @@ date_str=datestr(max(datnum));
 if status==0 % if a svn line command is available
     svn_info.rep_rev=0;svn_info.cur_rev=0;
     [tild,result]=system(['svn info ' dir_fct]); %get info fromn the svn server
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'r�vision' or 'Revision' in the text
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
     if ~isempty(t)
         svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
     end

@@ -106,10 +106,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
 
     %% check the validity of  input file types
-    ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom','image_DaVis'};%allowed input file types(images)
     FileInfo=get_file_info(FirstFileName);
     FileType=FileInfo.FileType;
-    CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
+    CheckImage=strcmp(FileInfo.FieldType,'image');% =1 for images
     if ~CheckImage
         msgbox_uvmat('ERROR',['invalid file type input: ' FileType ' not an image'])
         return

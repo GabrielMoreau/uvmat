@@ -79,10 +79,6 @@ end
 Field=[];
 VelTypeOut=VelType;
 errormsg='';
-if ~exist(FileName,'file')
-    errormsg=['input file ' FileName ' does not exist'];
-    return
-end
 if ischar(FieldNames), FieldNames={FieldNames}; end;
 ProjModeRequest='';
 for ilist=1:length(FieldNames)
@@ -101,13 +97,13 @@ end
 %% reading data
 Data=nc2struct(FileName,'ListGlobalAttribute','CivStage');
 if isfield(Data,'Txt')
-     erromsg=['error in read_civdata: ' Data.Txt];
+     errormsg=['error in read_civdata: ' Data.Txt];
     return
 end
 % set the list of variables to read and their role
 [varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
 if isempty(varlist)
-    erromsg=['error in read_civdata: unknow velocity type ' VelType];
+    errormsg=['error in read_civdata: unknow velocity type ' VelType];
     return
 else
     [Field,vardetect]=nc2struct(FileName,varlist);%read the variables in the netcdf file

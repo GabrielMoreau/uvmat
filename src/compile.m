@@ -45,8 +45,6 @@ end
 [mcrmajor, mcrminor] = mcrversion;   
 MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
 FctNameVersion=[FctName,'_',MCRROOT];
-%hver=ver('MATLAB');
-%FctNameVersion=[FctName '_MCRROOT' regexprep(hver.Version,'\.','')]; % suppress the dot in version number
 try
     disp(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])
     eval(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])% compile the source file [FctName .m], which produces a binary file FctName and a cmd file [run_' FctName '.sh]

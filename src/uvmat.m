@@ -2302,6 +2302,7 @@ if index==2
         state_j='on';
     end
 end
+if ~isempty(i1_series)
 [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
 if ~isempty(j1_series)
         state_j='on';
@@ -2331,6 +2332,7 @@ else
     end
      set(handles.scan_j,'Value',1)
      scan_j_Callback([],[], handles);
+end
 end
 set(handles.scan_j,'Visible',state_j)
 set(handles.j1,'Visible',state_j)
@@ -3469,9 +3471,9 @@ if ~isempty(FileName_1)
         NomType_1=get(handles.NomType,'String');
     end
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
-    if ~isequal(NomType_1,'*')&& isfield(UvData,'FileName_1')
-           test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;
-    end
+%     if ~isequal(NomType_1,'*')&& isfield(UvData,'FileName_1')
+%            test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;
+%     end
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
         ParamOut_1=UvData.ParamOut_1;
@@ -3689,6 +3691,10 @@ end
 transform=get(handles.TransformPath,'UserData');
 if isempty(transform)
     UvData.Field=Field{1};
+    if numel(Field)==2
+        UvData.Field=sub_field(Field{1},[],Field{2});
+       % UvData.Field.(FieldName)=Field{1}.(FieldName)-Field{2}.(FieldName_1);
+    end      
 else
     XmlData=[];%default
     XmlData_1=[];%default
@@ -4606,12 +4612,16 @@ switch field_1
         FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
         FieldList={};
-        VecColorList={};
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;
                 VName=GetFieldData.PanelVectors.vector_y;
-                YName=GetFieldData.Coordinates.Coord_y;
+                if isfield(GetFieldData,'Coordinates')
+                    YName=GetFieldData.Coordinates.Coord_y;
+                    if isfield(GetFieldData.Coordinates,'Coord_z')
+                        ZName=GetFieldData.Coordinates.Coord_z;
+                    end
+                end
                 CName=GetFieldData.PanelVectors.vec_color;
                 FieldList={['vec(' UName ',' VName ')'];...
                     ['norm(' UName ',' VName ')'];...
@@ -4621,15 +4631,25 @@ switch field_1
                 if ~isempty(CName)
                     VecColorList=[{CName};VecColorList];
                 end
+                 set(handles.ColorScalar,'Value',1)
+                 set(handles.ColorScalar,'String',VecColorList);
             case 'scalar'
+                set(handles.Scalar,'Visible','on')
+                ResizeFcn(gcbo,[],handles)
                 AName=GetFieldData.PanelScalar.scalar;
-                YName=GetFieldData.Coordinates.Coord_y;
+                if isfield(GetFieldData,'Coordinates')
+                    YName=GetFieldData.Coordinates.Coord_y;
+                    if isfield(GetFieldData.Coordinates,'Coord_z')
+                        ZName=GetFieldData.Coordinates.Coord_z;
+                    end
+                end
                 FieldList={AName};
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
+                FieldList={''}; 
             case 'civdata...'%reinitiate input, return to automatic civ data reading
                 display_file_name(handles,FileName,1)
-        end
+        end      
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
             XName=GetFieldData.Coordinates.Coord_x;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
@@ -4658,8 +4678,7 @@ switch field_1
             set(handles.Coord_y,'String',YName)
             set(handles.FieldName_1,'Value',1)
             set(handles.FieldName_1,'String',[FieldList; {'get_field...'}]);
-            set(handles.ColorScalar,'Value',1)
-            set(handles.ColorScalar,'String',VecColorList);
+           
             UvData.FileType{2}='netcdf';
             set(handles.uvmat,'UserData',UvData)
             REFRESH_Callback(hObject, eventdata, handles)

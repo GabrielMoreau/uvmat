@@ -240,12 +240,11 @@ if ~exist(GUI.ImageA,'file')
     return
 end
 [FileInfo,VideoObject]=get_file_info(GUI.ImageA);
-switch FileInfo.FileType
-    case {'image','multimage','video','mmreader'}% case of input image or movie OK
-    otherwise
-        msgbox_uvmat('ERROR',['error: ' GUI.ImageA ' is not an image type recognized by Matlab '])
-        return
+if ~strcmp(FileInfo.FieldType,'image');% =1 for images
+    msgbox_uvmat('ERROR',['error: ' GUI.ImageA ' is not an image type recognized by Matlab '])
+    return
 end
+
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(GUI.ImageA);
 
 %% transform to pixels if the grid is defined in phys coordinates
@@ -335,11 +334,8 @@ if isequal(get(handles.GetImageB,'Value'),1)
             'Pick the second image file',fileparts(fileparts(get(handles.ImageA,'String'))));
         ImageB=fullfile(PathName,FileName);
         [FileInfo,tild,VideoObject]=get_file_info(ImageB);
-    switch FileInfo.FileType
-        case {'image','multimage','video','mmreader'}% case of input image or movie OK
-            set(handles.ImageB,'String',ImageB)
-        otherwise
-            msgbox_uvmat('ERROR',['error: ' imageB ' is not an image type recognized by Matlab '])
+        if ~strcmp(FileInfo.FieldType,'image');% =1 for images
+            msgbox_uvmat('ERROR',['error: ' imageB ' is not an image type recognised by Matlab '])
             return
     end
 else

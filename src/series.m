@@ -174,8 +174,9 @@ RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
-    set(handles.num_CPUTime,'Visible','on'); % make visible button for access to Monika
-    set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time estimate for one ref index
+    set(handles.num_CPUTime,'Visible','on'); % make visible button for CPU time estimate for one ref index
+    set(handles.num_CPUTime,'String','1')% defqult CPU time estimate 1 minute
+    set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time title
 end
 % [s,w]=system('qstat -help'); % look for cluster system 'sge'
 % if isequal(s,0)
@@ -1568,34 +1569,21 @@ switch RunMode
         %proposed number of cores to reserve in the cluster
         NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
         NbCoreMax=SeriesData.SeriesParam.ClusterParam.NbCoreMax;
-        if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-            warning_string=', preferably use .sh option to save Matlab licences';
+        if NbCoreMax~=1
+            if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+                warning_string=', preferably use .sh option to save Matlab licences';
+            else
+                warning_string=')';
+            end
+            answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
+            if isempty(answer)
+                errormsg='Action launch interrupted by user';
+                return
+            end
+            NbCore=str2double(answer);
         else
-            warning_string=')';
+            NbCore=1;
         end
-        answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
-        if isempty(answer)
-            errormsg='Action launch interrupted by user';
-            return
-        end
-        NbCore=str2double(answer);
-%         extra_oar=answer{2};
-%     case {'cluster_pbs', 'cluster_sge', 'cluster_qstat_unknown'}
-%         if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-%             NbCore=1; % one core used only (limitation of Matlab licences)
-%             answer=msgbox_uvmat('INPUT_Y-N','Number of cores =1: select the compiled version .sh for multi-core processing. Proceed with the .m version?');
-%             if ~strcmp(answer,'Yes')
-%                 errormsg='Action launch interrupted';
-%                 return
-%             end
-%             extra_oar='';
-%         else
-%             answer=inputdlg({'Number of jobs (max 1000)','Queue'},'qsub parameters',1,{'100','piv_debian'});
-%             NbCore=str2double(answer{1});
-%             qstat_Queue=answer{2};
-%             %extra_oar=answer{2}; % TODO : fix this for LMFA cluster. Maybe
-%             %extrs_oar and extra_pbs are not the best names
-%         end
 end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
@@ -2156,14 +2144,14 @@ Param.InputTable(empty_line,:)=[];
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ActionName.
-function ActionName_Callback(hObject, eventdata, handles)
+function ActionName_Callback(hObject, ActionPath, handles)
 %------------------------------------------------------------------------
 
 %% stop any ongoing series processing
 if isequal(get(handles.RUN,'Value'),1)
     answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
     if strcmp(answer,'Yes')
-        STOP_Callback(hObject, eventdata, handles)
+        STOP_Callback(hObject, [], handles)
     else
         return
     end
@@ -2191,11 +2179,14 @@ ActionPathList=get(handles.ActionName,'UserData'); % list of recorded paths to f
 
 %% add a new function to the menu if 'more...' has been selected in the menu ActionName
 if isequal(ActionName,'more...')
+    if isempty(ActionPath)
+        ActionPath=get(handles.ActionPath,'String');
+    end
     [FileName, PathName] = uigetfile( ...
         {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a series processing function ',get(handles.ActionPath,'String'));
+        'Pick a series processing function ',ActionPath);
     if length(FileName)<2
         return
     end
@@ -2280,7 +2271,8 @@ ActionPath=get(handles.ActionPath,'String');
 ActionList=get(handles.ActionName,'String');
 ActionName= ActionList{get(handles.ActionName,'Value')}; % selected function name
 if ~exist(ActionPath,'dir')
-    msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
+    ActionName_Callback(handles.ActionName, ActionPath, handles)% update the function
+%     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
     return
 end
 current_dir=pwd; % current working dir

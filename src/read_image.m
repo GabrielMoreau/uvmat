@@ -42,6 +42,9 @@ end
 if ~exist('num','var')
     num=1;
 end
+if isempty(num)
+    num=1;
+end
 A=[];
 ObjectOut=VideoObject;%default
 switch FileType
@@ -67,5 +70,9 @@ switch FileType
         A=imread(FileName);
     case 'image_DaVis'
                 Input=readimx(FileName);
+                if numel(Input.Frames)==1
+                    A=Input.Frames{1}.Components{1}.Planes{1}';
+                else
         A=Input.Frames{num}.Components{1}.Planes{1}';
+                end
 end

@@ -79,7 +79,7 @@ if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,
     set(handles.num_CorrSmooth,'Value',1)
     set(handles.num_CorrSmooth,'String',{'1';'2'})
     set(handles.CheckThreshold,'Visible','on')
-    set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
+    set(handles.CheckDeformation,'Value',0)% desactivate 
 end
 switch Param.Action.ActionName
     case 'stereo_civ'
@@ -94,10 +94,9 @@ end
 NomTypeInput=Param.InputTable{1,4};
 FileType='image';%fdefault
 FileInfo=[];
-if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')...
-        &&numel(SeriesData.FileType)>=1&&numel(SeriesData.FileInfo)>=1
-    FileType=SeriesData.FileType{1};%type of the first input file series
-    FileInfo=SeriesData.FileInfo{1};% info on the first input file series
+if isfield(SeriesData,'FileInfo')...
+    FileType=SeriesData.FileInfo{1}.FileType;% info on the first input file series
+    FieldType=SeriesData.FileInfo{1}.FieldType;% info on the first input file series
 else
     set(hhseries.REFRESH,'BackgroundColor',[1 0 1])% indicate that the file input in series needs to be refreshed 
 end
@@ -108,9 +107,6 @@ NomTypeNc='';
 NomTypeImaA=NomTypeInput;
 iview_image=1;%line # for the input images
 switch FileType
-    case {'image','image_DaVis','multimage','video','mmreader','cine_phantom','netcdf'}
-%         NomTypeImaA=NomTypeInput;
-%         iview_image=1;%line # for the input images
     case 'civdata'
         if ~strcmp(Param.Action.ActionName,'civ_series')
             msgbox_uvmat('ERROR','bad input data file: open an image or a nc file from civ_series')
@@ -153,8 +149,10 @@ switch FileType
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
         return
     otherwise 
+        if ~strcmp(FieldType,'image')
         msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
         return
+        end
 end
 
 %% reinitialise menus
@@ -307,13 +305,16 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
         end
     end
     if isfield(Param.ActionInput,'Civ2')
-       CheckDeformation_Callback(hObject, eventdata, handles)
+        CheckDeformation_Callback(hObject, eventdata, handles)
     end
 end
-       if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ListCompareMode')&&...
-               strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            set(handles.PairIndices,'Visible','off')
-        end
+if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ListCompareMode')&&...
+        strcmp(Param.ActionInput.ListCompareMode,'displacement')
+    set(handles.PairIndices,'Visible','off')
+        set(handles.CheckRefFile,'Visible','on')
+else
+    set(handles.CheckRefFile,'Visible','off')
+end
 
 %% set the menu and default choice of civ pairs
 if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
@@ -369,7 +370,6 @@ end
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-%ListPairCiv1_Callback(hObject, eventdata, handles)
 
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
@@ -713,9 +713,7 @@ else
     end
     mode_selected=mode_list{mode_value};
 end
-% displ_num=[];%default
 ref_i=str2double(get(handles.ref_i,'String'));
-% last_i=str2num(get(handles.last_i,'String'));
 CivInputData=get(handles.civ_input,'UserData');
 TimeUnit=get(handles.TimeUnit,'String');
 checkframe=strcmp(TimeUnit,'frame');
@@ -724,12 +722,10 @@ siztime=size(CivInputData.Time);
 nbfield=siztime(1)-1;
 nbfield2=siztime(2)-1;
 %indchosen=1;  %%first pair selected by default
-%displ_num used to define the indices of the civ_input pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
 if isequal(mode_selected,'pair j1-j2')
     dt=1;
-    displ='';
     index=0;
     numlist_a=[];
     numlist_B=[];
@@ -750,24 +746,10 @@ if isequal(mode_selected,'pair j1-j2')
         end
     end
     [dtsort,indsort]=sort(displ_dt);
-    if ~isempty(numlist_a)
-        displ_num(1,:)=numlist_a(indsort);
-        displ_num(2,:)=numlist_b(indsort);
-    end
-    displ_num(3,:)=0;
-    displ_num(4,:)=0;
     enable_j(handles, 'off')
 elseif isequal(mode_selected,'series(Dj)') %| isequal(mode,'st_series(Dj)')
-    index=1:200;
-    displ_num(1,index)=-floor(index/2);
-    displ_num(2,index)=ceil(index/2);
-    displ_num(3:4,index)=zeros(2,200);
     enable_j(handles, 'on')
 elseif isequal(mode_selected,'series(Di)') %| isequal(mode,'st_series(Di)')
-%     index=1:200;
-%     displ_num(1:2,index)=zeros(2,200);
-%     displ_num(3,index)=-floor(index/2);
-%     displ_num(4,index)=ceil(index/2);
     enable_i(handles, 'on')
     if nbfield2 > 1
         enable_j(handles, 'on')
@@ -775,10 +757,6 @@ elseif isequal(mode_selected,'series(Di)') %| isequal(mode,'st_series(Di)')
         enable_j(handles, 'off')
     end
 elseif isequal(mode_selected,'displacement')%the pairs have the same indices
-    displ_num(1,1)=0;
-    displ_num(2,1)=0;
-    displ_num(3,1)=0;
-    displ_num(4,1)=0;
     if nbfield > 1 || nbfield==0
         enable_i(handles, 'on')
     else
@@ -790,34 +768,23 @@ elseif isequal(mode_selected,'displacement')%the pairs have the same indices
         enable_j(handles, 'off')
     end
 end
-%set(handles.ListPairCiv1,'UserData',displ_num);
 errormsg=find_netcpair_civ( handles,1);
-    if ~isempty(errormsg)
+if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
-    end
-% find_netcpair_civ2(handles)
+end
 
+%------------------------------------------------------------------------
 function enable_i(handles, state)
 set(handles.itext,'Visible',state)
-% set(handles.MinIndex_i,'Visible',state)
-% set(handles.last_i,'Visible',state)
-% set(handles.incr_i,'Visible',state)
 set(handles.MaxIndex_i,'Visible',state)
 set(handles.ref_i,'Visible',state)
 
+%------------------------------------------------------------------------
 function enable_j(handles, state)
 set(handles.jtext,'Visible',state)
-% set(handles.MinIndex_j,'Visible',state)
-% set(handles.last_j,'Visible',state)
-% set(handles.incr_j,'Visible',state)
 set(handles.MinIndex_j,'Visible',state)
 set(handles.MaxIndex_j,'Visible',state)
 set(handles.ref_j,'Visible',state)
-%hseries=findobj(allchild(0),'Tag','series');
-%hhseries=guidata(hseries);
-%series('enable_j',hhseries,state); %file input with xml reading  in uvmat, show the image in phys coordinates
-
-
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv1.
@@ -873,7 +840,6 @@ set(gcf,'Pointer','watch')% set the mouse pointer to 'watch' (clock)
 %% initialisation
 errormsg='';
 CivInputData=get(handles.civ_input,'UserData');
-%browse=get(handles.RootPath,'UserData');
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
@@ -895,9 +861,6 @@ menu_pair=get(handles.ListPairCiv1,'String');%previous menu of ListPairCiv1
 PairCiv1Init=menu_pair{get(handles.ListPairCiv1,'Value')};%previous choice of pair
 menu_pair=get(handles.ListPairCiv2,'String');%previous menu of ListPairCiv1
 PairCiv2Init=menu_pair{get(handles.ListPairCiv2,'Value')};%previous choice of pair
-
-%% determine nom_type_nc, nomenclature type of the .nc files:
-%[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
 %SubDirImages=get(handles.Civ1_ImageA,'String');
@@ -923,7 +886,6 @@ checkframe=strcmp(TimeUnit,'frame');
 displ_pair={''};
 nbpair=200;%default
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
-%nbpair=200; %default
 
 %% determine the menu display in .ListPairCiv1
 switch mode_selected
@@ -990,10 +952,11 @@ switch mode_selected
         displ_pair_dt=displ_pair_dt(indsort);
         end
     case 'displacement'
-        displ_pair={'Di=Dj=0'};
-        displ_pair_dt={'Di=Dj=0'};
+%         displ_pair={'Di=Dj=0'};
+%         displ_pair_dt={'Di=Dj=0'};
+        set(handles.PairIndices,'Visible','off')
 end
-if index==1
+if index==1 && ~strcmp(mode_selected,'displacement')
     set(handles.ListPairCiv1,'String',displ_pair_dt');
 end
 
@@ -1010,11 +973,9 @@ if ~isempty(ichoice)
 else
    set(handles.ListPairCiv1,'Value',1) 
 end
-% if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
-%     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
-% end
 
 %% determine the default selection in the pair menu for Civ2
+if ~strcmp(mode_selected,'displacement')
 if strcmp(get(handles.ListPairCiv2,'Visible'),'on')
     end_pair=regexp(PairCiv2Init,' :dt=');
     if ~isempty(end_pair)
@@ -1030,6 +991,7 @@ else
     set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))% initiate the choice of Civ2 as a reproduction of if civ1
 end
 set(handles.ListPairCiv2,'String',displ_pair_dt');
+end
 set(gcf,'Pointer','arrow')% Indicate that the process is finished
 
 
@@ -2304,8 +2266,6 @@ filexml=uigetfile_uvmat('pick a xml parameter file for civ',oldfile,'.xml');% ge
 %proceed only if a file has been introduced by the browser
 if ~isempty(filexml)
     Param=xml2struct(filexml);% read the input xml file as a Matlab structure
-
-   % Param.Action.RUN=0; %desactivate the input RUN=1
     if ~isfield(Param,'InputTable')||~isfield(Param,'IndexRange')
         msgbox_uvmat('ERROR','invalid config file: open a file in a folder ''/0_XML''')
         return
@@ -2325,23 +2285,42 @@ if ~isempty(filexml)
     end
 end
 
+%------------------------------------------------------------------------
 % --- Executes on selection change in CheckCiv3.
+%------------------------------------------------------------------------
 function CheckCiv3_Callback(hObject, eventdata, handles)
 
+%------------------------------------------------------------------------
 % --- Executes on button press in CheckRefFile.
+%------------------------------------------------------------------------
 function CheckRefFile_Callback(hObject, eventdata, handles)
 
-    hseries=findobj(allchild(0),'Tag','series');
-    hhseries=guidata(hseries);
-    InputTable=get(hhseries.InputTable,'Data');
-    InputFile=fullfile(InputTable{1,1},InputTable{1,2},[InputTable{1,3} InputTable{1,5}]);
- % browse for a reference file for displacement
-    fileref= uigetfile_uvmat('pick a reference image file:',InputFile);
-        if ~isempty(fileref)
-    set(handles.RefFile,'String',fileref)
-    set(handles.ConfigSource,'String','NEW')
-    set(handles.ConfigSource,'BackgroundColor',[1 0 1])
+hseries=findobj(allchild(0),'Tag','series');
+hhseries=guidata(hseries);
+InputTable=get(hhseries.InputTable,'Data');
+i1=str2num(get(hhseries.num_first_i,'String'));
+j1=str2num(get(hhseries.num_first_j,'String'));
+InputFile=fullfile_uvmat(InputTable{1,1},InputTable{1,2},InputTable{1,3},InputTable{1,5},InputTable{1,4},i1,[],j1);
+% browse for a reference file for displacement
+fileref= uigetfile_uvmat('pick a reference image file:',InputFile);
+if ~isempty(fileref)
+    FileInfo=get_file_info(fileref);
+    CheckImage=strcmp(FileInfo.FieldType,'image');% =1 for images
+    if ~CheckImage
+        msgbox_uvmat('ERROR',['invalid file type input for reference image: ' FileInfo.FileType ' not an image'])
+    else
+        if isfield (FileInfo,'NumberOfFrames')&& FileInfo.NumberOfFrames>1
+            set(handles.num_OriginIndex,'Visible','on')
+            set(handles.OriginIndex_title,'Visible','on')
+        else
+            set(handles.num_OriginIndex,'Visible','off')
+            set(handles.OriginIndex_title,'Visible','off')
         end
+        set(handles.RefFile,'String',fileref)
+        set(handles.ConfigSource,'String','NEW')
+        set(handles.ConfigSource,'BackgroundColor',[1 0 1])
+    end
+end
 
 %------------------------------------------------------------------------
 % --- Executes on key press with selection of a uicontrol

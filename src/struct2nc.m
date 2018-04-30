@@ -120,7 +120,8 @@ for ivar=1:length(ListVarName)
             case {'int8','uint8','int16','uint16','int32','uint32','int64','uint64'}
                 VarType='nc_int';
             case 'logical'
-                VarType='nc_byte';
+                VarType='nc_int';
+                Data.(ListVarName{ivar})=uint8(Data.(ListVarName{ivar}));
         end
         if ~isempty(VarType)
             varid(ivar)=netcdf.defVar(nc,ListVarName{ivar},VarType,dimid(VarDimIndex{ivar}));%define variable

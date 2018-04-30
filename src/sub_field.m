@@ -98,11 +98,11 @@ end
 %% field request
 ProjModeRequest=cell(size(Field.ListVarName));
 if isfield(Field,'VarAttribute')
-for ilist=1:numel(Field.VarAttribute)
-    if isfield(Field.VarAttribute{ilist},'ProjModeRequest')
-        ProjModeRequest{ilist}=Field.VarAttribute{ilist}.ProjModeRequest;
+    for ilist=1:numel(Field.VarAttribute)
+        if isfield(Field.VarAttribute{ilist},'ProjModeRequest')
+            ProjModeRequest{ilist}=Field.VarAttribute{ilist}.ProjModeRequest;
+        end
     end
-end
 end
 ProjModeRequest_1=cell(size(Field_1.ListVarName));
 if isfield(Field_1,'VarAttribute')

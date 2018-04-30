@@ -78,24 +78,22 @@ end
 
 %% transform first field
 iscalar=0;% counter of scalar fields
+checktransform=0;
 if  ~isempty(Calib{1})
-    if ~isfield(Calib{1},'CalibrationType')||~isfield(Calib{1},'CoordUnit')
-        return %bad calib parameter input
-    end
-    if ~(isfield(DataIn,'CoordUnit')&& strcmp(DataIn.CoordUnit,'pixel'))
-        return % transform only fields in pixel coordinates
-    end
-    DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordinates and velocity components
-    %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
-    if isfield(DataIn,'A') && isfield(DataIn,'Coord_x') && ~isempty(DataIn.Coord_x) && isfield(DataIn,'Coord_y')&&...
-                                           ~isempty(DataIn.Coord_y) && length(DataIn.A)>1
-        iscalar=1;
-        A{1}=DataIn.A;
+    if isfield(Calib{1},'CalibrationType')&& isfield(Calib{1},'CoordUnit') && isfield(DataIn,'CoordUnit')&& strcmp(DataIn.CoordUnit,'pixel')   
+        DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordinates and velocity components
+        %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
+        if isfield(DataIn,'A') && isfield(DataIn,'Coord_x') && ~isempty(DataIn.Coord_x) && isfield(DataIn,'Coord_y')&&...
+                ~isempty(DataIn.Coord_y) && length(DataIn.A)>1
+            iscalar=1;
+            A{1}=DataIn.A;
+        end
+        checktransform=1;
     end
 end
 
 %% document the selected  plane position and angle if relevant
-if isfield(Calib{1},'SliceCoord')&&size(Calib{1}.SliceCoord,1)>=ZIndex
+if  checktransform && isfield(Calib{1},'SliceCoord')&&size(Calib{1}.SliceCoord,1)>=ZIndex
     DataOut.PlaneCoord=Calib{1}.SliceCoord(ZIndex,:);% transfer the slice position corresponding to index ZIndex
     if isfield(Calib{1},'SliceAngle') % transfer the slice rotation angles
         if isequal(size(Calib{1}.SliceAngle,1),1)% case of a unique angle
@@ -107,41 +105,40 @@ if isfield(Calib{1},'SliceCoord')&&size(Calib{1}.SliceCoord,1)>=ZIndex
 end
 
 %% transform second field if relevant
+checktransform_1=0;
 if ~isempty(DataOut_1)
     if isfield(DataIn_1,'ZIndex') && ~isequal(DataIn_1.ZIndex,ZIndex)
         DataOut_1.Txt='different plane indices for the two input fields';
         return
     end
-    if ~isfield(Calib{2},'CalibrationType')||~isfield(Calib{2},'CoordUnit')
-        return %bad calib parameter input
-    end
-    if (isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel'))
+    if isfield(Calib{2},'CalibrationType')&&isfield(Calib{2},'CoordUnit') && isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel')
         DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
-    end
-    if isfield(Calib{1},'SliceCoord')
-        if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
-            DataOut_1.Txt='different plane positions for the two input fields';
-            return
-        end
-        DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
-        if isfield(Calib{1},'SliceAngle')
-            if ~(isfield(Calib{2},'SliceAngle') && isequal(Calib{2}.SliceAngle,Calib{1}.SliceAngle))
-                DataOut_1.Txt='different plane angles for the two input fields';
+        if isfield(Calib{1},'SliceCoord')
+            if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
+                DataOut_1.Txt='different plane positions for the two input fields';
                 return
             end
-            DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields
+            DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
+            if isfield(Calib{1},'SliceAngle')
+                if ~(isfield(Calib{2},'SliceAngle') && isequal(Calib{2}.SliceAngle,Calib{1}.SliceAngle))
+                    DataOut_1.Txt='different plane angles for the two input fields';
+                    return
+                end
+                DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields
+            end
         end
-    end
-    if isfield(DataIn_1,'A')&&isfield(DataIn_1,'Coord_x')&&~isempty(DataIn_1.Coord_x) && isfield(DataIn_1,'Coord_y')&&...
-            ~isempty(DataIn_1.Coord_y)&&length(DataIn_1.A)>1
-        iscalar=iscalar+1;
-        Calib{iscalar}=Calib{2};
-        A{iscalar}=DataIn_1.A;
+        if isfield(DataIn_1,'A')&&isfield(DataIn_1,'Coord_x')&&~isempty(DataIn_1.Coord_x) && isfield(DataIn_1,'Coord_y')&&...
+                ~isempty(DataIn_1.Coord_y)&&length(DataIn_1.A)>1
+            iscalar=iscalar+1;
+            Calib{iscalar}=Calib{2};
+            A{iscalar}=DataIn_1.A;
+        end
+        checktransform_1=1;
     end
 end
 
 %% transform the scalar(s) or image(s)
-if iscalar~=0
+if checktransform && iscalar~=0
     [A,Coord_x,Coord_y]=phys_ima(A,XmlData,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
     if iscalar==1 && ~isempty(DataOut_1) % case for which only the second field is a scalar
          DataOut_1.A=A{1};

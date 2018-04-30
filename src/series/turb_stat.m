@@ -113,7 +113,6 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
@@ -122,7 +121,6 @@ for iview=1:NbView
     end
     [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
     if ~isempty(j1_series{iview})
         frame_index{iview}=j1_series{iview};
@@ -152,18 +150,8 @@ end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
-%% check the validity of  input file types
-if CheckImage{1}
-    FileExtOut='.png'; % write result as .png images for image inputs
-elseif CheckNc{1}
-    FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else
-    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
-    return
-end
-
-
 %% settings for the output file
+FileExtOut='.nc';% write result as .nc files for netcdf inputs
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
 first_i=i1_series{1}(1);
 last_i=i1_series{1}(end);

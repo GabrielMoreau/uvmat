@@ -47,7 +47,7 @@
 function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput,checkxml)
 %------------------------------------------------------------------------
 
-%% get input root name and nomenclature type
+%% get input root name and info on the input file
 if isempty(regexp(FilePath,'^http://'))
 fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 else
@@ -152,22 +152,12 @@ if checkfileindexing
                 end
             end
         end
-  
+        
         detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
-%         if isempty(regexp(FilePath,'^http://'))
-        %find the string used to extract the relevant files with the command dir
-%         star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
-%         wd=pwd;%current working directory
-%         cd (FilePath)% move to the local dir to save time in the operation dir.
-%         dirpair=dir(star_string);% look for relevant files in the file directory
-%         cd(wd)
-%         else
-            ListStruct=dir_uvmat(FilePath);
-            ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-            ListFiles=ListCells(1,:);%list of file names
-            rr=regexp(ListFiles,detect_string,'names');
-%         end
-%         nbpair=numel(dirpair);
+        ListStruct=dir_uvmat(FilePath);% scan the content of the folder FilePath
+        ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        ListFiles=ListCells(1,:);%list of file names
+        rr=regexp(ListFiles,detect_string,'names');
         nbpair=numel(rr);
         ref_i_list=zeros(1,nbpair);
         ref_j_list=zeros(1,nbpair);
@@ -176,7 +166,7 @@ if checkfileindexing
         end
         % scan the list of relevant files, extract the indices
         for ifile=1:nbpair
-%             rr=regexp(dirpair(ifile).name,detect_string,'names');
+            %             rr=regexp(dirpair(ifile).name,detect_string,'names');
             if ~isempty(rr{ifile})
                 i1=str2num(rr{ifile}.i1);
                 i2=str2num(regexprep(rr{ifile}.i2,'^-',''));
@@ -273,20 +263,13 @@ if checkfileindexing
         SubDir=[SubDir DirExt];% include part after . in the name (considered as a file extension)
         NomType='*';
         i2_series=[];j1_series=[];j2_series=[];
-%         i1_input=1;i2_input=[];j1_input=[];j2_input=[];
+        %         i1_input=1;i2_input=[];j1_input=[];j2_input=[];
         if ~exist(fullfileinput,'file')
             RootFile='';
             return
         end
     end
 end
-% %% detect rdvision format
-% if strcmp(FileExt,'.bin')
-%     if exist(fullfile(RootPath,SubDir,[RootFile '.seq']),'file')
-%         FileInfo.FileType='rdvision';
-%         FileInfo.SeqFile=[RootFile '.seq'];
-%     end
-% end
 
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
