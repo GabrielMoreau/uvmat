@@ -1519,6 +1519,9 @@ if strcmp(ActionExt,'.sh')
     [mcrmajor, mcrminor] = mcrversion;   
     MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
     RunTime = getenv('MCRROOT'); % Just variable MCRROOT with no version in it's name
+    if strcmp(RunTime,'')
+        RunTime = getenv(MCRROOT); % Use specialize MCRROOT with version
+    end
     ActionNameVersion=[ActionName '_' MCRROOT];
     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']);
     % compile the .m file if the .sh file does not exist yet
