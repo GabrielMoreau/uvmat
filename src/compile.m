@@ -24,14 +24,18 @@
 %=======================================================================
 
 function compile (FctName,SubfctPath)
+
 hh=[]; % handles of message display window
+
 if isempty(which('mcc'))
     msgbox_uvmat('ERROR','no Matlab compiler toolbox mcc installed')
     return
 else
     hh=msgbox_uvmat('WAITING...',['compilation of ' FctName ' in progress...']);
 end
+
 disp(['compiling ' FctName ' ...'])
+
 % commands to compile civ_matlab and eventually other functions
 if ~exist('bin','dir')
     [success,errormsg]=mkdir('bin');
@@ -39,12 +43,15 @@ if ~exist('bin','dir')
         display(errormsg)
     end
 end
+
 if ~isempty(SubfctPath)
     SubfctPath=['-I ' SubfctPath]; % string indicating the option of including the path SubfctPath
 end
+
 [mcrmajor, mcrminor] = mcrversion;   
 MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
 FctNameVersion=[FctName,'_',MCRROOT];
+
 try
     disp(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])
     eval(['mcc -m -R -nojvm -R -nodisplay -R -singleCompThread ' SubfctPath ' ' FctName '.m'])% compile the source file [FctName .m], which produces a binary file FctName and a cmd file [run_' FctName '.sh]
@@ -55,9 +62,11 @@ try
 catch ME
     hh=msgbox_uvmat('ERROR',ME.message);
 end
+
 display('** END **')
+
 if ~isempty(hh)
-delete(hh)
+    delete(hh)
 end
 
 
