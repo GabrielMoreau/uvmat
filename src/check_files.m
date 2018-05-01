@@ -48,6 +48,7 @@ list_fct={...
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
+    'dir_scan';... % scan the structure of the directory tree (for editxml.m)
     'disp_uvmat';...% display a message using  msgbox_uvmat or on the log file in batch mode
     'editxml';...% display and edit xml files using a xls schema
     'editxml.fig';...% interface for editxml
@@ -69,7 +70,6 @@ list_fct={...
     'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
     'interp2_uvmat';...% linearly interpolate an image or scalar defined on a regular grid
     'keyboard_callback';... % function activated when a key is pressed on the keyboard
-    'ListDir';... % scan the structure of the directory tree (for editxml.m)
     'mask_proj';...% restrict input fields to a mask region, set to 0 outside 
     'mouse_down';% function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn')
     'mouse_motion';...% permanently called by mouse motion over a figure (callback for 'WindowButtonMotionFcn')

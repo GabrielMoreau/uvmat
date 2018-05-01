@@ -1026,7 +1026,7 @@ Value=get(hhdataview.ListRecords,'Value');
 if ~isequal(Value,1)
     ListRecords=ListRecords(Value);
 end
-[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
+[ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices,ListRecords);
 ListXml=get(hhdataview.ListXml,'String');
 Value=get(hhdataview.ListXml,'Value');
 if isequal(Value,1)

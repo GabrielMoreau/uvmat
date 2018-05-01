@@ -1,6 +1,6 @@
-%'ListDir': scan the structure of the directory tree (for browse_data.m)
+%'dir_scan': scan the structure of the directory tree (for browse_data.m)
 %------------------------------------------------------------------------
-% function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
+% function [ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
 %
 % 
 % OUTPUT:
@@ -34,7 +34,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
+function [ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
 
 ListRecords={};
 ListDevices={};

@@ -458,7 +458,7 @@ save(t,outputfile)
 % if ~isequal(Value,1)
 %     ListRecords=ListRecords(Value);
 % end
-% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
+% [ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices,ListRecords);
 % ListXml=get(handles.ListXml,'String');
 % Value=get(handles.ListXml,'Value');
 % set(handles.ListXml,'Value',Value(1));
