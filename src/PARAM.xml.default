@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <UvmatParam>
 <RunParam>
-<RunTime>${MCRROOT712}</RunTime>
 <CivBin>bin/civ<!--binary for the new civx version (relative or
 absolute path)--></CivBin>
 <Civ1Bin>bin/civ1<!--binary for civ1 (relative or absolute path)
@@ -13,8 +12,6 @@ absolute path)--></CivBin>
 <PatchBin>bin/patch_up</PatchBin>
 </RunParam>
 <BatchParam>
-<BatchMode>oar</BatchMode>
-<RunTime>${MCRROOT712}</RunTime>
 <CivBin>bin/civ</CivBin>
 <Civ1Bin>bin/civ1</Civ1Bin>
 <Civ2Bin>bin/civ2</Civ2Bin>
@@ -22,6 +19,4 @@ absolute path)--></CivBin>
 <FixBin>bin/fix_flag</FixBin>
 <PatchBin>bin/patch_up</PatchBin>
 </BatchParam>
-<SchemaPath>XML_SCHEMAS <!--directory of xml schemas(relative or absolut
-e path)--></SchemaPath>
 </UvmatParam>

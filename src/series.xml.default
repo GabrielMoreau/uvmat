@@ -11,6 +11,4 @@
   <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd> <!--command to know the number of active and waiting job launches-->  
   <LaunchCmdFcn>cluster_command</LaunchCmdFcn> <!--name of the function used to create job launch commmand--> 
 </ClusterParam>
-<SgeParam>
-</SgeParam>
 </SeriesParam>

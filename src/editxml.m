@@ -54,20 +54,14 @@ function editxml_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to editxml (see VARARGIN)
 
-% set(handles.replicate,'String',['copy';'<---'])
 if nargin
     CurrentFile=varargin{1};
 else
     CurrentFile=[];
 end
-% if exist('varargin') & length(varargin)>=1
-%     CurrentFile=cell2mat(varargin{1});
-% else
-%     CurrentFile=[];
-% end
+
 % Choose default command line output for editxml
 handles.output = hObject;
-% set(hObject,'Units','pixel')
 if exist(CurrentFile,'file')
     [PathName,Nme,FileExt]=fileparts(CurrentFile);
     if isequal(FileExt,'.xls')
@@ -117,18 +111,7 @@ if ~isempty(xs)
     if xs_element.subtest     
         DataIn.CurrentUid=[DataIn.CurrentUid NewRootUid];%record new current uid
         DataIn.xs_CurrentUid=[DataIn.xs_CurrentUid xs_node];%record the new curent schema uid
-    end
-    
-%     %update the import file display
-%     if isfield(DataIn,'h_ref')&ishandle(DataIn.h_ref)
-%         tag0_ref=find(t_ref,['/' path '/' xs_element.key]);
-%         node_ref=list.index(ind);
-%         if length(tag0_ref)<node_ref
-%             node_ref=length(tag0_ref);
-%         end
-%         [ref_element,ref_subelem]=get_xml(t_ref,path,xs_element,node_ref,xs_subelem);
-%         update_ref_list(DataIn.h_ref,xs_element,ref_element,node_ref,xs_subelem,ref_subelem);
-%     end  
+    end  
 set(get(hObject,'Parent'),'UserData',DataIn);
 else%no schema
     [DataIn,testsimple]=displ_xml(handles,t,NewRootUid,DataIn,get(hObject,'parent'));
@@ -163,9 +146,7 @@ if isempty(xs)
     end
 else
     xs_nodeup=[];
-%     if isfield(DataIn,'xs_UpUid')
     if isfield(DataIn,'xs_CurrentUid')&length(DataIn.xs_CurrentUid)>1
-%         xs_nodeup=DataIn.xs_UpUid
         xs_nodeup=DataIn.xs_CurrentUid(end-1);
         DataIn.xs_CurrentUid(end)=[];%uid of the root element in the schema
     end
@@ -245,29 +226,6 @@ element_index=get(handles.list_element,'Value');
 update_list(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,subelem);
 set(handles.list_element,'Value',element_index);
 
-% 
-% % --- Executes on button press in inport_file.
-% function inport_file_Callback(hObject, eventdata, handles)
-% CurrentFile=get(handles.RefFile,'String');
-% if isempty(CurrentFile)|isequal(CurrentFile,'')
-%     CurrentFile=get(handles.CurrentFile,'String')
-% end
-% [FileName, PathName]=uigetfile( ...
-%        {'*.xml', '(*.xml)';
-%         '*.xml',  '.xml files '; ...
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a file',CurrentFile); %file browser
-% fileinput=fullfile(PathName,FileName);
-% sizf=size(fileinput);
-% if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end% keep only character strings as input file name
-% if exist(fileinput,'file')
-%    set(handles.RefFile,'Visible','on')
-%    set(handles.replicate,'Visible','on')
-%    set(handles.RefFile,'String',fileinput)
-%    RefFile_Callback(handles.RefFile, eventdata, handles)
-% end
-
-
 %------------------------------------------------------
 % --- Executes on button press in browser.
 function browser_Callback(hObject, eventdata, handles)
@@ -286,7 +244,6 @@ CurrentFile=fullfile(PathName,FileName);
 sizf=size(CurrentFile);
 if (~ischar(CurrentFile)||~isequal(sizf(1),1)),return;end% keep only character strings as input file name
 if exist(CurrentFile,'file')
-%     set(handles.CurrentAttributes,'UserDataIn',PathName); %store the path to the xml file
     [CurPath,CurName,CurExt]=fileparts(CurrentFile);
     if isequal(CurExt,'.xls')    
         if isfield(DataIn,'hfig_xls') && ishandle(DataIn.hfig_xls)
@@ -332,13 +289,6 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     head_name=get(t,1,'name');
     %Path to shemas:
     path_uvmat=fileparts(which('editxml'));% check the path detected for source file uvmat
-    % path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-    %     xmlparam=fullfile(path_UVMAT,'PARAM.xml');
-    %     xmlparam='PARAM.xml'; %will find PARAM.xml whose path is set in priority
-    %     if exist(xmlparam,'file')
-    %         tparam=xmltree(xmlparam);
-    %         sparam=convert(tparam);
-    %         if isfield(sparam,'SchemaPath')
     schemafile=[fullfile(path_uvmat,'xml_shemas',head_name) '.xsd'];
     if ~exist(schemafile,'file')
         schemafile=fullfile(path_uvmat,schemafile);%look for relative path definition
@@ -346,22 +296,8 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     if exist(schemafile,'file')
         xs=xmltree(schemafile);
     else
-%         msgbox_uvmat('WARNING','The xml schema is not found, check the file PARAM.xml')
-%         [FileName, PathName]=uigetfile( ...
-%             {'*.xsd', '(*.xsd)';
-%             '*.xsd',  '.xsd files '; ...
-%             '*.*',  'All Files (*.*)'}, ...
-%             'Pick a .xsd schema' ,schemafile); %file browser
-%         if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
-%             DataIn.Schema=fullfile(PathName,FileName);
-%             xs=xmltree(DataIn.Schema);%open the associated schema file
-%         else
             xs=[];
-% 
-
     end
-    %         end
-    %     end
 end
 DataIn.CurrentUid=1;
 if isempty(xs)
@@ -532,10 +468,8 @@ if ~isempty(node1)
                      node_content=get(xs,node3(k));
                      xs_subelem(k).minOccurs=1; %default
                      xs_subelem(k).maxOccurs=1; %default
-%                      pref{k}=[]; %default
                      if isequal(node_content.name,'xs:element')
                         attr=node_content.attributes;
-%                         attr{:}.key
                         for l=1:length(attr)
                             if isequal(attr{l}.key,'name')
                                 xs_subelem(k).key=attr{l}.val;%name of the element
@@ -560,7 +494,6 @@ if ~isempty(node1)
                         end
                      end
                  end            
-
              end
          end     
      end   
@@ -575,7 +508,6 @@ if length(xs_element.type)>=3 & (xs_element.type([1:3])~='xs:')
         if ~isempty(nodeattr) & isequal(nodeattr{1}.key,'name') & isequal(nodeattr{1}.val,xs_element.type)
             node1=children(xs,node_type(i));
             node2=find(xs,node1,'name','xs:restriction');
-%             nodename1=find(xs,
             node3=children(xs,node2);
             node4=find(xs,node3,'name','xs:enumeration');
             for ienum=1:length(node4)
@@ -620,11 +552,8 @@ function [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)
 element.attr_key='';%default
 element.attr_val='';%default
 element.val='';
-% element.type='';
-% element.testmanual=testmanual %inheritates the input manual editing flag by default
 subelem=[]; %default
 attrup=[];
-% node=[];
 
 % %find the element properties in the xml file
 if node >= 1
@@ -634,7 +563,7 @@ if node >= 1
         if isempty(elem_contents)
             element.val=[];
         else
-            element.val=elem_contents.value
+            element.val=elem_contents.value;
         end
     end
     if isfield(elem_struct,'attributes')
@@ -642,10 +571,8 @@ if node >= 1
         for iattr=1:length(elem_attr)
             element.attr_key{iattr}=elem_attr{iattr}.key ;
             element.attr_val{iattr}=elem_attr{iattr}.val;
-%             attrup=setfield(attrup,elem_attr{iattr}.key,elem_attr{iattr}.val);
            breakdetect=find(elem_attr{iattr}.key=='/'| elem_attr{iattr}.key==':'| elem_attr{iattr}.key=='.');% find '/'
            if isempty(breakdetect)
-%                 comline=['attrup.' elem_attr{iattr}.key '=' elem_attr{iattr}.val ';']
                 eval(['attrup.' elem_attr{iattr}.key '=''' elem_attr{iattr}.val ''';'])
            end
         end
@@ -677,8 +604,6 @@ end
 if xs_element.subtest
    iline=0;
    for k=1:length(xs_subelem)%node2: list of subelements in the sub-sequence
-%     attr=attributes(xs,'get',node2(i),1);% 
-%     element=attr.val;%name of the element 
      tag=find(t,['/' path '/' xs_element.key '/' xs_subelem(k).key]);%look for the corresponding element node in the .xml tree
      struct_element=get(t,tag);%get the content of the element
      if isempty(struct_element) 
@@ -686,20 +611,17 @@ if xs_element.subtest
          subelem(iline).uid=0;
          subelem(iline).xsindex=k;
          subelem(iline).index=0;
-%          subelem(iline).testmanual=element.testmanual;% inheritates the manual editing flag by default
          if isequal(xs_subelem(k).minOccurs,'0')
              subelem(iline).val='[]';%element value not mandatory in the schema
          else
              subelem(iline).val='[MISSING]';%element value mandatory in the schema
          end
-%          subelem(iline).attrup=attrup; %inheritated attributes
      elseif isequal(length(struct_element),1)
          contents=get(t,struct_element.contents);
          iline=iline+1;
          subelem(iline).uid=tag;
          subelem(iline).xsindex=k;
          subelem(iline).index=1;
-%          subelem(iline).testmanual=element.testmanual;%
          if isfield(contents,'value') & ~isempty(contents.value)
              subelem(iline).val=contents.value;
          elseif xs_subelem(k).testsub
@@ -709,14 +631,11 @@ if xs_element.subtest
          else
              subelem(iline).val='[MISSING]';%element value mandatory in the schema
          end
-%          subelem(iline).attrup=attrup; %inheritated attributes
          if isfield(struct_element,'attributes')
             element_attr=struct_element.attributes;
             attr_display=[];
             for iattr=1:length(element_attr)
-%                 attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];
                 subelem(iline).val=[subelem(iline).val attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];
-%                 subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);
             end
          end
      else%case of a multiple element
@@ -725,7 +644,6 @@ if xs_element.subtest
              iline=iline+1;
              subelem(iline).index=subindex;%index of the element
              subelem(iline).xsindex=k;
-%              subelem(iline).testmanual=element.testmanual;%
              if isfield(contents,'value')& ~isempty(contents.value)
                  subelem(iline).val=contents.value;
              elseif xs_subelem(k).testsub
@@ -733,14 +651,11 @@ if xs_element.subtest
              else
                  subelem(iline).val='[]';
              end
-%              subelem(iline).attrup=attrup; %inheritated attributes
              if isfield(struct_element{subindex},'attributes')
                 element_attr=struct_element{subindex}.attributes;
                 attr_display=[];
                 for iattr=1:length(element_attr)
-%                     attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];
                     subelem(iline).val=[subelem(iline).val attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];
-%                     subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);
                 end
             end
         end
@@ -756,24 +671,10 @@ if xs_element.subtest% we list the sub-elements of root
     set(handles.export_list,'Value',1)
     set(handles.export_list,'String','')%flush the export list
     set(handles.CurrentElement,'String',[path '/' xs_element.key])
-%     title_element.key=[path '/' xs_element.key];
-%     if ~isempty(path)
-%         xsnode_index=get(handles.list_element,'UserDataIn');
-%         ind=get(handles.list_element,'Value');
-%         title_element.index=xsnode_index(2,ind);
-%     else
-%         title_element.index=1;
-%     end
-%     title_element.xsnode=xs_element.uid;
-%     title_element.node=node;
-%     set(handles.CurrentFile,'UserDataIn',title_element)%element corresponding to the title
     set(handles.CurrentAnnotation,'String',xs_element.annot)
     attr_col=[];
     testedit=0;% cannot edit elements by default
     for iattr=1:length(element.attr_key)
-%          if isequal(element.attr_key{iattr},'source') & isequal(element.attr_val{iattr},'manual')
-%             testedit=1;
-%         end
         attr_col=strvcat(attr_col,[element.attr_key{iattr} ' = ' element.attr_val{iattr}]);
     end
     set(handles.CurrentAttributes,'String',attr_col)
@@ -791,7 +692,6 @@ if xs_element.subtest% we list the sub-elements of root
             list.uid(iline)=subuid;
         end
         node(iline)=xs_subelem(xsindex).node;
-%         testmanual(iline)=subelem(iline).testmanual;
         ikey=xs_subelem(xsindex).key;
         if xs_subelem(xsindex).testsub
             ival=[' + ' subelem(iline).val];
@@ -811,7 +711,6 @@ if xs_element.subtest% we list the sub-elements of root
     set(handles.element_key,'Visible','off')
     set(handles.element_value,'Visible','off')
 else % we edit an element
-
     export_list=get(handles.export_list,'String');%export list
     testadd=1;
     for ilist=1:length(export_list) 
@@ -839,15 +738,10 @@ else % we edit an element
     attr_col=[];
     testedit=0;% cannot edit element by default
     for iattr=1:length(element.attr_key)
-%         if isequal(element.attr_key{iattr},'source') & isequal(element.attr_val{iattr},'manual')
-%             testedit=1;
-%         end
         attr_col=strvcat(attr_col,[element.attr_key{iattr} ' = ' element.attr_val{iattr}]);
     end
     set(handles.element_attrib,'String',attr_col)
     set(handles.element_key,'String',xs_element.key)
-
- 
     if isempty(xs_element.enum)
         set(handles.element_value,'Value',1)
         set(handles.element_value,'Style','edit')
@@ -889,20 +783,20 @@ global t
 DataIn=get(get(handles.SAVE,'parent'),'UserData');
 CurrentFile=get(handles.CurrentFile,'String');
 if isfield(DataIn,'Schema')
-if ~isempty(DataIn.Schema)% update ref to schema 
-    attrxsd=attributes(t,'get',1);
-    setest=0;
-    for iattr=1:length(attrxsd)
-        if isequal(attrxsd{iattr}.key,'xsi:noNamespaceSchemaLocation')
-            t= attributes(t,'set',1,iattr,'xsi:noNamespaceSchemaLocation',DataIn.Schema);
-            setest=1;
+    if ~isempty(DataIn.Schema)% update ref to schema
+        attrxsd=attributes(t,'get',1);
+        setest=0;
+        for iattr=1:length(attrxsd)
+            if isequal(attrxsd{iattr}.key,'xsi:noNamespaceSchemaLocation')
+                t= attributes(t,'set',1,iattr,'xsi:noNamespaceSchemaLocation',DataIn.Schema);
+                setest=1;
+            end
+        end
+        if setest==0;
+            t=attributes(t,'add',1,'xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance');
+            t= attributes(t,'add',1,'xsi:noNamespaceSchemaLocation',DataIn.Schema);
         end
     end
-    if setest==0;
-        t=attributes(t,'add',1,'xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance'); 
-        t= attributes(t,'add',1,'xsi:noNamespaceSchemaLocation',DataIn.Schema);
-    end
-end
 end
 copyfile(CurrentFile,[CurrentFile '.bak']);
 save(t,CurrentFile);
@@ -938,13 +832,6 @@ function element_attr_val_Callback(hObject, eventdata, handles)
 
 % Hints: contents = get(hObject,'String') returns element_attr_val contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from element_attr_val
-
-
-% --- Executes on button press in ADD.
-function ADD_Callback(hObject, eventdata, handles)
-% hObject    handle to ADD (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 %----------------------------------------
 %read an xml file without schema
@@ -998,7 +885,6 @@ for iattr=1:nbattrib
                         nbattrib_up= attributes(t,'length',uidparent);
                         for iattr_up=1:nbattrib_up
                             attr= attributes(t,'get',uidparent,iattr_up);
-%                             if isequal(attr.key,'source')&isequal(attr.val,'directory')% look for 'source' attribute
                               if isequal(attr.key,'DirName')
                                  cur_file=fullfile(attr.val,cur_file);
                              end
@@ -1030,8 +916,6 @@ for iattr=1:nbattrib
                    return
                end
            end
-       %elseif isequal(attr.val,'dir') A FAIRE : check directory
-       %else A FAIRE: edit the element
         end 
     end
     attr_col=strvcat(attr_col,[attr.key ' = ' attr.val]);
@@ -1041,7 +925,6 @@ set(handles.CurrentAttributes,'String',attr_col)
 %list subtree
 if ~testsimple
     list_element=[];
-%      Data.CurrentUid=[Data.CurrentUid root_uid]%record new current uid
     for iline=1:length(list_uid)
         element=get(t,list_uid(iline));
         if isfield(element,'type')&isequal(element.type,'element')
@@ -1096,7 +979,6 @@ for iline=1:length(subelem)
         end
     index(iline)=indexcur;
     node(iline)=xs_subelem(xsindex).node;
-%         testmanual(iline)=subelem(iline).testmanual;
     ikey=xs_subelem(xsindex).key;
     if xs_subelem(xsindex).testsub
         ival=[' + ' subelem(iline).val];
@@ -1113,76 +995,6 @@ set(hh,'Value',[1:siztext(1)])
 set(hh,'String',list_element)
 set(hh,'UserData',RefDataIn)
 
-% 
-% function RefFile_Callback(hObject, eventdata, handles)
-% global t_ref xs
-% t_ref=xmltree(get(hObject,'String'));%open the xml file fileinput
-% heditxml=get(hObject,'parent');
-% DataIn=get(get(hObject,'parent'),'UserData');
-% % set(heditxml,'Units','pixel')
-% figpos=get(heditxml,'Position')
-% % title_element=get(handles.element_cur,'UserDataIn');
-% % xs_node=xsnode_index(1,ind);
-% % index_chosen=xsnode_index(2,ind);
-% if isfield(DataIn,'fig_ref')&ishandle(DataIn.fig_ref)
-%     figure(DataIn.fig_ref);
-% else
-%     DataIn.fig_ref=figure;
-% end
-% set(DataIn.fig_ref,'Name',get(hObject,'String'))
-% set(DataIn.fig_ref,'MenuBar','none')
-% newfigpos=[figpos(1)+figpos(3) figpos(2)+0.4*figpos(4) 0.5*figpos(3) 0.3*figpos(4)];
-% set(DataIn.fig_ref,'Units','normalized')
-% set(DataIn.fig_ref,'Position',newfigpos)
-% DataIn.h_ref=uicontrol('Style','listbox', 'Max',2,'Units','pixel','Position', [0 0 newfigpos(3) newfigpos(4)], ...
-%         'FontName','FixedWidth','Tag','listbox'); 
-% if isfield(DataIn,'xs_CurrentUid');
-%     xs_CurrentUid=DataIn.xs_CurrentUid(end);
-% else
-%     DataIn.xs_CurrentUid=find(xs,'/xs:schema/xs:element');%uid of the root element in the schema
-% end
-% [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_CurrentUid(end));
-% xs_element.key
-% tag0=find(t_ref,['/' path '/' xs_element.key]);
-% if length(tag0)>=1
-%     CurrentRefNode=tag0(1);%chose the first occurence of the element
-% else
-%     CurrentRefNode=0;
-% end
-% [ref_element,ref_subelem]=get_xml(t_ref,path,xs_element,CurrentRefNode,xs_subelem);
-% update_ref_list(DataIn.h_ref,xs_element,ref_element,CurrentRefNode,xs_subelem,ref_subelem);
-% siztext=size(get(DataIn.h_ref,'String'));
-% set(DataIn.h_ref,'Value',[1:siztext(1)]); %select the whole list by default
-% set(heditxml,'UserData',DataIn)
-% set(handles.ref_data,'Value',siztext(1)); %select the whole list by default
-% 'TESTimport'
-% title_element=get(handles.element_cur,'UserDataIn')
-% xs_node=title_element.xsnode;%uid of the element in the schema
-% node=title_element.node;
-% t=flush(t,node);%removes the corresponding subtree in t
-% [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_node);%scan the schema
-% tag0=find(t_import,['/' path '/' xs_element.key])
-% if isempty(tag)
-%     errordlg(['element /' path '/' xs_element.key ' not found in' fileinput])
-%     return
-% end
-% % [element_import,node_import]=get_xml(t_import,path,xs_element,1,xs_subelem);% read the corresponding xml data
-% node2_import=children(t_import,tag0);
-% % t_import=branch(t_import,node_import);% extract branch of the new file
-% % %removes the corresponding subtree in t
-% for inode=1:length(node2_import)
-%     struct=get(t_import,node2_import(inode))
-%     if isfield(struct,'type') & isfield(struct,'name')%if the node is an elmeent type
-%         node3_import=children(t_import,node2_import(inode))
-%        [t,newuid]=add(t,node,struct.type,struct.name);
-%        for inode2=1:length(node3_import)
-%            struct2=get(t_import,node3_import(inode2))
-%            if isequal(struct2.type,'chardata')
-%                 t=add(t,newuid,'chardata',struct2.value);
-%             end
-%         end
-%     end
-% end
 % --- Executes on button press in replicate.
 function replicate_Callback(hObject, eventdata, handles)
 global xs  t
@@ -1190,9 +1002,9 @@ global xs  t
 export_list=get(handles.export_list,'String');
 export_val=get(handles.export_list,'UserData');
 heditxml=get(handles.replicate,'parent');
-Data=get(heditxml,'UserData')
+Data=get(heditxml,'UserData');
 
-hdataview=findobj(allchild(0),'Name','dataview')
+hdataview=findobj(allchild(0),'Name','dataview');
 if isempty(hdataview)
     hdataview=dataview;
     return
@@ -1214,7 +1026,6 @@ Value=get(hhdataview.ListRecords,'Value');
 if ~isequal(Value,1)
     ListRecords=ListRecords(Value);
 end
-% uvmat('runplus_Callback',hObject,eventdata,handleshaxes)
 [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
 ListXml=get(hhdataview.ListXml,'String');
 Value=get(hhdataview.ListXml,'Value');
@@ -1267,10 +1078,6 @@ for iexp=1:length(List.Experiment)
                             break
                         end
                     end
-%                     [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,[],FileName,SubCampaignTest);
-%                     if test
-%                         [List.Experiment{iexp}.Device{idevice}.xmlfile{ixml} ' , Heading updated']
-%                     end
                 end
              elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
                 for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
@@ -1284,10 +1091,6 @@ for iexp=1:length(List.Experiment)
                                     break
                                 end
                             end
-%                             [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,RecordName,FileName,SubCampaignTest);
-%                             if test
-%                                 [FileName ' , Heading updated']
-%                             end
                         end
                     end
                 end
@@ -1349,7 +1152,7 @@ set(heditxml,'UserData',DataIn)
 [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,DataIn.xs_CurrentUid(end));
 [element,subelem]=get_xml(t,path,xs_element,DataIn.CurrentUid(end),xs_subelem);
 update_list(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,subelem);
-% t=set_xml(t,xs_DataIn,subelem)
+
 %edit list of subelments:   
 
 %A REVOIR
@@ -1536,11 +1339,5 @@ else
     set(handles.replicate,'Visible','off')
 end
 
-
-% --- Executes on button press in pushbutton9.
-function pushbutton9_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton9 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 

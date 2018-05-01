@@ -100,28 +100,7 @@ ProjectFullName=ExpNameStruct.path;%full name of the project (including path)
 ExpPath=fullfile(ProjectFullName,ExpName);% full name of the experiment directory
 ExpDocName=fullfile(ExpPath,[ExpName '.xml']);% full name of the .xml file ExpDoc
 if exist(ExpDocName,'file')
-    hh=editxml({ExpDocName})   
-%     [FileName, PathName, filterindex] = uigetfile( ...
-%        {'*.xml','(*.xml)';
-%        '*.xml',  '.xml files '; 
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a file',ExpDocName);
-%      fileinput=[PathName FileName];%complete file name
-%      sizf=size(fileinput);
-%     if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
-%         [path,name,ext]=fileparts(fileinput);
-%     if isequal(ext,'.civ') | isequal(ext,'.log') | isequal(ext,'.cmx') isequal(ext,'.txt')
-%         edit(fileinput)
-%     elseif isequal(ext,'.xml')
-%         varargin{1}=fileinput;
-%         editxml(varargin)
-%     elseif isequal(ext,'.fig')
-%         open(fileinput)
-%     elseif isequal(ext,'.xls')
-%         xlsdisplay(fileinput)
-%     else
-%         uvmat({fileinput})
-%     end
+    hh=editxml({ExpDocName});   
 else
     answer=questdlg({['ExpDoc file ' ExpDocName ' does not exist, create the experiment?'];''})
     if isequal(answer,'Yes')

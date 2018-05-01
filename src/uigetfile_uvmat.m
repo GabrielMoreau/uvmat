@@ -72,8 +72,8 @@ if ischar(InputName)
     end
 end
 
-hfig=findobj(allchild(0),'tag',option);
-if isempty(hfig)
+hfig=findobj(allchild(0),'tag',option);%look for existing browser fig
+if isempty(hfig)% create the browser fig if it does not exist
     set(0,'Unit','points')
     ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
     Width=350;% fig width in points (1/72 inch)
@@ -148,7 +148,12 @@ refresh_GUI(hObject)
 %------------------------------------------------------------------------
 function OK_Callback(option,filter_ext,hObject,event)
 set(hObject,'backgroundColor',[1 1 0])% indicate button activation
-hfig=get(hObject,'parent');%handle of the fig
+fig_struct=get(hObject,'parent');
+if isstruct(fig_struct);%recent Matlab
+    hfig=fig_struct.Number;
+else
+    hfig=fig_struct;
+end
 htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
 DirName=get(htitlebox,'String');
 if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
@@ -191,12 +196,6 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     end
 end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activatio
-fig_struct=get(hObject,'parent');
-if isstruct(fig_struct);%recent Matlab
-uiresume(fig_struct.Number)
-else
-   uiresume(fig_struct) 
-end
 
 %------------------------------------------------------------------------
 % --- launched by refreshing the display figure

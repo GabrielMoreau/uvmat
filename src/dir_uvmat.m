@@ -26,13 +26,20 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [ ListFiles] = dir_uvmat(DirName)
+function [ ListFiles,errormsg] = dir_uvmat(DirName)
+errormsg='';
 if regexp(DirName,'^http://')
     catalog=[DirName,'/catalog.xml'];
+    try
     str=urlread(catalog);
-    ListFiles=(regexp(str,'xlink:title="(?<name>[^"]+)"','names'))';
+    catch ME
+        ListFiles=[];
+        errormsg=ME.message;
+        return
+    end
+    ListFiles=(regexp(str,'xlink:title="(?<name>[^"]+)"','names'))';%list subfolders
     NumDir=numel(ListFiles);
-    ListFiles=[ListFiles;(regexp(str,'dataset name="(?<name>[^"]+)"','names'))'];
+    ListFiles=[ListFiles;(regexp(str,'dataset name="(?<name>[^"]+)"','names'))'];% append files to the list
     for ilist=1:numel(ListFiles)
         ListFiles(ilist).date=0;
         ListFiles(ilist).bytes=0;
@@ -42,6 +49,7 @@ if regexp(DirName,'^http://')
     for ilist=1:NumDir
         ListFiles(ilist).isdir=true;
     end
+    ListFiles(NumDir+1)=[];
 else
     ListFiles=dir(DirName);
 end

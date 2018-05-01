@@ -86,7 +86,7 @@ else
 end
 
 %% initialize the GUI
-if ~(exist('DataSeries','var') && ischar(DataSeries) && exist(DataSeries,'dir'))
+if isempty(regexp(DataSeries,'^http:'))&& ~(exist('DataSeries','var') && ischar(DataSeries) && exist(DataSeries,'dir'))
     DataSeries=pwd;% current dir is the starting data series by default
 end
 [Experiment,DataSeries,Ext]=fileparts(DataSeries);
@@ -209,8 +209,8 @@ set(handles.SourceDir,'BackgroundColor',[1 1 1])
 function errormsg=scan_campaign(handles,Campaign,Experiment,DataSeries)
 %------------------------------------------------------------------------
 errormsg='';
-if exist(Campaign,'dir')
-    ListStruct=dir(Campaign); %list files and dirs
+if ~isempty(regexp(Campaign,'^http'))|| exist(Campaign,'dir')
+    ListStruct=dir_uvmat(Campaign); %list files and dirs
     if numel(ListStruct)>1000% A campaign folder must contain maily a list of 'experiment' sub-folders
         errormsg=[Campaign ' contains too many items (>1000) to be a Campaign folder'];
         return

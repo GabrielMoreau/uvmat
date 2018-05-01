@@ -485,7 +485,7 @@ function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 %% look for the previously opened file 'oldfile'
 InputTable=get(handles.InputTable,'Data');
 if ~isempty(InputTable)
-oldfile=fullfile(InputTable{1,1},InputTable{1,2});
+oldfile=[InputTable{1,1} InputTable{1,2}];
 else
     % use a file name stored in prefdir
     dir_perso=prefdir;
