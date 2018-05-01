@@ -1,4 +1,4 @@
-%'dir_uvmat': list the content of a folder, extending 'dir' to the case of OpenDap server
+%'dir_uvmat': list the content of a folder, extending 'dir' to the case of OpeNDAP server
 %--------------------------------------------------------------------
 %[RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(FileInput)
 %
@@ -26,9 +26,10 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [ ListFiles,errormsg] = dir_uvmat(DirName)
+function [ListFiles,errormsg] = dir_uvmat(DirName)
 errormsg='';
 if regexp(DirName,'^http://')
+    % OpeNDAP case - read catalog.xml file
     catalog=[DirName,'/catalog.xml'];
     try
     str=urlread(catalog);
@@ -37,9 +38,9 @@ if regexp(DirName,'^http://')
         errormsg=ME.message;
         return
     end
-    ListFiles=(regexp(str,'xlink:title="(?<name>[^"]+)"','names'))';%list subfolders
+    ListFiles=(regexp(str,'xlink:title="(?<name>[^"]+)"','names'))'; % list subfolders
     NumDir=numel(ListFiles);
-    ListFiles=[ListFiles;(regexp(str,'dataset name="(?<name>[^"]+)"','names'))'];% append files to the list
+    ListFiles=[ListFiles;(regexp(str,'dataset name="(?<name>[^"]+)"','names'))']; % append files to the list
     for ilist=1:numel(ListFiles)
         ListFiles(ilist).date=0;
         ListFiles(ilist).bytes=0;
@@ -51,6 +52,7 @@ if regexp(DirName,'^http://')
     end
     ListFiles(NumDir+1)=[];
 else
+    % Standart case
     ListFiles=dir(DirName);
 end
 
