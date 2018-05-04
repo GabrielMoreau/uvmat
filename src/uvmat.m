@@ -3166,9 +3166,9 @@ end
 
 %% read the second field
 if isempty(UvData.MovieObject)
-    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},[],num_frame);
+    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{index}.FileType,[],num_frame);
 else
-    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{1},UvData.MovieObject{1},num_frame);
+    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{1}.FileType,UvData.MovieObject{1},num_frame);
 end
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['Error in reading second image: ' errormsg])
@@ -3303,7 +3303,7 @@ end
 
 %% test for need of tps
 check_proj_tps=0;
-if  (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
+if  (strcmp(UvData.FileInfo{1}.FileType,'civdata')||strcmp(UvData.FileInfo{1}.FileType,'civx'))
     for iobj=1:numel(UvData.ProjObject)
         if isfield(UvData.ProjObject{iobj},'ProjMode')&& strcmp(UvData.ProjObject{iobj}.ProjMode,'interp_tps')
             check_proj_tps=1;
@@ -3317,7 +3317,31 @@ ParamIn.ColorVar='';%default variable name for vector color
 frame_index=1;%default
 FieldName='';%default
 VelType='';%default
-switch UvData.FileType{1}
+if strcmp(UvData.FileInfo{1}.FieldType,'image')
+    FieldName='image';
+    frame_index=1;%default
+    if UvData.FileInfo{1}.NumberOfFrames>1
+        if strcmp(NomType,'*')
+            if num_i1>UvData.FileInfo{1}.NumberOfFrames
+                errormsg='specified frame index exceeds file content';
+                return
+            else
+                frame_index=num_i1;%frame index from a single movies or multimage
+            end
+        else
+            if num_j1>UvData.FileInfo{1}.NumberOfFrames
+                errormsg='specified frame index exceeds file content';
+                return
+            else
+                frame_index=num_j1;% frame index from a set of indexed movies
+            end
+        end
+    end
+    if isfield(UvData,'MovieObject')
+        ParamIn=UvData.MovieObject{1};
+    end
+end
+switch UvData.FileInfo{1}.FileType
     case {'civx','civdata','netcdf','pivdata_fluidimage'};
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
@@ -3337,36 +3361,6 @@ switch UvData.FileType{1}
                 ParamIn.ColorVar= list_code{index_code}; % selected field
             end
         end
-    case {'video','mmreader','rdvision','cine_phantom'}
-        FieldName='image';
-        ParamIn=UvData.MovieObject{1}; % movie object
-        if strcmp(NomType,'*')
-            frame_index=num_i1;%frame index from a single movies or multimage
-        else
-            frame_index=num_j1;% frame index from a set of indexed movies
-        end
-        if isempty(frame_index)
-            frame_index=1; 
-        end
-    case 'multimage'
-        FieldName='image';
-        if ~strcmp(NomType,'*')
-            MaxIndex_j_cell=get(handles.MaxIndex_j,'String');
-            if num_j1>str2num(MaxIndex_j_cell{1})
-                errormsg='specified frame index exceeds file content';
-                return
-            else
-            frame_index=num_j1;%frame index for movies or multimage
-            end
-        else
-            MaxIndex_i_cell=get(handles.MaxIndex_i,'String');
-            if num_i1>str2num(MaxIndex_i_cell{1})
-                errormsg='specified frame index exceeds file content';
-                return
-            else
-            frame_index=num_i1;
-            end
-        end
     case 'vol' %TODO: update
         if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
             ParamIn.Npy=UvData.XmlData.Npy;
@@ -3375,9 +3369,6 @@ switch UvData.FileType{1}
             errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
             return
         end
-    case {'image','image_DaVis'}
-        FieldName='image';  
-        frame_index=num_j1;%frame index for image pairs
 end
 if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
@@ -3398,7 +3389,7 @@ if isstruct (ParamIn)
     end
 end
 
-[Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
+[Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileInfo{1}.FileType,ParamIn,frame_index);
 if ~isempty(errormsg)
     errormsg=['uvmat / refresh_field / read_field( ' FileName ') / ' errormsg];
     return
@@ -3410,51 +3401,67 @@ end
 Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
 
 %% choose and read a second field FileName_1 if defined
-VelType_1=[];%default
-FieldName_1=[];
-ParamIn_1=[];
 ParamOut_1=[];
-frame_index_1=1;
-if ~isempty(FileName_1)
-    if ~exist(FileName_1,'file')
-        errormsg=['second file ' FileName_1 ' does not exist'];
-        return
+if numel(UvData.FileInfo)>1
+    VelType_1=[];%default
+    FieldName_1=[];
+    ParamIn_1=[];
+ 
+    frame_index_1=1;
+    if ~isempty(FileName_1)
+        if ~exist(FileName_1,'file')
+            errormsg=['second file ' FileName_1 ' does not exist'];
+            return
+        end
     end
-    switch UvData.FileType{2}
-        case {'civx','civdata','netcdf'};
+    if isequal(get(handles.NomType_1,'Visible'),'on')
+        NomType_1=get(handles.NomType_1,'String');
+    else
+        NomType_1=get(handles.NomType,'String');
+    end
+    if strcmp(UvData.FileInfo{2}.FieldType,'image')
+        FieldName_1='image';
+        frame_index_1=1;%default
+        if UvData.FileInfo{2}.NumberOfFrames>1
+            if strcmp(NomType_1,'*')
+                if num_i1>UvData.FileInfo{2}.NumberOfFrames
+                    errormsg='specified frame index exceeds file content';
+                    return
+                else
+                    frame_index_1=num_i1;%frame index from a single movies or multimage
+                end
+            else
+                if num_j1>UvData.FileInfo{2}.NumberOfFrames
+                    errormsg='specified frame index exceeds file content';
+                    return
+                else
+                    frame_index_1=num_j1;% frame index from a set of indexed movies
+                end
+            end
+        end
+        if isfield(UvData,'MovieObject')
+            ParamIn_1=UvData.MovieObject{2};
+        end
+    end
+    switch UvData.FileInfo{2}.FileType
+        case {'civx','civdata','netcdf','pivdata_fluidimage'};
             list_fields=get(handles.FieldName_1,'String');% list menu fields
-            if ischar(list_fields),list_fields={list_fields};end
             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
             if ~strcmp(FieldName_1,'get_field...')
                 if get(handles.FixVelType,'Value')
                     VelTypeList=get(handles.VelType_1,'String');
-                    VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
+                    VelType_1=VelTypeList{get(handles.VelType_1,'Value')};
                 end
             end
-            if isempty(FieldName_1)
-                FieldName_1=FieldName;% if blank reproduce the field name of the first field
-            end
-            if ~isempty(regexp(FieldName_1,'^vel', 'once'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
+            % case of input vector field, get the scalar used for vector color
+            if ~isempty(regexp(FieldName_1,'^vec('))
                 list_code=get(handles.ColorCode,'String');% list menu fields
                 index_code=get(handles.ColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
                     list_code=get(handles.ColorScalar,'String');% list menu fields
                     index_code=get(handles.ColorScalar,'Value');% selected string index
-                    ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display
+                    ParamIn_1.ColorVar= list_code{index_code}; % selected field
                 end
-            end
-        case {'video','mmreader','cine_phantom'}
-            ParamIn_1=UvData.MovieObject{2};
-            if ~strcmp(NomType_1,'*')
-                frame_index_1=j1_1;%frame index for movies or multimage
-            else
-                frame_index_1=i1_1;
-            end
-         case 'multimage'
-            if strcmp(NomType_1,'*')%frame index for movies or multimage
-                frame_index_1=i1_1;
-            else
-                frame_index_1=j1_1;
             end
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -3465,24 +3472,62 @@ if ~isempty(FileName_1)
                 return
             end
     end
-    if isequal(get(handles.NomType_1,'Visible'),'on')
-        NomType_1=get(handles.NomType_1,'String');
-    else
-        NomType_1=get(handles.NomType,'String');
-    end
+    %     switch UvData.FileType{2}
+    %         case {'civx','civdata','netcdf'};
+    %             list_fields=get(handles.FieldName_1,'String');% list menu fields
+    %             if ischar(list_fields),list_fields={list_fields};end
+    %             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
+    %             if ~strcmp(FieldName_1,'get_field...')
+    %                 if get(handles.FixVelType,'Value')
+    %                     VelTypeList=get(handles.VelType_1,'String');
+    %                     VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
+    %                 end
+    %             end
+    %             if isempty(FieldName_1)
+    %                 FieldName_1=FieldName;% if blank reproduce the field name of the first field
+    %             end
+    %             if ~isempty(regexp(FieldName_1,'^vel', 'once'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
+    %                 list_code=get(handles.ColorCode,'String');% list menu fields
+    %                 index_code=get(handles.ColorCode,'Value');% selected string index
+    %                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
+    %                     list_code=get(handles.ColorScalar,'String');% list menu fields
+    %                     index_code=get(handles.ColorScalar,'Value');% selected string index
+    %                     ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display
+    %                 end
+    %             end
+    %         case {'video','mmreader','cine_phantom'}
+    %             ParamIn_1=UvData.MovieObject{2};
+    %             if ~strcmp(NomType_1,'*')
+    %                 frame_index_1=j1_1;%frame index for movies or multimage
+    %             else
+    %                 frame_index_1=i1_1;
+    %             end
+    %          case 'multimage'
+    %             if strcmp(NomType_1,'*')%frame index for movies or multimage
+    %                 frame_index_1=i1_1;
+    %             else
+    %                 frame_index_1=j1_1;
+    %             end
+    %         case 'vol' %TODO: update
+    %             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
+    %                 ParamIn_1.Npy=UvData.XmlData.Npy;
+    %                 ParamIn_1.Npx=UvData.XmlData.Npx;
+    %             else
+    %                 errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
+    %                 return
+    %             end
+    %     end
+    
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
-%     if ~isequal(NomType_1,'*')&& isfield(UvData,'FileName_1')
-%            test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;
-%     end
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
         ParamOut_1=UvData.ParamOut_1;
     else
         if isempty(ParamIn_1) || isstruct(ParamIn_1)
-        ParamIn_1.FieldName=FieldName_1;
-        ParamIn_1.VelType=VelType_1;
-        ParamIn_1.Coord_x=get(handles.Coord_x,'String');
-        ParamIn_1.Coord_y=get(handles.Coord_y,'String');
+            ParamIn_1.FieldName=FieldName_1;
+            ParamIn_1.VelType=VelType_1;
+            ParamIn_1.Coord_x=get(handles.Coord_x,'String');
+            ParamIn_1.Coord_y=get(handles.Coord_y,'String');
         end
         [Field{2},ParamOut_1,errormsg] = read_field(FileName_1,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
@@ -3509,13 +3554,13 @@ end
 
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
-if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'pivdata_fluidimage'))...
+if (strcmp(UvData.FileInfo{1}.FileType,'civx')||strcmp(UvData.FileInfo{1}.FileType,'civdata')||strcmp(UvData.FileInfo{1}.FileType,'pivdata_fluidimage'))...
         && ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
     set(handles.FixVelType,'Visible','on')
-    menu=set_veltype_display(ParamOut.CivStage,UvData.FileType{1});
+    menu=set_veltype_display(ParamOut.CivStage,UvData.FileInfo{1}.FileType);
     index_menu=strcmp(ParamOut.VelType,menu);%look for VelType in  the menu
     index_val=find(index_menu,1);
     if isempty(index_val)
@@ -3535,7 +3580,7 @@ end
 test_veltype_1=0;
 if isempty(FileName_1)
 elseif ~test_keepdata_1
-    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{1},'pivdata_fluidimage'))...
+    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileInfo{1}.FileType,'pivdata_fluidimage'))...
             && ~strcmp(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
@@ -4513,7 +4558,7 @@ switch field
             set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
             set(handles.ColorScalar,'Value',1)
             set(handles.ColorScalar,'String',VecColorList);
-            UvData.FileType{1}='netcdf';
+            UvData.FileInfo{1}.FileType='netcdf';
             set(handles.uvmat,'UserData',UvData)
             REFRESH_Callback(hObject, eventdata, handles)
         end
@@ -4710,7 +4755,7 @@ switch field_1
             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
             set(handles.FileExt_1,'String',get(handles.FileExt,'String'))
 
-            UvData.FileType{2}=UvData.FileType{1};
+            UvData.FileType{2}=UvData.FileInfo{1}.FileType;
             UvData.XmlData{2}= UvData.XmlData{1};
             transform=get(handles.TransformPath,'UserData');
              if (~isa(transform,'function_handle')||nargin(transform)<3)
@@ -4811,7 +4856,7 @@ elseif get(handles.SubField,'Value')% if subfield is already 'on'
      check_refresh=1;%will refresh the current plot
 else% we introduce the same file (with a different field) for the second series
      FileName_1=FileName;% we compare two fields in the same file
-     UvData.FileType{2}=UvData.FileType{1};
+     UvData.FileType{2}=UvData.FileInfo{1}.FileType;
      UvData.XmlData{2}= UvData.XmlData{1};
      set(handles.SubField,'Value',1)
      transform=get(handles.TransformPath,'UserData');

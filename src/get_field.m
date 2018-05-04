@@ -334,10 +334,9 @@ else
     if index>numel(list_var)
         return
     end
-    var_select=list_var{index};
-    set(handles.attributes_txt,'String', ['attributes of ' var_select])
+    VarName=list_var{index};
+    set(handles.attributes_txt,'String', ['attributes of ' VarName])
     if isfield(Field,'VarAttribute')&& length(Field.VarAttribute)>=index-1
-        %         nbline=0;
         VarAttr=Field.VarAttribute{index-1};
         if isstruct(VarAttr)
             attr_list=fieldnames(VarAttr);
@@ -355,7 +354,6 @@ else
 end
 if ~isempty(Tabcell)
     Tabchar=cell2tab(Tabcell,'=');
-    %     Tabchar=[{''};Tabchar];
 end
 set(handles.attributes,'Value',1);% select the first item
 set(handles.attributes,'String',Tabchar);
@@ -363,13 +361,13 @@ set(handles.attributes,'String',Tabchar);
 %% update dimensions;
 if isfield(Field,'ListDimName')
     Tabdim={};%default
-    if isequal(index,1)%list all dimensions
+    if isequal(index,1)%list all dimensions if '*' is selected as the variable
         dim_indices=1:length(Field.ListDimName);
         set(handles.dimensions_txt,'String', 'dimensions')
-    else
+    else   % a specific variable has been selected
         DimCell=Field.VarDimName{index-1};
         if ischar(DimCell)
-            DimCell={DimCell};
+            DimCell={DimCell};% transform into a cell for a single dimension defined by a char string
         end
         dim_indices=[];
         for idim=1:length(DimCell)
@@ -377,7 +375,7 @@ if isfield(Field,'ListDimName')
             dim_index=find(dim_index,1);
             dim_indices=[dim_indices dim_index];
         end
-        set(handles.dimensions_txt,'String', ['dimensions of ' var_select])
+        set(handles.dimensions_txt,'String', ['dimensions of ' VarName])
     end
     for iline=1:length(dim_indices)
         Tabdim{iline,1}=Field.ListDimName{dim_indices(iline)};
@@ -389,10 +387,25 @@ if isfield(Field,'ListDimName')
     set(handles.dimensions,'String',Tabchar)
 end
 
+%% propose a plot by default if a variable has been selected
+if ~isequal(index,1)
+    if numel(DimCell)==1
+        set(handles.FieldOption,'Value',1)%propose 1D plot
+    else
+        set(handles.FieldOption,'Value',2)%propose scalar plot
+    end
+    if numel(DimCell)<=2
+        set(handles.Check3D,'Value',0)
+    else
+        set(handles.Check3D,'Value',1)
+    end
+    FieldOption_Callback(hObject, VarName, handles)
+end
+
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldOption.
 %------------------------------------------------------------------------
-function FieldOption_Callback(hObject, eventdata, handles)
+function FieldOption_Callback(hObject, VarName, handles)
 
 Field=get(handles.get_field,'UserData');
 FieldList=get(handles.FieldOption,'String');
@@ -413,7 +426,7 @@ switch FieldOption
         set(handles.Y_title,'Visible','off')
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
-        ordinate_Callback(hObject, eventdata, handles)
+        ordinate_Callback(hObject, VarName, handles)
         
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
@@ -427,6 +440,9 @@ switch FieldOption
         set(handles.PanelScalar,'Position',pos)
         set(handles.Coord_y,'Visible','on')
         set(handles.Y_title,'Visible','on')
+        
+        if ~ischar(VarName)
+            
         %default scalar selection
         test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
         for ilist=1:numel(Field.Display.VarDimName)
@@ -446,8 +462,10 @@ switch FieldOption
             set(handles.scalar,'Value',1)
         else
             set(handles.scalar,'Value',scalar_index)
-        end       
-        scalar_Callback(hObject, eventdata, handles)
+        end      
+        end
+        scalar_Callback(hObject,VarName, handles)
+        
              
     case 'vectors'
         set(handles.PanelVectors,'Visible','on')
@@ -500,7 +518,7 @@ switch FieldOption
 end
 
 %------------------------------------------------------------------------
-function ordinate_Callback(hObject, eventdata, handles)
+function ordinate_Callback(hObject, DimCell, handles)
 %------------------------------------------------------------------------
 Field=get(handles.get_field,'UserData');
 y_index=get(handles.ordinate,'Value');
@@ -583,17 +601,25 @@ switch TimeOption
         set(handles.TimeName,'Value',1)
         set(handles.TimeName,'String',ListTime)
 end  
+if ~ischar(DimCell)
 update_field(handles,YName)
+end
          
 %------------------------------------------------------------------------
 % --- Executes on selection change in scalar menu.
 %------------------------------------------------------------------------
-function scalar_Callback(hObject, eventdata, handles)
+function scalar_Callback(hObject, VarName, handles)
 
 Field=get(handles.get_field,'UserData');
-scalar_index=get(handles.scalar,'Value');
 scalar_menu=get(handles.scalar,'String');
-ScalarName=scalar_menu{scalar_index};
+if ischar(VarName)
+    ScalarName=VarName;
+    scalar_index=find(strcmp(VarName,scalar_menu));
+    set(handles.scalar,'Value',scalar_index)
+else
+    scalar_index=get(handles.scalar,'Value');
+	ScalarName=scalar_menu{scalar_index};
+end
 
 %% set list of possible coordinates
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
@@ -695,7 +721,9 @@ switch TimeOption
         set(handles.TimeName,'Value',1)
         set(handles.TimeName,'String',ListTime)
 end  
+if ~ischar(VarName)
 update_field(handles,ScalarName)
+end
 
 % --- Executes on button press in check_rgb.
 function check_rgb_Callback(hObject, eventdata, handles)
@@ -704,44 +732,51 @@ function check_rgb_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_x.
 %------------------------------------------------------------------------
-function vector_x_Callback(hObject, eventdata, handles)
+function vector_x_Callback(hObject, DimCell, handles)
 
 vector_x_menu=get(handles.vector_x,'String');
 vector_x_index=get(handles.vector_x,'Value');
 vector_x=vector_x_menu{vector_x_index};
 vector_Callback(handles)
+if ~ischar(DimCell)
 update_field(handles,vector_x)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_x.
-function vector_y_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function vector_y_Callback(hObject, DimCell, handles)
+
 vector_y_menu=get(handles.vector_x,'String');
 vector_y_index=get(handles.vector_x,'Value');
 vector_y=vector_y_menu{vector_y_index};
 vector_Callback(handles)
+if ~ischar(DimCell)
 update_field(handles,vector_y)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_z.
-function vector_z_Callback(hObject, eventdata, handles)
+function vector_z_Callback(hObject, DimCell, handles)
 %------------------------------------------------------------------------
 vector_z_menu=get(handles.vector_z,'String');
 vector_z_index=get(handles.vector_z,'Value');
 vector_z=vector_z_menu{vector_z_index};
 vector_Callback(handles)
+if ~ischar(DimCell)
 update_field(handles,vector_z)
-
+end
 %------------------------------------------------------------------------
 % --- Executes on selection change in vec_color.
-function vec_color_Callback(hObject, eventdata, handles)
+function vec_color_Callback(hObject, DimCell, handles)
 %------------------------------------------------------------------------
 index=get(handles.vec_color,'Value');
 string=get(handles.vec_color,'String');
 VarName=string{index};
 vector_Callback(handles)
+if ~ischar(DimCell)
 update_field(handles,VarName)
-
+end
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_x or vector_y
 function vector_Callback( handles)
@@ -859,32 +894,37 @@ function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_x.
 %------------------------------------------------------------------------
-function Coord_x_Callback(hObject, eventdata, handles)
+function Coord_x_Callback(hObject, DimCell, handles)
 
 index=get(handles.Coord_x,'Value');
 string=get(handles.Coord_x,'String');
 VarName=string{index};
+if ~ischar(DimCell)
 update_field(handles,VarName)
-
+end
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_y.
 %------------------------------------------------------------------------
-function Coord_y_Callback(hObject, eventdata, handles)
+function Coord_y_Callback(hObject, DimCell, handles)
 
 index=get(handles.Coord_y,'Value');
 string=get(handles.Coord_y,'String');
 VarName=string{index};
+if ~ischar(DimCell)
 update_field(handles,VarName)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_z.
 %------------------------------------------------------------------------
-function Coord_z_Callback(hObject, eventdata, handles)
+function Coord_z_Callback(hObject, DimCell, handles)
 
 index=get(handles.Coord_z,'Value');
 string=get(handles.Coord_z,'String');
 VarName=string{index};
+if ~ischar(DimCell)
 update_field(handles,VarName)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in SwitchVarIndexTime.

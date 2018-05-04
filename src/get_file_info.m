@@ -21,12 +21,13 @@
 %               ='civdata': netcdf files provided by civ_series
 %               ='civx': netcdf files provided by the obsolete program civx (in fortran)
 %               ='pivdata_fluidimage': PIV data from software 'fluidimage'
-%      .FileIndexing='on' for data files (when series of indexed files are  expected)
+%      .FieldType='image' for all kinds of images and movies, =FileType  else
+%      .FileIndexing='on'/'off', for data files (when series of indexed files are  expected)
 %      .Height: image height in pixels
 %      .Width:  image width in pixels
 %      .BitDepth: nbre of bits per pixel  (8 of 16)
 %      .ColorType: 'greyscale' or 'color'
-%      .NumberOfFrames
+%      .NumberOfFrames: defined for images or movies
 %      .FrameRate: nbre of frames per second, =[] for images
 % VideoObject: in case of video
 %
@@ -57,7 +58,7 @@ if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
 else
-    FileInfo.FileType='';
+    FileInfo.FileType='';% input file does not exist
     return
 end
 [tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt

@@ -2182,7 +2182,7 @@ ActionPathList=get(handles.ActionName,'UserData'); % list of recorded paths to f
 
 %% add a new function to the menu if 'more...' has been selected in the menu ActionName
 if isequal(ActionName,'more...')
-    if isempty(ActionPath)
+    if ~ischar(ActionPath)
         ActionPath=get(handles.ActionPath,'String');
     end
     [FileName, PathName] = uigetfile( ...
