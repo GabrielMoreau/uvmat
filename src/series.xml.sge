@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <SeriesParam>
    <DiskQuotaCmd>quota -s -g -A</DiskQuotaCmd> 
-<ClusterParam>
-<ExistenceTest>qstat -help</ExistenceTest>
-  <NbCoreAdvised>100</NbCoreAdvised><!--proposed default number of parallel cores attributed for the computations -->
-  <NbCoreMax>1000</NbCoreMax><!--maximum number of cores allowed for the computations -->
-  <JobCPUTimeAdvised unit="minute">20</JobCPUTimeAdvised><!--used to group the iterations into jobs of sufficient CPU time-->
-  <JobNumberMax>500</JobNumberMax><!--maximum number of jobs allowed (will group the iterations to fit in)-->
-  <WallTimeMax unit="hour">23</WallTimeMax> <!--maximum allowed time for a job -->  
-  <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd> <!--command to know the number of active and waiting job launches-->  
-  <LaunchCmdFcn>cluster_command_sge</LaunchCmdFcn> <!--name of the function used to create job launch commmand--> 
-</ClusterParam>
-<SgeParam>
-</SgeParam>
+   <ClusterParam>
+      <ExistenceTest>qstat -help</ExistenceTest>
+      <NbCoreAdvised>100</NbCoreAdvised>                       <!-- proposed default number of parallel cores attributed for the computations -->
+      <NbCoreMax>1000</NbCoreMax>                              <!-- maximum number of cores allowed for the computations -->
+      <JobCPUTimeAdvised unit="minute">20</JobCPUTimeAdvised>  <!-- used to group the iterations into jobs of sufficient CPU time -->
+      <JobNumberMax>500</JobNumberMax>                         <!-- maximum number of jobs allowed (will group the iterations to fit in) -->
+      <WallTimeMax unit="hour">23</WallTimeMax>                <!-- maximum allowed time for a job -->
+      <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd>           <!-- command to know the number of active and waiting job launches -->
+      <LaunchCmdFcn>cluster_command_sge</LaunchCmdFcn>         <!-- name of the function used to create job launch commmand -->
+   </ClusterParam>
+   <SgeParam>
+   </SgeParam>
 </SeriesParam>
