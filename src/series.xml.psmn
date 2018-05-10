@@ -1,31 +1,32 @@
 <?xml version="1.0"?>
 <SeriesParam>
-   <DiskQuotaCmd></DiskQuotaCmd> <!-- pas de quota au psmn -->
-<ClusterParam>
-<ExistenceTest>qstat -help</ExistenceTest>
-<!-- la politique au PSMN est d'envoyer de nombreux jobs, de courte durée et
-     de 1 cœur. En effet, on n'est pas les seuls à avoir besoin de jobs non
-     parallélisé. Et il y a des nœuds financés avec des projets spécifiques
-     auxquels on a accès avec le deal que les financeurs devront attendre
-     moins de 15 minutes. La queue à utiliser est "piv_debian" et c'est une
-     queue virtuelle.
-     Le staff du PSMN est très favorable à ce qu'on envoie un grand nombre de
-     jobs courts sur un seul cœur car ils les utilisent pour équilibrer la
-     charge.
-     Les tests récents ont montré qu'on peut sans problème avoir près de 80k
-     jobs. Donc 10k jobs par utilisateur n'est pas un problème.
--->
-  <NbCoreAdvised>1</NbCoreAdvised> <!-- 1 cœur -->
-  <NbCoreMax>1</NbCoreMax>         <!--maximum 1 cœur -->
-  <JobCPUTimeAdvised unit="minute">1</JobCPUTimeAdvised> <!--used to group 
-                    the iterations into jobs of sufficient CPU time.
-                    Default estimate is 1 min per image pair, so
-                    JobCPUTimeAdvised=1min means 1 image pair per job-->
-  <JobNumberMax>10000</JobNumberMax><!--maximum number of jobs allowed (will group the iterations to fit in)-->
-  <WallTimeMax unit="hour">23</WallTimeMax> <!--maximum allowed time for a job -->  
-  <JobStatCmd>qstat |grep UVmat</JobStatCmd> <!--command to know the number of active and waiting job launches-->  
-  <LaunchCmdFcn>cluster_command_psmn</LaunchCmdFcn> <!--name of the function used to create job launch commmand--> 
-</ClusterParam>
-<SgeParam>
-</SgeParam>
+   <DiskQuotaCmd></DiskQuotaCmd> <!-- pas de quota au PSMN -->
+   <ClusterParam>
+      <ExistenceTest>qstat -help</ExistenceTest>
+      <!-- la politique au PSMN est d'envoyer de nombreux jobs, de courte durée et
+         de 1 cœur. En effet, on n'est pas les seuls à avoir besoin de jobs non
+         parallélisé. Et il y a des nœuds financés avec des projets spécifiques
+         auxquels on a accès avec le deal que les financeurs devront attendre
+         moins de 15 minutes. La queue à utiliser est "piv_debian" et c'est une
+         queue virtuelle.
+         Le staff du PSMN est très favorable à ce qu'on envoie un grand nombre de
+         jobs courts sur un seul cœur car ils les utilisent pour équilibrer la
+         charge.
+         Les tests récents ont montré qu'on peut sans problème avoir près de 80k
+         jobs. Donc 10k jobs par utilisateur n'est pas un problème.
+         -->
+      <NbCoreAdvised>1</NbCoreAdvised>                       <!-- 1 cœur -->
+      <NbCoreMax>1</NbCoreMax>                               <!-- maximum 1 cœur -->
+      <JobCPUTimeAdvised unit="minute">1</JobCPUTimeAdvised> <!--used to group 
+         the iterations into jobs of sufficient CPU time.
+         Default estimate is 1 min per image pair, so
+         JobCPUTimeAdvised=1min means 1 image pair per job
+         -->
+      <JobNumberMax>10000</JobNumberMax>                 <!-- maximum number of jobs allowed (will group the iterations to fit in) -->
+      <WallTimeMax unit="hour">23</WallTimeMax>          <!-- maximum allowed time for a job -->  
+      <JobStatCmd>qstat |grep UVmat</JobStatCmd>         <!-- command to know the number of active and waiting job launches -->  
+      <LaunchCmdFcn>cluster_command_psmn</LaunchCmdFcn>  <!-- name of the function used to create job launch commmand --> 
+   </ClusterParam>
+   <SgeParam>
+   </SgeParam>
 </SeriesParam>
