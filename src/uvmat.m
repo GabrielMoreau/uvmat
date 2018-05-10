@@ -1845,47 +1845,24 @@ drawnow
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-% if isempty(regexp(fileinput,'^http://'))
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
-% else
-%     FileInfo.FileType='netcdf';
-%     [RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(fileinput);
-%     i1_series=[0 i1 i2];
-%     i2_series=[];
-%     j1_series=[0 j1 j1];
-%     j2_series=[0 j1 j1];
-%     MovieObject=[];
-% %     [RootPath,RootFile]=fileparts(fileinput);
-% %     [RootPath,SubDir]=fileparts(RootPath);
-% %     NomType='*';
-% end
-FileType=FileInfo.FileType;
-if strcmp(FileType,'txt')
-    try
-        edit(fileinput)
-    catch ME
-        msgbox_uvmat('ERROR','invalid intput file')
-    end
-    return
-elseif strcmp(FileType,'xml')
-    editxml(fileinput)
-     return
-elseif strcmp(FileType,'figure')
-    open(fileinput)
-     return
-end
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=...
+    find_file_series(FilePath,[FileName FileExt]);
 
 %% open the file or fill the GUI uvmat according to the detected file type
-switch FileType
+FieldType=FileInfo.FieldType;
+switch FieldType
     case ''
         msgbox_uvmat('ERROR','invalid input file type')
+        return
     case 'txt'
         edit(fileinput)
+        return
     case 'figure'                           %display matlab figure
         hfig=open(fileinput);
         set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
         set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
         set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
+        return
     case 'xml'                % edit xml files
         t=xmltree(fileinput);
         % the xml file marks a project or project link, open datatree_browser
@@ -1894,28 +1871,22 @@ switch FileType
         else % other xml file, open the xml editor
             editxml(fileinput);
         end
+        return
     case 'xls'% Excel file opended by editxml
         editxml(fileinput);
+        return
     otherwise
         set(handles_RootPath,'String',RootPath);
         set(handles_SubDir,'String',['/' SubDir]);
         set(handles_RootFile,'String',['/' RootFile]); %display the separator
-%         if strcmp(NomType,'level')
-%             rootname=fullfile(RootPath,SubDir,'level');
-%             rr=regexp(fileinput,['^' rootname '(?<j>\d+)/' RootFile '(?<i>\d+)' FileExt '$'],'names');
-%             if ~isempty(rr)
-%                 set(handles_FileIndex,'String',rr.i);
-%             end
-%         else
-            if isempty(regexp(RootPath,'^http://'))
+        if isempty(regexp(RootPath,'^http://'))
             rootname=fullfile(RootPath,SubDir,RootFile);
-            else
-                rootname=[RootPath '/' SubDir '/' RootFile];
-            end
-            indices=fileinput(length(rootname)+1:end);
-            indices(end-length(FileExt)+1:end)=[]; %remove extension
-            set(handles_FileIndex,'String',indices);
-%         end
+        else
+            rootname=[RootPath '/' SubDir '/' RootFile];
+        end
+        indices=fileinput(length(rootname)+1:end);
+        indices(end-length(FileExt)+1:end)=[]; %remove extension
+        set(handles_FileIndex,'String',indices);
         set(handles_NomType,'String',NomType);
         set(handles_FileExt,'String',FileExt);
         if index==1
@@ -1930,7 +1901,7 @@ switch FileType
             if ~isempty(i2_0)
                 i2_s=i2_0;
             else
-               i2_s=i2;
+                i2_s=i2;
             end
             j1_0=stra2num(get(handles.j1,'String'));
             if ~isempty(j1_0)
@@ -1945,7 +1916,7 @@ switch FileType
                 j2_s=j2;
             end
         end
-
+        
         % synchronise indices of the second  input file if it exists
         if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
             Input=read_GUI(handles.InputFile);
@@ -1974,17 +1945,16 @@ switch FileType
             end
             set(handles.FileIndex_1,'String',FileIndex_1)
         end
-
+        
         %enable other menus
         set(handles.MenuOpenCampaign,'Enable','on')
         set(handles.MenuExport,'Enable','on')
         set(handles.MenuExportFigure,'Enable','on')
         set(handles.MenuExportMovie,'Enable','on')
         set(handles.MenuTools,'Enable','on')
-
+        
         % initiate input file series and inputfilerefresh the current field view:
         update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,index);
-
 end
 
 %% update list of recent files in the menubar and save it for future opening
@@ -1996,7 +1966,6 @@ if isempty(find(str_find,1))
 end
 for ifile=1:min(length(MenuFile),5)
     set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
-    %set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',MenuFile{ifile});
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -2061,11 +2030,6 @@ if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video da
     else
         XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
     end
-%     if strcmp(FileInfo.FileType,'rdvision')
-%         TimeName='timestamp';
-%     else
-%     TimeName='video';
-%     end
 end
 if isfield(FileInfo,'TimeName')
     TimeName=FileInfo.TimeName;
@@ -2110,25 +2074,6 @@ if ~isempty(XmlFileName)
                 sizDti=size(XmlDataRead.Time,1);% case starting with index 0
                 ind_start=0;
             end
-            % complement the input if the whole time series is not defined
-            %             if size(i1_series,3)>size(XmlDataRead.Time,1)-ind_start %only the first time interval is defined, extrapolate to the whole series
-            %                 Dti_total=XmlDataRead.Time(end)-XmlDataRead.Time(1);%total time interval covered by the time vector
-            %                 missing_indices=sizDti+1+ind_start:size(i1_series,3)+1;% remaining set of frame indices for which time needs to be found
-            %                 repeat_nbre=1+floor((missing_indices-sizDti-ind_start)/(sizDti-1));% number of repetitions of Dti
-            %                 time_indices=1+mod(missing_indices-sizDti-1,sizDti-1);
-            %                 for j=1:size(XmlDataRead.Time,2)
-            %                     XmlData.Time(missing_indices,j)=XmlDataRead.Time(time_indices,j)+repeat_nbre'*Dti_total;
-            %                 end
-            %                 % update the xml file with NbDti
-            %                 t=xmltree(XmlFileName);
-            %                 uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti')
-            %                 if isempty(uid_NbDti)
-            %                     uid_BurstTiming=find(t,'ImaDoc/Camera/BurstTiming')
-            %                     [t,uid_NbDti]=add(t,uid_BurstTiming,'element','NbDti');
-            %                 end
-            %                 [t,uid_NbDti]=add(t,uid_NbDti,'chardata',num2str(repeat_nbre(end)-1));
-            %                 save(t,XmlFileName)
-            %             end
         end
         set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
@@ -2159,14 +2104,12 @@ end
 
 %% Define timing
 % time not set by the input file: images or civ data: indicate that time is read from the xml file
-FileType=FileInfo.FileType;
+%FileType=FileInfo.FileType;
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time) && ...
-        (strcmp(FileType,'image')|| strcmp(FileType,'multimage'))%||strcmp(FileType,'civdata')||strcmp(FileType,'civx'))
+        (strcmp(FileInfo.FileType,'image')|| strcmp(FileInfo.FileType,'multimage'))%||strcmp(FileType,'civdata')||strcmp(FileType,'civx'))
     TimeName='xml';
-elseif strcmp(FileType,'civdata')% ajouter pivdata_fluidimage
+elseif strcmp(FileInfo.FieldType,'civdata')% ajouter pivdata_fluidimage
     TimeName='civdata';
-elseif strcmp(FileType,'civx')
-    TimeName='civx';
 end
 if index==1
     set(handles.TimeName,'String',TimeName)
@@ -2259,8 +2202,8 @@ if ~isequal(warntext,'')
 end
 
 %% set default options in menu 'FieldName'
-switch FileType
-    case {'civx','civdata','pivdata_fluidimage'}
+switch FileInfo.FieldType
+    case 'civdata'
         [FieldList,ColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
@@ -3317,7 +3260,7 @@ ParamIn.ColorVar='';%default variable name for vector color
 frame_index=1;%default
 FieldName='';%default
 VelType='';%default
-if strcmp(UvData.FileInfo{1}.FieldType,'image')
+if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldType,'image')
     FieldName='image';
     frame_index=1;%default
     if UvData.FileInfo{1}.NumberOfFrames>1
@@ -3375,6 +3318,9 @@ if isstruct (ParamIn)
     ParamIn.VelType=VelType;
     ParamIn.Coord_x=get(handles.Coord_x,'String');
     ParamIn.Coord_y=get(handles.Coord_y,'String');
+    if iscell(ParamIn.Coord_y)
+        ParamIn.Coord_y=ParamIn.Coord_y';
+    end
     ParamIn.Coord_z=get(handles.Coord_z,'String');
     %ParamIn.CheckCoordIndex=strcmp(get(handles.SwitchCoordIndex,'String'),'dim');
     TimeName=get(handles.TimeName,'String');
@@ -3554,8 +3500,7 @@ end
 
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
-if (strcmp(UvData.FileInfo{1}.FileType,'civx')||strcmp(UvData.FileInfo{1}.FileType,'civdata')||strcmp(UvData.FileInfo{1}.FileType,'pivdata_fluidimage'))...
-        && ~strcmp(FieldName,'get_field...')
+if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldType,'civdata')&& ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
@@ -3580,8 +3525,7 @@ end
 test_veltype_1=0;
 if isempty(FileName_1)
 elseif ~test_keepdata_1
-    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileInfo{1}.FileType,'pivdata_fluidimage'))...
-            && ~strcmp(FieldName_1,'get_field...')
+    if strcmp(UvData.FileInfo{2}.FieldType,'civdata')&& ~strcmp(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
         menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileType{2});
@@ -4503,7 +4447,10 @@ switch field
                 FieldList={AName};
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
-                FieldList={''};          
+                FieldList={''};  
+                set(handles.uvmat,'ToolBar','figure')
+                set(handles.Coord_y,'Max',2)
+                %set(huvmat,
             case 'civdata...'%reinitiate input, return to automatic civ data reading
                 display_file_name(handles,FileName,1)
         end

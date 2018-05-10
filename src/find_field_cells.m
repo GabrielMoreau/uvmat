@@ -136,8 +136,12 @@ for icell=1:numel(ivar_coord_x)
                 end
                 CellInfo{icell}.CoordSize=prod(CellInfo{icell}.CoordSize);
             end
+            ind_scalar=find(strcmp('scalar',Role(VarIndex)));
+            ind_vector_x=find(strcmp('vector_x',Role(VarIndex)));
+            ind_vector_y=find(strcmp('vector_y',Role(VarIndex)));
             ind_y=find(strcmp('coord_y',Role(VarIndex)));
-            if numel(VarIndex)==2||isempty(ind_y)% no variable, except possibly y
+            if numel([ind_scalar ind_vector_x ind_vector_y])==0           
+%             if numel(VarIndex)==2||isempty(ind_y)% no variable, except possibly y
                 NbDim(icell)=1;
             else
                 CellInfo{icell}.CoordType='scattered';

@@ -175,7 +175,11 @@ if CheckInputFile
                     end
                 end
             case 'displacement'
+                if isfield(Param.ActionInput,'OriginIndex')
                 i1_series_Civ1=Param.ActionInput.OriginIndex*ones(size(i1_series{1}));
+                else
+                    i1_series_Civ1=ones(size(i1_series{1}));
+                end
                 i1_series_Civ2=i1_series_Civ1;
                 i2_series_Civ1=i1_series{1};
                 i2_series_Civ2=i1_series{1};

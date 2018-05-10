@@ -100,23 +100,29 @@ switch FileType
         ListOperator={};
         checkU=0;
         checkV=0;
+        % scan the list InputField
         for ilist=1:numel(InputField)
             % look for input variables to read
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if isempty(r)%  no operator used
-                if isempty(find(strcmp(InputField{ilist},ListVar)))
+                if isempty(find(strcmp(InputField{ilist},ListVar),1))
                     ListVar=[ListVar InputField(ilist)];%append the variable name if not already in the list
                     ListInputField=[ListInputField InputField(ilist)];
                     ListOperator=[ListOperator {''}];
                 end
                 if check_colorvar(ilist)
-                    if isempty(find(strcmp(InputField{ilist},ListVar)))
+                    if isempty(find(strcmp(InputField{ilist},ListVar),1))
                     Role{numel(ListVar)}='ancillary';% not projected with interpolation
                     ProjModeRequest{numel(ListVar)}='';
                     end
                 else
                     Role{numel(ListVar)}='scalar';
                     ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
+                end
+                if isfield(ParamIn,'Coord_y')
+                    if ~isempty(strcmp(InputField{ilist},ParamIn.Coord_y))
+                        Role{numel(ListVar)}='coord_y';
+                    end
                 end
             else  % an operator 'vec' or 'norm' is used
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
@@ -138,8 +144,7 @@ switch FileType
                     ListVar=[ListVar {r.VName}];% append the variable in the list if not previously listed
                     Role=[Role {'vector_y'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
-                    ListInputField=[ListInputField InputField(ilist)];
-                    
+                    ListInputField=[ListInputField InputField(ilist)];                
                 else
                     checkV=1;
                 end
@@ -300,8 +305,6 @@ if ~isempty(A)
     end
     Npz=1;%default
     npxy=size(A);
-    %     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-    %     Rangy=[npxy(1)-0.5 0.5]; %
     Field.NbDim=2;%default
     Field.AName='image';
     Field.ListVarName={'Coord_y','Coord_x','A'}; %
@@ -317,7 +320,6 @@ if ~isempty(A)
                 ParamOut.Npx=npxy(2);% display image size on the interface
                 ParamOut.Npy=npxy(1);
             end
-%             Field.VarAttribute{3}.Mesh=1;
         else
             Field.NbDim=3;
             Field.ListVarName=['AZ' Field.ListVarName];
@@ -329,19 +331,14 @@ if ~isempty(A)
                 ParamOut.Npx=npxy(3);% display image size on the interface
                 ParamOut.Npy=npxy(2);
             end
-%             Field.VarAttribute{4}.Mesh=1;
         end
     else
         Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x'}}; %
         Field.Coord_y=[npxy(1)-0.5 0.5];
         Field.Coord_x=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-%        ParamOut.Npx=npxy(2);% display image size on the interface
- %       ParamOut.Npy=npxy(1);
-%         Field.VarAttribute{3}.Mesh=1;
     end
     Field.A=A;
     Field.CoordUnit='pixel'; %used for mouse_motion
-        
 end
 
 

@@ -54,12 +54,14 @@
 
 function [FileInfo,VideoObject]=get_file_info(fileinput)
 VideoObject=[];
+FileInfo.FileType='';% input file does not exist
+FileInfo.FieldType=''; %default output
+% check the existence (not possible for OpenDAP data)
 if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
 else
-    FileInfo.FileType='';% input file does not exist
-    return
+    return %input file does not exist.
 end
 [tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
@@ -185,12 +187,17 @@ switch FileExt
             end
         end
 end
+
 if ismember (FileInfo.FileType,{'image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
         FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
+else
+    FileInfo.FileIndexing='off';
 end
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
     case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom'}
     FileInfo.FieldType='image';
+    case {'civx','civdata','pivdata_fluidimage'}
+        FileInfo.FieldType='civdata';
 end
 
