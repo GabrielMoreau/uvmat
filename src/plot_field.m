@@ -114,20 +114,27 @@ PlotParamOut=PlotParam;%default
 
 %% check input structure
 % check the cells of fields :
-[CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
-    return
-end
 
-index_3D=find(NbDimArray>2,1);
-if ~isempty(index_3D)
-    msgbox_uvmat('ERROR','volume plot not implemented yet');
-    return
-end
-index_2D=find(NbDimArray==2);%find 2D fields
-index_1D=find(NbDimArray==1);
-index_0D=find(NbDimArray==0);
+% if ~isfield(PlotParam,'FieldName')
+%     index_0D=[];
+%     index_1D=1;
+%     index_2D=[];%find 2D fields
+%     index_3D=[];
+% else
+    [CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
+        return
+    end
+    index_0D=find(NbDimArray==0);
+    index_1D=find(NbDimArray==1);
+    index_2D=find(NbDimArray==2);%find 2D fields
+    index_3D=find(NbDimArray>2,1);
+    if ~isempty(index_3D)
+        msgbox_uvmat('ERROR','volume plot not implemented yet');
+        return
+    end
+% end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)
@@ -227,15 +234,9 @@ if ~(isfield(PlotParamOut,'Axes')&&isfield(PlotParamOut.Axes,'TextDisplay')&&(Pl
     htext=findobj(hfig,'Tag','TableDisplay');
     if ~isempty(htext)%&&~isempty(hchecktable)
         if isempty(index_0D)
-            %         set(htext,'Data',{})
-            %         set(htext,'visible','off')
-            %         set(hchecktable,'visible','off')
-            %         set(hchecktable,'Value',0)
         else
             errormsg=plot_text(Data,CellInfo(index_0D),htext);
             set(htext,'visible','on')
-%             set(hchecktable,'visible','on')
-%             set(hchecktable,'Value',1)
         end
         set(hfig,'Unit','pixels');
         set(htext,'Unit','pixels')
@@ -408,8 +409,8 @@ MaxY_cell=[];
 testplot=ones(size(data.ListVarName));%default test for plotted variables
 %loop on input  fields
 for icell=1:numel(CellInfo)
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
-    coord_x_index=CellInfo{icell}.CoordIndex;
+    VarIndex=CellInfo{icell}.YIndex;%  indices of the selected variables in the list data.ListVarName
+    coord_x_index=CellInfo{icell}.XIndex;
     coord_x_name{icell}=data.ListVarName{coord_x_index};
     coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
     if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)), 1)) %xtitle not already selected

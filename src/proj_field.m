@@ -553,15 +553,14 @@ if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
     return
 end
-CellInfo=CellInfo(NbDim>=2); %keep only the 2D cells
-%%%%%% TODO: treat 1D fields: project as identity so that P o P=P for projection operation
+CellInfo=CellInfo(NbDim>=2); %keep only the 2D or 3D cells
 cell_select=true(size(CellInfo));
 
 for icell=1:length(CellInfo)
     if isfield(CellInfo{icell},'ProjModeRequest')
-        if ~strcmp(CellInfo{icell}.ProjModeRequest, ProjMode)
-            cell_select(icell)=0;
-        end
+%         if ~strcmp(CellInfo{icell}.ProjModeRequest, ProjMode)
+%             cell_select(icell)=0;
+%         end
         if strcmp(ProjMode,'interp_tps')&& ~strcmp(CellInfo{icell}.CoordType,'tps')
             cell_select(icell)=0;
         end
@@ -850,10 +849,6 @@ for icell=1:length(CellInfo)
                     ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
                 end
                 
-                
-                
-                
-                
             else
                 AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
                 AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
@@ -928,6 +923,8 @@ for icell=1:length(CellInfo)
                 end
                 ProjData.ListVarName=[ProjData.ListVarName {AXName}];
                 ProjData.VarDimName=[ProjData.VarDimName {AXName}];
+                nbvar=numel(ProjData.VarDimName);
+                ProjData.VarAttribute{nbvar}.Role='coord_x';
                 for ivar=VarIndex
                     %VarName{ivar}=FieldData.ListVarName{ivar};
                     if test_interp2% interpolate on new grid
@@ -949,7 +946,8 @@ for icell=1:length(CellInfo)
                     end
                     ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
                     ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
-                    ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
+                    nbvar=nbvar+1;
+                    ProjData.VarAttribute{nbvar}.Role='coord_y';% for plot with continuous line
                 end
                 if nbcolor==3
                     ProjData.VarDimName{end}={AXName,'rgb'};
@@ -1121,10 +1119,12 @@ if ~isempty(errormsg)
 end
 
 check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for each field cell
-ProjMode=cell(size(CellInfo));
-for icell=1:numel(CellInfo)
-    ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
-end
+ProjMode=num2cell(blanks(numel(CellInfo)));
+ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
+%ProjMode=cell(size(CellInfo));
+% for icell=1:numel(CellInfo)
+%     ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
+% end
 icell_grid=[];% field cell index which defines the grid
 if ~strcmp(ObjectData.ProjMode,'projection')&& ~strcmp(ObjectData.Type,'plane_z')% TODO:rationalize
     %% define the new coordinates in case of interpolation on a imposed grid
@@ -1201,7 +1201,8 @@ if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no exis
     end
     ProjData.ListVarName={AYName,AXName};
     
-    ProjData.VarAttribute={[],[]};
+    ProjData.VarAttribute{1}.Role='coord_y';
+    ProjData.VarAttribute{2}.Role='coord_x';
 end
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1218,7 +1219,7 @@ for icell=1:length(CellInfo)
     if NbDim<2
         continue % only cells represnting 2D or 3D fields are involved
     end
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
+    VarIndex= CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
     %dimensions
     DimCell=FieldData.VarDimName{VarIndex(1)};
     if ischar(DimCell)
@@ -1236,11 +1237,11 @@ for icell=1:length(CellInfo)
             if strcmp(ProjMode{icell},'interp_tps')
                 continue %skip for next cell (needs tps field cell)
             end
-            coord_x=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)});% initial x coordinates
-            coord_y=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)});% initial y coordinates
+            coord_x=FieldData.(CellInfo{icell}.XName);% initial x coordinates
+            coord_y=FieldData.(CellInfo{icell}.YName);% initial y coordinates
             check3D=(numel(CellInfo{icell}.CoordIndex)==3);
             if check3D
-                coord_z=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
+                coord_z=FieldData.(CellInfo{icell}.ZName);
             end
             
             % translate  initial coordinates to account for the new origin
@@ -1255,7 +1256,7 @@ for icell=1:length(CellInfo)
                 %components of the unitiy vector normal to the projection plane
                 fieldZ=norm_plane(1)*coord_x + norm_plane(2)*coord_y+ norm_plane(3)*coord_z;% distance to the plane
                 indcut=find(abs(fieldZ) <= width);
-                for ivar=VarIndex
+                for ivar=[CellInfo{icell}.CoordIndex CellInfo{icell}.VarIndex]
                     VarName=FieldData.ListVarName{ivar};
                     FieldData.(VarName)=FieldData.(VarName)(indcut);
                 end
@@ -1304,7 +1305,7 @@ for icell=1:length(CellInfo)
                     errormsg='data outside the bounds of the projection object';
                     return
                 end
-                for ivar=VarIndex
+                for ivar=[CellInfo{icell}.CoordIndex CellInfo{icell}.VarIndex]
                     VarName=FieldData.ListVarName{ivar};
                     FieldData.(VarName)=FieldData.(VarName)(indcut);
                 end
@@ -1320,7 +1321,7 @@ for icell=1:length(CellInfo)
                 case 'projection'
                     nbvar=0;
                     %nbvar=numel(ProjData.ListVarName);
-                    for ivar=VarIndex %transfer variables to the projection plane
+                    for ivar=[CellInfo{icell}.CoordIndex CellInfo{icell}.VarIndex] %transfer variables to the projection plane
                         VarName=FieldData.ListVarName{ivar};
                         if ivar==CellInfo{icell}.CoordIndex(end)
                             ProjData.(VarName)=coord_X;
@@ -1400,8 +1401,8 @@ for icell=1:length(CellInfo)
                 NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});
                 SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
                 checkUV=0;
-                if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
-                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
+                if strcmp(CellInfo{icell}.VarType,'vector')
+                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y}));
                     checkUV=1;
                 end
                 

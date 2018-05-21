@@ -7,7 +7,7 @@
 % ParamOut: structure representing parameters:
 %        .FieldName; field name
 %        .VelType
-%        .CivStage: stage of civx processing (=0, not Civx, =1 (civ1), =2  (fix1)....     
+%        .CivStage: stage of civx processing (=0, not Civx, =1 (civ1), =2  (fix1)....
 %        .Npx,.Npy: for images, nbre of pixels in x and y
 % errormsg: error message, ='' by default
 %
@@ -19,7 +19,7 @@
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
-%     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'num'   
+%     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'num'
 % num: frame number for movies
 %
 % see also read_image.m,read_civxdata.m,read_civdata.m,
@@ -93,60 +93,53 @@ switch FileType
         if ~isempty(errormsg),errormsg=['read_civxdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
     case 'netcdf'% general netcdf file (not recognized as civ)
-        ListVar={};
+        ListVarName={};
         Role={};
         ProjModeRequest={};
-        ListInputField={};
-        ListOperator={};
-        checkU=0;
-        checkV=0;
+        %ListInputField={};
+        %checkU=0;
+        %checkV=0;
         % scan the list InputField
+        Operator=cell(1,numel(InputField));
+        InputVar=cell(1,numel(InputField));
         for ilist=1:numel(InputField)
             % look for input variables to read
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if isempty(r)%  no operator used
-                if isempty(find(strcmp(InputField{ilist},ListVar),1))
-                    ListVar=[ListVar InputField(ilist)];%append the variable name if not already in the list
-                    ListInputField=[ListInputField InputField(ilist)];
-                    ListOperator=[ListOperator {''}];
-                end
-                if check_colorvar(ilist)
-                    if isempty(find(strcmp(InputField{ilist},ListVar),1))
-                    Role{numel(ListVar)}='ancillary';% not projected with interpolation
-                    ProjModeRequest{numel(ListVar)}='';
-                    end
+                ListVarName=[ListVarName InputField(ilist)];%append the variable name
+                %InputVar{ilist}=InputField(ilist);
+                %ListInputField=[ListInputField InputField(ilist)];
+                if check_colorvar(ilist)% case of field used for vector color
+                    Role{numel(ListVarName)}='ancillary';% not projected with interpolation
+                    ProjModeRequest{numel(ListVarName)}='';
                 else
-                    Role{numel(ListVar)}='scalar';
-                    ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
+                    Role{numel(ListVarName)}='scalar';
+                    ProjModeRequest{numel(ListVarName)}='interp_lin';%scalar field (requires interpolation for plot)
                 end
-                if isfield(ParamIn,'Coord_y')
-                    if ~isempty(strcmp(InputField{ilist},ParamIn.Coord_y))
-                        Role{numel(ListVar)}='coord_y';
-                    end
-                end
+                Operator{numel(ListVarName)}='';
             else  % an operator 'vec' or 'norm' is used
+                ListVarName=[ListVarName {r.UName}]; % append the variable in the list if not previously listed
+                if  strcmp(r.Operator,'norm')
+                    if check_colorvar(ilist) 
+                    Role=[Role {'ancillary'}];
+                    else
+                       Role=[Role {'scalar'}]; 
+                    end
+                else
+                     Role=[Role {'vector_x'}];
+                end
+                %ListInputField=[ListInputField InputField(ilist)];
+                ListVarName=[ListVarName {r.VName}];% append the variable in the list if not previously listed
+                Role=[Role {'vector_y'}];
+                %ListInputField=[ListInputField InputField(ilist)];
+                Operator{numel(ListVarName)-1}=r.Operator;
+                Operator{numel(ListVarName)}='';           
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
-                    ProjModeRequestVar='interp_lin';%scalar field (requires interpolation for plot)
+                    ProjModeRequest{numel(ListVarName)}='interp_lin';%scalar field (requires interpolation for plot)
+                    ProjModeRequest{numel(ListVarName)-1}='interp_lin';%scalar field (requires interpolation for plot)
                 else
-                    ProjModeRequestVar='';
-                end
-                ind_var_U=find(strcmp(r.UName,ListVar));%check previous listing of variable r.UName
-                ind_var_V=find(strcmp(r.VName,ListVar));%check previous listing of variable r.VName
-                if isempty(ind_var_U)
-                    ListVar=[ListVar {r.UName}]; % append the variable in the list if not previously listed
-                    Role=[Role {'vector_x'}];
-                    ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
-                    ListInputField=[ListInputField InputField(ilist)];
-                else
-                    checkU=1;
-                end
-                if isempty(ind_var_V)
-                    ListVar=[ListVar {r.VName}];% append the variable in the list if not previously listed
-                    Role=[Role {'vector_y'}];
-                    ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
-                    ListInputField=[ListInputField InputField(ilist)];                
-                else
-                    checkV=1;
+                    ProjModeRequest{numel(ListVarName)}='';
+                    ProjModeRequest{numel(ListVarName)-1}='';
                 end
             end
         end
@@ -155,102 +148,97 @@ switch FileType
         end
         NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
             if numel(num)~=1
                 NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
             end
         else
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         end
         if ~isempty(errormsg)
             return
         end
         CheckStructured=1;
-        %scan all the variables beyond the two first NbCoord ones describing the coordinates.
-        for ilist=NbCoord+1:numel(Field.VarDimName)
-            if isequal(Field.VarDimName{1},Field.VarDimName{ilist}) % if a variable has the same dimension as the coordinate, it denotes a field with unstructured coordinates
-                Field.VarAttribute{1}.Role='coord_x';%unstructured coordinates
-                Field.VarAttribute{2}.Role='coord_y';
-                if NbCoord>=3
-                    Field.VarAttribute{3}.Role='coord_z';
+        %scan all the variables
+        NbCoord=0;
+        if ~isempty(ParamIn.Coord_x)
+            index_Coord_x=find(strcmp(ParamIn.Coord_x,Field.ListVarName));
+            Field.VarAttribute{index_Coord_x}.Role='coord_x';%
+            NbCoord=NbCoord+1;
+        end
+        if ~isempty(ParamIn.Coord_y)
+            if ischar(ParamIn.Coord_y)
+                index_Coord_y=find(strcmp(ParamIn.Coord_y,Field.ListVarName));
+                Field.VarAttribute{index_Coord_y}.Role='coord_y';%
+                NbCoord=NbCoord+1;
+            else
+                for icoord_y=1:numel(ParamIn.Coord_y)
+                    index_Coord_y=find(strcmp(ParamIn.Coord_y{icoord_y},Field.ListVarName));
+                    Field.VarAttribute{index_Coord_y}.Role='coord_y';%
+                    NbCoord=NbCoord+1;
                 end
-                CheckUnstructured=0;
-                break
             end
         end
-        if CheckStructured
-            for ilist=NbCoord+1:numel(Field.VarDimName)
-                if numel(Field.VarDimName{ilist})==NbCoord
-                    rank(1)=find(strcmp(ParamIn.Coord_x,Field.VarDimName{ilist}));
-                    rank(2)=find(strcmp(ParamIn.Coord_y,Field.VarDimName{ilist}));
-                    if NbCoord==3
-                        rank(3)=find(strcmp(ParamIn.Coord_z,Field.VarDimName{ilist}));
-                    end
-                    rank=rank(end:-1:1);
-                    VarName=Field.ListVarName{ilist};
-                    Field.(VarName)=permute(Field.(VarName),rank);
-                    Field.VarDimName{ilist}=Field.VarDimName{ilist}(rank);% permute the order of dimensions
-                end
-            end
+        NbDim=1;
+        if ~isempty(ParamIn.Coord_z)
+            index_Coord_z=find(strcmp(ParamIn.Coord_z,Field.ListVarName));
+            Field.VarAttribute{index_Coord_z}.Role='coord_z';%
+            NbCoord=NbCoord+1;
+            NbDim=3;
+        elseif ~isempty(ParamIn.FieldName)
+            NbDim=2;
         end
         NormName='';
         UName='';
         VName='';
-        if numel(Field.ListVarName)>NbCoord % if there are variables beyond coord (1 D plots)
-            for ilist=1:numel(ListVar)
-                Field.VarAttribute{ilist+NbCoord}.Role=Role{ilist};
-                Field.VarAttribute{ilist+NbCoord}.ProjModeRequest=ProjModeRequest{ilist};
+        if numel(Field.ListVarName)>NbCoord % if there are variables beyond coord (exclude 1 D plots)
+            VarAttribute=cell(1,numel(ListVarName));
+            for ilist=1:numel(ListVarName)
+                index_var=find(strcmp(ListVarName{ilist},Field.ListVarName),1);
+                VarDimName{ilist}=Field.VarDimName{index_var};
+                DimOrder=[];
+                if NbDim ==2
+                    DimOrder=[find(strcmp(ParamIn.Coord_y,VarDimName{ilist})) find(strcmp(ParamIn.Coord_x,VarDimName{ilist}))];
+                elseif NbDim ==3
+                    DimOrder=[find(strcmp(ParamIn.Coord_z,VarDimName{ilist}))...
+                        find(strcmp(ParamIn.Coord_y,VarDimName{ilist}))...
+                        find(strcmp(ParamIn.Coord_x,VarDimName{ilist}))];
+                end
+                if ~isempty(DimOrder)
+                    Field.(ListVarName{ilist})=permute(Field.(ListVarName{ilist}),DimOrder);
+                    VarDimName{ilist}=VarDimName{ilist}(DimOrder);
+                end
+                if numel(Field.VarAttribute)>=index_var
+                VarAttribute{ilist}=Field.VarAttribute{index_var};% read var attributes from input if exist
+                end
+            end
+            check_remove=false(1,numel(Field.ListVarName));
+            for ilist=1:numel(ListVarName)
+                VarAttribute{ilist}.Role=Role{ilist};
+                VarAttribute{ilist}.ProjModeRequest=ProjModeRequest{ilist};
                 if isfield(ParamIn,'FieldName')
-                    Field.VarAttribute{ilist+NbCoord}.FieldName=ListInputField{ilist};
+                    VarAttribute{ilist}.Operator=Operator{ilist};
                 end
-                r=regexp(ListInputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
-                if ~isempty(r)&& strcmp(r.Operator,'norm')
-                    NormName='norm';
-                    if ~isempty(find(strcmp(ListVar,'norm')))
-                        NormName='norm_1';
-                    end
-                    Field.ListVarName=[Field.ListVarName {NormName}];
-                    ilistmax=numel(Field.ListVarName);
-                    Field.VarDimName{ilistmax}=Field.VarDimName{ilist+2};
-                    Field.VarAttribute{ilistmax}.Role='scalar';
-                    Field.(NormName)=Field.(r.UName).*Field.(r.UName)+Field.(r.VName).*Field.(r.VName);
-                    Field.(NormName)=sqrt(Field.(NormName));
-                    UName=r.UName;
-                    VName=r.VName;
+                if strcmp(Operator{ilist},'norm')
+                    UName=ListVarName{ilist};
+                    VName=ListVarName{ilist+1};
+                    ListVarName{ilist}='norm';
+                    Field.norm=Field.(UName).*Field.(UName)+Field.(VName).*Field.(VName);
+                    Field.norm=sqrt(Field.norm);
+                    check_remove(ilist+1)=true;
+                    VarAttribute{ilist}.Operator='';
                 end
             end
-            
-            if ~isempty(NormName)% remove U and V if norm has been calculated and U and V are not needed as variables
-                ind_var_U=find(strcmp(UName,ListVar));%check previous listing of variable r.UName
-                ind_var_V=find(strcmp(VName,ListVar));%check previous listing of variable r.VName
-                if ~checkU && ~checkV
-                    Field.ListVarName([ind_var_U+2 ind_var_V+2])=[];
-                    Field.VarDimName([ind_var_U+2 ind_var_V+2])=[];
-                    Field.VarAttribute([ind_var_U+2 ind_var_V+2])=[];
-                elseif ~checkU
-                    Field.ListVarName(ind_var_U+2)=[];
-                    Field.VarDimName(ind_var_U+2)=[];
-                    Field.VarAttribute(ind_var_U+2 )=[];
-                elseif ~checkV
-                    Field.ListVarName(ind_var_V+2)=[];
-                    Field.VarDimName(ind_var_V+2)=[];
-                    Field.VarAttribute(ind_var_V+2 )=[];
-                end
-            end
-            % insert coordinates as indices in case of plots vs matrix index
-            if isfield(ParamIn,'CheckCoordIndex') && ParamIn.CheckCoordIndex
-                Field.ListVarName=[Field.ListDimName Field.ListVarName];
-                Field.VarDimName=[Field.ListDimName Field.VarDimName];
-                for idim=1:numel(Field.ListDimName)
-                    CoordName=Field.ListDimName{idim};
-                    Field.(CoordName)=1:Field.DimValue(idim);
-                end
-                Field.VarAttribute=[cell(1,numel(Field.ListDimName)) Field.VarAttribute];
-            end
-            
+            ListVarName(check_remove)=[];
+            VarDimName(check_remove)=[];
+            VarAttribute(check_remove)=[];
+            Field.ListVarName=[Field.ListVarName(1:NbCoord) ListVarName];% complement the list of vqriables, which may be listed twice
+            Field.VarDimName=[Field.VarDimName(1:NbCoord) VarDimName];
+            Field.VarAttribute=[Field.VarAttribute(1:NbCoord) VarAttribute];
         end
+        
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);
@@ -285,14 +273,15 @@ switch FileType
         A=Input.Frames{num}.Components{1}.Planes{1}';
         for ilist=1:numel(Input.Frames{1}.Attributes)
             if strcmp(Input.Frames{1}.Attributes{ilist}.Name,'AcqTimeSeries')
-        timestamps=str2num(Input.Frames{1}.Attributes{ilist}.Value(1:end-3))/1000000;
-        break
+                timestamps=str2num(Input.Frames{1}.Attributes{ilist}.Value(1:end-3))/1000000;
+                break
             end
         end
     case 'cine_phantom'
         [A,FileInfo] = read_cine_phantom(FileName,num );
     otherwise
         errormsg=[ FileType ': invalid input file type for uvmat'];
+        
 end
 
 %% case of image
@@ -310,6 +299,8 @@ if ~isempty(A)
     Field.ListVarName={'Coord_y','Coord_x','A'}; %
     Field.VarAttribute{1}.Unit='pixel';
     Field.VarAttribute{2}.Unit='pixel';
+    Field.VarAttribute{1}.Role='coord_y';
+    Field.VarAttribute{2}.Role='coord_x';
     Field.VarAttribute{3}.Role='scalar';
     if ndims(A)==3
         if Npz==1;%color

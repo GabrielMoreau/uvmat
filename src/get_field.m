@@ -134,7 +134,13 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['get_field / Field_input / find_field_cells: ' errormsg])
     return
 end
-[Field.MaxDim,imax]=max(NbDim);
+if isempty(CellInfo)
+    Field.MaxDim=max(cellfun(@numel,Field.Display.VarDimName));
+    check_cellinfo=false;
+else
+    [Field.MaxDim,imax]=max(NbDim);
+    check_cellinfo=true;
+end
 
 %% set time mode
 ListSwitchVarIndexTime={'file index'};% default setting: the time is the file index
@@ -209,11 +215,12 @@ end
 
 %% set default field options
 checknbdim=cellfun('size',Field.Display.VarDimName,2);
-if max(checknbdim)<=1
-    Field.MaxDim=1;% only 1D fields, considered as a time series by default
-end
+% if max(checknbdim)<=1
+%     Field.MaxDim=1;% only 1D fields, considered as a time series by default
+% end
 if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
     check_vec_input=0;
+    % case of vector initially selected from uvmat input
     if isfield(ParamIn,'vector_x')&& isfield(ParamIn,'vector_y')
         ichoice_x=find(strcmp(ParamIn.vector_x,Field.Display.ListVarName),1);
         ichoice_y=find(strcmp(ParamIn.vector_y,Field.Display.ListVarName),1);
@@ -223,7 +230,8 @@ if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
             check_vec_input=1;
         end
     end
-    if ~check_vec_input && isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
+    % otherwise select vectors marked as attributes in the input field
+    if check_cellinfo && ~check_vec_input && isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
         set(handles.vector_x,'UserData',CellInfo{imax}.VarIndex_vector_x(1))
         set(handles.vector_y,'UserData',CellInfo{imax}.VarIndex_vector_y(1))
         check_vec_input=1;
@@ -251,27 +259,47 @@ end
 FieldOption_Callback(handles.variables,[], handles)% list the global attributes
 
 %% Make choices of coordinates from input
-if isfield(CellInfo{imax},'CoordIndex')
-    CoordIndex=CellInfo{imax}.CoordIndex;
-    if numel(CoordIndex)==2
-        if isfield(ParamIn,'Coord_x')&& isfield(ParamIn,'Coord_y')
-            YName=ParamIn.Coord_y;
-            XName=ParamIn.Coord_x;
-        else
-        YName=Field.ListVarName{CoordIndex(1)};
-        XName=Field.ListVarName{CoordIndex(2)};
-        end
-        ListCoord=get(handles.Coord_x,'String');
-        XIndex=find(strcmp(XName,ListCoord));
-        if ~isempty(XIndex)
-            set(handles.Coord_x,'Value',XIndex)
-        end
-        YIndex=find(strcmp(YName,ListCoord));
-        if ~isempty(YIndex)
-            set(handles.Coord_y,'Value',YIndex)
-        end
-    end
-end
+%     check_menu=false(1,numel(Data.ListVarName));
+%     ListCoordMenu=1:numel(Data.ListVarName);
+%     CoordIndex=CellInfo{icell}.CoordIndex(CellInfo{icell}.CoordIndex~=0);
+% 
+%             for ivar=find(check_coord_names)
+%                 check_dim=strcmp(Data.VarDimName{ivar},DimCell_var);
+%                 if ~isempty(find(check_dim))
+%                     check_menu(ivar)=true;
+%                 end
+%             end
+%             CellInfo{icell}.CoordMenu=[CoordIndex find(check_menu)];
+%             ListCoordMenu(CoordIndex)=[];
+%             for ivar=ListCoordMenu
+%                 DimCell=Data.VarDimName{ivar};
+%                 if isequal(DimCell,DimCell_var)
+%                     check_menu(ivar)=true;
+%                 end
+%             end
+%             CellInfo{icell}.CoordMenu=[CellInfo{icell}.CoordMenu find(check_menu)];
+% 
+% if isfield(CellInfo{imax},'CoordIndex')
+%     CoordIndex=CellInfo{imax}.CoordIndex;
+%     if numel(CoordIndex)==2
+%         if isfield(ParamIn,'Coord_x')&& isfield(ParamIn,'Coord_y')
+%             YName=ParamIn.Coord_y;
+%             XName=ParamIn.Coord_x;
+%         else
+%         YName=Field.ListVarName{CoordIndex(1)};
+%         XName=Field.ListVarName{CoordIndex(2)};
+%         end
+%         ListCoord=get(handles.Coord_x,'String');
+%         XIndex=find(strcmp(XName,ListCoord));
+%         if ~isempty(XIndex)
+%             set(handles.Coord_x,'Value',XIndex)
+%         end
+%         YIndex=find(strcmp(YName,ListCoord));
+%         if ~isempty(YIndex)
+%             set(handles.Coord_y,'Value',YIndex)
+%         end
+%     end
+% end
 
 %% put the GUI on the lower right of the sceen
 set(hObject,'Unit','pixels')
@@ -303,7 +331,7 @@ uiwait(handles.get_field);
 % -----------------------------------------------------------------------
 % --- Activated by selection in the list of variables
 % ----------------------------------------------------------------------
-function variables_Callback(hObject, eventdata, handles)
+function variables_Callback(hObject, VarName, handles)
 
 Tabchar={''};%default
 Tabcell=[];
@@ -387,8 +415,8 @@ if isfield(Field,'ListDimName')
     set(handles.dimensions,'String',Tabchar)
 end
 
-%% propose a plot by default if a variable has been selected
-if ~isequal(index,1)
+%% propose a plot by default if variables_Callback has not been already called by FieldOption_Callback (VarName is not a char string)
+if ~ischar(VarName) && ~isequal(index,1)
     if numel(DimCell)==1
         set(handles.FieldOption,'Value',1)%propose 1D plot
     else
@@ -411,7 +439,6 @@ Field=get(handles.get_field,'UserData');
 FieldList=get(handles.FieldOption,'String');
 FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
-    
     case '1D plot'
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','on')
@@ -422,12 +449,11 @@ switch FieldOption
         set(handles.PanelOrdinate,'Position',pos)
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','off')
-        set(handles.Coord_y,'Visible','off')
-        set(handles.Y_title,'Visible','off')
+        set(handles.Coord_y,'Visible','on')
+        set(handles.Y_title,'Visible','on')
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
-        ordinate_Callback(hObject, VarName, handles)
-        
+        %ordinate_Callback(hObject, VarName, handles)       
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
@@ -439,34 +465,30 @@ switch FieldOption
         pos(2)=pos_coord(2)-pos(4)-2;
         set(handles.PanelScalar,'Position',pos)
         set(handles.Coord_y,'Visible','on')
-        set(handles.Y_title,'Visible','on')
-        
-        if ~ischar(VarName)
-            
-        %default scalar selection
-        test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
-        for ilist=1:numel(Field.Display.VarDimName)
-            if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
-                Role=Field.Display.VarAttribute{ilist}.Role;
-                if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+        set(handles.Y_title,'Visible','on')     
+        if ~ischar(VarName)      
+            %default scalar selection
+            test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
+            for ilist=1:numel(Field.Display.VarDimName)
+                if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
+                    Role=Field.Display.VarAttribute{ilist}.Role;
+                    if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+                        test_coord(ilist)=1;
+                    end
+                end
+                dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+                if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
                     test_coord(ilist)=1;
                 end
             end
-            dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-            if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
-                test_coord(ilist)=1;
+            scalar_index=find(~test_coord,1);%get the first variable not a coordinate
+            if isempty(scalar_index)
+                set(handles.scalar,'Value',1)
+            else
+                set(handles.scalar,'Value',scalar_index)
             end
         end
-        scalar_index=find(~test_coord,1);%get the first variable not a coordinate
-        if isempty(scalar_index)
-            set(handles.scalar,'Value',1)
-        else
-            set(handles.scalar,'Value',scalar_index)
-        end      
-        end
-        scalar_Callback(hObject,VarName, handles)
-        
-             
+        scalar_Callback(hObject,VarName, handles)        
     case 'vectors'
         set(handles.PanelVectors,'Visible','on')
         set(handles.Coordinates,'Visible','on')
@@ -508,8 +530,7 @@ switch FieldOption
                 set(handles.vector_y,'Value',vector_index(2))
             end
         end
-        vector_Callback(handles)
-        
+        vector_Callback(handles)      
     case 'civdata...'
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
@@ -575,9 +596,9 @@ else
             end
         end
     end
-    set(handles.Coord_x,'Value',coord_val)
+    set(handles.Coord_x,'Value',coord_val+1)
 end
-set(handles.Coord_x,'String',ListCoord)
+set(handles.Coord_x,'String',[{''}; ListCoord])
 
 
 %% set list of time coordinates
@@ -610,13 +631,13 @@ end
 %------------------------------------------------------------------------
 function scalar_Callback(hObject, VarName, handles)
 
-Field=get(handles.get_field,'UserData');
-scalar_menu=get(handles.scalar,'String');
-if ischar(VarName)
+Field=get(handles.get_field,'UserData');% get the input field info stored in UserData of the GUI
+scalar_menu=get(handles.scalar,'String');% read the menu for scalar selection
+if ischar(VarName)% case of a call with input variable
     ScalarName=VarName;
     scalar_index=find(strcmp(VarName,scalar_menu));
-    set(handles.scalar,'Value',scalar_index)
-else
+    set(handles.scalar,'Value',scalar_index)% select the input variable field in the menu
+else % no input variable, the variable ScalarName is selected from the menu
     scalar_index=get(handles.scalar,'Value');
 	ScalarName=scalar_menu{scalar_index};
 end
@@ -625,7 +646,7 @@ end
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-if ~get(handles.CheckDimensionX,'Value')  
+%if ~get(handles.CheckDimensionX,'Value')  
     %look for coordinate variables among the other variables
     for ilist=1:numel(Field.Display.VarDimName)
         dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
@@ -635,9 +656,9 @@ if ~get(handles.CheckDimensionX,'Value')
             test_coord(ilist)=1;
         end
     end
-end
+%end
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
-var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
+var_coord=find(test_coord);% % list of variable indices elligible as gridded coordinates
 var_coord(var_coord==scalar_index)=[];
 var_component(var_component==scalar_index)=[];
 ListCoord=Field.Display.ListVarName([var_coord var_component]);
@@ -663,8 +684,9 @@ for ilist=1:numel(var_component)
             coord_val(1)=ilist;
         elseif strcmp(Role,'coord_y')
             coord_val(2)=ilist;
-            elseif strcmp(Role,'coord_z')
+        elseif strcmp(Role,'coord_z')
             coord_val(3)=ilist;
+            Check3D=1;
         end
     end
 end
@@ -678,26 +700,29 @@ if numel(find(coord_val))<2
         coord_val=[1 2];
     end
 end
-if  get(handles.CheckDimensionX,'Value')
-    set(handles.Coord_x,'Value',2)
-    set(handles.Coord_x,'String',dim_var')
-else
+% if  get(handles.CheckDimensionX,'Value')
+%     set(handles.Coord_x,'Value',2)
+%     set(handles.Coord_x,'String',dim_var')
+% else
     set(handles.Coord_x,'Value',coord_val(1))
     set(handles.Coord_x,'String',ListCoord)
-end
-if  get(handles.CheckDimensionX,'Value')
-    set(handles.Coord_y,'Value',1)
-    set(handles.Coord_y,'String',dim_var')
-else
+% end
+% if  get(handles.CheckDimensionX,'Value')
+%     set(handles.Coord_y,'Value',1)
+%     set(handles.Coord_y,'String',dim_var')
+% else
     set(handles.Coord_y,'Value',coord_val(2))
     set(handles.Coord_y,'String',ListCoord)
-end
-if  get(handles.CheckDimensionX,'Value')
-    set(handles.Coord_z,'Value',1)
-    set(handles.Coord_z,'String',dim_var')
-else
+% end
+% if  get(handles.CheckDimensionX,'Value')
+%     set(handles.Coord_z,'Value',1)
+%     set(handles.Coord_z,'String',dim_var')
+% else
+if numel(test_coord)>=3
     set(handles.Coord_z,'Value',coord_val(2))
     set(handles.Coord_z,'String',ListCoord)
+    set(handles.Coord_z,'Visible','on')
+    set(handles.Check3D,'Value', 1)
 end
 
 %% set list of time coordinates
@@ -910,6 +935,7 @@ function Coord_y_Callback(hObject, DimCell, handles)
 index=get(handles.Coord_y,'Value');
 string=get(handles.Coord_y,'String');
 VarName=string{index};
+
 if ~ischar(DimCell)
 update_field(handles,VarName)
 end
@@ -991,7 +1017,7 @@ Field=get(handles.get_field,'UserData');
 index=name2index(VarName,Field.ListVarName);
 if ~isempty(index)
     set(handles.variables,'Value',index+1)
-    variables_Callback(handles.variables, [], handles)
+    variables_Callback(handles.variables, VarName, handles)
 end
 
 %------------------------------------------------------------------------
@@ -1021,13 +1047,13 @@ elseif iscell(cell_str)
 end
 
 % --- Executes on button press in CheckDimensionY.
-function CheckDimensionX_Callback(hObject, eventdata, handles)
-CheckDimensionX=get(handles.CheckDimensionX,'value')
-if CheckDimensionX
-    set(handles.Coordinates,'visible','off')
-else
-    set(handles.Coordinates,'visible','on')
-end
+% function CheckDimensionX_Callback(hObject, eventdata, handles)
+% CheckDimensionX=get(handles.CheckDimensionX,'value')
+% if CheckDimensionX
+%     set(handles.Coordinates,'visible','off')
+% else
+%     set(handles.Coordinates,'visible','on')
+% end
 % FieldList=get(handles.FieldOption,'String');
 % FieldOption=FieldList{get(handles.FieldOption,'Value')};
 % switch FieldOption
