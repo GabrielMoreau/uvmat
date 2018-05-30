@@ -122,7 +122,7 @@ if ~isempty(frame_idx)
             binrepertoire=[binrepertoire DirExt];     
         end 
       %  binrepertoire='2014-07-04T10.48.46'% case FJORD5a %%%%%%%%%%%%%%%%%%%%%%%%%
-       binrepertoire='2017-01-19T22.12.182'% EXP14 %%%%%%%%%%%%%%%%%%%%%%%%%
+      % binrepertoire='2017-01-19T22.12.182'% EXP14 %%%%%%%%%%%%%%%%%%%%%%%%%
         binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);

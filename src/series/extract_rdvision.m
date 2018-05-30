@@ -493,6 +493,8 @@ end
 if isempty(Dtj)% case of simple series
     timestamp=timestamp';
     t=set(t,uid_content_NbDti,'value',num2str(numel(timestamp)-1));% correct NbDti in the xml file 
+    nbfield1=numel(timestamp);
+    nbfield2=1;
 else
     nbfieldi=(NbDti*numel(Dti)+1);
     nbfieldk=(NbDtk*numel(Dtk)+1);
