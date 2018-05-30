@@ -1369,20 +1369,53 @@ else
     return
 end
 
+%% read the lines previously used for LIF calibration if available, and display them
+if isfield(XmlData,'LIFCalib')
+    if isfield(XmlData.LIFCalib,'Ray1Coord') && isfield(XmlData.LIFCalib,'Ray2Coord') && isfield(XmlData.LIFCalib,'RefLineCoord')
+        data.Name='Ray1';
+        data.Type='line';
+        data.ProjMode='none';%default
+        data.Coord=XmlData.LIFCalib.Ray1Coord;
+        UvData.ProjObject{2}=data;
+        UvData.ProjObject{2}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{2},UvData.ProjObject{1},handles.PlotAxes,'b');
+        data.Name='Ray2';
+        data.Coord=XmlData.LIFCalib.Ray2Coord;
+        UvData.ProjObject{3}=data;
+        UvData.ProjObject{3}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{3},UvData.ProjObject{1},handles.PlotAxes,'b');
+        data.Name='RefLine';
+        data.Coord=XmlData.LIFCalib.RefLineCoord;
+        UvData.ProjObject{4}=data;
+        UvData.ProjObject{4}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{4},UvData.ProjObject{1},handles.PlotAxes,'b');
+    end
+    if isfield(XmlData.LIFCalib,'MaskPolygon')
+        data.Name='MaskPolygon';
+        data.Coord=XmlData.LIFCalib.MaskPolygonCoord;
+        UvData.ProjObject{5}=data;
+        UvData.ProjObject{5}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{5},UvData.ProjObject{1},handles.PlotAxes,'b');
+    end
+end
+set(handles.ListObject,'String',{'plane';'Ray1';'Ray2';'RefLine';'MaskPolygon'})
+set(handles.ListObject,'Value',1)
+set(handles.uvmat,'UserData',UvData);
+
 %% read lines currently drawn
-ListObj=UvData.ProjObject;
+ListObj=UvData.ProjObject;% get the current list of projection objects 
 select=zeros(1,numel(ListObj));
+select_mask=zeros(1,numel(ListObj));
 for iobj=1:numel(ListObj);
     if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
-        select(iobj)=1;
+        select(iobj)=1;% select the lines among the projection objects
+    end
+    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'polygon')
+        select_mask(iobj)=1;% select the mask among the projection objects
     end
 end
 val=find(select);
 if numel(val)<2
-    msgbox_uvmat('ERROR','light rays must be defined by at least two lines created by Projection object/line in the menu bar');
+    msgbox_uvmat('ERROR',{'light rays must be defined by at least two lines created by Projection object/line in the menu bar'; ...
+    'use a third line to get a reference luminosity profile accross the illumination beam'});
     return
 else
-    set(handles.ListObject,'Value',val);% show the selected lines on the list
     ObjectData=UvData.ProjObject(val);
     for iobj=1:length(ObjectData)
             xA(iobj)=ObjectData{iobj}.Coord(1,1);
@@ -1390,6 +1423,25 @@ else
             xB(iobj)=ObjectData{iobj}.Coord(2,1);
             yB(iobj)=ObjectData{iobj}.Coord(2,2);
     end
+end
+index_mask=find(select_mask);
+if numel(index_mask)>=1    
+    MaskData=UvData.ProjObject(index_mask);
+    for iobj=1:length(MaskData)
+           
+    end
+end
+
+%% set the image offset
+blackoffset=0;
+if isfield(XmlData,'LIFCalib')&& isfield(XmlData.LIFCalib,'BlackOffset')
+    blackoffset=XmlData.LIFCalib.BlackOffset ;% image value for black background, to be determined by taking images with a cover on the objective lens
+end
+answer=msgbox_uvmat('INPUT_TXT','camera offset value in the absence of illumination:', num2str(blackoffset));
+if strcmp(answer,'Cancel')
+    return
+else
+    XmlData.LIFCalib.BlackOffset=answer ;% image value for black background, to be determined by taking images with a cover on the objective lens
 end
 
 %% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
@@ -1404,8 +1456,10 @@ if D==0
 end
 x0=((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/D;
 y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
-XmlData.Illumination.Origin=[x0 y0];
-XmlData.PolarCentre=[x0 y0];
+XmlData.LIFCalib.LightOrigin=[x0 y0];% origin of the light source to be saved in the current xml file
+XmlData.LIFCalib.Ray1Coord=ObjectData{1}.Coord;
+XmlData.LIFCalib.Ray2Coord=ObjectData{2}.Coord;
+XmlData.LIFCalib.RefLineCoord=ObjectData{3}.Coord;
 
 %% display the current image in polar axes with origin at the  illumination source
 currentdir=pwd;
@@ -1413,47 +1467,58 @@ uvmatpath=fileparts(which('uvmat'));
 cd(fullfile(uvmatpath,'transform_field'));
 phys_polar=str2func('phys_polar');
 cd(currentdir)
-DataOut=phys_polar(UvData.Field,XmlData);
-view_field(DataOut);
+XmlData.TransformInput.PolarCentre=[x0 y0];
+DataPol=phys_polar(UvData.Field,XmlData);%transform the input image in polar coordinates with origin at the light source
 
-%% use the third line for reference luminosity
+%% use the third line for reference luminosity, renormalize the image intensity along each ray to get a uniform brightness along this line
 if numel(val)==3
     x_ref=linspace(ObjectData{3}.Coord(1,1),ObjectData{3}.Coord(2,1),10);
     y_ref=linspace(ObjectData{3}.Coord(1,2),ObjectData{3}.Coord(2,2),10);
     x_ref=x_ref-x0;
     y_ref=y_ref-y0;
     [theta_ref,r_ref] = cart2pol(x_ref,y_ref);%theta_ref  and r_ref are the polar coordinates of the points on the line
-    theta_ref=theta_ref*180/pi;
-    figure
+    theta_ref=theta_ref*180/pi;% theta_ref in radians
+    figure(10)
     plot(theta_ref,r_ref)
-    azimuth_ima=linspace(DataOut.Coord_y(1),DataOut.Coord_y(2),size(DataOut.A,1));%profile of x index on the transformed image
-    dist_source = interp1(theta_ref,r_ref,azimuth_ima);
-    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.Coord_x(1))/(DataOut.Coord_x(2)-DataOut.Coord_x(1)));
-    line_nan= isnan(dist_source_pixel);
+    xlabel('azimuth(degrees)')
+    ylabel('radius from light source')
+    title('ref line in polar coordinates')
+    azimuth_ima=linspace(DataPol.Coord_y(1),DataPol.Coord_y(2),size(DataPol.A,1));%array of angular index on the transformed image
+    dist_source = interp1(theta_ref,r_ref,azimuth_ima);% get the polar position of the reference line
+    dist_source_pixel=round(size(DataPol.A,2)*(dist_source-DataPol.Coord_x(1))/(DataPol.Coord_x(2)-DataPol.Coord_x(1)));
+    line_nan= isnan(dist_source);
     dist_source_pixel(line_nan)=1;
     width=20; %number of pixels used for reference
-    DataOut.A=double(DataOut.A);
-    Anorm=zeros(size(DataOut.A));
-    Aval=mean(mean(DataOut.A));
-    for iline=1:size(DataOut.A,1)
-        lum(iline)=mean(DataOut.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));
-        Anorm(iline,:)=uint16(Aval*DataOut.A(iline,:)/lum(iline));
+    DataPol.A=double(DataPol.A)-XmlData.LIFCalib.BlackOffset;% black background substracted
+    Anorm=zeros(size(DataPol.A));
+    for iline=1:size(DataPol.A,1)
+        lum(iline)=mean(DataPol.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));% average the luminosity on a band width lying on the reference line
+        Anorm(iline,:)=DataPol.A(iline,:)/lum(iline);% for each ray (iline), renormalise the image by the brightness at the reference line 
     end
     lum(line_nan)=NaN;
-    figure
-    plot(1:size(DataOut.A,1),lum)
+    figure(11)
+    plot(1:size(DataPol.A,1),lum)
+    xlabel('azimuth (pixels)')
+    ylabel('image brightness')
+    %ImaName=regexprep([get(handles.RootFile,'String') get(handles.FileIndex,'String')],'//','');
+NewImageName=fullfile(get(handles.RootPath,'String'),'LIF_ref.png');
+imwrite(uint16(1000*Anorm),NewImageName,'BitDepth',16)
+DataPol.A=uint16(1000*Anorm);
+view_field(DataPol);
 end
-ImaName=regexprep([get(handles.RootFile,'String') get(handles.FileIndex,'String')],'//','');
-NewImageName=fullfile(get(handles.RootPath,'String'),'polar',[ImaName get(handles.FileExt,'String')]);
-imwrite(Anorm,NewImageName,'BitDepth',16)
 
-%% record the origin in the xml file
+% figure(12)
+% imagesc(DataPol.Coord_x,DataPol.Coord_y,AY,uint16(1000*Anorm))
+%title('rescaled image')
+
+%% record the calibration data in the xml file
+
 XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
 answer=msgbox_uvmat('INPUT_Y-N','save the illumination origin in the current xml file?');
 if strcmp(answer,'Yes')
     t=xmltree(XmlFileName); %read the file
-    title=get(t,1,'name');
-    if ~strcmp(title,'ImaDoc')
+    title_str=get(t,1,'name');
+    if ~strcmp(title_str,'ImaDoc')
         msgbox_uvmat('ERROR','wrong xml file');
         return
     end
@@ -1469,18 +1534,136 @@ if strcmp(answer,'Yes')
         errormsg=['errror in xml file backup: ' message];
         return
     end
-    uid_illumination=find(t,'ImaDoc/Illumination');
+    uid_illumination=find(t,'ImaDoc/LIFCalib');
     if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
-        [t,uid_illumination]=add(t,1,'element','Illumination');
+        [t,uid_illumination]=add(t,1,'element','LIFCalib');
     end
-    uid_origin=find(t,'ImaDoc/Illumination/Origin');
+    uid_origin=find(t,'ImaDoc/LIFCalib/LightOrigin');
     if ~isempty(uid_origin)  %if GeometryCalib does not already exists, create it
          t=delete(t,uid_origin);
     end
-    % save the illumination origin
-    t=struct2xml(XmlData.Illumination,t,uid_illumination);
+    uid_line=find(t,'ImaDoc/LIFCalib/Ray1Coord');
+    if ~isempty(uid_line)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_line);
+    end
+       uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
+    if ~isempty(uid_line)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_line);
+    end
+       uid_line=find(t,'ImaDoc/LIFCalib/RefLineCoord');
+    if ~isempty(uid_line)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_line);
+    end
+     uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
+    if ~isempty(uid_BlackOffset)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_BlackOffset);
+    end
+    % save the LIF calibration data
+    t=struct2xml(XmlData.LIFCalib,t,uid_illumination);
     save(t,XmlFileName);
 end
+
+
+%% get the image A*r
+[npy,npx]=size(DataPol.A);
+AX=DataPol.Coord_x;
+AY=DataPol.Coord_y;
+dX=(AX(2)-AX(1))/(npx-1);
+dY=(AY(1)-AY(2))/(npy-1);%mesh of new pixels
+r=AX(1)+[0:npx-1]*dX;%distance from laser
+rmat=ones(npy,1)*r;
+A=rmat.*Anorm;
+A=(A<=0).*ones(npy,npx)+(A>0).*A; %replaces zeros by ones
+A=log(A); % rA(r) should have a slope -gamma in x (radius from laser source)
+
+%%  find mask image: for use in uvmat
+% if ~isempty(DataIn.ZIndex)
+% num_level=DataIn.ZIndex;% needed to handle multilevel illumination
+% if ~exist('maskname','var')
+%     huvmat=findobj(allchild(0),'tag','uvmat');
+%     hhuvmat=guidata(huvmat);
+%     RootPath=get(hhuvmat.RootPath,'String');
+%     RootFile=get(hhuvmat.RootFile,'String');
+%     maskname=fullfile(RootPath,[RootFile '_23mask_' num2str(num_level) '.png']);
+%     if test_1% PIV image used for correction
+%         RootPath_1=get(hhuvmat.RootPath_1,'String');
+%         RootFile_1=get(hhuvmat.RootFile_1,'String');
+%         maskname_1=fullfile(RootPath_1,[RootFile_1 '_23mask_' num2str(num_level) '.png']);
+%     end
+% end
+% Mask=DataIn;
+% if test_1
+%     Mask_1=DataIn_1;
+%     Mask.A=imread(maskname);
+%     Mask_1.A=imread(maskname_1);
+%     [Mask,Mask_1]=phys_polar(Mask,XmlData,Mask_1,XmlData_1);
+%     Mask.A=Mask.A >= 200 & Mask_1.A >= 200 ;
+% % end
+%  end
+% Mask.A=ones(size(DataPol.A));
+[R,Y]=meshgrid(linspace(AX(1),AX(2),npx),linspace(AY(1),AY(2),npy));
+[X,Y] = pol2cart(Y*pi/180,R);
+X=X+x0;% ny*nx matrix of phys cartesian coordiantes
+Y=Y+y0;
+gamma_coeff=zeros(1,npy);
+
+NewImageName=fullfile(get(handles.RootPath,'String'),'LIF_ref_rescaled.png');
+imwrite(uint16(1000*A),NewImageName,'BitDepth',16)
+return
+%loop on lines iY (angle in polar coordiantes)
+for iY=1:npy
+    Theta_i=(AY(1)-(iY-1)*dY)*pi/180;%theta in radians
+    %r_edge(iY)=(-100-XmlData.GeometryCalib.PolarCentre(1))/cos(Theta_i);%r_edge=radius of the edge (at X=-95)
+    r_edge(iY)
+    Aline=A(iY,:);% =r*image intensity
+    Xline=X(iY,:);
+    % adjust the fit region
+    test_fit=X(iY,:)>10 & X(iY,:)<70 & A(iY,:)>0 & Mask.A(iY,:);
+    ind_fit=find(test_fit);% indices of points used for the exponential fit
+    if numel(ind_fit)<50
+        Mask.A(iY,:)=0;% to exclude lines for which the line of rays is too short
+    else
+        p = polyfit(r(ind_fit),Aline(ind_fit),1);
+        Aline_fit=polyval(p,r);
+        if iY==round(npy/2)
+            figure(12)
+            plot(r(ind_fit),Aline(ind_fit),'b+',r,Aline_fit,'r')
+            test_out=(Aline_fit-Aline)>0.5
+            ind_out=find(test_out & test_fit)
+        end
+        test_out=(Aline_fit-Aline)>0.5;% eliminate points too dark compared to the fit, such that log(Afit/A)>0.5
+        ind_out=find(test_out & test_fit);
+%         if ~isempty(find(test_out & test_fit,1))
+%             Mask.A(iY,test_out)=0;
+         if ~isempty(ind_out)
+              Mask.A(iY,ind_out)=0;
+            ind_fit=find(~test_out & test_fit);
+            p = polyfit(r(ind_fit),Aline(ind_fit),1);%do new fit after elimination of the dark points
+        end
+        if -p(1) > 0.003 && -p(1) < 0.012
+            gamma_coeff(iY)=-p(1);
+            Aline_edge=polyval(p,r_edge(iY));
+            DataPol.A(iY,:)=exp(Aline_edge)/(r_edge(iY));
+        end
+
+    end
+end
+gamma_select=gamma_coeff(gamma_coeff~=0);
+gamma_select=filter(ones(1,20)/20,1,gamma_select);%smooth gamma_ceff over 20 pixels
+gamma_coeff(gamma_coeff~=0)=gamma_select;
+DataPol.A(Mask.A==0)=0;
+Ref.r_edge=r_edge;
+Ref.GammaCoeff=gamma_coeff
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2093,6 +2276,9 @@ if ~isempty(XmlFileName)
                     end
                 end
             end
+        end
+        if isfield(XmlDataRead, 'LIFCalib')
+            XmlData.LIFCalib=XmlDataRead.LIFCalib;
         end
     end
 end

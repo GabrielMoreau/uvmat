@@ -94,11 +94,12 @@ end
 
 %parameters for polar coordinates (taken from the calibration data of the first field)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-XmlData.PolarReferenceRadius=450;
-XmlData.PolarReferenceAngle=450*pi/2;
+XmlData.PolarReferenceRadius=0;%450;
+XmlData.PolarReferenceAngle=0;%450*pi/2;
 origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinates
 radius_offset=0;%reference radius used to offset the radial coordinate r
 angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
+angle_scale=180/pi; 
 if isfield(XmlData,'TransformInput')
     if isfield(XmlData.TransformInput,'PolarCentre') && isnumeric(XmlData.TransformInput.PolarCentre)
         if isequal(length(XmlData.TransformInput.PolarCentre),2);
@@ -248,17 +249,25 @@ xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
+NbPoints=20; % nbre of points used to determine the image edge
 for icell=1:length(A)
     siz=size(A{icell});
     npx=[npx siz(2)];
     npy=[npy siz(1)];
     zphys=0; %default
     if isfield(CalibIn{icell},'SliceCoord') %.Z= index of plane
+        if ZIndex==0
+            ZIndex=1;
+        end
        SliceCoord=CalibIn{icell}.SliceCoord(ZIndex,:);
        zphys=SliceCoord(3); %to generalize for non-parallel planes
     end
-    xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
-    yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
+%     xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
+%     yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
+      edge_x=linspace(0.5,siz(1)-0.5,NbPoints);      
+      edge_y=linspace(0.5,siz(2)-0.5,NbPoints);
+      xima=[edge_y (siz(2)-0.5)*ones(1,NbPoints) edge_y 0.5*ones(1,NbPoints)];%image coordinates of corners
+      yima=[0.5*ones(1,NbPoints) edge_x (siz(1)-0.5)*ones(1,NbPoints) edge_x];%image coordinates of corners
     [xcorner_new,ycorner_new]=phys_XYZ(CalibIn{icell},xima,yima,ZIndex);%corresponding physical coordinates
     %transform the corner coordinates into polar ones    
     xcorner_new=xcorner_new-origin_xy(1);%shift to the origin of the polar coordinates 
