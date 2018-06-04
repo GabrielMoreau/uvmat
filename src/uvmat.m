@@ -4163,14 +4163,14 @@ else
     % display menus and plot histograms
     test_v=0;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% A REMETTRE
-%     if ~isempty(menu_histo)
-%         set(handles.HistoMenu,'Value',1)
-%         set(handles.HistoMenu,'String',menu_histo)
-%         set(handles.Histogram,'Visible','on')
-%         set(handles.HistoMenu,'Visible','on')
-%         set(handles.HistoAxes,'Visible','on')
-%         HistoMenu_Callback(handles.HistoMenu, [], handles)% plot first histogram
-%     end
+    if ~isempty(menu_histo)
+        set(handles.HistoMenu,'Value',1)
+        set(handles.HistoMenu,'String',menu_histo)
+        set(handles.Histogram,'Visible','on')
+        set(handles.HistoMenu,'Visible','on')
+        set(handles.HistoAxes,'Visible','on')
+        HistoMenu_Callback(handles.HistoMenu, [], handles)% plot first histogram
+    end
 end
 % open the set_object for interactive plane projection in 3D case
 if UvData.Field.NbDim==3
@@ -4261,6 +4261,8 @@ else
                 end
             end
         end
+        Histo.VarAttribute{1}.Role='coord_x';
+        Histo.VarAttribute{2}.Role='coord_y';
         if ~isempty(units)
             Histo.VarAttribute{1}.units=units;
         end

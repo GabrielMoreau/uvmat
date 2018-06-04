@@ -336,7 +336,7 @@ end
 set(handles.ListPairMode,'String',PairMenu)
 
 %% set default choice of pair mode
-PairIndex=[];
+PairIndex=1;
 if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'PairIndices')
     PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));
 end

@@ -327,7 +327,7 @@ for icell=1:cell_nbre
             end
         end
         for ivar=ind_coord_y
-              if check_coord_names(ivar)
+            if check_coord_names(ivar)
                     DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             elseif check_coord_raster(ivar)
@@ -395,10 +395,11 @@ if check_var
             case 'scattered'
                 CellInfo{icell}.CoordSize=numel(Data.(CellInfo{icell}.XName));
             case 'grid'
+                VarName=Data.ListVarName{CellInfo{icell}.VarIndex(1)};
                 if NbDim(icell)==3
-                    CellInfo{icell}.CoordSize=[numel(Data.(CellInfo{icell}.XName)) numel(Data.(CellInfo{icell}.YName)) numel(Data.(CellInfo{icell}.YName))];
+                    CellInfo{icell}.CoordSize=[size(Data.(VarName),3) size(Data.(VarName),2) size(Data.(VarName),1)];
                 else
-                    CellInfo{icell}.CoordSize=[numel(Data.(CellInfo{icell}.XName)) numel(Data.(CellInfo{icell}.YName))];
+                    CellInfo{icell}.CoordSize=[size(Data.(VarName),2) size(Data.(VarName),1)];
                 end
             case 'tps'
                 NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);
@@ -468,17 +469,25 @@ if ~isempty(ind_coord_x)
         Cell1DPlot{icell}.VarType='1DPlot';
         Cell1DPlot{icell}.XIndex=ind_coord_x(icell);
         Cell1DPlot{icell}.XName=Data.ListVarName{ind_coord_x(icell)};
+        Cell1DPlot{icell}.YIndex=[];
+        Cell1DPlot{icell}.YIndex_discrete=[];
         DimCell_x=Data.VarDimName{ind_coord_x(icell)};
-        for ivar=[ind_coord_y ind_discrete]
+        for ivar=ind_coord_y 
             DimCell=Data.VarDimName{ivar};
             if  numel(DimCell)==1 && strcmp(DimCell_x{1},DimCell{1})
                 y_nbre(icell)=y_nbre(icell)+1;
                 Cell1DPlot{icell}.YIndex(y_nbre(icell))=ivar;
-                break
+            end
+        end
+        for ivar=ind_discrete
+            DimCell=Data.VarDimName{ivar};
+            if  numel(DimCell)==1 && strcmp(DimCell_x{1},DimCell{1})
+                y_nbre(icell)=y_nbre(icell)+1;
+                Cell1DPlot{icell}.YIndex_discrete(y_nbre(icell))=ivar;
             end
         end
     end
-    Cell1DPlot(find(y_nbre==0))=[];
+    Cell1DPlot(y_nbre==0)=[];
     CellInfo=[CellInfo Cell1DPlot];
     NbDim=[NbDim ones(1,numel(Cell1DPlot))];
 end

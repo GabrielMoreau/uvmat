@@ -538,14 +538,11 @@ if isfield(ObjectData,'RangeY')
     width=max(ObjectData.RangeY);%Rangey needed bfor mode 'projection'
 end
 % default output
-errormsg='';%default
 Xline=[];
 flux=0;
 circul=0;
 liny=ObjectData.Coord(:,2);
 NbPoints=size(ObjectData.Coord,1);
-testfalse=0;
-ListIndex={};
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellInfo,NbDim,errormsg]=find_field_cells(FieldData);
@@ -555,18 +552,14 @@ if ~isempty(errormsg)
 end
 CellInfo=CellInfo(NbDim>=2); %keep only the 2D or 3D cells
 cell_select=true(size(CellInfo));
-
 for icell=1:length(CellInfo)
     if isfield(CellInfo{icell},'ProjModeRequest')
-%         if ~strcmp(CellInfo{icell}.ProjModeRequest, ProjMode)
-%             cell_select(icell)=0;
-%         end
         if strcmp(ProjMode,'interp_tps')&& ~strcmp(CellInfo{icell}.CoordType,'tps')
             cell_select(icell)=0;
         end
     end
 end
-if isempty(find(cell_select))
+if isempty(find(cell_select,1))
     errormsg=[' invalid projection mode ''' ProjMode ''': use ''interp_tps'' to interpolate spatial derivatives'];
     return
 end
@@ -597,10 +590,6 @@ if ~strcmp(ObjectData.Type,'ellipse')
     NbSegment=numel(LineLength);
 end
 CheckClosedLine=~isempty(find(strcmp(ObjectData.Type,{'rectangle','ellipse','polygon'})));
-
-%     x = a \ \cosh \mu \ \cos \nu
-%
-%     y = a \ \sinh \mu \ \sin \nu
 
 %% angles of the polyline and boundaries of action for mode 'projection'
 
@@ -693,12 +682,10 @@ for icell=1:length(CellInfo)
     switch CellInfo{icell}.CoordType
         %case of unstructured coordinates
         case 'scattered'
-            %             XName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-            %             YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
             coord_x=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)});
             coord_y=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
             
-            if isequal(ProjMode,'projection')
+            if strcmp(ProjMode,'projection')
                 if width==0
                     errormsg='range of the projection object is missing';
                     return
@@ -706,6 +693,7 @@ for icell=1:length(CellInfo)
                 ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
                 ProjData.VarDimName=[ProjData.VarDimName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
                 nbvar=numel(ProjData.ListVarName);
+                ProjData.VarAttribute{nbvar}.Role='coord_x';
                 ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                 % select the (non false) input data located in the band of projection
                 flagsel=(errorflag==0) & ((coord_y -yinf(1))*(xinf(2)-xinf(1))>(coord_x-xinf(1))*(yinf(2)-yinf(1))) ...
@@ -741,6 +729,7 @@ for icell=1:length(CellInfo)
                     ProjData.ListVarName=[ProjData.ListVarName {XName}];
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
                     nbvar=numel(ProjData.ListVarName);
+                    ProjData.VarAttribute{nbvar}.Role='coord_x';
                     ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                     check_abscissa=1; % define abcissa only once
                 end
@@ -768,7 +757,7 @@ for icell=1:length(CellInfo)
                             ivar_V=ivar+nbvar;
                         end
                     end
-                    ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
+                    ProjData.VarAttribute{ivar+nbvar}.Role='coord_y';% will promote plots of the profiles with continuous lines
                     ProjData.(ListFieldProj{ivar})=ProjVar{ivar};
                 end
             end
@@ -777,14 +766,15 @@ for icell=1:length(CellInfo)
                 Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
                 NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});
                 SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
-                if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
-                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
+                if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
+                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y}));
                 end
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
                 ProjData.ListVarName=[ProjData.ListVarName {'X'}];
                 ProjData.VarDimName=[ProjData.VarDimName {'X'}];
                 ProjData.X=Xproj;
                 nbvar=numel(ProjData.ListVarName);
+                ProjData.VarAttribute{nbvar}.Role='coord_x';
                 ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                 ProjVarName=(fieldnames(DataOut))';
                 ProjData.ListVarName=[ProjData.ListVarName ProjVarName];
@@ -798,7 +788,7 @@ for icell=1:length(CellInfo)
                             ivar_V=ivar+nbvar;
                         end
                     end
-                    ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
+                    ProjData.VarAttribute{ivar+nbvar}.Role='coord_y';% will promote plots of the profiles with continuous lines
                     ProjData.(ProjVarName{ivar})=DataOut.(ProjVarName{ivar});
                 end
             end
@@ -1106,8 +1096,6 @@ elseif isfield(FieldData,'CoordMesh')
 end
 %error=0;%default
 %flux=0;
-%testfalse=0;
-%ListIndex={};
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 

@@ -409,7 +409,7 @@ MaxY_cell=[];
 testplot=ones(size(data.ListVarName));%default test for plotted variables
 %loop on input  fields
 for icell=1:numel(CellInfo)
-    VarIndex=CellInfo{icell}.YIndex;%  indices of the selected variables in the list data.ListVarName
+    VarIndex=[CellInfo{icell}.YIndex CellInfo{icell}.YIndex_discrete];%  indices of the selected variables in the list data.ListVarName
     coord_x_index=CellInfo{icell}.XIndex;
     coord_x_name{icell}=data.ListVarName{coord_x_index};
     coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
@@ -441,7 +441,7 @@ for icell=1:numel(CellInfo)
                 end
             end
         end
-        if isfield(CellInfo{icell},'VarIndex_discrete')
+        if isfield(CellInfo{icell},'YIndex_discrete')&& ~isempty(CellInfo{icell}.YIndex_discrete)
             charplot_0='''+''';
         else
             charplot_0='''-''';
