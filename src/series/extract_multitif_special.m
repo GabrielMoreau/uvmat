@@ -143,8 +143,14 @@ OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]
 %     return
 % end
 %ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
+Dtj=0.05;% time interval between frames
 ImagesPerLevel=450;% total number of images per position, ImagesPerLevel-Nbj images skiiped during motion between two positions
 Nbj=400; %Nbre of images kept at a given position
+Dti=Dtj*ImagesPerLevel;
+NbLevel=11;
+NbScan=3;
+TimeReturn=20; %time needed to return back to the first position (in sec)
+NbSkippedReturn=round(TimeReturn/Dtj);
 %% create the xml file of PCO camera if it does not exist
 Newxml=fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']);
 if ~exist(Newxml,'file')
@@ -153,12 +159,13 @@ if ~exist(Newxml,'file')
     XmlInput.Camera.BurstTiming.FrameFrequency=1;
    % XmlInput.Camera.BurstTiming.Time=-1;% for 180
    XmlInput.Camera.BurstTiming.Time=0;% for 200
-    XmlInput.Camera.BurstTiming.Dtj=0.05;
-    XmlInput.Camera.BurstTiming.NbDtj=199;
-    XmlInput.Camera.BurstTiming.Dti=12.5;
-    XmlInput.Camera.BurstTiming.NbDti=10;
-    XmlInput.Camera.BurstTiming.Dtk=157;
-    XmlInput.Camera.BurstTiming.NbDtk=2;
+    XmlInput.Camera.BurstTiming.Dtj=Dtj;
+    XmlInput.Camera.BurstTiming.NbDtj=Nbj-1;
+    XmlInput.Camera.BurstTiming.Dti=Dti;
+    XmlInput.Camera.BurstTiming.NbDti=NbLevel-1;
+    XmlInput.Camera.BurstTiming.Dtk=Dti*Nb
+    Level+TimeReturn;
+    XmlInput.Camera.BurstTiming.NbDtk=NbScan-1;
     %XmlInput=rmfield(XmlInput,'Time');
     %XmlInput=rmfield(XmlInput,'TimeUnit');
     t=struct2xml(XmlInput);
@@ -197,14 +204,14 @@ for ifile=firstindex:Param.IndexRange.last_i
         if count<=ImagesPerLevel*11 % first scan of 11 levels
             i_index=fix((count-1)/ImagesPerLevel)+1;
             j_index=mod(count-1,ImagesPerLevel)+1;
-        elseif count<=ImagesPerLevel*11+400 %skip 400 images during return
+        elseif count<=ImagesPerLevel*NbLevel+400 %skip 400 images during return
             checkkeep=0;
-        elseif count<=ImagesPerLevel*22+400 % =5930 second scan
+        elseif count<=ImagesPerLevel*2*NbLevel+400 % =5930 second scan
             i_index=fix((count-401)/ImagesPerLevel)+1;
             j_index=mod(count-401,ImagesPerLevel)+1;
-        elseif count<=ImagesPerLevel*22+800 %skip images during second return, from 2763 to 3167
+        elseif count<=ImagesPerLevel*2*NbLevel+800 %skip images during second return, from 2763 to 3167
             checkkeep=0;
-        elseif count<=ImagesPerLevel*33+800 % =5930 third scan
+        elseif count<=ImagesPerLevel*3*NbLevel+800 % =5930 third scan
             i_index=fix((count-801)/ImagesPerLevel)+1;
             j_index=mod(count-801,ImagesPerLevel)+1;
         end

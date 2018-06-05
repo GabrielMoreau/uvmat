@@ -474,7 +474,7 @@ if ~isempty(ind_coord_x)
         DimCell_x=Data.VarDimName{ind_coord_x(icell)};
         for ivar=ind_coord_y 
             DimCell=Data.VarDimName{ivar};
-            if  numel(DimCell)==1 && strcmp(DimCell_x{1},DimCell{1})
+            if  numel(DimCell_x)==1 && strcmp(DimCell_x{1},DimCell{1})
                 y_nbre(icell)=y_nbre(icell)+1;
                 Cell1DPlot{icell}.YIndex(y_nbre(icell))=ivar;
             end
