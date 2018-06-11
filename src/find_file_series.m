@@ -244,7 +244,7 @@ if checkfileindexing
             NomType=regexprep(NomType,['^' NomTypePref],'');
             %% update the file type if the input file does not exist (pb of 0001)
             if isempty(FileInfo.FileType)
-                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles(ifile_min)));
+                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
             end
         end
         %         end

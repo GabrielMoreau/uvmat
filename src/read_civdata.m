@@ -95,15 +95,15 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-Data=nc2struct(FileName,'ListGlobalAttribute','CivStage');
-if isfield(Data,'Txt')
-     errormsg=['error in read_civdata: ' Data.Txt];
+[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','CivStage');
+if ~isempty(errormsg)
+     errormsg=['read_civdata: ' errormsg];
     return
 end
 % set the list of variables to read and their role
 [varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
 if isempty(varlist)
-    errormsg=['error in read_civdata: unknow velocity type ' VelType];
+    errormsg=['read_civdata: unknow velocity type ' VelType];
     return
 else
     [Field,vardetect]=nc2struct(FileName,varlist);%read the variables in the netcdf file

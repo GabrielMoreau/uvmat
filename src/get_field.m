@@ -639,23 +639,23 @@ if ischar(VarName)% case of a call with input variable
     set(handles.scalar,'Value',scalar_index)% select the input variable field in the menu
 else % no input variable, the variable ScalarName is selected from the menu
     scalar_index=get(handles.scalar,'Value');
-	ScalarName=scalar_menu{scalar_index};
+    ScalarName=scalar_menu{scalar_index};
 end
 
 %% set list of possible coordinates
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-%if ~get(handles.CheckDimensionX,'Value')  
-    %look for coordinate variables among the other variables
-    for ilist=1:numel(Field.Display.VarDimName)
-        dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-        if isequal(dimnames,dim_var)
-            test_component(ilist)=1;% the listed variable has the same dimension as the selected scalar-> possibly chosen as unstructured coordinate
-        elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var), 1))%variable ilist is a 1D array which can be coordinate variable
-            test_coord(ilist)=1;
-        end
+%if ~get(handles.CheckDimensionX,'Value')
+%look for coordinate variables among the other variables
+for ilist=1:numel(Field.Display.VarDimName)
+    dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+    if isequal(dimnames,dim_var)
+        test_component(ilist)=1;% the listed variable has the same dimension as the selected scalar-> possibly chosen as unstructured coordinate
+    elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var), 1))%variable ilist is a 1D array which can be coordinate variable
+        test_coord(ilist)=1;
     end
+end
 %end
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
 var_coord=find(test_coord);% % list of variable indices elligible as gridded coordinates
@@ -686,40 +686,23 @@ for ilist=1:numel(var_component)
             coord_val(2)=ilist;
         elseif strcmp(Role,'coord_z')
             coord_val(3)=ilist;
-            Check3D=1;
         end
     end
 end
-if numel(find(coord_val))<2
+if numel(find(coord_val))<2 % no predefiend components
     if numel(var_coord)>=3
-         coord_val=[3 2 1];
-    elseif numel(var_coord)>=2
-       % coord_val=[numel(var_component)+2 numel(var_component)+1];
-       coord_val=[2 1];
-    else
-        coord_val=[1 2];
+        coord_val(3)=3;
     end
+    coord_val([1 2])=[1 2];
 end
-% if  get(handles.CheckDimensionX,'Value')
-%     set(handles.Coord_x,'Value',2)
-%     set(handles.Coord_x,'String',dim_var')
-% else
-    set(handles.Coord_x,'Value',coord_val(1))
-    set(handles.Coord_x,'String',ListCoord)
-% end
-% if  get(handles.CheckDimensionX,'Value')
-%     set(handles.Coord_y,'Value',1)
-%     set(handles.Coord_y,'String',dim_var')
-% else
-    set(handles.Coord_y,'Value',coord_val(2))
-    set(handles.Coord_y,'String',ListCoord)
-% end
-% if  get(handles.CheckDimensionX,'Value')
-%     set(handles.Coord_z,'Value',1)
-%     set(handles.Coord_z,'String',dim_var')
-% else
-if numel(test_coord)>=3
-    set(handles.Coord_z,'Value',coord_val(2))
+set(handles.Coord_x,'Value',coord_val(1))
+set(handles.Coord_x,'String',ListCoord)
+
+set(handles.Coord_y,'Value',coord_val(2))
+set(handles.Coord_y,'String',ListCoord)
+
+if numel(coord_val)>=3
+    set(handles.Coord_z,'Value',coord_val(3))
     set(handles.Coord_z,'String',ListCoord)
     set(handles.Coord_z,'Visible','on')
     set(handles.Check3D,'Value', 1)
@@ -745,9 +728,9 @@ switch TimeOption
         end
         set(handles.TimeName,'Value',1)
         set(handles.TimeName,'String',ListTime)
-end  
+end
 if ~ischar(VarName)
-update_field(handles,ScalarName)
+    update_field(handles,ScalarName)
 end
 
 % --- Executes on button press in check_rgb.
