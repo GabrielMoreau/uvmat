@@ -166,7 +166,8 @@ if status==0 % if a svn line command is available
     if ~isempty(t)
         svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
     end
-    [tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
+    %[tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
+    [tild,result]=system(['svn info ''HEAD'' '  pathuvmat]);
     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
     if ~isempty(t)
         svn_info.rep_rev=str2double(t.rev); % version nbre available on the svn repository

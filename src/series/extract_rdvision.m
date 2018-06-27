@@ -110,11 +110,13 @@ end
 ParamOut=[];
 %%%%%%%%%%%% STANDARD PART  %%%%%%%%%%%%
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
+
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    checkrun=0;
+%     checkrun=0;
 end
+disp(Param)
+checkrun=strcmp(Param.RunMode,'local')
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -526,6 +528,9 @@ else
 end
 
 %% adjust Dti
+if NbDti+1>size(timestamp,1)
+    NbDti=size(timestamp,1)-1;
+end
 Dti_stamp=(timestamp(1+NbDti,1)-timestamp(1,1))/NbDti;
 t=set(t,uid_content_Dti,'value',num2str(Dti_stamp));%corret Dti
 if abs(Dti_stamp-Dti)>Dti/1000

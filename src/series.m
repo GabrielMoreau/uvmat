@@ -1463,6 +1463,7 @@ RunMode='local'; % default (needed for first opening of the GUI series)
 if isfield(Param.Action,'RunMode')
     RunMode=Param.Action.RunMode;
     Param.Action=rmfield(Param.Action,'RunMode'); % remove from the recorded xml file to avoid interference during ImportConfig
+    Param.RunMode=RunMode; % keep track of the mode
 end
 ActionExt='.m'; % default
 if isfield(Param.Action,'ActionExt')
@@ -2320,8 +2321,9 @@ if VelTypeRequest && numel(iview_civ)>=1
     set(handles.VelType,'Visible','on')
     set(handles.VelType_title,'Visible','on')
     FieldList=set_field_list('U','V'); % standard menu for civx data
-    %CheckList=1;
+    if max(get(handles.FieldName,'Value'))>numel(FieldList)
     set(handles.FieldName,'Value',1); % velocity vector choice by default
+    end
     if  VelTypeRequest_1 && numel(iview_civ)>=2
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
         set(handles.VelType_1,'Value',1)% set first choice by default

@@ -2614,7 +2614,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
         end
         RootPath=MaskPath;
     end
-    if mdetect==0
+    if mdetect==0 % if no mask is detected in the current folder
         MaskFullName=uigetfile_uvmat('pick a mask image file:',RootPath,'image');
         if isempty(MaskFullName)
             set(handles.CheckMask,'Value',0)
@@ -2632,6 +2632,13 @@ if isequal(get(handles.CheckMask,'Value'),1)
         Mask.File=MaskFile;
     else
         Mask.File=MaskFile{1};
+    end
+    Mask.NbSlice_i=1;
+    Mask.NbSlice_j=1;
+    if isempty(j1_series)
+        Mask.NbSlice_i=i1_series(1,2,end);
+    else
+        Mask.NbSlice_j=j1_series(1,end,2);
     end
     Mask.Ext=MaskExt;
     Mask.NomType=MaskNomType;
@@ -2656,14 +2663,20 @@ function errormsg=update_mask(handles)
 %------------------------------------------------------------------------
 errormsg=[];%default
 Mask=get(handles.CheckMask,'UserData');
-MaskIndex=1;
 if strcmp(get(handles.z_index,'Visible'),'on')
-    MaskIndex=str2num(get(handles.z_index,'String'));
+    MaskIndex_i=str2num(get(handles.z_index,'String'));
+else
+    MaskIndex_i=mod(str2num(get(handles.i1,'String')),Mask.NbSlice_i);
+end
+if Mask.NbSlice_j>1
+    MaskIndex_j=str2num(get(handles.j1,'String'));
+else
+    MaskIndex_j=1;
 end
 if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
     uistack(Mask.maskhandle,'top');
 end
-MaskName=fullfile_uvmat(Mask.Path,'',Mask.File,Mask.Ext,Mask.NomType,MaskIndex);
+MaskName=fullfile_uvmat(Mask.Path,'',Mask.File,Mask.Ext,Mask.NomType,MaskIndex_i,[],MaskIndex_j);
 UvData=get(handles.uvmat,'UserData');
 
 %% update mask image if the mask is new
@@ -2688,7 +2701,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             errormsg=[MaskName ' is not a 8 bit grey level image'];
             return
         end
-        MaskField.ZIndex=MaskIndex;
+        MaskField.ZIndex=MaskIndex_i;
         %px to phys or other transform on field
          menu_transform=get(handles.TransformName,'String');
         choice_value=get(handles.TransformName,'Value');

@@ -16,13 +16,13 @@
 
 function cmd=cluster_command_psmn(ListProcessFile, ActionFullName, DirLog, NbProcess, NbCore, CPUTimeProcess)
     SubmitScriptFile = regexprep(ListProcessFile, '\job_list.txt\>', 'submit_script.sh');
-    fid_list = fopen(ListProcessFile, 'r');
+	fid_list = fopen(ListProcessFile, 'r');
     fid_submit = fopen(SubmitScriptFile, 'w');
     i=1;
-    while(true)
-        process = fgets(fid_list);
+	while(true)
+		process = fgets(fid_list);
         if(process == -1)
-            break
+			break
         end
         n = numel(process);
         process = process(1:(n-1)); % on enlève le trailing \n
@@ -30,12 +30,13 @@ function cmd=cluster_command_psmn(ListProcessFile, ActionFullName, DirLog, NbPro
         fwrite(fid_submit, ['qsub -V '...
                             '-e ' LogFile ' '...
                             '-o ' LogFile ' '...
-                            '-q piv_debian '...
+                            '-q piv_debian* '...
+		            '-P PIV '...
                             '-N UVmat_' num2str(i) ' '...
                             process char(10)]);
         i=i+1;
-    end
-    fclose(fid_list);
+	end
+	fclose(fid_list);
     fclose(fid_submit);
     system(['chmod +x ' SubmitScriptFile]);
     cmd = SubmitScriptFile;
