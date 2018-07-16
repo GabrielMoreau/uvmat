@@ -62,7 +62,7 @@ function ParamOut=turb_correlation_x(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.NbSlice=1;%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
@@ -210,7 +210,7 @@ for index=1:NbField
         [npy,npx]=size(Field.U);
         UMean=zeros(npy,npx);
         VMean=zeros(npy,npx);
-        Counter=false(npy,npx);
+        Counter=zeros(npy,npx);
                 % transcripts the global attributes
         if isfield(Field,'ListGlobalAttribute')
             DataOut.ListGlobalAttribute= Field.ListGlobalAttribute;
@@ -227,6 +227,7 @@ for index=1:NbField
     VMean=VMean+Field.V;
     Counter=Counter+~FF;
 end
+Counter(Counter==0)=1;
 UMean=UMean./Counter;
 VMean=VMean./Counter;
 
@@ -287,6 +288,10 @@ for index=1:NbField
     DataOut.Counter=DataOut.Counter+~FFCorr;
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
+DataOut.Counter(DataOut.Counter==0)=1;
+size(DataOut.UUCorr)
+size(DataOut.VVCorr)
+size(DataOut.Counter)
 DataOut.UUCorr=DataOut.UUCorr./DataOut.Counter;
 DataOut.VVCorr=DataOut.VVCorr./DataOut.Counter;
 DataOut.UVCorr=DataOut.UVCorr./DataOut.Counter;
