@@ -107,7 +107,7 @@ else% interactive mode in Matlab
 end
 
 %% root input file names and nomenclature type (cell arrays with one element)
-RootPath=Param.InputTable{1,1};
+RootPath=Param.InputTable{2,1};
 % RootFile=Param.InputTable(:,3);
 % SubDir=Param.InputTable(:,2);
 % NomType=Param.InputTable(:,4);
@@ -161,7 +161,7 @@ x=1:4096;
 %filecell{2,img}= list of the images _end
 for img=1:nbfield_i
      img
-    image=flipud(imread(filecell{1,img}));
+    image=flipud(imread(filecell{2,img}));
     a=image(700:1900,:);
     % filtering
     a=filter2(Mfiltre,a);
@@ -204,7 +204,7 @@ y_y=1:size(a,1);
 %% Load the transit bed scan
 for img=1:nbfield_i
     img
-     image=flipud(imread(filecell{2,img}));
+     image=flipud(imread(filecell{1,img}));
     b=image(700:1900,:);
         % filtering
     b=filter2(Mfiltre,b);
