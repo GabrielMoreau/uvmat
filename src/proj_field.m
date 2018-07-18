@@ -918,7 +918,7 @@ for icell=1:length(CellInfo)
                 for ivar=VarIndex
                     %VarName{ivar}=FieldData.ListVarName{ivar};
                     if test_interp2% interpolate on new grid
-                        FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI);%TO TEST
+                        FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI');
                     end
                     vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
                     if nbcolor==1

@@ -3918,7 +3918,7 @@ else
             UvData.ProjObject{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
             UvData.ProjObject{1}.Angle=[0 0];
             if isfield(UvData.Field,'CoordUnit')
-                UvData.ProjObject{1}.CoordUnit=CoordUnit;
+                UvData.ProjObject{1}.CoordUnit=UvData.Field.CoordUnit;
             end
         elseif isfield(UvData,'Z')
             %multilevel case (single menuplane in a 3D space)

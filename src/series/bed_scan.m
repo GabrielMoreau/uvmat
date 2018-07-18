@@ -150,13 +150,12 @@ nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 
 %% Load the init bed scan
 
-y0=90.05;
-Mfiltre=ones(2,10);%filter matrix for imnages
+y=90.05-0.05*i1_series{1};
+Mfiltre=ones(2,10)/20;%filter matrix for imnages
 tic
 % y=zeros(1,nimages);
 % X_new=zeros(4096,nimages);
 x=1:4096;
-step=Param.IndexRange.incr_i;
 % img=1;
 %filecell{1,img}= list of the images _init
 %filecell{2,img}= list of the images _end
@@ -166,11 +165,12 @@ for img=1:nbfield_i
     a=image(700:1900,:);
     % filtering
     a=filter2(Mfiltre,a);
-    [~,iy]=max(a);
+    [imax,iy]=max(a);
     Z=squeeze(iy);
-    Z_s(:,img)=smooth(Z,50,'rloess');
-    y(img)=y0-(0.05.*step);
-    y0=y(img);
+    iy(imax<50)=NaN;
+    Z_s(:,img)=smooth(Z,40,'rloess');
+%     y(img)=y0-(0.05.*step);
+%     y0=y(img);
     X_new(:,img)=phys_scan(x,y(img));
 end
 
@@ -210,22 +210,22 @@ for img=1:nbfield_i
     b=filter2(Mfiltre,b);
     [imaxb,iyb]=max(b);
     Zb=squeeze(iyb);
-    Z_sb(:,img)=smooth(Zb,40,'rloess');
+    iyb(imaxb<50)=NaN;
+    Z_sb(:,img)=smooth(Zb,20,'rloess');
 end
 
 
 %% bed change
-
 dZ=Z_s-Z_sb;
 dZ_new=zeros(4096,nimages2);
-
-for img=1:nimages2
-dZ_new(:,img)=phys_scanz(dZ(:,img),y(img));
+for img=1:nimages2  
+    dZ_new(:,img)=phys_scanz(dZ(:,img),y(img));
 end
 
 
 %% PLOTS
-[Y_m,X_m]=meshgrid(y(1,:),X_new(:,1));
+coord_x=X_new(1,end):0.1:X_new(end,end);
+[Y_m,X_m]=meshgrid(y(1,:),coord_x);
 Y_new=Y';
 dZ_mesh=griddata(X_new,Y_new,dZ_new,X_m,Y_m);
 
@@ -270,8 +270,8 @@ Data.VarAttribute{2}.Role='coord_y';
 Data.VarAttribute{2}.unit='cm';
 Data.VarAttribute{3}.Role='scalar';
 Data.VarAttribute{3}.unit='cm';
-Data.coord_x=X_new(:,1);
-Data.coord_y=y(1,:);
+Data.coord_x=[coord_x(1) coord_x(end)];
+Data.coord_y=[y(1) y(end)];
 Data.dZ=dZ_mesh';
 struct2nc(fullfile(DirOut,'dZ.nc'),Data)
 
