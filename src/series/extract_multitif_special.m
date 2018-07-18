@@ -134,7 +134,7 @@ end
 
 %% output directory
 OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
-
+OutputDirScan=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
 %% Timing
 % XmlInputFile=Param.ActionInput.XmlFile;
 % [XmlInput,errormsg]=imadoc2struct(XmlInputFile,'Camera');
@@ -143,14 +143,16 @@ OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]
 %     return
 % end
 %ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
+count0=14;
 Dtj=0.05;% time interval between frames
-ImagesPerLevel=450;% total number of images per position, ImagesPerLevel-Nbj images skiiped during motion between two positions
-Nbj=400; %Nbre of images kept at a given position
+ImagesPerLevel=455;% total number of images per position, ImagesPerLevel-Nbj images skiiped during motion between two positions
+Nbj=390; %Nbre of images kept at a given position
 Dti=Dtj*ImagesPerLevel;
 NbLevel=11;
 NbScan=3;
-TimeReturn=20; %time needed to return back to the first position (in sec)
-NbSkippedReturn=round(TimeReturn/Dtj);
+TimeReturn=268.5; %time needed to return back to the first position (in sec)
+NbReturn=round(TimeReturn/Dtj);
+NbSkipReturn=NbReturn+1-NbLevel*ImagesPerLevel;
 %% create the xml file of PCO camera if it does not exist
 Newxml=fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']);
 if ~exist(Newxml,'file')
@@ -163,8 +165,7 @@ if ~exist(Newxml,'file')
     XmlInput.Camera.BurstTiming.NbDtj=Nbj-1;
     XmlInput.Camera.BurstTiming.Dti=Dti;
     XmlInput.Camera.BurstTiming.NbDti=NbLevel-1;
-    XmlInput.Camera.BurstTiming.Dtk=Dti*Nb
-    Level+TimeReturn;
+    XmlInput.Camera.BurstTiming.Dtk=TimeReturn;
     XmlInput.Camera.BurstTiming.NbDtk=NbScan-1;
     %XmlInput=rmfield(XmlInput,'Time');
     %XmlInput=rmfield(XmlInput,'TimeUnit');
@@ -201,19 +202,24 @@ for ifile=firstindex:Param.IndexRange.last_i
         iframe% = frame number inside a tif multimage
         checkkeep=1;
         count=count+1;
-        if count<=ImagesPerLevel*11 % first scan of 11 levels
-            i_index=fix((count-1)/ImagesPerLevel)+1;
-            j_index=mod(count-1,ImagesPerLevel)+1;
-        elseif count<=ImagesPerLevel*NbLevel+400 %skip 400 images during return
+        if count<count0
             checkkeep=0;
-        elseif count<=ImagesPerLevel*2*NbLevel+400 % =5930 second scan
-            i_index=fix((count-401)/ImagesPerLevel)+1;
-            j_index=mod(count-401,ImagesPerLevel)+1;
-        elseif count<=ImagesPerLevel*2*NbLevel+800 %skip images during second return, from 2763 to 3167
-            checkkeep=0;
-        elseif count<=ImagesPerLevel*3*NbLevel+800 % =5930 third scan
-            i_index=fix((count-801)/ImagesPerLevel)+1;
-            j_index=mod(count-801,ImagesPerLevel)+1;
+        else
+            countnew=count-count0+1;         
+            if countnew<=ImagesPerLevel*NbLevel % first scan of 11 levels
+                i_index=fix((countnew-1)/ImagesPerLevel)+1;
+                j_index=mod(countnew-1,ImagesPerLevel)+1;
+            elseif countnew<=NbReturn%skip 400 images during return
+                checkkeep=0;
+            elseif countnew<=NbReturn+ImagesPerLevel*NbLevel % =5930 second scan
+                i_index=fix((countnew-NbSkipReturn)/ImagesPerLevel)+1;
+                j_index=mod(countnew-NbSkipReturn,ImagesPerLevel)+1;
+            elseif countnew<=2*NbReturn %skip images during second return, from 2763 to 3167
+                checkkeep=0;
+            elseif countnew<=2*NbReturn+ImagesPerLevel*NbLevel % =5930 third scan
+                i_index=fix((countnew-2*NbSkipReturn)/ImagesPerLevel)+1;
+                j_index=mod(countnew-2*NbSkipReturn,ImagesPerLevel)+1;
+            end
         end
         if checkkeep
             if j_index>Nbj
@@ -230,6 +236,8 @@ for ifile=firstindex:Param.IndexRange.last_i
                     disp([OutputFile ' already exists'])
                 end
             end
+%         else
+%             OutputFile=fullfile(OutputDir,['img_' num2str(i_index) '_' num2str(j_index) '.png']);
         end
     end
 end
