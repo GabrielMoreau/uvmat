@@ -1607,7 +1607,8 @@ for icell=1:length(CellInfo)
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
                     XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(2))-YI*sin(PlaneAngle(1));%corresponding coordinates in the original system
                     YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(2))+YI*cos(PlaneAngle(1));
-                    if numel(Coord{1})==2% x coordiante defiend by its bounds, get the whole set
+
+                    if numel(Coord{1})==2% x coordinate defined by its bounds, get the whole set
                         Coord{1}=linspace(Coord{1}(1),Coord{1}(2),CellInfo{icell}.CoordSize(1));
                     end
                     if numel(Coord{2})==2% y coordiante defiend by its bounds, get the whole set

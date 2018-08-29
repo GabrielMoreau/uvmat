@@ -3614,12 +3614,12 @@ if numel(UvData.FileInfo)>1
             ParamIn_1.Coord_x=get(handles.Coord_x,'String');
             ParamIn_1.Coord_y=get(handles.Coord_y,'String');
         end
-        [Field{2},ParamOut_1,errormsg] = read_field(FileName_1,UvData.FileType{2},ParamIn_1,frame_index_1);
+        [Field{2},ParamOut_1,errormsg] = read_field(FileName_1,UvData.FileInfo{2}.FileType,ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
             return
         end
-        if isstruct(ParamOut_1)&&~strcmp(ParamOut_1.FieldName,'get_field...')&& (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
+        if isstruct(ParamOut_1)&&~strcmp(ParamOut_1.FieldName,'get_field...')&& (strcmp(UvData.FileInfo{2}.FileType,'civdata')||strcmp(UvData.FileInfo{2}.FileType,'civx'))...
                 &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
             if ~check_proj_tps
             end
@@ -3667,7 +3667,7 @@ elseif ~test_keepdata_1
     if strcmp(UvData.FileInfo{2}.FieldType,'civdata')&& ~strcmp(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
-        menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileType{2});
+        menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileInfo{2}.FileType);
         index_menu=strcmp(ParamOut_1.VelType,menu);
         set(handles.VelType_1,'Value',1+find(index_menu,1))
         set(handles.VelType_1,'String',[{''};menu])
@@ -4118,7 +4118,6 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % display menus and plot histograms
     test_v=0;
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% A REMETTRE
     if ~isempty(menu_histo)
         set(handles.HistoMenu,'Value',1)
         set(handles.HistoMenu,'String',menu_histo)

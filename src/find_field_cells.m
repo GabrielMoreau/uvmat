@@ -305,37 +305,41 @@ for icell=1:cell_nbre
         NbDim(icell)=numel(DimCell_var);
         CellInfo{icell}.DimOrder=[];
         if NbDim(icell)==3
-            %coord z
-            for ivar=ind_coord_z
-                if check_coord_names(ivar)
-                    DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
-                check_coord=~isempty(DimRank);
-            elseif check_coord_raster(ivar)
-                DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
-                check_coord=~isempty(DimRank);
-            end
-%                 check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{1}))||...% coord varbable
-%                     (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{1})); % rasrewr coord defined by min and max
-                if check_coord
-                    CellInfo{icell}.CoordType='grid';
-                    CellInfo{icell}.CoordIndex(1)=ivar;
-                    CellInfo{icell}.ZName=Data.ListVarName{ivar};
-                    CellInfo{icell}.ZIndex=ivar;
-                    CellInfo{icell}.DimOrder=DimRank;
-                    break
+            if strcmp(DimCell_var{3},'rgb')
+                NbDim(icell)=2;% case of color images
+            else
+                %coord z
+                for ivar=ind_coord_z
+                    if check_coord_names(ivar)
+                        DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
+                        check_coord=~isempty(DimRank);
+                    elseif check_coord_raster(ivar)
+                        DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
+                        check_coord=~isempty(DimRank);
+                    end
+                    %                 check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{1}))||...% coord varbable
+                    %                     (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{1})); % rasrewr coord defined by min and max
+                    if check_coord
+                        CellInfo{icell}.CoordType='grid';
+                        CellInfo{icell}.CoordIndex(1)=ivar;
+                        CellInfo{icell}.ZName=Data.ListVarName{ivar};
+                        CellInfo{icell}.ZIndex=ivar;
+                        CellInfo{icell}.DimOrder=DimRank;
+                        break
+                    end
                 end
             end
         end
         for ivar=ind_coord_y
             if check_coord_names(ivar)
-                    DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
+                DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             elseif check_coord_raster(ivar)
                 DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             end
-%             check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{NbDim(icell)-1}))||...% coord variable
-%                 (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{NbDim(icell)-1})); % rasrewr coord defined by min and max
+            %             check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{NbDim(icell)-1}))||...% coord variable
+            %                 (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{NbDim(icell)-1})); % rasrewr coord defined by min and max
             if check_coord
                 CellInfo{icell}.CoordType='grid';
                 CellInfo{icell}.CoordIndex(NbDim(icell)-1)=ivar;
@@ -347,14 +351,14 @@ for icell=1:cell_nbre
         end
         for ivar=ind_coord_x
             if check_coord_names(ivar)
-                    DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
+                DimRank=find(strcmp(Data.VarDimName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             elseif check_coord_raster(ivar)
                 DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             end
-%             check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{NbDim(icell)}))||...% coord variable
-%                 (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{NbDim(icell)})); % raster coord defined by min and max
+            %             check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{NbDim(icell)}))||...% coord variable
+            %                 (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{NbDim(icell)})); % raster coord defined by min and max
             if check_coord
                 CellInfo{icell}.CoordIndex(NbDim(icell))=ivar;
                 CellInfo{icell}.XName=Data.ListVarName{ivar};
@@ -399,7 +403,7 @@ if check_var
                 if NbDim(icell)==3
                     CellInfo{icell}.CoordSize=[size(Data.(VarName),3) size(Data.(VarName),2) size(Data.(VarName),1)];
                 else
-                    CellInfo{icell}.CoordSize=[size(Data.(VarName),2) size(Data.(VarName),1)];
+                    CellInfo{icell}.CoordSize=[size(Data.(VarName),1) size(Data.(VarName),2)];
                 end
             case 'tps'
                 NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);

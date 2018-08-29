@@ -25,8 +25,11 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=ima_color2BW(DataIn)
-
+function DataOut=ima_color2BW(DataIn,XmlData)
+DataOut=[];
+if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
+    return
+end
 DataOut=DataIn; %default
 if ndims(DataOut.A)==3
     DataOut.A=uint16(sum(double(DataOut.A),3));%sum on color components, transform in 16 bit BW images

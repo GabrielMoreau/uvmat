@@ -37,7 +37,6 @@ if ~isempty(errormsg)
     errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
     return
 end
-
 NbDim=max(NbDimArray);% spatial dimension of the input field
 imax=find(NbDimArray==NbDim);% indices of field cells to consider
 Check4D=0;
