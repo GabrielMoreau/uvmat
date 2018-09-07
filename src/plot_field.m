@@ -584,7 +584,7 @@ TableData={'Variable';'SampleNbr';'bin size';'Mean';'RMS';'Skewness';'Kurtosis';
 
 TextDisplay=0;
 for icell=1:numel(CellInfo)
-    if isfield(CellInfo{icell},'VarIndex_histo')
+    if isfield(CellInfo{icell},'VarIndex_histo')% case of histogram plot
         TextDisplay=1;
         VarName=data.ListVarName{CellInfo{icell}.CoordIndex};
         pdf_val=data.(data.ListVarName{CellInfo{icell}.VarIndex_histo});

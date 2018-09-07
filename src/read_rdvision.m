@@ -124,10 +124,15 @@ if ~isempty(frame_idx)
       %  binrepertoire='2014-07-04T10.48.46'% case FJORD5a %%%%%%%%%%%%%%%%%%%%%%%%%
       % binrepertoire='2017-01-19T22.12.182'% EXP14 %%%%%%%%%%%%%%%%%%%%%%%%%
         binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
+        if ~exist(binfile,'file')
+            errormsg=[binfile ' does not exist'];
+            return
+        else
         fid=fopen(binfile,'rb');
         fseek(fid,data(ii).offset,-1);
         A(:,:,i)=reshape(fread(fid,w*h,classname),w,h)';
         fclose(fid);
+        end
     end
     
     if ~isempty(frame_idx)

@@ -264,7 +264,7 @@ switch FileType
     case 'image'
         A=imread(FileName);
     case 'rdvision'
-        [A,FileInfo,timestamps]=read_rdvision(FileName,num);
+        [A,FileInfo,timestamps,errormsg]=read_rdvision(FileName,num);
     case 'image_DaVis'
         Input=readimx(FileName);
         if numel(Input.Frames)==1

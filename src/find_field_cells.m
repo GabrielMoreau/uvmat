@@ -16,7 +16,8 @@
 %              _errorflag: index of error flag
 %              _image   : B/W image, (behaves like scalar)
 %              _vector_x,_y,_z: indices of variables giving the vector components x, y, z
-%              _warnflag: index of warnflag    
+%              _warnflag: index of warnflag 
+%              _histo: index of variable used as histogram
 %       .DimIndex
 %      .ProjModeRequest= 'interp_lin', 'interp_tps' indicate whether lin interpolation  or derivatives (tps) is needed to calculate the requested field
 %      .FieldName = operation to be performed to finalise the field cell after projection
@@ -117,9 +118,10 @@ if ~isempty(ind_vector_x)
     ind_ancillary=find(strcmp('ancillary',Role));
 end
 ind_discrete=find(strcmp('discrete',Role));
-ind_coord_x=find(strcmp('coord_x',Role));
+ind_coord_x=[find(strcmp('coord_x',Role)) find(strcmp('histo',Role))];
 ind_coord_y=find(strcmp('coord_y',Role));
 ind_coord_z=find(strcmp('coord_z',Role));
+ind_histo=find(strcmp('histo',Role));
 ind_coord_tps=find(strcmp('coord_tps',Role));
 check_string=cellfun(@ischar,Data.VarDimName)==1;
 index_string=find(check_string);
@@ -476,7 +478,7 @@ if ~isempty(ind_coord_x)
         Cell1DPlot{icell}.YIndex=[];
         Cell1DPlot{icell}.YIndex_discrete=[];
         DimCell_x=Data.VarDimName{ind_coord_x(icell)};
-        for ivar=ind_coord_y 
+        for ivar=[ind_coord_y ind_histo]
             DimCell=Data.VarDimName{ivar};
             if  numel(DimCell_x)==1 && strcmp(DimCell_x{1},DimCell{1})
                 y_nbre(icell)=y_nbre(icell)+1;

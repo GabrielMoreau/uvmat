@@ -139,23 +139,43 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     nbfield_i=floor(nbfield/NbSlice_i);%total number of  indexes in a slice (adjusted to an integer number of slices)
     
     %% setting of  parameters specific to sub_background
-    nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts  
-    if nbfield_i~=1
+    CheckVolume='No';
+    nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts 
+     if nbfield_i~=1
         nbaver=floor(nbaver_init/nbfield_j); % number of bursts used for the sliding background,
         if isequal(mod(nbaver,2),0)% if nbaver is even
             nbaver=nbaver+1;%put the number of burst to an odd number (so the middle burst is defined)
         end
         nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
     end
-    
+    BrightnessRankThreshold=0.1;
+    CheckSubmedian='No';
+    SaturationCoeff=0;
+    if isfield(Param,'ActionInput')
+        if isfield(Param.ActionInput,'CheckVolume') && Param.ActionInput.CheckVolume
+            CheckVolume='Yes';
+        end
+        if isfield(Param.ActionInput,'SlidingSequenceLength')
+         nbaver_init=Param.ActionInput.SlidingSequenceLength;
+        end
+        if isfield(Param.ActionInput,'BrightnessRankThreshold')
+          BrightnessRankThreshold=Param.ActionInput.BrightnessRankThreshold;
+        end
+        if isfield(Param.ActionInput,'CheckSubmedian') && Param.ActionInput.CheckSubmedian
+        CheckSubmedian='Yes';
+        end
+        if isfield(Param.ActionInput,'SaturationCoeff') 
+            SaturationCoeff=Param.ActionInput.SaturationCoeff;
+        end
+    end   
     prompt = {'volume scan mode (Yes/No)';...
         'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles';...
         'set to 0 image levels below median(Yes/No)';...
-        'image rescaling coefficient(high values reduce the influence of bright particles), =0 for no rescaling' };
+        'image rescaling coefficient(=2 to reduce the influence of bright particles), =0 for no rescaling' };
     dlg_title = 'get (slice by slice) a sliding background and substract to each image';
     num_lines= 5;
-    def     = { 'No';num2str(nbaver_init);'0.1';'No';'2'};
+    def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold);CheckSubmedian;num2str(SaturationCoeff)};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
     if isempty(answer)
         return

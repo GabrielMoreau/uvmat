@@ -508,6 +508,7 @@ for icell=1:length(CellInfo)
         VarAttribute_var=[];
         if isfield(FieldData,'VarAttribute')&& numel(FieldData.VarAttribute)>=ivar
             VarAttribute_var=FieldData.VarAttribute{ivar};
+            VarAttribute_var.Role='coord_x';
         end
       %  VarAttribute_var.Role='coord_x';% the variable is now used as an absissa
         VarAttribute_histo.Role='histo';

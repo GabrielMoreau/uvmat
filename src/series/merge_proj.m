@@ -532,11 +532,6 @@ for icell=1:length(CellInfo)
                     MergeData.(VarName)(NbAver==0)=NaN;% set to NaN the points with no good data
                 end
         end
-%         if isempty(FFName)
-%             FFName='FF';
-%         end
-%         MergeData.(FFName)(NbAver~=0)=0;% flag to 1 undefined summed data
-%         MergeData.(FFName)(NbAver==0)=1;% flag to 1 undefined summed data
     end
 end
 

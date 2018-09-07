@@ -99,7 +99,8 @@ YI=Radius.*sin(Azimuth)-radius_ref;% set of y axis of the points where interpolq
 FieldNames={'vec(U,V)';'curl(U,V)';'div(U,V)'};
 HeadData.ListVarName= {'radius','azimuth'} ;
 HeadData.VarDimName={'radius','azimuth'};
-HeadData.VarAttribute={'coord_y','coord_x'} ;
+HeadData.VarAttribute{1}.Role='coord_y';
+HeadData.VarAttribute{2}.Role='coord_x';
 HeadData.radius=radius_shifted;
 HeadData.azimuth=azimuth_arclength;    
 thresh2=16; % square of the interpolation range
@@ -372,7 +373,9 @@ for index=1:NbField
         ProjData{iview}=HeadData;
         ProjData{iview}.ListVarName= [ProjData{iview}.ListVarName ListVarName];
         ProjData{iview}.VarDimName={'radius','azimuth'};
-        ProjData{iview}.VarAttribute=[{'coord_x'} {'coord_y'} VarAttribute];
+%         ProjData{iview}.VarAttribute{1}.Role='coord_y';
+%         ProjData{iview}.VarAttribute{2}.Role='coord_x';
+        ProjData{iview}.VarAttribute=[ProjData{iview}.VarAttribute VarAttribute];
         for ivar=1:numel(ListVarName)
             ProjData{iview}.VarDimName{ivar+2}={'radius','azimuth'};
             VarName=ListVarName{ivar};
@@ -456,6 +459,77 @@ ellapsed_time=toc(tstart);
 disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
 disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])
 
+% %'merge_field': concatene fields
+% %------------------------------------------------------------------------
+% function [MergeData,errormsg]=merge_field(Data)
+% %% default output
+% if isempty(Data)||~iscell(Data)
+%     MergeData=[];
+%     return
+% end
+% errormsg='';
+% MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
+% NbView=length(Data);
+% if NbView==1% if there is only one field, just reproduce it in MergeData
+%     return
+% end
+% 
+% %% group the variables (fields of 'Data') in cells of variables with the same dimensions
+% [CellInfo,NbDim,errormsg]=find_field_cells(Data{1});
+% if ~isempty(errormsg)
+%     return
+% end
+% 
+% %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
+% for icell=1:length(CellInfo)
+%     if NbDim(icell)~=1 % skip field cells which are of dim 1
+%         switch CellInfo{icell}.CoordType
+%             case 'scattered'  %case of input fields with unstructured coordinates: just concatene data
+%                 for ivar=CellInfo{icell}.VarIndex %  indices of the selected variables in the list FieldData.ListVarName
+%                     VarName=Data{1}.ListVarName{ivar};
+%                     for iview=2:NbView
+%                         MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
+%                     end
+%                 end
+%             case 'grid'        %case of fields defined on a structured  grid
+%                 FFName='';
+%                 if isfield(CellInfo{icell},'VarIndex_errorflag') && ~isempty(CellInfo{icell}.VarIndex_errorflag)
+%                     FFName=Data{1}.ListVarName{CellInfo{icell}.VarIndex_errorflag};% name of errorflag variable
+%                     MergeData.ListVarName(CellInfo{icell}.VarIndex_errorflag)=[];%remove error flag variable in MergeData (will use NaN instead)
+%                     MergeData.VarDimName(CellInfo{icell}.VarIndex_errorflag)=[];
+%                     MergeData.VarAttribute(CellInfo{icell}.VarIndex_errorflag)=[];
+%                 end
+%                 % select good data on each view
+%                 for ivar=CellInfo{icell}.VarIndex  %  indices of the selected variables in the list FieldData.ListVarName
+%                     VarName=Data{1}.ListVarName{ivar};
+%                     for iview=1:NbView
+%                         if isempty(FFName)
+%                             check_bad=isnan(Data{iview}.(VarName));%=0 for NaN data values, 1 else
+%                         else
+%                             check_bad=isnan(Data{iview}.(VarName)) | Data{iview}.(FFName)~=0;%=0 for NaN or error flagged data values, 1 else
+%                         end
+%                         Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
+%                         if iview==1
+%                             %MergeData.(VarName)=Data{1}.(VarName);% initiate MergeData with the first field
+%                             MergeData.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
+%                             NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
+%                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
+%                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
+%                             return
+%                         else
+%                             MergeData.(VarName)=MergeData.(VarName) +double(Data{iview}.(VarName));%add data
+%                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
+%                         end
+%                     end
+%                     MergeData.(VarName)(NbAver~=0)=MergeData.(VarName)(NbAver~=0)./NbAver(NbAver~=0);% take average of defined data at each point
+%                     MergeData.(VarName)(NbAver==0)=NaN;% set to NaN the points with no good data
+%                 end
+%         end
+%    
+%     end
+% end
+
+
 %'merge_field': concatene fields
 %------------------------------------------------------------------------
 function [MergeData,errormsg]=merge_field(Data)
@@ -468,7 +542,7 @@ errormsg='';
 MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
 NbView=length(Data);
 if NbView==1% if there is only one field, just reproduce it in MergeData
-    return
+    return 
 end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
@@ -513,7 +587,7 @@ for icell=1:length(CellInfo)
                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
                             return
-                        else
+                        else                             
                             MergeData.(VarName)=MergeData.(VarName) +double(Data{iview}.(VarName));%add data
                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
                         end
@@ -522,13 +596,5 @@ for icell=1:length(CellInfo)
                     MergeData.(VarName)(NbAver==0)=NaN;% set to NaN the points with no good data
                 end
         end
-        %         if isempty(FFName)
-        %             FFName='FF';
-        %         end
-        %         MergeData.(FFName)(NbAver~=0)=0;% flag to 1 undefined summed data
-        %         MergeData.(FFName)(NbAver==0)=1;% flag to 1 undefined summed data
     end
-end
-
-
-    
+end    

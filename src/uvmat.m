@@ -2636,7 +2636,11 @@ if isequal(get(handles.CheckMask,'Value'),1)
     Mask.NbSlice_i=1;
     Mask.NbSlice_j=1;
     if isempty(j1_series)
+        if isempty(i1_series)
+            MaskNomType='*';
+        else
         Mask.NbSlice_i=i1_series(1,2,end);
+        end
     else
         Mask.NbSlice_j=j1_series(1,end,2);
     end
@@ -2666,10 +2670,12 @@ Mask=get(handles.CheckMask,'UserData');
 if strcmp(get(handles.z_index,'Visible'),'on')
     MaskIndex_i=str2num(get(handles.z_index,'String'));
 else
-    MaskIndex_i=mod(str2num(get(handles.i1,'String')),Mask.NbSlice_i);
+    MaskIndex_i=mod(str2num(get(handles.i1,'String'))-1,Mask.NbSlice_i)+1;
 end
+MaskIndex_z=MaskIndex_i;%default
 if Mask.NbSlice_j>1
     MaskIndex_j=str2num(get(handles.j1,'String'));
+    MaskIndex_z=MaskIndex_j;
 else
     MaskIndex_j=1;
 end
@@ -2701,7 +2707,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             errormsg=[MaskName ' is not a 8 bit grey level image'];
             return
         end
-        MaskField.ZIndex=MaskIndex_i;
+        MaskField.ZIndex=MaskIndex_z;
         %px to phys or other transform on field
          menu_transform=get(handles.TransformName,'String');
         choice_value=get(handles.TransformName,'Value');
