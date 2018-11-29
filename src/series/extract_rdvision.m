@@ -185,18 +185,21 @@ NbSlice_calib={};
 %
 %      nbfield2=size(time,1);
 checkpreserve=0;% if =1, will npreserve the original images, else it erases them at the end
+
 for iview=1:size(Param.InputTable,1)
+    check_xml=0;
     for iview_xml=1:size(Param.InputTable,1)% look for the xml files in the different data directories
         filexml=[fullfile(RootPath,Param.InputTable{iview_xml,2},Param.InputTable{iview,3}) '.xml'];%new convention: xml at the level of the image folder
         if exist(filexml,'file')
+            check_xml=1;
             break
         end
     end
-    if ~exist(filexml,'file')
-        disp_uvmat('ERROR',[filexml ' missing'],checkrun)
-        return
-    end
- 
+    %     if ~exist(filexml,'file')
+    %         disp_uvmat('ERROR',[filexml ' missing'],checkrun)
+    %         return
+    %     end
+    
     newxml=fullfile(RootPath,Param.InputTable{iview,3});
     newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
     newxml=[newxml '.xml'];
@@ -210,7 +213,9 @@ for iview=1:size(Param.InputTable,1)
             logdir=[Param.OutputSubDir Param.OutputDirExt];
             [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
             [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
+            if check_xml
             [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
+            end
         otherwise
             errormsg='input file extension must be .seq or .sqb';
     end

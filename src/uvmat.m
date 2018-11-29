@@ -1201,8 +1201,8 @@ uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-
 wwp=(1-4*ii)/3; %width of the push buttons
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','REPLICATE','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''REPLICATE'': replicate the output for a series of experiments');
+uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Replicate'': select to replicate the output of APPLY to a series of experiments');
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
     'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
 drawnow
@@ -1271,6 +1271,11 @@ elseif isfield(GeometryCalib,'RefractionIndex')
     GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
 end
 
+hreplicate=findobj(hObject,'Tag','Replicate');
+if get(hreplicate,'Value')
+    'TEST'
+else
+
 %% store the result in the xml file used for calibration
 errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
 if strcmp(errormsg,'')
@@ -1283,6 +1288,7 @@ end
 %set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
 uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
 set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
+end
 
 delete(hset_slice)
 
@@ -1290,65 +1296,80 @@ delete(hset_slice)
 % function called by pressing REPLICATE in the GUI  set_slices
 function set_slice_REPLICATE_Callback(hObject,eventdata)
 %------------------------------------------------------------------------
-set(hObject,'BackgroundColor',[1 1 0])
-drawnow
-
-%% read the GUI set_slice
-SliceData=read_GUI(get(hObject,'parent'));
-
-%% get info on the GUI uvmat
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-RootPath=read_file_boxes(hhuvmat);
-
-OutPutDir=uigetfile_uvmat('choose an image folder to document with slice position?',fileparts(RootPath),'uigetdir');
-OutPut=browse_data(OutPutDir,'off','on');
-nbcalib=0;
-for ilist=1:numel(OutPut.Experiment)
-    for idevice=1:numel(OutPut.DataSeries)
-        SubDirBase=regexprep(OutPut.DataSeries{idevice},'\..+$','');
-        XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
-
-        % read the current xml file
-        if  exist(XmlFile,'file')
-            [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-            if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
-                return
-            end
-            GeometryCalib=s.GeometryCalib;
-            GeometryCalib.NbSlice=SliceData.NbSlice;
-            GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
-            Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-            GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-            GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-            Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
-            Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-            GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
-            GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
-            GeometryCalib.SliceAngle(:,3)=0;
-            if SliceData.CheckRefraction
-                GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-                GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-            elseif isfield(GeometryCalib,'RefractionIndex')
-                GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
-                GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
-            end
-
-            % update the current xml file
-            errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-            if ~strcmp(errormsg,'')
-                msgbox_uvmat('ERROR',errormsg);
-            else
-                display([XmlFile ' updated with slice positions'])
-                nbcalib=nbcalib+1;
-            end
-        end
+if get(hObject,'Value') %open the GUI browse_data
+    % look for the GUI uvmat and check for an image as input
+    huvmat=findobj(allchild(0),'Name','uvmat');
+    hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+    RootPath=get(hhuvmat.RootPath,'String');
+    SubDir=get(hhuvmat.SubDir,'String');
+    browse_data(fullfile(RootPath,SubDir))
+else
+    hbrowse=findobj(allchild(0),'Tag','browse_data');
+    if ~isempty(hbrowse)
+        delete(hbrowse)
     end
 end
-set(hObject,'BackgroundColor',[1 0 0])
-msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
 
+% 
+% set(hObject,'BackgroundColor',[1 1 0])
+% drawnow
+% 
+% %% read the GUI set_slice
+% SliceData=read_GUI(get(hObject,'parent'));
+% 
+% %% get info on the GUI uvmat
+% huvmat=findobj(allchild(0),'Tag','uvmat');
+% hhuvmat=guidata(huvmat);
+% RootPath=read_file_boxes(hhuvmat);
+% 
+% OutPutDir=uigetfile_uvmat('choose an image folder to document with slice position?',fileparts(RootPath),'uigetdir');
+% OutPut=browse_data(OutPutDir,'off','on');
+% nbcalib=0;
+% for ilist=1:numel(OutPut.Experiment)
+%     for idevice=1:numel(OutPut.DataSeries)
+%         SubDirBase=regexprep(OutPut.DataSeries{idevice},'\..+$','');
+%         XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+% 
+%         % read the current xml file
+%         if  exist(XmlFile,'file')
+%             [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+%             if ~isempty(errormsg)
+%                 msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
+%                 return
+%             end
+%             GeometryCalib=s.GeometryCalib;
+%             GeometryCalib.NbSlice=SliceData.NbSlice;
+%             GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
+%             Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+%             GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+%             GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+%             Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
+%             Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
+%             GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
+%             GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
+%             GeometryCalib.SliceAngle(:,3)=0;
+%             if SliceData.CheckRefraction
+%                 GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+%                 GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+%             elseif isfield(GeometryCalib,'RefractionIndex')
+%                 GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
+%                 GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
+%             end
+% 
+%             % update the current xml file
+%             errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+%             if ~strcmp(errormsg,'')
+%                 msgbox_uvmat('ERROR',errormsg);
+%             else
+%                 display([XmlFile ' updated with slice positions'])
+%                 nbcalib=nbcalib+1;
+%             end
+%         end
+%     end
+% end
+% set(hObject,'BackgroundColor',[1 0 0])
+% msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
+% 
 
 %------------------------------------------------------------------------
 % function called by pressing Cancel in the GUI  set_slices

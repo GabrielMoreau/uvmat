@@ -78,6 +78,7 @@ check_empty=zeros(1,NbSubDomain);
 
 %% calculate tps coeff in each subdomain
 for isub=1:NbSubDomain
+    isub
     SubRange(1,:,isub)=[CentreX(isub)-0.55*Siz(1) CentreX(isub)+0.55*Siz(1)];%bounds of subdomain #isub in x coordinate
     SubRange(2,:,isub)=[CentreY(isub)-0.55*Siz(2) CentreY(isub)+0.55*Siz(2)];%bounds of subdomain #isub in y coordinate
     ind_sel_previous=[];
@@ -86,6 +87,7 @@ for isub=1:NbSubDomain
     while numel(ind_sel)>numel(ind_sel_previous)
         ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration
         ind_sel=find(Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));
+        numel(ind_sel)
         % if no vector in the subdomain  #isub, skip the subdomain
         if isempty(ind_sel)
             check_empty(isub)=1;

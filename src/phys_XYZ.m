@@ -29,7 +29,7 @@ function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 %------------------------------------------------------------------------
 testangle=0;
 test_refraction=0;
-if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&length(Calib.SliceCoord)>=Zindex
+if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&size(Calib.SliceCoord,1)>=Zindex
     if isfield(Calib, 'SliceAngle') && ~isequal(Calib.SliceAngle,[0 0 0]) && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
         om=norm(Calib.SliceAngle(Zindex,:));%norm of rotation angle in radians
@@ -42,7 +42,7 @@ if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(C
         norm_plane(3)=OmAxis(3)*coeff+cos_om;
 %         Z0=norm_plane*Calib.SliceCoord(Zindex,:)'/norm_plane(3);
     end
-        Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
+    Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
 %     end
     Z0virt=Z0;
     if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')

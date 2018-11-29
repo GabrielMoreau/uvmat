@@ -331,7 +331,7 @@ switch ObjectStyle
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
     case {'plane','plane_z'}  
-%        set(handles.num_Angle_3,'Visible','on')
+        set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')

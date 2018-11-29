@@ -23,7 +23,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 24-Jan-2015 16:55:04
+% Last Modified by GUIDE v2.5 08-Sep-2018 19:03:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,15 +46,16 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
-function browse_data_OpeningFcn(hObject, eventdata, handles, DataSeries,EnableMirror,MultiDevices)
+function browse_data_OpeningFcn(hObject, eventdata, handles, InputDir,EnableMirror,MultiDevices)
 %------------------------------------------------------------------------
 
 %% Choose default command line output for browse_data
-handles.output = 'Cancel';
+handles.output =hObject;% 'Cancel';
 
 %% Update handles structure
 guidata(hObject, handles);
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
+set(hObject,'DeleteFcn',{@closefcn})%
 
 %% Determine the position of the dialog - centered on the screen
 FigPos=get(0,'DefaultFigurePosition');
@@ -86,13 +87,15 @@ else
 end
 
 %% initialize the GUI
-if isempty(regexp(DataSeries,'^http:'))&& ~(exist('DataSeries','var') && ischar(DataSeries) && exist(DataSeries,'dir'))
-    DataSeries=pwd;% current dir is the starting data series by default
+if isempty(regexp(InputDir,'^http:'))&& ~(exist('InputDir','var') && ischar(InputDir) && exist(InputDir,'dir'))
+    InputDir=pwd;% current dir is the starting data series by default
 end
-[Experiment,DataSeries,Ext]=fileparts(DataSeries);
-DataSeries=[DataSeries Ext];
-[Campaign,Experiment,Ext]=fileparts(Experiment);
-Experiment=[Experiment Ext];
+% [Experiment,DataSeries,Ext]=fileparts(DataSeries);
+% DataSeries=[DataSeries Ext];
+% [Campaign,Experiment,Ext]=fileparts(Experiment);
+% Experiment=[Experiment Ext];
+[ExpWithPath,DataSeries]=fileparts(InputDir);
+[Campaign,Experiment,Ext]=fileparts(ExpWithPath);
 [tild,CampaignName]=fileparts(Campaign);
 RootXml=fullfile(Campaign,[CampaignName '.xml']);
 s=[];
@@ -110,19 +113,21 @@ if isempty(s) %a source dir has been opened
     set(handles.MirrorDir,'Visible','off');% no mirror dir display
     set(handles.CreateMirror,'String','create_mirror')
 end
-errormsg=scan_campaign(handles,Campaign,Experiment,DataSeries);
+errormsg=scan_campaign(handles,Campaign,Experiment,ExpWithPath);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-set(handles.OK,'Visible','on')
-set(handles.Cancel,'Visible','on')
+% set(handles.OK,'Visible','on')
+% set(handles.Cancel,'Visible','on')
 
-set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal
+%set(handles.browse_data,'WindowStyle','modal')% Make the GUI
+%modal%%%%%%%%%%%%%%%%%%%%%%%
 set(hObject,'Visible','on')
 drawnow
-% UIWAIT makes GUI wait for user response (see UIRESUME)
-uiwait(handles.browse_data);
+% UIWAIT makes GUI wait for user response (see UIRESUME)%%%%%%%%%%%%%%%%TO
+% CHECK
+%uiwait(handles.browse_data);
 
 
 
@@ -132,7 +137,7 @@ function varargout = browse_data_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-delete(handles.browse_data)
+%%%%%%%%%%%%%%%%%%delete(handles.browse_data)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CreateMirror.
@@ -212,7 +217,7 @@ errormsg='';
 if ~isempty(regexp(Campaign,'^http'))|| exist(Campaign,'dir')
     ListStruct=dir_uvmat(Campaign); %list files and dirs
     if numel(ListStruct)>1000% A campaign folder must contain maily a list of 'experiment' sub-folders
-        errormsg=[Campaign ' contains too many items (>1000) to be a Campaign folder'];
+        errormsg=[Campaign ' contains too many items (>1000) to be a Project folder'];
         return
     end
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
@@ -223,9 +228,9 @@ if ~isempty(regexp(Campaign,'^http'))|| exist(Campaign,'dir')
     check_keep=cellfun('isempty', cell_remove);
     ListFiles=sort((ListFiles(check_keep))');
     index=find(strcmp(['+/' Experiment],ListFiles));
-    if isempty(index), index=0; end
-    set(handles.ListExperiments,'String',[{'*'};ListFiles])
-    set(handles.ListExperiments,'Value',index+1)% initialise the menu selection with the folder defined by the input
+    if isempty(index), index=1; end
+    set(handles.ListExperiments,'String',ListFiles)
+    set(handles.ListExperiments,'Value',index)% initialise the menu selection with the folder defined by the input
     ListExperiments_Callback([],[], handles)
     ListDevices=get(handles.ListDevices,'String');
     index=find(strcmp(['+/' DataSeries],ListDevices));
@@ -251,12 +256,12 @@ else
 end
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
-if isequal(list_val(1),1)
-    ListExperiments=ListExperiments(2:end); %choose all experiments if the first line '*' is selected
-    set(handles.ListExperiments,'Value',1)
-else
+% if isequal(list_val(1),1)
+%     ListExperiments=ListExperiments(2:end); %choose all experiments if the first line '*' is selected
+%     set(handles.ListExperiments,'Value',1)
+% else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
-end
+% end
 list_dataseries(handles,ListExperiments,MirrorPath)
 
 %------------------------------------------------------------------------
@@ -282,10 +287,10 @@ for iexp=1:numel(ListExperiments)
                     delete(mirror)% delete broken link
                 else %update the list of dataSeries
                     [tild,msg]=fileattrib(mirror);
-                    msg.Name=regexprep(msg.Name,'^/.','/');%remove the dot in /. at the beginning of the name
-                    if ~strcmp(msg.Name,mirror)% if it is a link
-                        ListFiles{ilist}=['~' ListFiles{ilist}];%mark link by '@' in the list
-                    end
+%                     msg.Name=regexprep(msg.Name,'^/.','/');%remove the dot in /. at the beginning of the name
+%                     if ~strcmp(msg.Name,mirror)% if it is a link
+%                         ListFiles{ilist}=['~' ListFiles{ilist}];%mark link by '@' in the list
+%                     end
                     if check_dir(ilist)
                         ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
                     end
@@ -297,6 +302,7 @@ for iexp=1:numel(ListExperiments)
         end
     end
 end
+set(handles.ListDevices,'Value',1)
 set(handles.ListDevices,'String',sort(ListDevices))
 
 %------------------------------------------------------------------------
@@ -437,172 +443,7 @@ outputfile=fullfile(outputdir,[dirname '.xml']);
 %campaigndoc(t);
 save(t,outputfile)
 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in CampaignDoc.
-% function edit_xml_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% CurrentPath=get(handles.SourceDir,'String');
-% %[CurrentPath,Name,Ext]=fileparts(CurrentDir);
-% ListExperiments=get(handles.ListExperiments,'String');
-% Value=get(handles.ListExperiments,'Value');
-% if ~isequal(Value,1)
-%     ListExperiments=ListExperiments(Value);
-% end
-% ListDevices=get(handles.ListDevices,'String');
-% Value=get(handles.ListDevices,'Value');
-% if ~isequal(Value,1)
-%     ListDevices=ListDevices(Value);
-% end
-% ListRecords=get(handles.ListRecords,'String');
-% Value=get(handles.ListRecords,'Value');
-% if ~isequal(Value,1)
-%     ListRecords=ListRecords(Value);
-% end
-% [ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices,ListRecords);
-% ListXml=get(handles.ListXml,'String');
-% Value=get(handles.ListXml,'Value');
-% set(handles.ListXml,'Value',Value(1));
-% if isequal(Value(1),1)
-%     msgbox_uvmat('ERROR','an xml file needs to be selected')
-%    return
-% else
-%     XmlName=ListXml{Value(1)};
-% end
-% for iexp=1:length(List.Experiment)
-%     ExpName=List.Experiment{iexp}.name;
-%     if isfield(List.Experiment{iexp},'Device')
-%         for idevice=1:length(List.Experiment{iexp}.Device)
-%             DeviceName=List.Experiment{iexp}.Device{idevice}.name;
-%             if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-%                 for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-%                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
-%                     if isequal(FileName,XmlName)
-%                         editxml(fullfile(CurrentPath,ExpName,DeviceName,FileName));
-%                         return
-%                     end
-%                 end
-%              elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-%                 for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-%                     RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-%                     if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-%                         for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
-%                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
-%                             if isequal(FileName,XmlName)
-%                                 editxml(fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName));
-%                                 return
-%                             end                          
-%                         end
-%                     end
-%                 end
-%             end
-%         end
-%     end
-% end
-% 
-% 
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % CurrentPath/Campaign: root directory 
-% function  [Title,test_mod]=check_heading(Currentpath,Campaign,Experiment,Device,Record,xmlname,testSubCampaign)
-% 
-%  %Shema for Heading:
-% %  Campaign             
-% %  (SubCampaign)
-% % Experiment
-% %  Device
-% %  (Record)
-% %  ImageName
-% %  DateExp
-% %                 old: %Project: suppressed ( changed to Campaign)
-%                        %Exp: suppressed (changed to experiment)
-%                        %ImaNames: changed to ImageName
-% if exist('Record','var') && ~isempty(Record)
-%     xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,Record,xmlname);  
-%     testrecord=1;
-% else
-%     xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,xmlname); 
-%     testrecord=0;
-% end
-% if ~exist('testSubCampaign','var')
-%     testSubCampaign=0;
-% end
-% if testSubCampaign
-%    SubCampaign=Campaign;
-%    [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
-%    Campaign=[Campaign DirExt];
-% end
-% test_mod=0; %test for the modification of the xml file
-% t_device=xmltree(xmlfullname);
-% Title=get(t_device,1,'name');
-% uid_child=children(t_device,1);
-% Heading_old=[];
-% uidheading=0;
-% for ilist=1:length(uid_child)
-%     name=get(t_device,uid_child(ilist),'name');
-%     if isequal(name,'Heading')
-%         uidheading=uid_child(ilist);
-%     end
-% end
-% if uidheading
-%     subt=branch(t_device,uidheading);
-%     Heading_old=convert(subt);
-% else
-%    return % do not edit xml files without element 'Heading'
-% end
-% if ~(isfield(Heading_old,'Campaign')&& isequal(Heading_old.Campaign,Campaign))
-%     test_mod=1;
-% end
-% Heading.Campaign=Campaign;
-% if testSubCampaign
-%     if ~(isfield(Heading_old,'SubCampaign')&& isequal(Heading_old.SubCampaign,SubCampaign))
-%         test_mod=1;
-%     end
-%     Heading.SubCampaign=SubCampaign;
-% end
-% if ~(isfield(Heading_old,'Experiment')&& isequal(Heading_old.Experiment,Experiment))
-%     test_mod=1;
-% end
-% Heading.Experiment=Experiment;
-% if ~(isfield(Heading_old,'Device')&& isequal(Heading_old.Device,Device))
-%     test_mod=1;
-% end
-% Heading.Device=Device;
-% if testrecord
-%     if ~(isfield(Heading_old,'Record')&& isequal(Heading_old.Record,Record))
-%         test_mod=1;
-%     end
-%     Heading.Record=Record;
-% end
-% if isfield(Heading_old,'ImaNames')
-%     test_mod=1;
-%     if  ~isempty(Heading_old.ImaNames)
-%         Heading.ImageName=Heading_old.ImaNames;
-%     end
-% end
-% if isfield(Heading_old,'ImageName')&& ~isempty(Heading_old.ImageName)
-%     Heading.ImageName=Heading_old.ImageName;
-% end
-% if isfield(Heading_old,'DateExp')&& ~isempty(Heading_old.DateExp)
-%     Heading.DateExp=Heading_old.DateExp;
-% end
-% if test_mod && uidheading
-%      uid_child=children(t_device,uidheading);
-%      t_device=delete(t_device,uid_child);
-%     t_device=struct2xml(Heading,t_device,uidheading);
-%     backupfile=xmlfullname;
-%     testexist=2;
-%     while testexist==2
-%        backupfile=[backupfile '~'];
-%        testexist=exist(backupfile,'file');
-%     end
-%     [success,message]=copyfile(xmlfullname,backupfile);%make backup
-%     if isequal(success,1)
-%         delete(xmlfullname)
-%     else
-%         return
-%     end
-%     save(t_device,xmlfullname)
-% end
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in OK.
@@ -647,25 +488,45 @@ end
 %------------------------------------------------------------------------
 % --- Executes on button press in Cancel.
 %------------------------------------------------------------------------
-function Cancel_Callback(hObject, eventdata, handles)
-    
-handles.output = get(hObject,'String');
-guidata(hObject, handles); % Update handles structure
-% Use UIRESUME instead of delete because the OutputFcn needs
-uiresume(handles.browse_data);
+% function Cancel_Callback(hObject, eventdata, handles)
+% % hseries=findobj(allchild(0),'Tag','series');
+% % if ~isempty(hseries)
+% %     hhh=guidata(hseries);
+% %     set(hhh.Replicate,'Value',0)
+% % end
+% % delete(get(hObject,'parent'))
+
+% handles.output = get(hObject,'String');
+% guidata(hObject, handles); % Update handles structure
+% % Use UIRESUME instead of delete because the OutputFcn needs
+% uiresume(handles.browse_data);
+
+%------------------------------------------------------------------------
+% --- executes when user attempts to close geometry_calib.
+function browse_data_CloseRequestFcn(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes when user attempts to close browse_data.
 %------------------------------------------------------------------------
-function browse_data_CloseRequestFcn(hObject, eventdata, handles)
-if isequal(get(handles.browse_data, 'waitstatus'), 'waiting')
-    % The GUI is still in UIWAIT, us UIRESUME
-    handles.output = get(hObject,'String');
-    guidata(hObject, handles); % Update handles structure
-    uiresume(handles.browse_data);
-else
-    % The GUI is no longer waiting, just close it
-    delete(handles.browse_data);
+function closefcn(gcbo, eventdata)
+% if isequal(get(handles.browse_data, 'waitstatus'), 'waiting')
+%     % The GUI is still in UIWAIT, us UIRESUME
+%     handles.output = get(hObject,'String');
+%     guidata(hObject, handles); % Update handles structure
+%     uiresume(handles.browse_data);
+% else
+%     % The GUI is no longer waiting, just close it
+%     delete(handles.browse_data);
+% end
+hseries=findobj(allchild(0),'Tag','series');
+if ~isempty(hseries)
+    hreplicate=findobj(hseries,'Tag','Replicate');
+    set(hreplicate,'Value',0)
+end
+hcalib=findobj(allchild(0),'Tag','geometry_calib');
+if ~isempty(hcalib)
+    hreplicate=findobj(hcalib,'Tag','Replicate');
+    set(hreplicate,'Value',0)
 end
 
 %------------------------------------------------------------------------
@@ -688,10 +549,31 @@ if isequal(get(hObject,'CurrentKey'),'return')
 end 
 
 
-% --- Executes on button press in Browse.
-function Browse_Callback(hObject, eventdata, handles)
+% --- Executes on button press in Up.
+function Up_Callback(hObject, eventdata, handles)
+SourceDir=get(handles.SourceDir,'String');
+% Device=ListDevices{get(handles.ListDevices,'Value')};
+% DataSeries=uigetfile_uvmat('open a data folder',Device,'uigetdir');
+% uiresume(handles.browse_data);
+browse_data(SourceDir)
+
+
+% --- Executes on button press in Down.
+function Down_Callback(hObject, eventdata, handles)
+SourceDir=get(handles.SourceDir,'String');
+ListExperiments=get(handles.ListExperiments,'String');
+list_val=get(handles.ListExperiments,'Value');
+SourceFolder=regexprep(ListExperiments{list_val(1)},'+','');
+set(handles.SourceDir,'String',fullfile(SourceDir,SourceFolder))
 ListDevices=get(handles.ListDevices,'String');
-Device=ListDevices{get(handles.ListDevices,'Value')};
-DataSeries=uigetfile_uvmat('open a data folder',Device,'uigetdir');
-uiresume(handles.browse_data);
-browse_data(DataSeries)
+ValueDevice=get(handles.ListDevices,'Value');
+set(handles.ListExperiments,'String',ListDevices)
+set(handles.ListExperiments,'Value',ValueDevice)
+ListExperiments_Callback(hObject, [], handles)
+% Device=regexprep(ListDevices{get(handles.ListDevices,'Value')},'+','');
+% Device=regexprep(Device,'~','');
+% PathDevice=fullfile(SourceDir,SourceFolder,Device);
+% DirDevice=dir(PathDevice);
+% NewDevice=DirDevice(end).name;
+% % uiresume(handles.browse_data);
+% browse_data(fullfile(PathDevice,NewDevice))

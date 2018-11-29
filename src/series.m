@@ -1,6 +1,3 @@
-
-
-
 %'series': master function associated to the GUI series.m for analysis field series  
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
@@ -211,11 +208,11 @@ if exist(profil_perso,'file')
         end
     end
     %get the list of previous campaigns in the upper bar menu Open campaign
-    if isfield(h,'MenuCampaign')
-        for ifile=1:min(length(h.MenuCampaign),5)
-            set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
-        end
-    end
+%     if isfield(h,'MenuCampaign')
+%         for ifile=1:min(length(h.MenuCampaign),5)
+%             set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
+%         end
+%     end
     %get the menu of actions
     if isfield(h,'ActionListUser') && iscell(h.ActionListUser) && isfield(h,'ActionPathListUser') && iscell(h.ActionPathListUser)
         ActionList=[ActionList;h.ActionListUser];
@@ -497,88 +494,88 @@ else
         end
     end
 end
-
-OutPut=browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
-NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
-icount=0;
-for iexp=1:numel(OutPut.Experiment)
-    for idevice=1:numel(OutPut.DataSeries)
-        icount=icount+1;
-        InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
-        InputTable{icount,2}=OutPut.DataSeries{idevice};
-        if isempty(InputTable{icount,3})
-            if icount>1
-            InputTable{icount,3}=InputTable{icount-1,3};
-            else
-                InputTable{icount,3}='';
-            end
-        end
-        if isempty(InputTable{icount,4})
-            if icount>1
-            InputTable{icount,4}=InputTable{icount-1,4};
-            else
-                InputTable{icount,4}='';
-            end
-        end
-                if isempty(InputTable{icount,5})
-            if icount>1
-            InputTable{icount,5}=InputTable{icount-1,5};
-            else
-                InputTable{icount,5}='';
-            end
-        end
-    end
-end
-if size(InputTable,1)>icount
-    InputTable(icount+1:size(InputTable,1),:)=[];
-end
+InputTable{1,1}='...';
 set(handles.InputTable,'Data',InputTable)
-REFRESH_Callback(hObject, eventdata, handles)
+browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
+% NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
+% icount=0;
+% for iexp=1:numel(OutPut.Experiment)
+%     for idevice=1:numel(OutPut.DataSeries)
+%         icount=icount+1;
+%         InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
+%         InputTable{icount,2}=OutPut.DataSeries{idevice};
+%         if isempty(InputTable{icount,3})
+%             if icount>1
+%             InputTable{icount,3}=InputTable{icount-1,3};
+%             else
+%                 InputTable{icount,3}='';
+%             end
+%         end
+%         if isempty(InputTable{icount,4})
+%             if icount>1
+%             InputTable{icount,4}=InputTable{icount-1,4};
+%             else
+%                 InputTable{icount,4}='';
+%             end
+%         end
+%                 if isempty(InputTable{icount,5})
+%             if icount>1
+%             InputTable{icount,5}=InputTable{icount-1,5};
+%             else
+%                 InputTable{icount,5}='';
+%             end
+%         end
+%     end
+% end
+% if size(InputTable,1)>icount
+%     InputTable(icount+1:size(InputTable,1),:)=[];
+% end
+%REFRESH_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
-function MenuCampaign_Callback(hObject, eventdata, handles)
-% -------------------------------------------------------------------- 
-
-OutPut=browse_data(get(hObject,'Label'),'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
-if ~isfield(OutPut,'Campaign')
-    return
-end
-NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
-icount=0;
-InputTable=get(handles.InputTable,'Data');
-for iexp=1:numel(OutPut.Experiment)
-    for idevice=1:numel(OutPut.DataSeries)
-        icount=icount+1;
-        InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
-        InputTable{icount,2}=OutPut.DataSeries{idevice};
-        if isempty(InputTable{icount,3})
-            if icount>1
-                InputTable{icount,3}=InputTable{icount-1,3};
-            else
-                InputTable{icount,3}='';
-            end
-        end
-        if isempty(InputTable{icount,4})
-            if icount>1
-                InputTable{icount,4}=InputTable{icount-1,4};
-            else
-                InputTable{icount,4}='';
-            end
-        end
-        if isempty(InputTable{icount,5})
-            if icount>1
-                InputTable{icount,5}=InputTable{icount-1,5};
-            else
-                InputTable{icount,5}='';
-            end
-        end
-    end
-end
-if size(InputTable,1)>icount
-    InputTable(icount+1:size(InputTable,1),:)=[];
-end
-set(handles.InputTable,'Data',InputTable)
-REFRESH_Callback(hObject, eventdata, handles)
+% function MenuCampaign_Callback(hObject, eventdata, handles)
+% % -------------------------------------------------------------------- 
+% 
+% OutPut=browse_data(get(hObject,'Label'),'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
+% if ~isfield(OutPut,'Campaign')
+%     return
+% end
+% NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
+% icount=0;
+% InputTable=get(handles.InputTable,'Data');
+% for iexp=1:numel(OutPut.Experiment)
+%     for idevice=1:numel(OutPut.DataSeries)
+%         icount=icount+1;
+%         InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
+%         InputTable{icount,2}=OutPut.DataSeries{idevice};
+%         if isempty(InputTable{icount,3})
+%             if icount>1
+%                 InputTable{icount,3}=InputTable{icount-1,3};
+%             else
+%                 InputTable{icount,3}='';
+%             end
+%         end
+%         if isempty(InputTable{icount,4})
+%             if icount>1
+%                 InputTable{icount,4}=InputTable{icount-1,4};
+%             else
+%                 InputTable{icount,4}='';
+%             end
+%         end
+%         if isempty(InputTable{icount,5})
+%             if icount>1
+%                 InputTable{icount,5}=InputTable{icount-1,5};
+%             else
+%                 InputTable{icount,5}='';
+%             end
+%         end
+%     end
+% end
+% if size(InputTable,1)>icount
+%     InputTable(icount+1:size(InputTable,1),:)=[];
+% end
+% set(handles.InputTable,'Data',InputTable)
+% REFRESH_Callback(hObject, eventdata, handles)
 
 
 % --- Executes when selected cell(s) is changed in InputTable.
@@ -741,11 +738,11 @@ end
 
 %% enable other menus and uicontrols
 % set(handles.MenuOpenCampaign,'Enable','on')
-set(handles.MenuCampaign_1,'Enable','on')
-set(handles.MenuCampaign_2,'Enable','on')
-set(handles.MenuCampaign_3,'Enable','on')
-set(handles.MenuCampaign_4,'Enable','on')
-set(handles.MenuCampaign_5,'Enable','on')
+% set(handles.MenuCampaign_1,'Enable','on')
+% set(handles.MenuCampaign_2,'Enable','on')
+% set(handles.MenuCampaign_3,'Enable','on')
+% set(handles.MenuCampaign_4,'Enable','on')
+% set(handles.MenuCampaign_5,'Enable','on')
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
@@ -1593,525 +1590,556 @@ if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
 
-%% create the output data directory if needed
-OutputDir='';
-if isfield(Param,'OutputSubDir')
-    SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
-    SubDirOutNew=SubDirOut;
-    detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
-    check_create=1; % need to create the result directory by default
-    CheckOverwrite=1;
-    if isfield(Param,'CheckOverwrite')
-        CheckOverwrite=Param.CheckOverwrite;
-    end
-    while detect
-        if CheckOverwrite
-            comment=', possibly overwrite previous data';
-        else
-            comment=', will complement existing result files (no overwriting)';
-        end
-        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) comment]);
-        if strcmp(answer,'Cancel')
-            return
-        elseif strcmp(answer,'Yes')
-            detect=0;
-            check_create=0;
-        else
-            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
-            if isempty(r)
-                r(1).root=[SubDirOutNew '_'];
-                r(1).num1='0';
-            end
-            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
-            detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exists
-            check_create=1;
-        end
-    end
-    Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
-    Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
-    set(handles.OutputDirExt,'String',Param.OutputDirExt)
-    OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
-    if check_create    % create output directory if it does not exist
-        [tild,msg1]=mkdir(OutputDir);
-        if ~strcmp(msg1,'')
-            errormsg=['cannot create ' OutputDir ': ' msg1]; % error message for directory creation
-            return
-        end
-    end
-    
-elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
-    OutputDir=Param.ActionInput.LogPath;   
-end
-DirXml=fullfile(OutputDir,'0_XML');
-if ~exist(DirXml,'dir')
-    [~,msg1]=mkdir(DirXml);
-    if ~strcmp(msg1,'')
-        errormsg=['cannot create ' DirXml ': ' msg1]; % error message for directory creation
-        return
-    end
-end
-OutputNomType=nomtype2pair(Param.InputTable{1,4}); % nomenclature for output files
+%% Look for prcessing on multiple experiments set by the GUI browse_data
+NbExp=1;
+ListExp=Param.InputTable(1,1);
 
-%% get the set of reference input field indices 
-first_i=1; % first i index to process
-last_i=1; % last i index to process
-incr_i=1; % increment step in i index
-first_j=1; % first j index to process
-last_j=1; % last j index to process
-incr_j=1; % increment step in j index
-if isfield(Param.IndexRange,'first_i')
-    first_i=Param.IndexRange.first_i;
-    incr_i=Param.IndexRange.incr_i;
-    last_i=Param.IndexRange.last_i;
-end
-if isfield(Param.IndexRange,'incr_j')
-    first_j=Param.IndexRange.first_j;
-    last_j=Param.IndexRange.last_j;
-    incr_j=Param.IndexRange.incr_j;
-end
-if last_i < first_i || last_j < first_j
-    errormsg= 'series/Run_Callback:last field index must be larger or equal to the first one';
-    return
-end
-%incr_i must be defined, =1 by default, if NbSlice is active
-if isempty(incr_i)&& ~isempty(Param.IndexRange.NbSlice)
-    incr_i=1;
-    set(handles.num_incr_i,'String','1')
-end
-% case of no increment i defined: processing is done on the available files found in i1_series
-if isempty(incr_i)
-    if isempty(incr_j)
-        [ref_j,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
-        ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
-        ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
-        ref_j=ref_j-1;
-        ref_i=ref_i-1;
-    else
-        ref_j=first_j:incr_j:last_j;
-        [tild,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
-        ref_i=ref_i-1;
-        ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
+if get(handles.Replicate,'Value')
+    hh=findobj(allchild(0),'Tag','browse_data');
+    BrowseData=guidata(hh);
+    SourceDir=get(BrowseData.SourceDir,'String');
+    ListExp=get(BrowseData.ListExperiments,'String');
+    ListExp=ListExp(get(BrowseData.ListExperiments,'Value'));
+    NbExp=numel(ListExp) % number of experiments set possibly by the GUI browse_data, =1 otherwise
+    for ilist=1:NbExp
+        ListExp{ilist}=regexprep(ListExp{ilist},'+','');
+        ListExp{ilist}= [SourceDir ListExp{ilist}];
     end
-    % increment i is defined: processing is done on first_i:incr_i:last_i;
-else
-    ref_i=first_i:incr_i:last_i;
-    if isempty(incr_j)% automatic finding of the existing j indices
-        [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
-        ref_j=ref_j-1;
-        ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
-    else
-        ref_j=first_j:incr_j:last_j;
-    end
-end
-CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
-if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
-    CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
-end
-nbfield_j=numel(ref_j); % number of j indices
-BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
-NbProcess=1;
-switch RunMode
-    case 'cluster'
-        JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
-        JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;
-        if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
-            BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is MinJobNumber.
-            BlockLength=max(BlockLength,ceil(numel(ref_i)/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
-            NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
-        else
-            NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
-        end
-        NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
-    otherwise
-        if ~isempty(Param.IndexRange.NbSlice)
-            NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
-        end
 end
 
-%% record nbre of output files and starting time for computation for status
-StatusData=get(handles.status,'UserData');
-if isfield(StatusData,'OutputFileMode')
-    switch StatusData.OutputFileMode
-        case 'NbInput'
-            StatusData.NbOutputFile=numel(ref_i)*nbfield_j;
-        case 'NbInput_i'
-            StatusData.NbOutputFile=numel(ref_i);
-        case 'NbSlice'
-            StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
-    end
-end
-StatusData.TimeStart=now;
-set(handles.status,'UserData',StatusData)
-
-%% case of a function in Python
-if strcmp(ActionExt, '.py (in dev.)')
-    fprintf([
-        '\n' ...
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n' ...
-        'The option .py is used. It is still in development.\n' ...
-        'To try it, first install pyper and the most recent version of fluidimage\n' ...
-        '(see https://bitbucket.org/fluiddyn/fluidimage).\n' ...
-        'Warning: there is no direct correspondance between UVMAT and fluidimage parameters\n' ...
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
-    RunMode = 'python';
-end
-
-
-%% direct processing on the current Matlab session or creation of command files
-filexml=cell(1,NbProcess); % initialisation of the names of the files containing the processing parameters
-extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
-for iprocess=1:NbProcess
-    extxml{iprocess}='.xml';
-end
-for iprocess=1:NbProcess
-    if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
-        disp('program stopped by user')
-        return
-    end
-    if isempty(Param.IndexRange.NbSlice)
-        Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
-        if Param.IndexRange.first_i>last_i
-            NbProcess=iprocess-1; % leave the loop, we are at the end of the calculation
-            break
-        end
-        Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
-    else %multislices (then incr_i is not empty)
-        Param.IndexRange.first_i= first_i+iprocess-1;
-        Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
-    end
-    for ilist=1:size(Param.InputTable,1)
-        Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/'); % correct path name for PCWIN system
-    end
-    
+%%%%%%%%%%%%%%%%%%% LOOP ON EXPERIMENTS POSSIBLY SET BY THE GUI browse_data, NbExp=1 otherwise %%%%%%%%%
+for iexp=1:NbExp
+    Param.InputTable{1,1}=ListExp{iexp};
+    set(handles.InputTable,'Data',Param.InputTable)
+    [xx,ExpName]=fileparts(ListExp{iexp});
+    Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
+    Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
+    %% create the output data directory if needed
+    OutputDir='';
+    answer='';
     if isfield(Param,'OutputSubDir')
-        t=struct2xml(Param);
-        t=set(t,1,'name','Series');
-        extxml{iprocess}=fullfile_uvmat('','',Param.InputTable{1,3},'.xml',OutputNomType,...
-            Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
-        filexml{iprocess}=fullfile(OutputDir,'0_XML',extxml{iprocess});
-        try
-            save(t, filexml{iprocess}); % save the xml file containing the processing parameters
-        catch ME
-            if ~strcmp (RunMode,'local')
-                errormsg=['error writting ' filexml{iprocess} ': ' ME.message];
+        SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
+        SubDirOutNew=SubDirOut;
+        detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
+        check_create=1; % need to create the result directory by default
+        CheckOverwrite=1;
+        if isfield(Param,'CheckOverwrite')
+            CheckOverwrite=Param.CheckOverwrite;
+        end
+        while detect
+            if CheckOverwrite
+                comment=', possibly overwrite previous data';
+            else
+                comment=', will complement existing result files (no overwriting)';
+            end
+            answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) comment]);
+            if strcmp(answer,'Cancel')
+                break
+            elseif strcmp(answer,'Yes')
+                detect=0;
+                check_create=0;
+            else
+                r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
+                if isempty(r)
+                    r(1).root=[SubDirOutNew '_'];
+                    r(1).num1='0';
+                end
+                SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
+                detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exists
+                check_create=1;
+            end
+        end
+        if strcmp(answer,'Cancel')
+            continue
+        end
+        Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
+        Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
+        set(handles.OutputDirExt,'String',Param.OutputDirExt)
+        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
+        if check_create    % create output directory if it does not exist
+            [tild,msg1]=mkdir(OutputDir);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' OutputDir ': ' msg1]; % error message for directory creation
                 return
             end
         end
-    end
-    if strcmp (RunMode,'local')
-        switch ActionExt
-            case '.m'
-                h_fun(Param); % direct launching
-                
-            case '.sh'
-                switch computer
-                    case {'PCWIN','PCWIN64'} %Windows system
-                        filexml=regexprep(filexml,'\\','\\\\'); % add '\' so that '\' are left as characters
-                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]); % TODO: adapt to DOS system
-                    case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-                        system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);
-                end
-        end
-    end
-end
-
-if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
-    %% processing on a different session of the same computer (background) or cluster, create executable files
-    batch_file_list=cell(NbProcess,1); % initiate the list of executable files
-    DirExe=fullfile(OutputDir,'0_EXE'); % directory name for executable files
-    switch computer
-        case {'PCWIN','PCWIN64'} %Windows system
-            ExeExt='.bat';
-        case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-            ExeExt='.sh';
-    end
-    %create subdirectory for executable files
-    if ~exist(DirExe,'dir')
-        [tild,msg1]=mkdir(DirExe);
-        if ~strcmp(msg1,'')
-            errormsg=['cannot create ' DirExe ': ' msg1]; % error message for directory creation
-            return
-        end
-    end
-    %create subdirectory for log files
-    DirLog=fullfile(OutputDir,'0_LOG');
-    if ~exist(DirLog,'dir')
-        [tild,msg1]=mkdir(DirLog);
-        if ~strcmp(msg1,'')
-            errormsg=['cannot create ' DirLog ': ' msg1]; % error message for directory creation
-            return
-        end
-    end
-    
-    %create the executable file
-    file_exe_global=fullfile_uvmat('','',Param.InputTable{1,3},ExeExt,OutputNomType,...
-        first_i,last_i,first_j,last_j);
-    file_exe_global=fullfile(OutputDir,'0_EXE',file_exe_global);
-    filelog_global=fullfile_uvmat('','',Param.InputTable{1,3},'.log',OutputNomType,...
-        first_i,last_i,first_j,last_j);
-    filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
-
-    for iprocess=1:NbProcess    
-        %create the executable file       
-        batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
         
-        % set the log file name
-        filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));      
+    elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
+        OutputDir=Param.ActionInput.LogPath;
     end
-end
-
-%% launch the executable files for background or cluster processing
-
-switch RunMode
-    
-    case 'background'
-        [fid,message]=fopen(file_exe_global,'w');
-        if isequal(fid,-1)
-            errormsg=['creation of ' file_exe_global ':' message];
+    DirXml=fullfile(OutputDir,'0_XML');
+    if ~exist(DirXml,'dir')
+        [~,msg1]=mkdir(DirXml);
+        if ~strcmp(msg1,'')
+            errormsg=['cannot create ' DirXml ': ' msg1]; % error message for directory creation
             return
         end
-        switch ActionExt
-            case '.m'% Matlab function
-                switch computer
-                    case {'GLNX86','GLNXA64','MACI64'}
-                        matlab_ver = ver('MATLAB');
-                        matlab_version = matlab_ver.Version;
-                        cmd=[...
-                            '#!/bin/bash\n'...
-                            'source /etc/profile\n'...
-                            'module load matlab/' matlab_version '\n'...% CHOICE OF MATLAB VERSION
-                            'time_start=$(date +%%s)\n'...
-                            'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog_global ''' <<END_MATLAB\n'...
-                            'addpath(''' path_series ''');\n'...
-                            'addpath(''' Param.Action.ActionPath ''');\n'];
-                        for iprocess=1:NbProcess
-                            cmd=[cmd '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'];
-                        end
-                        cmd=[cmd  'exit\n' 'END_MATLAB\n'...
-                            'time_end=$(date +%%s)\n'...
-                            'echo "global time = " $(($time_end - $time_start)) >> ''' filelog_global '''\n'];
-                        fprintf(fid,cmd); % fill the executable file with the  char string cmd
-                        fclose(fid); % close the executable filefilelog_global
-                        system(['chmod +x ' file_exe_global]); % set the file to executable
-                    case {'PCWIN','PCWIN64'}
-                        cmd=['matlab -automation -logfile ' regexprep(filelog{iprocess},'\\','\\\\')...
-                            ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
-                            'addpath(''' regexprep(Param.Action.ActionPath,'\\','\\\\') ''');'];
-                        for iprocess=1:NbProcess
-                            cmd=[cmd '' Param.Action.ActionName  '( ''' regexprep(filexml{iprocess},'\\','\\\\') ''');']
-                        end
-                        cmd=[cmd ';exit"'];
-                        fprintf(fid,cmd); % fill the executable file with the  char string cmd
-                        fclose(fid); % close the executable file
+    end
+    OutputNomType=nomtype2pair(Param.InputTable{1,4}); % nomenclature for output files
+    
+    %% get the set of reference input field indices
+    first_i=1; % first i index to process
+    last_i=1; % last i index to process
+    incr_i=1; % increment step in i index
+    first_j=1; % first j index to process
+    last_j=1; % last j index to process
+    incr_j=1; % increment step in j index
+    if isfield(Param.IndexRange,'first_i')
+        first_i=Param.IndexRange.first_i;
+        incr_i=Param.IndexRange.incr_i;
+        last_i=Param.IndexRange.last_i;
+    end
+    if isfield(Param.IndexRange,'incr_j')
+        first_j=Param.IndexRange.first_j;
+        last_j=Param.IndexRange.last_j;
+        incr_j=Param.IndexRange.incr_j;
+    end
+    if last_i < first_i || last_j < first_j
+        errormsg= 'series/Run_Callback:last field index must be larger or equal to the first one';
+        return
+    end
+    %incr_i must be defined, =1 by default, if NbSlice is active
+    if isempty(incr_i)&& ~isempty(Param.IndexRange.NbSlice)
+        incr_i=1;
+        set(handles.num_incr_i,'String','1')
+    end
+    % case of no increment i defined: processing is done on the available files found in i1_series
+    if isempty(incr_i)
+        if isempty(incr_j)
+            [ref_j,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+            ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
+            ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
+            ref_j=ref_j-1;
+            ref_i=ref_i-1;
+        else
+            ref_j=first_j:incr_j:last_j;
+            [tild,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+            ref_i=ref_i-1;
+            ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
+        end
+        % increment i is defined: processing is done on first_i:incr_i:last_i;
+    else
+        ref_i=first_i:incr_i:last_i;
+        if isempty(incr_j)% automatic finding of the existing j indices
+            [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+            ref_j=ref_j-1;
+            ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
+        else
+            ref_j=first_j:incr_j:last_j;
+        end
+    end
+    CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
+    if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
+        CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+    end
+    nbfield_j=numel(ref_j); % number of j indices
+    BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
+    NbProcess=1;
+    switch RunMode
+        case 'cluster'
+            JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
+            JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;
+            if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
+                BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is JobCPUTimeAdvised.
+                BlockLength=max(BlockLength,ceil(numel(ref_i)*NbExp/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
+                NbProcess=ceil(numel(ref_i)/BlockLength) ; % nbre of processes sent to oar
+            else
+                NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
+            end
+            NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
+        otherwise
+            if ~isempty(Param.IndexRange.NbSlice)
+                NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
+            end
+    end
+    
+    %% record nbre of output files and starting time for computation for status
+    StatusData=get(handles.status,'UserData');
+    if isfield(StatusData,'OutputFileMode')
+        switch StatusData.OutputFileMode
+            case 'NbInput'
+                StatusData.NbOutputFile=numel(ref_i)*nbfield_j;
+            case 'NbInput_i'
+                StatusData.NbOutputFile=numel(ref_i);
+            case 'NbSlice'
+                StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
+        end
+    end
+    StatusData.TimeStart=now;
+    set(handles.status,'UserData',StatusData)
+    
+    %% case of a function in Python
+    if strcmp(ActionExt, '.py (in dev.)')
+        fprintf([
+            '\n' ...
+            '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n' ...
+            'The option .py is used. It is still in development.\n' ...
+            'To try it, first install pyper and the most recent version of fluidimage\n' ...
+            '(see https://bitbucket.org/fluiddyn/fluidimage).\n' ...
+            'Warning: there is no direct correspondance between UVMAT and fluidimage parameters\n' ...
+            '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
+        RunMode = 'python';
+    end
+    
+    
+    %% direct processing on the current Matlab session or creation of command files
+    filexml=cell(1,NbProcess); % initialisation of the names of the files containing the processing parameters
+    extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
+    for iprocess=1:NbProcess
+        extxml{iprocess}='.xml';
+    end
+    for iprocess=1:NbProcess
+        if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
+            disp('program stopped by user')
+            return
+        end
+        if isempty(Param.IndexRange.NbSlice)
+            Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
+            if Param.IndexRange.first_i>last_i
+                NbProcess=iprocess-1; % leave the loop, we are at the end of the calculation
+                break
+            end
+            Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
+        else %multislices (then incr_i is not empty)
+            Param.IndexRange.first_i= first_i+iprocess-1;
+            Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
+        end
+        for ilist=1:size(Param.InputTable,1)
+            Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/'); % correct path name for PCWIN system
+        end
+        
+        if isfield(Param,'OutputSubDir')
+            t=struct2xml(Param);
+            t=set(t,1,'name','Series');
+            extxml{iprocess}=fullfile_uvmat('','',Param.InputTable{1,3},'.xml',OutputNomType,...
+                Param.IndexRange.first_i,Param.IndexRange.last_i,first_j,last_j);
+            filexml{iprocess}=fullfile(OutputDir,'0_XML',extxml{iprocess});
+            try
+                save(t, filexml{iprocess}); % save the xml file containing the processing parameters
+            catch ME
+                if ~strcmp (RunMode,'local')
+                    errormsg=['error writting ' filexml{iprocess} ': ' ME.message];
+                    return
                 end
-                system([file_exe_global ' &'])% directly execute the command file
-            case '.sh' % compiled Matlab function
-                for iprocess=1:NbProcess
+            end
+        end
+        if strcmp (RunMode,'local')
+            switch ActionExt
+                case '.m'
+                    h_fun(Param); % direct launching
+                    
+                case '.sh'
+                    switch computer
+                        case {'PCWIN','PCWIN64'} %Windows system
+                            filexml=regexprep(filexml,'\\','\\\\'); % add '\' so that '\' are left as characters
+                            system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]); % TODO: adapt to DOS system
+                        case {'GLNX86','GLNXA64','MACI64'}%Linux  system
+                            system([ActionFullName ' ' RunTime ' ' filexml{iprocess}]);
+                    end
+            end
+        end
+    end
+    
+    if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
+        %% processing on a different session of the same computer (background) or cluster, create executable files
+        batch_file_list=cell(NbProcess,1); % initiate the list of executable files
+        DirExe=fullfile(OutputDir,'0_EXE'); % directory name for executable files
+        switch computer
+            case {'PCWIN','PCWIN64'} %Windows system
+                ExeExt='.bat';
+            case {'GLNX86','GLNXA64','MACI64'}%Linux  system
+                ExeExt='.sh';
+        end
+        %create subdirectory for executable files
+        if ~exist(DirExe,'dir')
+            [tild,msg1]=mkdir(DirExe);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' DirExe ': ' msg1]; % error message for directory creation
+                return
+            end
+        end
+        %create subdirectory for log files
+        DirLog=fullfile(OutputDir,'0_LOG');
+        if ~exist(DirLog,'dir')
+            [tild,msg1]=mkdir(DirLog);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' DirLog ': ' msg1]; % error message for directory creation
+                return
+            end
+        end
+        
+        %create the executable file
+        file_exe_global=fullfile_uvmat('','',Param.InputTable{1,3},ExeExt,OutputNomType,...
+            first_i,last_i,first_j,last_j);
+        file_exe_global=fullfile(OutputDir,'0_EXE',file_exe_global);
+        filelog_global=fullfile_uvmat('','',Param.InputTable{1,3},'.log',OutputNomType,...
+            first_i,last_i,first_j,last_j);
+        filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
+        
+        for iprocess=1:NbProcess
+            %create the executable file
+            batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
+            
+            % set the log file name
+            filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));
+        end
+    end
+    
+    %% launch the executable files for background or cluster processing
+    
+    switch RunMode
+        
+        case 'background'
+            [fid,message]=fopen(file_exe_global,'w');
+            if isequal(fid,-1)
+                errormsg=['creation of ' file_exe_global ':' message];
+                return
+            end
+            switch ActionExt
+                case '.m'% Matlab function
                     switch computer
                         case {'GLNX86','GLNXA64','MACI64'}
-                            [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
-                            if isequal(fid,-1)
-                                errormsg=['creation of .bat file: ' message];
-                                return
+                            matlab_ver = ver('MATLAB');
+                            matlab_version = matlab_ver.Version;
+                            cmd=[...
+                                '#!/bin/bash\n'...
+                                'source /etc/profile\n'...
+                                'module load matlab/' matlab_version '\n'...% CHOICE OF MATLAB VERSION
+                                'time_start=$(date +%%s)\n'...
+                                'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog_global ''' <<END_MATLAB\n'...
+                                'addpath(''' path_series ''');\n'...
+                                'addpath(''' Param.Action.ActionPath ''');\n'];
+                            for iprocess=1:NbProcess
+                                cmd=[cmd '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'];
                             end
-                            cmd=['#!/bin/bash \n '...
-                                '#$ -cwd \n '...
-                                'hostname && date \n '...
-                                'umask 002 \n'...
-                                ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
+                            cmd=[cmd  'exit\n' 'END_MATLAB\n'...
+                                'time_end=$(date +%%s)\n'...
+                                'echo "global time = " $(($time_end - $time_start)) >> ''' filelog_global '''\n'];
+                            fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                            fclose(fid); % close the executable filefilelog_global
+                            system(['chmod +x ' file_exe_global]); % set the file to executable
+                        case {'PCWIN','PCWIN64'}
+                            cmd=['matlab -automation -logfile ' regexprep(filelog{iprocess},'\\','\\\\')...
+                                ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
+                                'addpath(''' regexprep(Param.Action.ActionPath,'\\','\\\\') ''');'];
+                            for iprocess=1:NbProcess
+                                cmd=[cmd '' Param.Action.ActionName  '( ''' regexprep(filexml{iprocess},'\\','\\\\') ''');']
+                            end
+                            cmd=[cmd ';exit"'];
                             fprintf(fid,cmd); % fill the executable file with the  char string cmd
                             fclose(fid); % close the executable file
-                            system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
-                            system([batch_file_list{iprocess} ' &'])% directly execute the command file
-                        case {'PCWIN','PCWIN64'}
-                            msgbox_uvmat('ERROR','option for compiled Matlab functions not implemented for Windows system')
-                            return
                     end
-                end
-                msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background: press STATUS to see results'])
-        end
-        
-    case 'cluster' % option 'oar-parexec' used
-        %create subdirectory for oar commands
-        for iprocess=1:NbProcess
-            [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
-            if isequal(fid,-1)
-                errormsg=['creation of .bat file: ' message];
-                return
+                    system([file_exe_global ' &'])% directly execute the command file
+                case '.sh' % compiled Matlab function
+                    for iprocess=1:NbProcess
+                        switch computer
+                            case {'GLNX86','GLNXA64','MACI64'}
+                                [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
+                                if isequal(fid,-1)
+                                    errormsg=['creation of .bat file: ' message];
+                                    return
+                                end
+                                cmd=['#!/bin/bash \n '...
+                                    '#$ -cwd \n '...
+                                    'hostname && date \n '...
+                                    'umask 002 \n'...
+                                    ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
+                                fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                                fclose(fid); % close the executable file
+                                system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
+                                system([batch_file_list{iprocess} ' &'])% directly execute the command file
+                            case {'PCWIN','PCWIN64'}
+                                msgbox_uvmat('ERROR','option for compiled Matlab functions not implemented for Windows system')
+                                return
+                        end
+                    end
+                    msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background for ' ExpName ': press STATUS to see results'])
             end
-            if  strcmp(ActionExt,'.sh')
-                cmd=['#!/bin/bash \n '...
-                    '#$ -cwd \n '...
-                    'hostname && date \n '...
-                    'umask 002 \n'...
-                    ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
+            
+        case 'cluster' % option 'oar-parexec' used
+            %create subdirectory for oar commands
+            for iprocess=1:NbProcess
+                [fid,message]=fopen(batch_file_list{iprocess},'w'); % create the executable file
+                if isequal(fid,-1)
+                    errormsg=['creation of .bat file: ' message];
+                    return
+                end
+                if  strcmp(ActionExt,'.sh')
+                    cmd=['#!/bin/bash \n '...
+                        '#$ -cwd \n '...
+                        'hostname && date \n '...
+                        'umask 002 \n'...
+                        ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
+                else
+                    matlab_ver = ver('MATLAB');
+                    matlab_version = matlab_ver.Version;
+                    cmd=[...
+                        '#!/bin/bash\n'...
+                        'source /etc/profile\n'...
+                        'module load matlab/' matlab_version '\n'...% CHOICE OF MATLAB VERSION
+                        'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...
+                        'addpath(''' path_series ''');\n'...
+                        'addpath(''' Param.Action.ActionPath ''');\n'...
+                        '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'...
+                        'exit\n'...
+                        'END_MATLAB\n'];
+                end
+                fprintf(fid,cmd); % fill the executable file with the  char string cmd
+                fclose(fid); % close the executable file
+                system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
+            end
+            DIR_CLUSTER=fullfile(OutputDir,'0_CLUSTER');
+            if exist(DIR_CLUSTER,'dir')% delete the content of the dir 0_LOG to allow new input
+                curdir=pwd;
+                cd(DIR_CLUSTER)
+                delete('*')
+                cd(curdir)
             else
-                matlab_ver = ver('MATLAB');
-                matlab_version = matlab_ver.Version;
-                cmd=[...
-                    '#!/bin/bash\n'...
-                    'source /etc/profile\n'...
-                    'module load matlab/' matlab_version '\n'...% CHOICE OF MATLAB VERSION
-                    'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...
-                    'addpath(''' path_series ''');\n'...
-                    'addpath(''' Param.Action.ActionPath ''');\n'...
-                    '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'...
-                    'exit\n'...
-                    'END_MATLAB\n'];
-            end
-            fprintf(fid,cmd); % fill the executable file with the  char string cmd
-            fclose(fid); % close the executable file
-            system(['chmod +x ' batch_file_list{iprocess}]); % set the file to executable
-        end
-        DIR_CLUSTER=fullfile(OutputDir,'0_CLUSTER');
-        if exist(DIR_CLUSTER,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DIR_CLUSTER)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DIR_CLUSTER);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DIR_CLUSTER ': ' msg1]; % error message for directory creation
-                return
-            end
-        end
-        % create file containing the list of jobs
-        ListProcess=fullfile(DIR_CLUSTER,'job_list.txt'); % name of the file containing the list of executables
-        fid=fopen(ListProcess,'w'); % open it for writting
-        for iprocess=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{iprocess} '\n']); % write list of exe files
-        end
-        fclose(fid);
-        system(['chmod +x ' ListProcess]); % set the file to executable
- 
-        CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
-        LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
-        oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
-        [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
-        filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
-        fid=fopen(filename_oarcommand,'w');
-        fprintf(fid,oar_command); % store the command
-        fprintf(fid,result); % store the result (job ID number)
-        fclose(fid);
-        msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched as  ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
-        
-%     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct 
-
-%         %create subdirectory for pbs command and log files
-%         DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
-%         if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
-%             curdir=pwd;
-%             cd(DirPBS)
-%             delete('*')
-%             cd(curdir)
-%         else
-%             [tild,msg1]=mkdir(DirPBS);
-%             if ~strcmp(msg1,'')
-%                 errormsg=['cannot create ' DirPBS ': ' msg1]; % error message for directory creation
-%                 return
-%             end
-%         end
-%         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
-%         walltime_onejob=1800; % seconds, max estimated time for asingle file index value
-%         ListProcess=fullfile(DirPBS,'job_list.txt'); % create name of the global executable file
-%         fid=fopen(ListProcess,'w');
-%         for iprocess=1:length(batch_file_list)
-%             fprintf(fid,[batch_file_list{iprocess} '\n']); % list of exe files
-%         end
-%         fclose(fid);
-%         system(['chmod +x ' ListProcess]); % set the file to executable
-%         pbs_command=['qsub -n CIVX '...
-%             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-%             '-l /core=' num2str(NbCore) ','...
-%             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
-%             '-E ' regexprep(ListProcess,'\.txt\>','.stderr') ' '...
-%             '-O ' regexprep(ListProcess,'\.txt\>','.log') ' '...
-%             extra_qstat ' '...
-%             '"oar-parexec -s -f ' ListProcess ' '...
-%             '-l ' ListProcess '.log"'];
-%         filename_oarcommand=fullfile(DirPBS,'pbs_command');
-%         fid=fopen(filename_oarcommand,'w');
-%         fprintf(fid,pbs_command);
-%         fclose(fid);
-%         fprintf(pbs_command); % display in command line
-%         %system(pbs_command);
-%         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
-
-     case 'cluster_sge' % for PSMN % TODO: use the standard 'cluster' config with an external fct
-        % Au PSMN, on ne cr??e pas 1 job avec plusieurs c??urs, mais N jobs de 1 c??urs
-        % o?? N < 1000.
-        %create subdirectory for pbs command and log files
-
-        DirSGE=fullfile(OutputDir,'0_SGE');
-        if exist(DirSGE,'dir')% delete the content of the dir 0_LOG to allow new input
-            curdir=pwd;
-            cd(DirSGE)
-            delete('*')
-            cd(curdir)
-        else
-            [tild,msg1]=mkdir(DirSGE);
-            if ~strcmp(msg1,'')
-                errormsg=['cannot create ' DirSGE ': ' msg1]; % error message for directory creation
-                return
-            end
-        end
-        maxImgsPerJob = ceil(length(batch_file_list)/NbCore);
-        disp(['Max number of jobs: ' num2str(NbCore)])
-        disp(['Images per job: ' num2str(maxImgsPerJob)])
-        
-        iprocess = 1;
-        imgsInJob = [];
-        currJobIndex = 1;
-        done = 0;
-        while(~done)
-            if(iprocess <= length(batch_file_list))
-                imgsInJob = [imgsInJob, iprocess];
-            end
-            if((numel(imgsInJob) >= maxImgsPerJob) || (iprocess == length(batch_file_list)))
-                cmd=['#!/bin/sh \n'...
-                     '#$ -cwd \n'...
-                     'hostname && date\n']
-                for ii=1:numel(imgsInJob)
-                    cmd=[cmd ActionFullName ' /softs/matlab ' filexml{imgsInJob(ii)} '\n'];
+                [tild,msg1]=mkdir(DIR_CLUSTER);
+                if ~strcmp(msg1,'')
+                    errormsg=['cannot create ' DIR_CLUSTER ': ' msg1]; % error message for directory creation
+                    return
                 end
-                [fid, message] = fopen([DirSGE '/job' num2str(currJobIndex) '.sh'], 'w');
-                fprintf(fid, cmd);
-                fclose(fid);
-                system(['chmod +x ' DirSGE '/job' num2str(currJobIndex) '.sh'])
-                sge_command=['qsub -N civ_' num2str(currJobIndex) ' '...
-                    '-q ' qstat_Queue ' '...
-                    '-e ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
-                    '-o ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
-                    fullfile([DirSGE '/job' num2str(currJobIndex) '.sh'])];
-                fprintf(sge_command); % display in command line
-                [status, result] = system(sge_command);
-                fprintf(result);
-                currJobIndex = currJobIndex + 1;
-                imgsInJob = [];
             end
-            if(iprocess == length(batch_file_list))
-                done = 1;
+            % create file containing the list of jobs
+            ListProcess=fullfile(DIR_CLUSTER,'job_list.txt'); % name of the file containing the list of executables
+            fid=fopen(ListProcess,'w'); % open it for writting
+            for iprocess=1:length(batch_file_list)
+                fprintf(fid,[batch_file_list{iprocess} '\n']); % write list of exe files
             end
-            iprocess = iprocess + 1;
+            fclose(fid);
+            system(['chmod +x ' ListProcess]); % set the file to executable
+            
+            CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
+            LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
+            oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
+            [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
+            filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
+            fid=fopen(filename_oarcommand,'w');
+            fprintf(fid,oar_command); % store the command
+            fprintf(fid,result); % store the result (job ID number)
+            fclose(fid);
+            if status==0
+            msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+            else
+               msgbox_uvmat('ERROR',result) 
+            end
+            %     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct
+            
+            %         %create subdirectory for pbs command and log files
+            %         DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
+            %         if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
+            %             curdir=pwd;
+            %             cd(DirPBS)
+            %             delete('*')
+            %             cd(curdir)
+            %         else
+            %             [tild,msg1]=mkdir(DirPBS);
+            %             if ~strcmp(msg1,'')
+            %                 errormsg=['cannot create ' DirPBS ': ' msg1]; % error message for directory creation
+            %                 return
+            %             end
+            %         end
+            %         max_walltime=3600*20; % 20h max total calculation (cannot exceed 24 h)
+            %         walltime_onejob=1800; % seconds, max estimated time for asingle file index value
+            %         ListProcess=fullfile(DirPBS,'job_list.txt'); % create name of the global executable file
+            %         fid=fopen(ListProcess,'w');
+            %         for iprocess=1:length(batch_file_list)
+            %             fprintf(fid,[batch_file_list{iprocess} '\n']); % list of exe files
+            %         end
+            %         fclose(fid);
+            %         system(['chmod +x ' ListProcess]); % set the file to executable
+            %         pbs_command=['qsub -n CIVX '...
+            %             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+            %             '-l /core=' num2str(NbCore) ','...
+            %             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
+            %             '-E ' regexprep(ListProcess,'\.txt\>','.stderr') ' '...
+            %             '-O ' regexprep(ListProcess,'\.txt\>','.log') ' '...
+            %             extra_qstat ' '...
+            %             '"oar-parexec -s -f ' ListProcess ' '...
+            %             '-l ' ListProcess '.log"'];
+            %         filename_oarcommand=fullfile(DirPBS,'pbs_command');
+            %         fid=fopen(filename_oarcommand,'w');
+            %         fprintf(fid,pbs_command);
+            %         fclose(fid);
+            %         fprintf(pbs_command); % display in command line
+            %         %system(pbs_command);
+            %         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
+            
+        case 'cluster_sge' % for PSMN % TODO: use the standard 'cluster' config with an external fct
+            % Au PSMN, on ne cr??e pas 1 job avec plusieurs c??urs, mais N jobs de 1 c??urs
+            % o?? N < 1000.
+            %create subdirectory for pbs command and log files
+            
+            DirSGE=fullfile(OutputDir,'0_SGE');
+            if exist(DirSGE,'dir')% delete the content of the dir 0_LOG to allow new input
+                curdir=pwd;
+                cd(DirSGE)
+                delete('*')
+                cd(curdir)
+            else
+                [tild,msg1]=mkdir(DirSGE);
+                if ~strcmp(msg1,'')
+                    errormsg=['cannot create ' DirSGE ': ' msg1]; % error message for directory creation
+                    return
+                end
+            end
+            maxImgsPerJob = ceil(length(batch_file_list)/NbCore);
+            disp(['Max number of jobs: ' num2str(NbCore)])
+            disp(['Images per job: ' num2str(maxImgsPerJob)])
+            
+            iprocess = 1;
+            imgsInJob = [];
+            currJobIndex = 1;
+            done = 0;
+            while(~done)
+                if(iprocess <= length(batch_file_list))
+                    imgsInJob = [imgsInJob, iprocess];
+                end
+                if((numel(imgsInJob) >= maxImgsPerJob) || (iprocess == length(batch_file_list)))
+                    cmd=['#!/bin/sh \n'...
+                        '#$ -cwd \n'...
+                        'hostname && date\n']
+                    for ii=1:numel(imgsInJob)
+                        cmd=[cmd ActionFullName ' /softs/matlab ' filexml{imgsInJob(ii)} '\n'];
+                    end
+                    [fid, message] = fopen([DirSGE '/job' num2str(currJobIndex) '.sh'], 'w');
+                    fprintf(fid, cmd);
+                    fclose(fid);
+                    system(['chmod +x ' DirSGE '/job' num2str(currJobIndex) '.sh'])
+                    sge_command=['qsub -N civ_' num2str(currJobIndex) ' '...
+                        '-q ' qstat_Queue ' '...
+                        '-e ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
+                        '-o ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
+                        fullfile([DirSGE '/job' num2str(currJobIndex) '.sh'])];
+                    fprintf(sge_command); % display in command line
+                    [status, result] = system(sge_command);
+                    fprintf(result);
+                    currJobIndex = currJobIndex + 1;
+                    imgsInJob = [];
+                end
+                if(iprocess == length(batch_file_list))
+                    done = 1;
+                end
+                iprocess = iprocess + 1;
+            end
+            msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
+        case 'python'
+            command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
+                'python -m fluidimage.run_from_xml ' filexml{iprocess}];
+            fprintf(['command:\n' command '\n\n'])
+            system(command, '-echo');
+    end
+    if exist(OutputDir,'dir')
+        [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);
+        if MESSAGE.GroupWrite~=1
+            [success,msg] = fileattrib(OutputDir,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
+            if success==0
+                msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg}); % error message for directory creation
+            end
         end
-        msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
-    case 'python'
-        command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
-            'python -m fluidimage.run_from_xml ' filexml{iprocess}];
-        fprintf(['command:\n' command '\n\n'])
-        system(command, '-echo');
-end
-if exist(OutputDir,'dir')
-    [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);
-    if MESSAGE.GroupWrite~=1
-    [success,msg] = fileattrib(OutputDir,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
-    if success==0
-        msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg}); % error message for directory creation
-    end
     end
 end
-
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -3473,12 +3501,9 @@ if strcmp(ActionExt,'.py (in dev.)')
     set(handles.RunMode,'Value',2)
 end
 
-%function num_NbProcess_Callback(hObject, eventdata, handles)
-
 
 function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
-%set(handles.num_NbProcess,'String',num2str(NbSlice))
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus: 
@@ -3519,8 +3544,8 @@ menu=menu(1:imax);
 
 
 % --- Executes on mouse motion over figure - except title and menu.
-function series_WindowButtonMotionFcn(hObject, eventdata, handles)
-set(hObject,'Pointer','arrow');
+% function series_WindowButtonMotionFcn(hObject, eventdata, handles)
+% set(hObject,'Pointer','arrow');
 
 
 % --- Executes on button press in SetPairs.
@@ -3735,3 +3760,14 @@ system(SeriesData.SeriesParam.DiskQuotaCmd)
 
 
 
+% --- Executes on button press in Replicate.
+function Replicate_Callback(hObject, eventdata, handles)
+if get(handles.Replicate,'Value')
+InputTable=get(handles.InputTable,'Data');
+browse_data(fullfile(InputTable{1,1},InputTable{1,2}))
+else
+    hh=findobj(allchild(0),'Tag','browse_data');
+    if ~isempty(hh)
+        delete(hh)
+    end
+end
