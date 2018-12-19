@@ -5853,8 +5853,9 @@ end
 % --- Executes on selection change in CheckEditObject.
 function CheckEditObject_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
+get(handles.CheckEditObject,'Value')
 hset_object=findobj(allchild(0),'Tag','set_object');
-if get(handles.CheckEditObject,'Value')
+if get(handles.CheckEditObject,'Value')% if the edit box has been selected
     %suppress the other options
     set(handles.MenuObject,'checked','off')
     set(handles.CheckZoom,'Value',0)
@@ -5882,9 +5883,9 @@ function CheckViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 check_view=get(handles.CheckViewObject,'Value');
 hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
+% if ~isempty(hset_object)
+%     delete(hset_object)% delete existing version of set_object
+% end
 if check_view %activate set_object
     IndexObj=get(handles.ListObject,'Value');
     list_object=get(handles.ListObject,'String');
@@ -5909,8 +5910,11 @@ if check_view %activate set_object
     end
     
     %% initiate the new projection object
+    if isempty(hset_object)
     hset_object=set_object(data,[],ZBounds);
     set(hset_object,'name','set_object')
+    end
+    
     hhset_object=guidata(hset_object);
     if get(handles.CheckEditObject,'Value')% edit mode
         set(get(hset_object,'children'),'Enable','on')

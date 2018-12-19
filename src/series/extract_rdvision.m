@@ -537,6 +537,7 @@ if NbDti+1>size(timestamp,1)
     NbDti=size(timestamp,1)-1;
 end
 Dti_stamp=(timestamp(1+NbDti,1)-timestamp(1,1))/NbDti;
+Dti_stamp=(timestamp(1+NbDti,1)-timestamp(2,1))/(NbDti-1);
 t=set(t,uid_content_Dti,'value',num2str(Dti_stamp));%corret Dti
 if abs(Dti_stamp-Dti)>Dti/1000
     disp([msg 'Dti from xml file corrected by ' num2str(Dti_stamp-Dti) ', ']);%'

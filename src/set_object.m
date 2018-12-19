@@ -164,7 +164,7 @@ if exist('data','var')
     end
 %     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
          set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
-         set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
+%          set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
 %         set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
 %     end
 end
@@ -331,7 +331,7 @@ switch ObjectStyle
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
     case {'plane','plane_z'}  
-        set(handles.num_Angle_3,'Visible','on')
+        set(handles.num_Angle_1,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
@@ -417,19 +417,20 @@ function update_slider(hObject, eventdata,handles)
 PlaneAngle(1)=str2num(get(handles.num_Angle_1,'String'));%first  angle in degrees
 PlaneAngle(2)=str2num(get(handles.num_Angle_2,'String'));%second  angle in degrees
 %PlaneAngle(3)=str2num(get(handles.num_Angle_3,'String'));%second  angle in degrees
-om=norm(PlaneAngle);%norm of rotation angle in radians
-OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-cos_om=cos(pi*om/180);
-sin_om=sin(pi*om/180);
-coeff=OmAxis(3)*(1-cos_om);
+% om=norm(PlaneAngle);%norm of rotation angle in radians
+% OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+cos_om1=cos(pi*PlaneAngle(1)/180);
+sin_om1=sin(pi*PlaneAngle(1)/180);
+cos_om2=cos(pi*PlaneAngle(2)/180);
+sin_om2=sin(pi*PlaneAngle(2)/180);
 %components of the unity vector norm_plane normal to the projection plane
-norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-norm_plane(3)=OmAxis(3)*coeff+cos_om;
+% norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+% norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+% norm_plane(3)=OmAxis(3)*coeff+cos_om;
 huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
 if isfield(UvData,'X') && isfield(UvData,'Y') && isfield(UvData,'Z')
-    Z=norm_plane(1)*(UvData.X)+norm_plane(2)*(UvData.Y)+norm_plane(3)*(UvData.Z);
+    Z=sin_om2*(cos_om1*(UvData.X)+sin_om1*(UvData.Y))+cos_om2*(UvData.Z);
     set(handles.z_slider,'Min',min(Z))
     set(handles.z_slider,'Max',max(Z))
     ZMax_Callback(hObject, eventdata, handles)
