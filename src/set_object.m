@@ -292,33 +292,30 @@ set(handles.num_Angle_1,'Visible','off')
 set(handles.num_Angle_2,'Visible','off')
 %set(handles.num_Angle_3,'Visible','off')
 set(handles.num_RangeX_1,'Visible','off')
-set(handles.num_RangeX_2,'Visible','off')
 set(handles.num_RangeY_1,'Visible','off')
-if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
-    set(handles.num_RangeY_2,'Visible','off')
-else
-    set(handles.num_RangeY_2,'Visible','on')
-end
-if strcmp(ObjectStyle,'rectangle')||strcmp(ObjectStyle,'ellipse')
-    set(handles.num_RangeX_2,'Visible','on')
-else
-   set(handles.num_RangeX_2,'Visible','off')
-end
+% if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
+%     set(handles.num_RangeY_2,'Visible','off')
+% else
+%     set(handles.num_RangeY_2,'Visible','on')
+
 set(handles.num_RangeZ_1,'Visible','off')
 set(handles.num_RangeZ_2,'Visible','off')
 set(handles.num_DX,'Visible','off')
 set(handles.num_DY,'Visible','off')
 set(handles.num_DZ,'Visible','off')
-set(handles.num_RangeInterp,'Visible','off')
-
+%default
+                set(handles.num_RangeX_2,'Visible','off')
+         set(handles.num_RangeY_2,'Visible','off')
 switch ObjectStyle
     case 'points'
-        set(handles.num_RangeY_2,'TooltipString','num_RangeY_2: range of projection around each point') 
+        set(handles.num_RangeInterp,'TooltipString','num_RangeY_2: range of projection around each point') 
 %         set(handles.XObject,'TooltipString','XObject: set of x coordinates of the points')
 %         set(handles.YObject,'TooltipString','YObject: set of y coordinates of the points')
 %         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates of the points')
     case {'line','polyline','polygon'}
-        set(handles.num_RangeY_2,'TooltipString','num_RangeY_2: range of projection around the line')
+        set(handles.num_RangeX_2,'Visible','off')
+         set(handles.num_RangeY_2,'Visible','off')
+        %set(handles.num_RangeY_2,'TooltipString','num_RangeY_2: range of projection around the line')
          set(handles.Coord,'TooltipString','Coord: table of x,y, z coordinates defining the line')
 %         set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
 %         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
@@ -328,14 +325,21 @@ switch ObjectStyle
             set(handles.num_RangeInterp,'Visible','on')
         end       
     case {'rectangle','ellipse'}
+                set(handles.num_RangeX_2,'Visible','on')
+         set(handles.num_RangeY_2,'Visible','on')
         set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
         set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
+        if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
+            set(handles.num_DX,'Visible','on')
+            set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
+            set(handles.num_RangeInterp,'Visible','on')
+        end       
     case {'plane','plane_z'}  
         set(handles.num_Angle_1,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
-        set(handles.num_RangeY_2,'Visible','on')
+        %set(handles.num_RangeY_2,'Visible','on')
         set(handles.num_RangeZ_2,'TooltipString','num_ZMax: range of projection normal to the plane')
         if test3D
             set(handles.num_Angle_2,'Visible','on')

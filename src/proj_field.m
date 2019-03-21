@@ -573,10 +573,10 @@ switch ObjectData.Type
         LineLength=2*pi*ObjectData.RangeX*ObjectData.RangeY;
         NbSegment=0;
     case 'rectangle'
-        LineCoord([1 4],1)=ObjectData.Coord(1,1)-ObjectData.RangeX;
-        LineCoord([1 2],2)=ObjectData.Coord(1,2)-ObjectData.RangeY;
-        LineCoord([2 3],1)=ObjectData.Coord(1,1)+ObjectData.RangeX;
-        LineCoord([4 1],2)=ObjectData.Coord(1,2)+ObjectData.RangeY;
+        LineCoord([1 4],1)=ObjectData.Coord(1,1)-ObjectData.num_RangeX_2;
+        LineCoord([1 2],2)=ObjectData.Coord(1,2)-ObjectData.num_RangeX_2;
+        LineCoord([2 3],1)=ObjectData.Coord(1,1)+ObjectData_RangeX_2;
+        LineCoord([4 1],2)=ObjectData.Coord(1,2)+ObjectData.RangeY-Y2;
     case 'polygon'
         LineCoord(NbPoints+1)=LineCoord(1);
 end
@@ -1609,8 +1609,8 @@ for icell=1:length(CellInfo)
                     ProjData.(AYName)=[coord_y_proj(1) coord_y_proj(end)]; %record the new (projected ) y coordinates
                     ProjData.(AXName)=[coord_x_proj(1) coord_x_proj(end)]; %record the new (projected ) x coordinates
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
-                    XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(2))-YI*sin(PlaneAngle(1));%corresponding coordinates in the original system
-                    YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(2))+YI*cos(PlaneAngle(1));
+                    XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(1))-YI*sin(PlaneAngle(1));%corresponding coordinates in the original system
+                    YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(1))+YI*cos(PlaneAngle(1));
                     
                     if numel(Coord{1})==2% x coordinate defined by its bounds, get the whole set
                         Coord{1}=linspace(Coord{1}(1),Coord{1}(2),CellInfo{icell}.CoordSize(1));

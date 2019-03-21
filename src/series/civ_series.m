@@ -454,14 +454,18 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
-                try
-                    par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
-                catch ME
-                    if ~isempty(ME.message)
-                        errormsg=['error reading input image: ' ME.message];
-                        disp_uvmat('ERROR',errormsg,checkrun)
-                        return
+                if exist(maskname,'file')
+                    try
+                        par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
+                    catch ME
+                        if ~isempty(ME.message)
+                            errormsg=['error reading input image: ' ME.message];
+                            disp_uvmat('ERROR',errormsg,checkrun)
+                            return
+                        end
                     end
+                else
+                    par_civ1.Mask=[];
                 end
                 mask=par_civ1.Mask;
                 maskoldname=maskname;
@@ -710,6 +714,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ2.Mask=mask; %use mask already opened
             else
+                if exist(maskname,'file')
                 try
                     par_civ2.Mask=imread(maskname);%update the mask, an store it for future use
                 catch ME
@@ -718,6 +723,9 @@ for ifield=1:NbField
                         disp_uvmat('ERROR',errormsg,checkrun)
                         return
                     end
+                end
+                else
+                    par_civ2.Mask=[];
                 end
                 mask=par_civ2.Mask;
                 maskoldname=maskname;
