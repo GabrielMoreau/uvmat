@@ -254,6 +254,7 @@ answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];
     [num2str(numel(ind_removed)) ' points removed']});
+SliceCoord_ref=[0 0 0]; %default reference plane
 if strcmp(answer,'Yes') %store the calibration data
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
         answer=msgbox_uvmat('INPUT_Y-N',{['Assume that the current image is in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be later modified by MenuSetSlice in the upper bar menu of uvmat'});
@@ -267,6 +268,7 @@ end
 if ~isempty(GeometryCalib) % if calibration is not cancelled
     %%%%% use of the option 'replicate'
     if get(handles.Replicate,'Value')% if the option replicate is activated
+        nbcalib=0;
         %% open the GUI browse_data
         hbrowse=findobj(allchild(0),'Tag','browse_data');
         if ~isempty(hbrowse)% look for the GUI 'replicate'
@@ -275,131 +277,77 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
             ListExperiments=get(BrowseHandles.ListExperiments,'String');
             ListValues=get(BrowseHandles.ListExperiments,'Value');
             ListExperiments=ListExperiments(ListValues);
-            ListDevices=get(BrowseHandles.ListDevices,'String');
-            Val=get(BrowseHandles.ListDevices,'Value');
-            DataFolder=ListDevices{Val};
-            nbcalib=0;
+            DataSeries=get(BrowseHandles.DataSeries,'String');
+            Val=get(BrowseHandles.DataSeries,'Value');
+            DataFolder=DataSeries{Val};
             for ilist=1:numel(ListExperiments)
                 SubDirBase=regexprep(DataFolder,'+/','');
                 ListExperiments{ilist}=regexprep(ListExperiments{ilist},'+/','');
                 XmlName=fullfile(SourceDir,ListExperiments{ilist},[SubDirBase '.xml']);
-                % copy the xml file from the old location if appropriate, then update with the calibration parameters
-                %                 if ~exist(XmlName,'file') && ~isempty(SubDirBase)
-                %                     oldxml=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},SubDirBase,[get(hhuvmat.RootFile,'String') '.xml']);
-                GeometryCalib.SliceCoord=SliceCoord_ref;%default input
-                if exist(XmlName,'file')
-                    %[success,message]=copyfile(oldxml,XmlName);%copy the old xml file to a new one with the new convention
-                    dispmesGeometryCalib=UvData.XmlData{1}.GeometryCalib;
+                errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+                if ~strcmp(errormsg,'')
+                    msgbox_uvmat('ERROR',errormsg);
                 else
-                    msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
-                    return
-                end
-                SliceCoord=GeometryCalib.SliceCoord;
-                InterfaceCoord=min(SliceCoord(:,3));
-                if isfield(GeometryCalib,'InterfaceCoord')
-                    InterfaceCoord=GeometryCalib.InterfaceCoord(1,3);
-                end
-                NbSlice=size(SliceCoord,1);
-                CheckVolumeScan=0;
-                if isfield(GeometryCalib,'CheckVolumeScan')
-                    CheckVolumeScan=GeometryCalib.CheckVolumeScan;
-                end
-                RefractionIndex=1.33;
-                CheckRefraction=0;% default value of the check box refraction
-                if isfield(GeometryCalib,'RefractionIndex')
-                    RefractionIndex=GeometryCalib.RefractionIndex;
-                    CheckRefraction=1;
-                end
-                SliceAngle=[0 0 0];
-                if isfield(GeometryCalib,'SliceAngle')
-                    SliceAngle=GeometryCalib.SliceAngle;
-                end
-                dispmessage=' updated with calibration parameters';
-                %                         if ~strcmp(answer,'yes')
-                [XmlDataOld,warntext]=imadoc2struct(XmlName);
-                if isfield(XmlDataOld,'GeometryCalib')
-                    if isfield(XmlDataOld.GeometryCalib,'SliceAngle')
-                        GeometryCalib.SliceAngle=XmlDataOld.GeometryCalib.SliceAngle;
-                    end
-                    if isfield(XmlDataOld.GeometryCalib,'CheckRefraction')
-                        GeometryCalib.SliceAngle=XmlDataOld.GeometryCalib.CheckRefraction;
-                    end
-                    if isfield(XmlDataOld.GeometryCalib,'RefractionIndex')
-                        GeometryCalib.SliceAngle=XmlDataOld.GeometryCalib.RefractionIndex;
-                    end
-                    if isfield(XmlDataOld.GeometryCalib,'InterfaceCoord')
-                        GeometryCalib.SliceAngle=XmlDataOld.GeometryCalib.InterfaceCoord;
-                    end
+                    display([XmlName ' updated with calibration parameters'])
+                    nbcalib=nbcalib+1;
                 end
             end
-
-        else % in case the GUI 'replicate'is not found
-            dispmessage=' created with calibration parameters';
         end
-        errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+        msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' experiments']);  
+    else
+        %% copy the xml file from the old location if appropriate, then update with the calibration parameters
+        if ~exist(outputfile,'file') && ~isempty(SubDirBase)
+            oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
+            if exist(oldxml,'file')
+                [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+            end
+        end
+        errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
+        end
+        
+        %% display image with new calibration in the currently opened uvmat interface
+        FieldList=get(hhuvmat.FieldName,'String');
+        val=get(hhuvmat.FieldName,'Value');
+        if strcmp(FieldList{val},'image')
+            set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+            UserData=get(handles.geometry_calib,'UserData');
+            UserData.XmlInputFile=outputfile;%save the current xml file name
+            set(handles.geometry_calib,'UserData',UserData)
+            uvmat('InputFileREFRESH_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+            PLOT_Callback(hObject, eventdata, handles)
+            set(handles.CoordLine,'string',num2str(index))
+            Coord=get(handles.ListCoord,'Data');
+            update_calib_marker(Coord(index,:)); %indicate the point with max deviations from phys coord to calibration
+            figure(handles.geometry_calib)% put the GUI geometry_calib in front
         else
-            display([XmlName dispmessage])
-            nbcalib=nbcalib+1;
+            msgbox_uvmat('WARNING','open the image to see the effect of the new calibration')
         end
     end
-    % Use of the option replicate
-end
-msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' experiments']);
-
-
-%% copy the xml file from the old location if appropriate, then update with the calibration parameters
-if ~exist(outputfile,'file') && ~isempty(SubDirBase)
-    oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
-    if exist(oldxml,'file')
-        [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
-    end
-end
-errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
-if ~strcmp(errormsg,'')
-    msgbox_uvmat('ERROR',errormsg);
-end
-
-%% display image with new calibration in the currently opened uvmat interface
-FieldList=get(hhuvmat.FieldName,'String');
-val=get(hhuvmat.FieldName,'Value');
-if strcmp(FieldList{val},'image')
-    set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-    UserData=get(handles.geometry_calib,'UserData');
-    UserData.XmlInputFile=outputfile;%save the current xml file name
-    set(handles.geometry_calib,'UserData',UserData)
-    uvmat('InputFileREFRESH_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-    PLOT_Callback(hObject, eventdata, handles)
-    set(handles.CoordLine,'string',num2str(index))
-    Coord=get(handles.ListCoord,'Data');
-    update_calib_marker(Coord(index,:)); %indicate the point with max deviations from phys coord to calibration
-    figure(handles.geometry_calib)% put the GUI geometry_calib in front
-else
-    msgbox_uvmat('WARNING','open the image to see the effect of the new calibration')
 end
 
 set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color
-                    
+
 %------------------------------------------------------------------------
 % --- Executes on button press in Replicate
-function Replicate_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
-
-if get(handles.Replicate,'Value') %open the GUI browse_data
-    % look for the GUI uvmat and check for an image as input
-    huvmat=findobj(allchild(0),'Name','uvmat');
-    hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-    RootPath=get(hhuvmat.RootPath,'String');
-    SubDir=get(hhuvmat.SubDir,'String');
-    browse_data(fullfile(RootPath,SubDir))
-else
-    hbrowse=findobj(allchild(0),'Tag','browse_data');
-    if ~isempty(hbrowse)
-        delete(hbrowse)
-    end
-end
+    function Replicate_Callback(hObject, eventdata, handles)
+        % %------------------------------------------------------------------------
+        set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
+        
+        if get(handles.Replicate,'Value') %open the GUI browse_data
+            % look for the GUI uvmat and check for an image as input
+            huvmat=findobj(allchild(0),'Name','uvmat');
+            hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+            RootPath=get(hhuvmat.RootPath,'String');
+            SubDir=get(hhuvmat.SubDir,'String');
+            browse_data(fullfile(RootPath,SubDir))
+        else
+            hbrowse=findobj(allchild(0),'Tag','browse_data');
+            if ~isempty(hbrowse)
+                delete(hbrowse)
+            end
+        end
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
 function [GeometryCalib,ind_max,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic)

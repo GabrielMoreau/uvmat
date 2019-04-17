@@ -23,7 +23,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 08-Sep-2018 19:03:40
+% Last Modified by GUIDE v2.5 17-Apr-2019 18:15:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -74,9 +74,9 @@ FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
 if exist('MultiDevices','var') && strcmp(MultiDevices,'on')
-    set(handles.ListDevices,'Max',2)
+    set(handles.DataSeries,'Max',2)
 else
-    set(handles.ListDevices,'Max',1)
+    set(handles.DataSeries,'Max',1)
 end
 if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
     set(handles.CreateMirror,'Visible','on')
@@ -211,7 +211,7 @@ set(handles.SourceDir,'BackgroundColor',[1 1 1])
 %------------------------------------------------------------------------
 % List the experiments in a campaign, filling the menu ListExperiments
 %------------------------------------------------------------------------
-function errormsg=scan_campaign(handles,Campaign,Experiment,DataSeries)
+function errormsg=scan_campaign(handles,Campaign,Experiment,DataInput)
 %------------------------------------------------------------------------
 errormsg='';
 if ~isempty(regexp(Campaign,'^http'))|| exist(Campaign,'dir')
@@ -232,13 +232,13 @@ if ~isempty(regexp(Campaign,'^http'))|| exist(Campaign,'dir')
     set(handles.ListExperiments,'String',ListFiles)
     set(handles.ListExperiments,'Value',index)% initialise the menu selection with the folder defined by the input
     ListExperiments_Callback([],[], handles)
-    ListDevices=get(handles.ListDevices,'String');
-    index=find(strcmp(['+/' DataSeries],ListDevices));
+    DataSeries=get(handles.DataSeries,'String');
+    index=find(strcmp(['+/' DataInput],DataSeries));
     if isempty(index)
-        index=find(strcmp(['~/' DataSeries],ListDevices));
+        index=find(strcmp(['~/' DataInput],DataSeries));
     end
     if ~isempty(index)
-          set(handles.ListDevices,'Value',index)
+          set(handles.DataSeries,'Value',index)
     end
 else
     msgbox_uvmat('ERROR',['The input ' Campaign ' is not a directory'])
@@ -269,7 +269,7 @@ list_dataseries(handles,ListExperiments,MirrorPath)
 %------------------------------------------------------------------------
  function list_dataseries(handles,ListExperiments,MirrorPath)
 
-ListDevices={};
+DataSeries={};
 for iexp=1:numel(ListExperiments)
     if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
         ListExperiments{iexp}(1)=[];%remove the first char '+' used to mark folders
@@ -294,23 +294,23 @@ for iexp=1:numel(ListExperiments)
                     if check_dir(ilist)
                         ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
                     end
-                    if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
-                        ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                    if isempty(find(strcmp(ListFiles{ilist},DataSeries), 1))% if the item is not already in DataSeries
+                        DataSeries=[DataSeries;ListFiles{ilist}]; %append the item to the list
                     end                   
                 end
             end
         end
     end
 end
-set(handles.ListDevices,'Value',1)
-set(handles.ListDevices,'String',sort(ListDevices))
+set(handles.DataSeries,'Value',1)
+set(handles.DataSeries,'String',sort(DataSeries))
 
 %------------------------------------------------------------------------
 % --- Executes when the mirror is created or updated
 %------------------------------------------------------------------------
  function update_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
 
-ListDevices={};
+DataSeries={};
 for iexp=1:numel(ListExperiments)
     if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
         ListExperiments{iexp}(1)=[];
@@ -349,18 +349,18 @@ for iexp=1:numel(ListExperiments)
                     else% create mirror to the data series if needed
                         system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder                     
                     end
-                    if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
+                    if isempty(find(strcmp(ListFiles{ilist},DataSeries), 1))% if the item is not already in DataSeries
                         if check_dir(ilist)
                             ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
                         end
-                        ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                        DataSeries=[DataSeries;ListFiles{ilist}]; %append the item to the list
                     end
                 end
             end
         end
     end
 end
-set(handles.ListDevices,'String',sort(ListDevices))
+set(handles.DataSeries,'String',sort(DataSeries))
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CampaignDoc.
@@ -463,8 +463,8 @@ if ~isequal(IndicesExp,1)% if first element ('*') selected all the experiments a
     Experiment=Experiment(IndicesExp);% use the selection of the list of experiments
 end
 Experiment=regexprep(Experiment,'^\+/','');% remove the +/ used to mark dir
-Device=get(handles.ListDevices,'String');
-Value=get(handles.ListDevices,'Value');
+Device=get(handles.DataSeries,'String');
+Value=get(handles.DataSeries,'Value');
 Device=Device(Value);
 Device=regexprep(Device,'^\+/','');% remove the +/ used to mark dir
 Device=regexprep(Device,'^~','');% remove the ~ used to mark symbolic link
@@ -552,7 +552,7 @@ end
 % --- Executes on button press in Up.
 function Up_Callback(hObject, eventdata, handles)
 SourceDir=get(handles.SourceDir,'String');
-% Device=ListDevices{get(handles.ListDevices,'Value')};
+% Device=DataSeries{get(handles.DataSeries,'Value')};
 % DataSeries=uigetfile_uvmat('open a data folder',Device,'uigetdir');
 % uiresume(handles.browse_data);
 browse_data(SourceDir)
@@ -565,15 +565,34 @@ ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
 SourceFolder=regexprep(ListExperiments{list_val(1)},'+','');
 set(handles.SourceDir,'String',fullfile(SourceDir,SourceFolder))
-ListDevices=get(handles.ListDevices,'String');
-ValueDevice=get(handles.ListDevices,'Value');
-set(handles.ListExperiments,'String',ListDevices)
+DataSeries=get(handles.DataSeries,'String');
+ValueDevice=get(handles.DataSeries,'Value');
+set(handles.ListExperiments,'String',DataSeries)
 set(handles.ListExperiments,'Value',ValueDevice)
 ListExperiments_Callback(hObject, [], handles)
-% Device=regexprep(ListDevices{get(handles.ListDevices,'Value')},'+','');
+% Device=regexprep(DataSeries{get(handles.DataSeries,'Value')},'+','');
 % Device=regexprep(Device,'~','');
 % PathDevice=fullfile(SourceDir,SourceFolder,Device);
 % DirDevice=dir(PathDevice);
 % NewDevice=DirDevice(end).name;
 % % uiresume(handles.browse_data);
 % browse_data(fullfile(PathDevice,NewDevice))
+
+
+% --- Executes on selection change in DataSeries.
+function DataSeries_Callback(hObject, eventdata, handles)
+% hObject    handle to DataSeries (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns DataSeries contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from DataSeries
+
+
+% --- Executes on button press in CheckDevices.
+function CheckDevices_Callback(hObject, eventdata, handles)
+if get(handles.CheckDevices,'Value')
+    set(handles.ListDevices,'Visible','on')
+else
+    set(handles.ListDevices,'Visible','off')
+end

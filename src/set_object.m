@@ -339,7 +339,7 @@ switch ObjectStyle
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
-        %set(handles.num_RangeY_2,'Visible','on')
+        set(handles.num_RangeY_2,'Visible','on')
         set(handles.num_RangeZ_2,'TooltipString','num_ZMax: range of projection normal to the plane')
         if test3D
             set(handles.num_Angle_2,'Visible','on')
