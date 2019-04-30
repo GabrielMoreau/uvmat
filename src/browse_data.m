@@ -256,12 +256,7 @@ else
 end
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
-% if isequal(list_val(1),1)
-%     ListExperiments=ListExperiments(2:end); %choose all experiments if the first line '*' is selected
-%     set(handles.ListExperiments,'Value',1)
-% else
-    ListExperiments=ListExperiments(list_val);%choose selected experiments
-% end
+ListExperiments=ListExperiments(list_val);%choose selected experiments
 list_dataseries(handles,ListExperiments,MirrorPath)
 
 %------------------------------------------------------------------------
@@ -302,8 +297,14 @@ for iexp=1:numel(ListExperiments)
         end
     end
 end
+if get(handles.CheckDevices,'Value')
+    set(handles.ListDevices,'Value',1)
+set(handles.ListDevices,'String',sort(DataSeries))
+CheckDevices_Callback([],[], handles)
+else
 set(handles.DataSeries,'Value',1)
 set(handles.DataSeries,'String',sort(DataSeries))
+end
 
 %------------------------------------------------------------------------
 % --- Executes when the mirror is created or updated
@@ -486,26 +487,6 @@ web([helpfile '#dataview'])
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in Cancel.
-%------------------------------------------------------------------------
-% function Cancel_Callback(hObject, eventdata, handles)
-% % hseries=findobj(allchild(0),'Tag','series');
-% % if ~isempty(hseries)
-% %     hhh=guidata(hseries);
-% %     set(hhh.Replicate,'Value',0)
-% % end
-% % delete(get(hObject,'parent'))
-
-% handles.output = get(hObject,'String');
-% guidata(hObject, handles); % Update handles structure
-% % Use UIRESUME instead of delete because the OutputFcn needs
-% uiresume(handles.browse_data);
-
-%------------------------------------------------------------------------
-% --- executes when user attempts to close geometry_calib.
-function browse_data_CloseRequestFcn(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
 % --- Executes when user attempts to close browse_data.
 %------------------------------------------------------------------------
 function closefcn(gcbo, eventdata)
@@ -552,9 +533,6 @@ end
 % --- Executes on button press in Up.
 function Up_Callback(hObject, eventdata, handles)
 SourceDir=get(handles.SourceDir,'String');
-% Device=DataSeries{get(handles.DataSeries,'Value')};
-% DataSeries=uigetfile_uvmat('open a data folder',Device,'uigetdir');
-% uiresume(handles.browse_data);
 browse_data(SourceDir)
 
 
@@ -570,29 +548,40 @@ ValueDevice=get(handles.DataSeries,'Value');
 set(handles.ListExperiments,'String',DataSeries)
 set(handles.ListExperiments,'Value',ValueDevice)
 ListExperiments_Callback(hObject, [], handles)
-% Device=regexprep(DataSeries{get(handles.DataSeries,'Value')},'+','');
-% Device=regexprep(Device,'~','');
-% PathDevice=fullfile(SourceDir,SourceFolder,Device);
-% DirDevice=dir(PathDevice);
-% NewDevice=DirDevice(end).name;
-% % uiresume(handles.browse_data);
-% browse_data(fullfile(PathDevice,NewDevice))
 
 
 % --- Executes on selection change in DataSeries.
 function DataSeries_Callback(hObject, eventdata, handles)
-% hObject    handle to DataSeries (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns DataSeries contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from DataSeries
 
 
 % --- Executes on button press in CheckDevices.
 function CheckDevices_Callback(hObject, eventdata, handles)
 if get(handles.CheckDevices,'Value')
     set(handles.ListDevices,'Visible','on')
+    ListDevices=get(handles.DataSeries,'String');
+    Index=get(handles.DataSeries,'Value');
+    set(handles.ListDevices,'String',ListDevices)
+    set(handles.ListDevices,'Value',Index)
+    set(handles.DataSeries,'Value',1)
+    if strcmp(get(handles.MirrorDir,'Visible'),'on')
+    MirrorPath=get(handles.MirrorDir,'String');
+    else
+    MirrorPath=get(handles.SourceDir,'String');
+    end
+    IndexExperiment=get(handles.ListExperiments,'Value');
+    ListExperiment=get(handles.ListExperiments,'String');
+    Experiment=ListExperiment{get(handles.ListExperiments,'Value')};
+    Experiment=regexprep(Experiment,'^\+/','');% remove the +/ used to mark dir
+    Experiment=regexprep(Experiment,'^~','');% remove the ~ used to mark symbolic link
+    Device=regexprep(ListDevices{Index},'^\+/','');% remove the +/ used to mark dir
+    Device=regexprep(Device,'^~','');% remove the ~ used to mark symbolic link
+    DataSeries=dir(fullfile(MirrorPath,Experiment,Device));
+    DataSeriesCell=struct2cell(DataSeries);
+    set(handles.DataSeries,'String',DataSeriesCell(1,:)')
 else
+    ListDevices=get(handles.ListDevices,'String');
+    Index=get(handles.ListDevices,'Value');
     set(handles.ListDevices,'Visible','off')
+    set(handles.DataSeries,'String',ListDevices)
+    set(handles.DataSeries,'Value',Index)
 end

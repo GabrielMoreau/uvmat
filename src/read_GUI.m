@@ -93,7 +93,7 @@ for ichild=1:numel(hchild)
                     otherwise
                         check_input=0;
                 end
-                if check_input% 
+                if check_input && ~isempty(tag)% 
                     if index==0
                        struct.(tag)=input;
                     elseif ~isempty(input)
