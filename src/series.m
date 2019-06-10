@@ -2575,6 +2575,10 @@ if isfield(ParamOut,'Mask')
     MaskVisible=ParamOut.Mask;
 end
 set(handles.CheckMask,'Visible',MaskVisible);
+%% Setting of expected iteration time
+if isfield(ParamOut,'CPUTime')
+    set(handles.num_CPUTime,'String',num2str(ParamOut.CPUTime));
+end
 
 %% definition of the directory containing the output files 
 if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))

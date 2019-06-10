@@ -119,6 +119,9 @@ if isfield(ObjectData,'RangeY')&&~isempty(ObjectData.RangeY)
     YMinRange=min(ObjectData.RangeY);
         end
 end
+if isfield(ObjectData,'RangeInterp')&&~isempty(ObjectData.RangeInterp) 
+    YMax=ObjectData.RangeInterp;
+end
 if isfield(ObjectData,'RangeZ')&&~isempty(ObjectData.RangeZ)
     ZMax=max(ObjectData.RangeZ);
     ZMin=min(ObjectData.RangeZ);
@@ -143,9 +146,6 @@ if test_line
     yline=ObjectData.Coord(:,2);
     nbpoints=numel(xline);
     switch ObjectData.Type
-        case 'line_x'
-            xline=[xline; ObjectData.RangeX(2)];%creating the line
-            yline=[yline; ObjectData.RangeY(2)];%creating the line
         case 'polygon'
             xline=[xline; ObjectData.Coord(1,1)];%closing the line
             yline=[yline; ObjectData.Coord(1,2)];

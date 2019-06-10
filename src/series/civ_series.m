@@ -87,6 +87,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
             Data.j_index_2=stra2num(r.num2);
         end
     end
+    % estimated CPUTime
+Data.CPUTime=1; % 1 minute per field pair
     return
 end
 

@@ -25,7 +25,7 @@
 %             .ActionPath:   path of the current activated function
 %             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
 %             .RUN =0 for GUI input, =1 for function activation
-%             .RunMode='local','background', 'cluster': type of function  use
+%             .RunMode='local','background', 'cluster': type of function  extract_rdvision.muse
 %             
 %    .IndexRange: set the file or frame indices on which the action must be performed
 %    .FieldTransform: .TransformName: name of the selected transform function
@@ -43,7 +43,7 @@
 %=======================================================================
 % Copyright 2008-2019, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
-%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
+%   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.frextract_rdvision.m
 %
 %     This file is part of the toolbox UVMAT.
 %
@@ -55,7 +55,7 @@
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%     GNU General Public License (see LICENSE.txt) for more details.
+%     GNU General Public License (see LICENSE.txt) for more details.extract_rdvision.m
 %=======================================================================
 
 function ParamOut=extract_rdvision(Param) %default output=relabel_i_j(Param)
@@ -64,13 +64,14 @@ function ParamOut=extract_rdvision(Param) %default output=relabel_i_j(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
         ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-        ParamOut.NbSlice=1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
+        ParamOut.NbSlice='off';%1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
         ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
         ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
         ParamOut.FieldTransform = 'off';...%can use a transform function
         ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
         ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        ParamOut.OutputDirExt='.extract';%set the output dir extension
+        ParamOut.CPUTime=0.1;% expected time for writting one image ( in minute)
+        ParamOut.OutputDirExt='.extract';%set the output dir extensionextract_rdvision.m
     ParamOut.OutputSubDirMode='one'; %output folder given by the folder name of the first input line
     % detect the set of image folder
     RootPath=Param.InputTable{1,1};
@@ -79,8 +80,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
     check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
     ListDir=ListCells(1,find(check_dir & ~check_bad));
-    %     InputTable=cell(numel(ListDir),5);
-    %     InputTable(:,2)=ListDir';
     isel=0;
     InputTable=Param.InputTable;
     for ilist=1:numel(ListDir)
@@ -89,15 +88,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         detect_seq=regexp(ListCellSub(1,:),'.seq$');
         seq_index=find(~cellfun('isempty',detect_seq),1);
         if ~isempty(seq_index)
-            %             msgbox_uvmat('ERROR',['not seq file in ' ListDir{ilist} ': please check the input folders'])
-            %         else
             isel=isel+1;
             InputTable{isel,1}=RootPath;
             InputTable{isel,2}=ListDir{ilist};
             RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
             InputTable{isel,3}=RootFile;
             InputTable{isel,4}='*';
-            InputTable{isel,5}='.seq';
+            InputTable{isel,5}='.seq';extract_rdvision.m
         end
     end
     hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
@@ -113,7 +110,6 @@ ParamOut=[];
 
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-%     checkrun=0;
 end
 disp(Param)
 checkrun=strcmp(Param.RunMode,'local')
@@ -143,11 +139,11 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 
 FileInfo=get_file_info(filecell{1,1});
 if strcmp(FileInfo.FileType,'rdvision')
-    if ~isequal(FileInfo.NumberOfFrames,nbfield)
-        disp_uvmat('WARNING',['the whole series of ' num2str(FileInfo.NumberOfFrames) ' images must be extracted at once'],checkrun)
-        %rmfield(OutputDir)
-%         return
-    end
+%     if ~isequal(FileInfo.NumberOfFrames,nbfield)
+%         disp_uvmat('WARNING',['the whole series of ' num2str(FileInfo.NumberOfextract_rdvision.mFrames) ' images must be extracted at once'],checkrun)
+%         %rmfield(OutputDir)
+% %         return
+%     end
     %% interactive input of specific parameters (for RDvision system)
     display('converting images from RDvision system...')
 else
@@ -195,11 +191,6 @@ for iview=1:size(Param.InputTable,1)
             break
         end
     end
-    %     if ~exist(filexml,'file')
-    %         disp_uvmat('ERROR',[filexml ' missing'],checkrun)
-    %         return
-    %     end
-    
     newxml=fullfile(RootPath,Param.InputTable{iview,3});
     newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
     newxml=[newxml '.xml'];
@@ -209,12 +200,15 @@ for iview=1:size(Param.InputTable,1)
         case {'.seq','.sqb'}
             filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
             filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
-            
-            logdir=[Param.OutputSubDir Param.OutputDirExt];
-            [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
-            [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
-            if check_xml
-            [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
+            errormsg='';
+            if isequal(Param.IndexRange.first_i,1)
+                
+                logdir=[Param.OutputSubDir Param.OutputDirExt];
+                [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
+                [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
+                if check_xml
+                    [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
+                end
             end
         otherwise
             errormsg='input file extension must be .seq or .sqb';
@@ -266,56 +260,59 @@ for iview=1:size(Param.InputTable,1)
 %             end
 %             m.Data=data;
     %%%%%%%
-    timestamp=zeros(1,numel(m.Data));
-    for ii=1: numel(m.Data)
-        timestamp(ii)=m.Data(ii).timestamp;
+        timestamp=zeros(1,numel(m.Data));
+        for ii=1: numel(m.Data)
+            timestamp(ii)=m.Data(ii).timestamp;
+        end
+        if isequal(Param.IndexRange.first_i,1)
+        [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+        [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
+        if ~isempty(errormsg)
+            disp(errormsg)
+            return
+        end
+        timestamp=timestamp(1:nbfield1*nbfield2);
+        timestamp=reshape(timestamp,nbfield2,nbfield1);
+        difftime=XmlData.Time(2:end,2:end)'-timestamp;
+        disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+        if max(abs(difftime))>0.01
+            checkpreserve=1;% will not erase the initial files, possibility of error
+        end      
+        % checking consistency with the xml file
+        %     if ~isequal(SeqData.nb_frames,numel(timestamp))
+        %         disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
+        %         return
+        %     end
+    else
+       [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,''); 
     end
-    [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
-    [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
-    if ~isempty(errormsg)
-        disp(errormsg)
-        return
-    end
-    timestamp=timestamp(1:nbfield1*nbfield2);
-    timestamp=reshape(timestamp,nbfield2,nbfield1);
-    difftime=XmlData.Time(2:end,2:end)'-timestamp;
-    disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
-    if max(abs(difftime))>0.01
-        checkpreserve=1;% will not erase the initial files, possibility of error
-    end
-    
-        %% checking consistency with the xml file
-%     if ~isequal(SeqData.nb_frames,numel(timestamp))
-%         disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
-%         return
-%     end    
-    
     if nbfield2>1
         NomTypeNew='_1_1';
     else
         NomTypeNew='_1';
     end
 
-    [BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew);
+    [BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew,Param.IndexRange.first_i,Param.IndexRange.last_i);
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun)
         return
     end
     
     % check the existence of the expected output image files (from the xml)
+    
     FileDir=SeqData.sequencename;
      FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
-    for i1=1:numel(timestamp)/nbfield2
-        for j1=1:nbfield2
-            OutputFile=fullfile_uvmat(RootPath,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
-            try 
-            A=imread(OutputFile);% check image reading (stop if error)
-            catch ME
-                disp(['checking ' OutputFile])
-                disp(ME.message)
-            end
-        end
-    end
+%     for i1=1:numel(timestamp)/nbfield2
+%         for j1=1:nbfield2
+%             OutputFile=fullfile_uvmat(RootPath,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
+%             try 
+%             A=imread(OutputFile);% check image reading (stop if error)
+%             catch ME
+%                 disp(['checking ' OutputFile])
+%                 disp(ME.message)
+%             end
+%         end
+%     end
 end
 
 %% remove binary files if transfer OK
@@ -332,7 +329,7 @@ delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that p
 %--------- reads a series of bin files
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew)
+function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew,first,last)
 % BINREAD_RDV Permet de lire les fichiers bin g???n???r???s par Hiris ??? partir du
 % fichier seq associ???.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
@@ -386,7 +383,8 @@ if ~exist(OutputDir,'dir')
     end
 end
 bin_file_counter=0;
-for ii=1:SeqData.nb_frames
+%for ii=1:SeqData.nb_frames
+for ii=first:last
     j1=[];
     if ~isequal(nbfield2,1)
         j1=mod(ii-1,nbfield2)+1;
@@ -421,8 +419,10 @@ for ii=1:SeqData.nb_frames
         A=A';
         BinSize(NbBinFile)=BinSize(NbBinFile)+SeqData.width*SeqData.height*SeqData.bytesperpixel*8; %record bits read
         try
+            tic
             imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
             disp([OutputFile ' written']);
+            toc
             % [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
             %         if ~s
             % %             disp_uvmat('ERROR',errormsg,checkrun);
@@ -558,12 +558,13 @@ if ~isempty(uid_Dtk)
 end
 
 %% save the new xml file
-save(t,newxml)
-[success,errormsg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users
-if success==0
-    disp({['warning: unable to set group write access to ' newxml ':']; errormsg});%error message for directory creation
-    msg=errormsg;
+if ~isempty(newxml)
+    save(t,newxml)
+    [success,errormsg] = fileattrib(newxml,'+w','g');% allow writing access for the group of users
+    if success==0
+        disp({['warning: unable to set group write access to ' newxml ':']; errormsg});%error message for directory creation
+        msg=errormsg;
+    end
 end
-
 
 

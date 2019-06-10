@@ -975,11 +975,13 @@ if isfield(UvData,'Field')
         switch data.Type
             case {'line','polyline','points'}
                 data.RangeY=UvData.Field.CoordMesh;
+                data.RangeInterp=3*UvData.Field.CoordMesh;
             case 'line_x'
                 check_plot=1; %plot the line directly when set_object is opened
                 data.Type='line';
                 data.RangeX=UvData.Field.XMin ;
                 data.RangeY=UvData.Field.CoordMesh;
+                data.RangeInterp=3*UvData.Field.CoordMesh;
                 if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
                     Coord_z=(UvData.Field.ZMin +UvData.Field.ZMax)/2;
                 else
@@ -992,6 +994,7 @@ if isfield(UvData,'Field')
                 data.Type='line';
                 data.RangeX=UvData.Field.YMin ;
                 data.RangeY=UvData.Field.CoordMesh;
+                data.RangeInterp=3*UvData.Field.CoordMesh;
                 if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
                     Coord_z=(UvData.Field.ZMin +UvData.Field.ZMax)/2;
                 else

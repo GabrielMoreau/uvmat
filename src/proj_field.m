@@ -538,6 +538,9 @@ width=0;
 if isfield(ObjectData,'RangeY')
     width=max(ObjectData.RangeY);%Rangey needed bfor mode 'projection'
 end
+if isfield(ObjectData,'RangeInterp')
+    width=ObjectData.RangeInterp;%Rangey needed bfor mode 'projection'
+end
 % default output
 Xline=[];
 flux=0;

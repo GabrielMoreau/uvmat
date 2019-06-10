@@ -387,7 +387,6 @@ if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
     if ~isempty(huvmat)
         UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
         if isempty(str2num(get(handles.num_DX,'String')))||isempty(str2num(get(handles.num_DY,'String')));
-            %         Field=UvData.Field;
             if  isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
                 set(handles.num_DX,'String',num2str(UvData.Field.CoordMesh))
                 set(handles.num_DY,'String',num2str(UvData.Field.CoordMesh))
