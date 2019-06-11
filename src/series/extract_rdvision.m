@@ -94,7 +94,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
             RootFile=regexprep(ListCellSub{1,seq_index},'.seq$','');
             InputTable{isel,3}=RootFile;
             InputTable{isel,4}='*';
-            InputTable{isel,5}='.seq';extract_rdvision.m
+            InputTable{isel,5}='.seq';
         end
     end
     hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
@@ -192,7 +192,7 @@ for iview=1:size(Param.InputTable,1)
         end
     end
     newxml=fullfile(RootPath,Param.InputTable{iview,3});
-    newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
+    newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'extract_rdvision.m
     newxml=[newxml '.xml'];
     
     %% get the names of .seq and .sqb files
