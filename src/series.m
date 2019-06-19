@@ -1582,6 +1582,9 @@ switch RunMode
                 return
             end
             NbCore=str2double(answer);
+            if NbCore > NbCoreMax
+                NbCore=NbCoreMax;
+            end
         else
             NbCore=1;
         end
