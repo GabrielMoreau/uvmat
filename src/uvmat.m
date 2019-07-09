@@ -253,9 +253,9 @@ set(handles.TransformPath,'String','')
 set(handles.TransformPath,'UserData',[])
 
 %% case of an input argument for uvmat
-testinputfield=0;
+%testinputfield=0;
 inputfile=[];
-Field=[];
+%Field=[];
 if exist('input','var')
     if ishandle(handles.UVMAT_title)
         delete(handles.UVMAT_title)
@@ -789,7 +789,7 @@ end
 %create avi open
 %aviobj=avifile(MovieName,'Compression','None','fps',fps);
 
-aviobj = VideoWriter(MovieName,'Uncompressed AVI');
+aviobj = VideoWriter(MovieName,'Motion JPEG AVI');
 open(aviobj)
 %% get info from uvmat and adjust it
 huvmat=findobj(allchild(0),'Tag','uvmat');
@@ -811,7 +811,6 @@ for i=1:FrameNumber
             Title=get(htitle,'String');
             set(htitle,'String',regexprep(Title,'t=\d+.\d*',['t=' time_str]))
             mov=getframe(figure_movie);
-           % aviobj=addframe(aviobj,mov);
             writeVideo(aviobj,mov);
     end
 end

@@ -62,7 +62,7 @@ function ParamOut=merge_proj_polar(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='on';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
+    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
@@ -267,10 +267,8 @@ CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
-
+NbField 
 for index=1:NbField
-    disp(['index=' num2str(index)])
-    disp(['ellapsed time ' num2str(toc(tstart)/60,4) ' minutes'])
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -351,10 +349,14 @@ for index=1:NbField
         
         %% calculate tps coefficients
         Data{iview}=tps_coeff_field(Data{iview},1);
-        
+        'tps_coeff done'
         %% projection on the polar grid
         [DataOut,VarAttribute,errormsg]=calc_field_tps(Data{iview}.Coord_tps,Data{iview}.NbCentre,Data{iview}.SubRange,...
             cat(3,Data{iview}.U_tps,Data{iview}.V_tps),FieldNames,cat(3,XI,YI));
+        if ~isempty(errormsg)
+            disp(errormsg)
+        end
+        
         % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
         Coord=permute(Data{iview}.Coord_tps,[1 3 2]);
         Coord=reshape(Coord,size(Coord,1)*size(Coord,2),2);
@@ -365,6 +367,7 @@ for index=1:NbField
             F=TriScatteredInterp(Coord,Coord(:,1),'nearest');
             G=TriScatteredInterp(Coord,Coord(:,2),'nearest');
         end
+        'Interp done'
         Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
         Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
         Dist=Distx.*Distx+Disty.*Disty;
@@ -389,6 +392,7 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
     
     %% merge the NbView fields
+    ProjData
     [MergeData,errormsg]=merge_field(ProjData);
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun);
@@ -445,18 +449,16 @@ for index=1:NbField
        TimeData.curl=MergeData.curl;
        TimeData.div=MergeData.div;
 
-            [error,ncid]=struct2nc(OutputFile,TimeData);%save result file
+            error=struct2nc(OutputFile,TimeData);%save result file
         if isempty(error)
             disp(['output file ' OutputFile ' written'])
         else
             disp(error)
         end
             ellapsed_time=toc(tstart);
-    disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
+    disp(['ellapsed time since start ' num2str(ellapsed_time/60,2) ' minutes'])
 end
 
-ellapsed_time=toc(tstart);
-disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
 disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])
 
 % %'merge_field': concatene fields

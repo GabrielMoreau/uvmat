@@ -272,28 +272,60 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
         %% open the GUI browse_data
         hbrowse=findobj(allchild(0),'Tag','browse_data');
         if ~isempty(hbrowse)% look for the GUI 'replicate'
-            BrowseHandles=guidata(hbrowse);
-            SourceDir=get(BrowseHandles.SourceDir,'String');
-            ListExperiments=get(BrowseHandles.ListExperiments,'String');
-            ListValues=get(BrowseHandles.ListExperiments,'Value');
-            ListExperiments=ListExperiments(ListValues);
-            DataSeries=get(BrowseHandles.DataSeries,'String');
-            Val=get(BrowseHandles.DataSeries,'Value');
-            DataFolder=DataSeries{Val};
-            for ilist=1:numel(ListExperiments)
-                SubDirBase=regexprep(DataFolder,'+/','');
-                ListExperiments{ilist}=regexprep(ListExperiments{ilist},'+/','');
-                XmlName=fullfile(SourceDir,ListExperiments{ilist},[SubDirBase '.xml']);
+            BrowseData=guidata(hbrowse);
+            SourceDir=get(BrowseData.SourceDir,'String');
+            ListExp=get(BrowseData.ListExperiments,'String');
+            ExpIndices=get(BrowseData.ListExperiments,'Value');
+            ListExp=ListExp(ExpIndices);
+            ListDevices=get(BrowseData.ListDevices,'String');
+            DeviceIndices=get(BrowseData.ListDevices,'Value');
+            ListDevices=ListDevices(DeviceIndices);
+            ListDataSeries=get(BrowseData.DataSeries,'String');
+            DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+            ListDataSeries=ListDataSeries(DataSeriesIndices);
+            NbExp=0; % counter of the number of experiments set by the GUI browse_data
+            for iexp=1:numel(ListExp)
+                if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+                    for idevice=1:numel(ListDevices)
+                        if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                            for isubdir=1:numel(ListDataSeries)
+                                if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                        regexprep(ListDevices{idevice},'^\+/',''));
+                                    ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                                    if exist(fullfile(lpath,ldir),'dir')
+                                        NbExp=NbExp+1;
+                                        ListPath{NbExp}=lpath;
+                                        ListSubdir{NbExp}=ldir;
+                                        ExpIndex{NbExp}=iexp;
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            for iexp=1:NbExp
+                XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+                if exist(XmlName,'file')
+                    check_update=1;
+                else
+                    check_update=0;
+                end
                 errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
                 if ~strcmp(errormsg,'')
                     msgbox_uvmat('ERROR',errormsg);
                 else
-                    display([XmlName ' updated with calibration parameters'])
+                    if check_update
+                        display([XmlName ' updated with calibration parameters'])
+                    else
+                        display([XmlName ' created with calibration parameters'])
+                    end
                     nbcalib=nbcalib+1;
                 end
             end
         end
-        msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' experiments']);  
+        msgbox_uvmat('CONFIMATION',['calibration replicated for ' num2str(NbExp) ' experiments']);
     else
         %% copy the xml file from the old location if appropriate, then update with the calibration parameters
         if ~exist(outputfile,'file') && ~isempty(SubDirBase)

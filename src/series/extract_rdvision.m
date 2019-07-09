@@ -488,14 +488,14 @@ if ~isempty(uid_content_Dtj)
 end
 
 %% correct NbDtj and NbDti (error from RDvision)
-if NbDtj==numel(Dtj)% case of bursts
-    NbDtj=1;
-    uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
-    if ~isempty(uid_motor_nbslice)&& ~isempty(uid_Dtk)% case of multilevel
-        NbSlice=str2num(get(t,get(t,uid_motor_nbslice,'contents'),'value'));
-        NbDti=NbSlice-1;
-    end
-end
+% if NbDtj==numel(Dtj)% case of bursts
+%     NbDtj=1;
+%     uid_motor_nbslice=find(t,'ImaDoc/TranslationMotor/Nbslice');
+%     if ~isempty(uid_motor_nbslice)&& ~isempty(uid_Dtk)% case of multilevel
+%         NbSlice=str2num(get(t,get(t,uid_motor_nbslice,'contents'),'value'));
+%         NbDti=NbSlice-1;
+%     end
+% end
 
 if isempty(Dtj)% case of simple series
     timestamp=timestamp';
@@ -508,42 +508,42 @@ else
     nbfield1=nbfieldi*nbfieldk;
     nbfield2=NbDtj*numel(Dtj)+1;
     NbFrames_xml=nbfield1*nbfield2;
-   if NbFrames_xml<numel(timestamp)
-       disp(['ERROR: size from xml ' num2str(NbFrame_xml) ' smaller than timestamp size ' num2str(numel(timestamp))])
-       return
-   end
-   if NbFrames_xml>numel(timestamp)
-       nbfield1=floor(numel(timestamp)/nbfield2);
-       nbfieldk=floor(nbfield1/nbfieldi);
-       nbfield1=nbfieldi*nbfieldk;
-       NbDtk=nbfieldk-1;
-       t=set(t,uid_content_NbDtk,'value',num2str(NbDtk));% correct NbDtk in the xml file (in practice numel(Dtk)=1;
-       timestamp=timestamp(1:nbfield1*nbfield2);
-       disp(['image record stopped before end: max index i= ' num2str(nbfield1)]);
-       timestamp=reshape(timestamp,nbfield2,nbfield1);
-   end
-   % check Dtj with respect to timestamp
-    timestamp=(reshape(timestamp,nbfield2,[]))';
-    diff_Dtj=diff(timestamp(1,:))-Dtj;
-    if max(abs(diff_Dtj))>min(Dtj)/1000
-        disp(['Dtj from xml file differs from time stamp by ' num2str(max(abs(diff_Dtj))) ', '])%'
-    else
-        disp('Dtj OK');
-    end
+%    if NbFrames_xml<numel(timestamp)
+%        disp(['ERROR: size from xml ' num2str(NbFrame_xml) ' smaller than timestamp size ' num2str(numel(timestamp))])
+%        return
+%    end
+%    if NbFrames_xml>numel(timestamp)
+%        nbfield1=floor(numel(timestamp)/nbfield2);
+%        nbfieldk=floor(nbfield1/nbfieldi);
+%        nbfield1=nbfieldi*nbfieldk;
+%        NbDtk=nbfieldk-1;
+%        t=set(t,uid_content_NbDtk,'value',num2str(NbDtk));% correct NbDtk in the xml file (in practice numel(Dtk)=1;
+%        timestamp=timestamp(1:nbfield1*nbfield2);
+%        disp(['image record stopped before end: max index i= ' num2str(nbfield1)]);
+%        timestamp=reshape(timestamp,nbfield2,nbfield1);
+%    end
+%    % check Dtj with respect to timestamp
+%     timestamp=(reshape(timestamp,nbfield2,[]))';
+%     diff_Dtj=diff(timestamp(1,:))-Dtj;
+%     if max(abs(diff_Dtj))>min(Dtj)/1000
+%         disp(['Dtj from xml file differs from time stamp by ' num2str(max(abs(diff_Dtj))) ', '])%'
+%     else
+%         disp('Dtj OK');
+%     end
 end
 
 %% adjust Dti
-if NbDti+1>size(timestamp,1)
-    NbDti=size(timestamp,1)-1;
-end
-Dti_stamp=(timestamp(1+NbDti,1)-timestamp(1,1))/NbDti;
-Dti_stamp=(timestamp(1+NbDti,1)-timestamp(2,1))/(NbDti-1);
-t=set(t,uid_content_Dti,'value',num2str(Dti_stamp));%corret Dti
-if abs(Dti_stamp-Dti)>Dti/1000
-    disp([msg 'Dti from xml file corrected by ' num2str(Dti_stamp-Dti) ', ']);%'
-else
-    disp('Dti OK')
-end
+% if NbDti+1>size(timestamp,1)
+%     NbDti=size(timestamp,1)-1;
+% end
+% Dti_stamp=(timestamp(1+NbDti,1)-timestamp(1,1))/NbDti;
+% Dti_stamp=(timestamp(1+NbDti,1)-timestamp(2,1))/(NbDti-1);
+% t=set(t,uid_content_Dti,'value',num2str(Dti_stamp));%corret Dti
+% if abs(Dti_stamp-Dti)>Dti/1000
+%     disp([msg 'Dti from xml file corrected by ' num2str(Dti_stamp-Dti) ', ']);%'
+% else
+%     disp('Dti OK')
+% end
 
 %% adjust Dtk
 if ~isempty(uid_Dtk)

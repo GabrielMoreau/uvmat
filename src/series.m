@@ -1593,34 +1593,72 @@ if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
 
-%% Look for prcessing on multiple experiments set by the GUI browse_data
-NbExp=1;
-ListExp=Param.InputTable(1,1);
-
+%% Look for processing on multiple experiments set by the GUI browse_data
+NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
 if get(handles.Replicate,'Value')
+    set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
     hh=findobj(allchild(0),'Tag','browse_data');
     BrowseData=guidata(hh);
     SourceDir=get(BrowseData.SourceDir,'String');
     ListExp=get(BrowseData.ListExperiments,'String');
-    ListExp=ListExp(get(BrowseData.ListExperiments,'Value'));
-    NbExp=numel(ListExp) % number of experiments set possibly by the GUI browse_data, =1 otherwise
-    for ilist=1:NbExp
-        ListExp{ilist}=regexprep(ListExp{ilist},'+','');
-        ListExp{ilist}= [SourceDir ListExp{ilist}];
+    ExpIndices=get(BrowseData.ListExperiments,'Value');
+    ListExp=ListExp(ExpIndices);
+    ListDevices=get(BrowseData.ListDevices,'String');
+    DeviceIndices=get(BrowseData.ListDevices,'Value');
+    ListDevices=ListDevices(DeviceIndices);
+    ListDataSeries=get(BrowseData.DataSeries,'String');
+    DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+    ListDataSeries=ListDataSeries(DataSeriesIndices);
+    NbExp=0; % counter of the number of experiments set by the GUI browse_data
+    for iexp=1:numel(ListExp)
+        if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+            for idevice=1:numel(ListDevices)
+                if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                    for isubdir=1:numel(ListDataSeries)
+                        if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                            lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                regexprep(ListDevices{idevice},'^\+/',''));
+                            ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                            if exist(fullfile(lpath,ldir),'dir')
+                                NbExp=NbExp+1;
+                                ListPath{NbExp}=lpath;
+                                ListSubdir{NbExp}=ldir;
+                                ExpIndex{NbExp}=iexp;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
+    if strcmp(answer,'Cancel')||strcmp(answer,'No')
+        return
     end
 end
-
+%      set(handles.OutputSubDir,'String',SubDir)
+%      Param.OutputSubDir=SubDir;
 %%%%%%%%%%%%%%%%%%% LOOP ON EXPERIMENTS POSSIBLY SET BY THE GUI browse_data, NbExp=1 otherwise %%%%%%%%%
 for iexp=1:NbExp
-    Param.InputTable{1,1}=ListExp{iexp};
-    set(handles.InputTable,'Data',Param.InputTable)
-    [xx,ExpName]=fileparts(ListExp{iexp});
+    if get(handles.Replicate,'Value')
+        if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
+            disp('program stopped by user')
+            return
+        end
+        set(BrowseData.ListExperiments,'Value',ExpIndex{iexp})
+        Param.InputTable{1,1}=ListPath{iexp};
+        Param.InputTable{1,2}=ListSubdir{iexp};
+        Param.OutputSubDir=ListSubdir{iexp};
+        set(handles.InputTable,'Data',Param.InputTable)
+%         set(handles.OutputSubDir,'String',ListSubdir{iexp})
+    end
+    [xx,ExpName]=fileparts(Param.InputTable{1,1});
     Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
     Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
     %% create the output data directory if needed
     OutputDir='';
     answer='';
-    if isfield(Param,'OutputSubDir')
+    if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
         SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
         SubDirOutNew=SubDirOut;
         detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
@@ -1658,7 +1696,7 @@ for iexp=1:NbExp
         Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
         Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
         set(handles.OutputDirExt,'String',Param.OutputDirExt)
-        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
+        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]) % full name (with path) of output directory
         if check_create    % create output directory if it does not exist
             [tild,msg1]=mkdir(OutputDir);
             if ~strcmp(msg1,'')
@@ -1676,6 +1714,10 @@ for iexp=1:NbExp
         if ~strcmp(msg1,'')
             errormsg=['cannot create ' DirXml ': ' msg1]; % error message for directory creation
             return
+        end
+        [success,msg] = fileattrib(DirXml,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg}); % error message for directory creation
         end
     end
     OutputNomType=nomtype2pair(Param.InputTable{1,4}); % nomenclature for output files
@@ -1860,6 +1902,10 @@ for iexp=1:NbExp
                 errormsg=['cannot create ' DirExe ': ' msg1]; % error message for directory creation
                 return
             end
+            [success,msg] = fileattrib(DirExe,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
+            if success==0
+                msgbox_uvmat('WARNING',{['unable to set group write access to ' DirExe ':']; msg}); % error message for directory creation
+            end
         end
         %create subdirectory for log files
         DirLog=fullfile(OutputDir,'0_LOG');
@@ -1868,6 +1914,10 @@ for iexp=1:NbExp
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' DirLog ': ' msg1]; % error message for directory creation
                 return
+            end
+            [success,msg] = fileattrib(DirLog,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
+            if success==0
+                msgbox_uvmat('WARNING',{['unable to set group write access to ' DirLog ':']; msg}); % error message for directory creation
             end
         end
         
@@ -2023,9 +2073,9 @@ for iexp=1:NbExp
             fprintf(fid,result); % store the result (job ID number)
             fclose(fid);
             if status==0
-            msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+                msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
             else
-               msgbox_uvmat('ERROR',result) 
+                msgbox_uvmat('ERROR',result)
             end
             %     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct
             
@@ -2143,6 +2193,10 @@ for iexp=1:NbExp
         end
     end
 end
+set(handles.Replicate,'BackgroundColor',[0 1 0])
+if NbExp>1
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta (input file features need to be updated)
+end
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -2159,7 +2213,7 @@ function Param=read_GUI_series(handles)
 %% read raw parameters from the GUI series
 Param=read_GUI(handles.series);
 
-%% clean the output structure by removing unused information 
+%% clean the output structure by removing unused information
 if isfield(Param,'Pairs')
     Param=rmfield(Param,'Pairs'); % info Pairs not needed for output
 end
@@ -2202,7 +2256,7 @@ drawnow
 NbBuiltinAction=get(handles.Action,'UserData'); % nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
 ActionList=get(handles.ActionName,'String'); % list menu fields
 ActionIndex=get(handles.ActionName,'Value');
-if ~isequal(ActionIndex,1)% if we are not just opening series 
+if ~isequal(ActionIndex,1)% if we are not just opening series
     InputTable=get(handles.InputTable,'Data');
     if isempty(InputTable{1,4})
         msgbox_uvmat('ERROR','no input file available: use Open in the menu bar')
@@ -2300,6 +2354,7 @@ set(handles.ActionInput,'BackgroundColor',[1 0 1])% set ActionInput button to ma
 function ActionInput_Callback(hObject, eventdata, handles)
 
 set(handles.ActionInput,'BackgroundColor',[1 1 0])
+SeriesData=get(handles.series,'UserData'); % info on the input file series
 
 %% create the function handle for Action
 ActionPath=get(handles.ActionPath,'String');
@@ -2307,7 +2362,6 @@ ActionList=get(handles.ActionName,'String');
 ActionName= ActionList{get(handles.ActionName,'Value')}; % selected function name
 if ~exist(ActionPath,'dir')
     ActionName_Callback(handles.ActionName, ActionPath, handles)% update the function
-%     msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
     return
 end
 current_dir=pwd; % current working dir
@@ -2318,6 +2372,7 @@ cd(current_dir)
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles); % read the parameters from the GUI series
 Param.Action.RUN=0;
+Param.SeriesData=SeriesData;
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
 
 
@@ -2336,7 +2391,6 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-SeriesData=get(handles.series,'UserData'); % info on the input file series
 iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
 iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)); % all nc files, icluding civ
 FieldList=get(handles.FieldName,'String'); % previous list as default
@@ -2468,9 +2522,14 @@ if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& s
     set(handles.MinIndex_i,'Data',MinIndex_i(iview,:));
     set(handles.MinIndex_j,'Data',MinIndex_j(iview,:));
     set(handles.MaxIndex_i,'Data',MaxIndex_i(iview,:));
-    set(handles.MaxIndex_j,'Data',MaxIndex_j(iview,:));
+    set(handles.MaxIndex_j,'Data',MaxIndex_j(iview,:));;
     TimeTable=get(handles.TimeTable,'Data');
-    set(handles.TimeTable,'Data',TimeTable(iview,:));
+    if size(TimeTable,1)<size(Param.InputTable,1)%if the time table is not complete, copy the missing lines from the previous ones
+        for iline=size(TimeTable,1)+1:size(Param.InputTable,1)
+            TimeTable(iline,:)=TimeTable(iline-1,:);
+        end
+    end
+    set(handles.TimeTable,'Data',TimeTable(iview,:));% sort the time tables
     PairString=get(handles.PairString,'Data');
     set(handles.PairString,'Data',PairString(iview,:));
 end

@@ -72,7 +72,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.png';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-      ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    ParamOut.CPUTime=7;% expected time for writting one image ( in minute)
     %% root input file(s) and type
     % check the existence of the first file in the series
         first_j=[];% note that the function will propose to cover the whole range of indices
@@ -112,26 +113,6 @@ else
     WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
 
-%% list of input images
-% DirImages=fullfile(Param.InputTable{1,1},Param.InputTable{1,2});
-% ListStruct=dir(DirImages);
-% ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-% check_bad=strcmp('.',ListCells(1,:))|strcmp('..',ListCells(1,:));%detect the dir '.' to exclude it
-% check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-% ListFile=ListCells(1,find(~check_dir & ~check_bad));
-
-%% check file names
-% RootName=regexprep(ListFile{1},'.tif$','')
-% rank(1)=1;
-% for ilist=2:numel(ListFile)
-%     rank_str=regexprep(ListFile{ilist},'.tif$','');
-%     rank(ilist)=regexprep(rank_str,['^' RootName '@'],'');
-% %     if ~isequal(str2num(rank),ilist-1)
-% %         disp(['error in the list of input file # ' num2str(ilist-1)])
-% %         return
-% %     end
-% end
-
 %% output directory
 OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
 
@@ -155,12 +136,6 @@ t=set(t,1,'name','ImaDoc');
 save(t,Newxml);
 end
 
-%% Main loop
-
-
-% count=0;
-%count=316;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP08: 4684 images -> start at 316 start 67->_11_1
-%count=1934%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CORRECTION EXP07: 3066 images
 %% loop on the files
 % include the first tiff file with no index in the first iteration
 if Param.IndexRange.first_i==1% first slice of processing
@@ -173,6 +148,7 @@ else
    count=Param.IndexRange.first_i*NbFrames;
 end
 for ifile=firstindex:Param.IndexRange.last_i
+    tic
     if firstindex==0 && ifile==0% first slice of processing
         ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif')
     else
@@ -180,7 +156,6 @@ for ifile=firstindex:Param.IndexRange.last_i
     end
     NbFrames=numel(imfinfo(ImageName));
     for iframe=1:NbFrames
-        iframe
         if isequal(ImagesPerLevel,1)% mode series
             OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
         else % indices i and j
@@ -197,6 +172,9 @@ for ifile=firstindex:Param.IndexRange.last_i
         end
         count=count+1;
     end
+    tt=toc;
+    disp(['elapsed time (in min.) for the file im@' num2str(ifile,'%04d')])
+    disp(num2str(tt/60))
 end
 
 
