@@ -91,14 +91,25 @@ end
 if isempty(regexp(InputDir,'^http:'))&& ~(exist('InputDir','var') && ischar(InputDir) && exist(InputDir,'dir'))
     InputDir=pwd;% current dir is the starting data series by default
 end
-
-[ExpWithPath,DataSeries]=fileparts(InputDir);
-[Experiment,Device,Ext]=fileparts(ExpWithPath);
-Device=[Device Ext];
-[SourceDir,Experiment,Ext]=fileparts(Experiment);
-Experiment=[Experiment Ext];
-% [tild,CampaignName]=fileparts(Campaign);
-% RootXml=fullfile(Campaign,[CampaignName '.xml']);
+if ischar(InputDir),InputDir={InputDir};end
+for ilist=1:numel(InputDir)
+    [ExpWithPath,DataSeries{ilist},Ext]=fileparts(InputDir{ilist});
+    DataSeries{ilist}=['+/' DataSeries{ilist} Ext];
+    [Experiment{ilist},Device{ilist},Ext]=fileparts(ExpWithPath);
+    Device{ilist}=['+/' Device{ilist} Ext];
+    [SourceDir{ilist},Experiment{ilist},Ext]=fileparts(Experiment{ilist});
+    Experiment{ilist}=['+/' Experiment{ilist} Ext];
+    if ~strcmp(SourceDir{ilist},SourceDir{1})||~strcmp(Experiment{ilist},Experiment{1})
+        msgbox_uvmat('ERROR','replicate cannot be used with multiple root folders')
+        return
+    end
+    if ~strcmp(DataSeries{ilist},DataSeries{1})
+        set(handles.DataSeries,'enable','off')
+    end
+    if ~strcmp(Device{ilist},Device{1})
+        set(handles.ListDevices,'enable','off')
+    end
+end
 s=[];
 % if exist(RootXml,'file')
 %     [s,Heading]=xml2struct(RootXml);%read the xml file
@@ -110,13 +121,15 @@ s=[];
 %     end
 % end
 if isempty(s) %a source dir has been opened
-    set(handles.SourceDir,'String',SourceDir);
+    set(handles.SourceDir,'String',SourceDir{1});
     set(handles.MirrorDir,'Visible','off');% no mirror dir display
     set(handles.CreateMirror,'String','create_mirror')
 end
-set(handles.DataSeries,'String',{['+/' DataSeries]});
-set(handles.ListDevices,'String',{['+/' Device]});
-errormsg=scan_campaign(handles,SourceDir,['+/' Experiment]);
+set(handles.DataSeries,'String',DataSeries);
+set(handles.DataSeries,'Value',(1:numel(DataSeries)));
+set(handles.ListDevices,'String',Device);
+set(handles.ListDevices,'Value',(1:numel(Device)));
+errormsg=scan_campaign(handles,SourceDir{1},Experiment{1});
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -241,7 +254,8 @@ Device='';
 if numel(ListDevices)>=list_val
 Device=ListDevices(list_val);%choose selected devices
 end
-[ListFiles,indices]=list_dir_2(SourceDir,ListExperiments,Device);
+check_fix=strcmp(get(handles.ListDevices,'enable'),'off');
+[ListFiles,indices]=list_dir_2(SourceDir,ListExperiments,Device,check_fix);
 set(handles.ListDevices,'String',ListFiles)
 set(handles.ListDevices,'Value',indices)% initialise the menu selection with the folder defined by the input
 ListDevices_Callback([],[], handles)
@@ -270,7 +284,8 @@ if numel(DataSeries)>=list_val
 else
     DataSeries=[];
 end
-[ListFiles,indices]=list_dir_3(SourceDir,ListExperiments,ListDevices,DataSeries);
+check_fix=strcmp(get(handles.DataSeries,'enable'),'off');
+[ListFiles,indices]=list_dir_3(SourceDir,ListExperiments,ListDevices,DataSeries,check_fix);
 set(handles.DataSeries,'String',ListFiles)
 set(handles.DataSeries,'Value',indices)% initialise the menu selection with the folder defined by the input
 
@@ -345,7 +360,7 @@ if isempty(indices), indices=1; end
 %------------------------------------------------------------------------
 % Provide a list to display
 %------------------------------------------------------------------------
-function [ListFilesTot,indices]=list_dir_2(SourceDir,ListDir,ListSub)
+function [ListFilesTot,indices]=list_dir_2(SourceDir,ListDir,ListSub,check_fix)
 ListFilesTot={};
 for ilist=1:numel(ListDir)
     if ~isempty(regexp(ListDir{ilist},'^\+/'))
@@ -357,7 +372,7 @@ for ilist=1:numel(ListDir)
     ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
     cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
     check_keep=cellfun('isempty', cell_remove);
-    ListFilesTot=[ListFilesTot;(ListFiles(check_keep))'];
+    ListFilesTot=[ListFilesTot (ListFiles(check_keep))];
     end
 end
 ListFilesTot=unique(ListFilesTot);
@@ -369,6 +384,13 @@ else
         index=find(strcmp(ListSub{ilist},ListFilesTot));
         indices=[indices index];
     end
+    if check_fix
+        index_init=1:numel(ListFilesTot);
+        %indices=sort(indices)
+        index_init(indices)=[];
+       ListFilesTot=ListFilesTot([indices index_init]);
+       indices=1:numel(indices);
+    end      
 end
 if isempty(indices), indices=1; end
 
@@ -376,7 +398,7 @@ if isempty(indices), indices=1; end
 %------------------------------------------------------------------------
 % Provide a list to display
 %------------------------------------------------------------------------
-function [ListFilesTot,indices]=list_dir_3(SourceDir,ListDir,ListSub,ListSubSub)
+function [ListFilesTot,indices]=list_dir_3(SourceDir,ListDir,ListSub,ListSubSub,check_fix)
 ListFilesTot={};
 for ilist=1:numel(ListDir)
     if ~isempty(regexp(ListDir{ilist},'^\+/'))
@@ -391,7 +413,7 @@ for ilist=1:numel(ListDir)
                 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
                 cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
                 check_keep=cellfun('isempty', cell_remove);
-                ListFilesTot=[ListFilesTot;(ListFiles(check_keep))'];
+                ListFilesTot=[ListFilesTot (ListFiles(check_keep))];
             end
         end
     end
@@ -405,6 +427,12 @@ else
         index=find(strcmp(ListSubSub{ilist},ListFilesTot));
         indices=[indices index];
     end
+    if check_fix
+        index_init=1:numel(ListFilesTot);
+        index_init(indices)=[];
+       ListFilesTot=ListFilesTot([indices index_init]);
+       indices=1:numel(indices);
+    end      
 end
 if isempty(indices), indices=1; end
 

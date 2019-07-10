@@ -1612,18 +1612,30 @@ if get(handles.Replicate,'Value')
     NbExp=0; % counter of the number of experiments set by the GUI browse_data
     for iexp=1:numel(ListExp)
         if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-            for idevice=1:numel(ListDevices)
-                if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                    for isubdir=1:numel(ListDataSeries)
-                        if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                            lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                regexprep(ListDevices{idevice},'^\+/',''));
-                            ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                            if exist(fullfile(lpath,ldir),'dir')
-                                NbExp=NbExp+1;
-                                ListPath{NbExp}=lpath;
-                                ListSubdir{NbExp}=ldir;
-                                ExpIndex{NbExp}=iexp;
+            if strcmp(get(BrowseData.DataSeries,'enable'),'off');%case of a multiple input line for series
+                NbExp=NbExp+1;
+                ExpIndex{NbExp}=iexp;
+                for idevice=1:numel(ListDevices)
+                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                        regexprep(ListDevices{idevice},'^\+/',''));
+                    ldir=regexprep(ListDataSeries{idevice},'^\+/','');
+                    ListPath{idevice,NbExp}=lpath;
+                    ListSubdir{idevice,NbExp}=ldir;
+                end
+            else
+                for idevice=1:numel(ListDevices)
+                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                        for isubdir=1:numel(ListDataSeries)
+                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                    regexprep(ListDevices{idevice},'^\+/',''));
+                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                                if exist(fullfile(lpath,ldir),'dir')
+                                    NbExp=NbExp+1;
+                                    ExpIndex{NbExp}=iexp;
+                                    ListPath{NbExp}=lpath;
+                                    ListSubdir{NbExp}=ldir;
+                                end
                             end
                         end
                     end
@@ -1646,9 +1658,11 @@ for iexp=1:NbExp
             return
         end
         set(BrowseData.ListExperiments,'Value',ExpIndex{iexp})
-        Param.InputTable{1,1}=ListPath{iexp};
-        Param.InputTable{1,2}=ListSubdir{iexp};
+        Param.InputTable(:,1)=ListPath(:,iexp);
+        Param.InputTable(:,2)=ListSubdir(:,iexp);
+        if size(Param.InputTable,1)==1% case of single input line
         Param.OutputSubDir=ListSubdir{iexp};
+        end
         set(handles.InputTable,'Data',Param.InputTable)
 %         set(handles.OutputSubDir,'String',ListSubdir{iexp})
     end
@@ -3829,8 +3843,11 @@ system(SeriesData.SeriesParam.DiskQuotaCmd)
 % --- Executes on button press in Replicate.
 function Replicate_Callback(hObject, eventdata, handles)
 if get(handles.Replicate,'Value')
-InputTable=get(handles.InputTable,'Data');
-browse_data(fullfile(InputTable{1,1},InputTable{1,2}))
+    InputTable=get(handles.InputTable,'Data');
+    for ilist=1:size(InputTable,1)
+        InputDir{ilist}=fullfile(InputTable{ilist,1},InputTable{ilist,2});
+    end
+    browse_data(InputDir)
 else
     hh=findobj(allchild(0),'Tag','browse_data');
     if ~isempty(hh)

@@ -303,13 +303,18 @@ nbfile=0;% not used , to check
 nbmissing=0;
 VarMesh=[];
 checkhisto=0;
-if isfield(Param,'ProjObject') && ismember(Param.ProjObject.ProjMode,{'inside','outside'})
+checkline=0;
+if isfield(Param,'ProjObject') 
+    if ismember(Param.ProjObject.ProjMode,{'inside','outside'})
     checkhisto=1;
     if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VarMesh')%case of histograms
         VarMesh=Param.ActionInput.VarMesh;
     else
         VarMesh=[];
         disp_uvmat('WARNING','automatic bin size for histograms, select time_series again to set the value',checkrun)
+    end
+    elseif ismember(Param.ProjObject.Type,{'line'})
+        checkline=1;
     end
 end
 
@@ -400,9 +405,6 @@ for index=1:NbField
                 if isfield(Data{1},VarName)
                     DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
                     DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
-%                     if isfield(DataOut.VarAttribute{ivar},'Role')
-%                     DataOut.VarAttribute{ivar}=rmfield(DataOut.VarAttribute{ivar},'Role');
-%                     end
                     StatName=pdf2stat;% get the names of statistical quantities to calcuilate at each time
                     for istat=1:numel(StatName)
                         DataOut.ListVarName=[DataOut.ListVarName {[VarName StatName{istat}]}];
@@ -429,8 +431,11 @@ for index=1:NbField
                             testsum(ivar)=0;  % not recorded variable
                             eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
                         end
-                        if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_y')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
+                        if strcmp(var_role,'coord_x')||strcmp(var_role,'coord_z')||strcmp(var_role,'coord')
                             testsum(ivar)=1; %constant coordinates, record without time evolution
+                        end
+                        if strcmp(var_role,'coord_y')&& ~checkline
+                             testsum(ivar)=1;
                         end
                     end
                     % check whether the variable ivar is a dimension variable
@@ -566,17 +571,6 @@ if ~test_time
     DataOut.Time=1:NbField;
 end
 
-% %case of histograms
-% if checkhisto
-%     for ivar=1:numel(Field.ListVarName)
-%         VarName=Field.ListVarName{ivar};
-%         if isfield(Data{1},VarName)
-%             DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Histo']}];
-%             DataOut.VarDimName=[DataOut.VarDimName {{'Time',VarName}}];
-%         end
-%     end
-% end
-% display nbmissing
 if ~isequal(nbmissing,0)
     disp_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
 end
