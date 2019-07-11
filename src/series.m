@@ -611,6 +611,13 @@ end
 % --- Executes on button press in REFRESH.
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+check_input_file_series(handles)
+
+%% enable field and veltype menus, in accordance with the current action
+ActionInput_Callback([],[], handles)
+
+
+function check_input_file_series(handles)
 InputTable=get(handles.InputTable,'Data');
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
@@ -675,8 +682,6 @@ displ_time(handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
-%% enable field and veltype menus, in accordance with the current action
-ActionInput_Callback([],[], handles)
 
 
 %------------------------------------------------------------------------
@@ -1660,20 +1665,23 @@ for iexp=1:NbExp
         set(BrowseData.ListExperiments,'Value',ExpIndex{iexp})
         Param.InputTable(:,1)=ListPath(:,iexp);
         Param.InputTable(:,2)=ListSubdir(:,iexp);
-        if size(Param.InputTable,1)==1% case of single input line
-        Param.OutputSubDir=ListSubdir{iexp};
-        end
-        set(handles.InputTable,'Data',Param.InputTable)
-%         set(handles.OutputSubDir,'String',ListSubdir{iexp})
+        OutputSubDir=unique(ListSubdir(:,iexp));
+        Param.OutputSubDir=OutputSubDir{1};
+        if numel(OutputSubDir)>1% case 
+            for iout=2:numel(OutputSubDir)
+                Param.OutputSubDir=[Param.OutputSubDir '-' OutputSubDir{iout}];
+            end               
+        end       
     end
     [xx,ExpName]=fileparts(Param.InputTable{1,1});
     Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
     Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
-    %% create the output data directory if needed
+    
+    %% create the output data directory if needed, after chcking its existence
     OutputDir='';
     answer='';
     if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
-        SubDirOut=[get(handles.OutputSubDir,'String') Param.OutputDirExt];
+        SubDirOut=[Param.OutputSubDir Param.OutputDirExt];
         SubDirOutNew=SubDirOut;
         detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
         check_create=1; % need to create the result directory by default
@@ -1707,10 +1715,9 @@ for iexp=1:NbExp
         if strcmp(answer,'Cancel')
             continue
         end
-        Param.OutputDirExt=regexprep(SubDirOutNew,Param.OutputSubDir,'');
+        Param.OutputDirExt=regexprep(SubDirOutNew,['^' Param.OutputSubDir],'');
         Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
-        set(handles.OutputDirExt,'String',Param.OutputDirExt)
-        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]) % full name (with path) of output directory
+        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
         if check_create    % create output directory if it does not exist
             [tild,msg1]=mkdir(OutputDir);
             if ~strcmp(msg1,'')
@@ -1721,6 +1728,14 @@ for iexp=1:NbExp
         
     elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
         OutputDir=Param.ActionInput.LogPath;
+    end
+    
+    set(handles.OutputSubDir,'String',Param.OutputSubDir)
+    set(handles.OutputDirExt,'String',Param.OutputDirExt)
+    drawnow
+    if get(handles.Replicate,'Value')
+        set(handles.InputTable,'Data',Param.InputTable)
+        check_input_file_series(handles)
     end
     DirXml=fullfile(OutputDir,'0_XML');
     if ~exist(DirXml,'dir')
@@ -2208,9 +2223,7 @@ for iexp=1:NbExp
     end
 end
 set(handles.Replicate,'BackgroundColor',[0 1 0])
-if NbExp>1
-    set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta (input file features need to be updated)
-end
+
 %------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -3815,8 +3828,14 @@ set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta co
 
 % --- Executes on button press in MonitorCluster.
 function MonitorCluster_Callback(hObject, eventdata, handles)
-disp('format: R/W=run/wait, time lapsed, R=nbre of cores,W=walltime')
-system('oarstat |grep N=UVmat')% check the list of jobs launched with uvmat
+
+[rr,ss]=system('oarstat |grep N=UVmat');% check the list of jobs launched with uvmat
+if isempty(ss)
+   disp( 'no job presently submitted with uvmat')
+else
+    disp('format: R/W=run/wait, time lapsed, R=nbre of cores,W=walltime')
+    disp(ss)
+end
 
 
 function OutputSubDir_Callback(hObject, eventdata, handles)

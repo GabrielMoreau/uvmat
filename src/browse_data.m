@@ -24,7 +24,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 08-Jul-2019 23:32:39
+% Last Modified by GUIDE v2.5 11-Jul-2019 18:52:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -34,7 +34,7 @@ gui_State = struct('gui_Name',       mfilename, ...
     'gui_OutputFcn',  @browse_data_OutputFcn, ...
     'gui_LayoutFcn',  [] , ...
     'gui_Callback',   []);
-if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))
+if nargin && ischar(varargin{1}) 
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -44,6 +44,7 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
+
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
@@ -145,6 +146,19 @@ function varargout = browse_data_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 %%%%%%%%%%%%%%%%%%delete(handles.browse_data)
+
+%------------------------------------------------------------------------
+% --- Executes on button press in SourceDir.
+function SourceDir_Callback(hObject, eventdata, handles)
+SourceDir=get(handles.SourceDir,'String');
+ListExp=get(handles.ListExperiments,'String');
+ListExp=ListExp(get(handles.ListExperiments,'Value'));
+errormsg=scan_campaign(handles,SourceDir,ListExp);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+%------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CreateMirror.
@@ -396,9 +410,14 @@ if isempty(indices), indices=1; end
 
 
 %------------------------------------------------------------------------
-% Provide a list to display
+% Provide the list (ListFilesTot) to display in DataSeries with the selected indices
 %------------------------------------------------------------------------
 function [ListFilesTot,indices]=list_dir_3(SourceDir,ListDir,ListSub,ListSubSub,check_fix)
+% INPUT:
+%SourceDir: path to the displayed directories
+%ListDir: list of file and folder names under SourceDir (column 'Experiments')
+%ListSub: list of file and folder in the second column 'Devices')
+%ListSubSub: prvious list of file and folder in the third column 'DataSeries', used to mark the selected indices
 ListFilesTot={};
 for ilist=1:numel(ListDir)
     if ~isempty(regexp(ListDir{ilist},'^\+/'))
@@ -409,11 +428,17 @@ for ilist=1:numel(ListDir)
                 ListStruct=dir_uvmat(fullfile(SourceDir,ListDir{ilist},ListSub{isub})); %list files and dirs, extende to OpenDAP case
                 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
                 ListFiles=ListCells(1,:);
+                check_xml=~cellfun('isempty',regexp(ListFiles,'(\.xml|~)$'));% detect non xml files and files not marked by ~
                 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+                nbfiles=numel(find(~check_xml & ~check_dir));% number of non xml files
+                check_dir=check_dir & cellfun('isempty', regexp(ListFiles,'^(-|\.|\+/\.)'));% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
                 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-                cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
-                check_keep=cellfun('isempty', cell_remove);
-                ListFilesTot=[ListFilesTot (ListFiles(check_keep))];
+                %cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )         
+                ListFiles=ListFiles(check_dir | check_xml);           
+                ListFilesTot=[ListFilesTot ListFiles];
+                if nbfiles>0
+                    ListFilesTot=[ListFilesTot {[num2str(nbfiles) ' files']}];
+                end
             end
         end
     end
@@ -425,6 +450,10 @@ else
     indices=[];
     for ilist=1:numel(ListSubSub)
         index=find(strcmp(ListSubSub{ilist},ListFilesTot));
+        if check_fix && isempty(index)
+            ListFilesTot=[ListFilesTot {['---' ListSubSub{ilist}]}];
+            index=numel(ListFilesTot);
+        end
         indices=[indices index];
     end
     if check_fix
@@ -675,7 +704,7 @@ list_val=get(handles.DataSeries,'Value');
 set(handles.ListDevices,'String',DataSeries);%replace Devices by DataSeries
 set(handles.ListDevices,'Value',list_val);%replace Devices by DataSeries
 
-[ListFiles,indices]=list_dir_3(SourceDirNew,ListDevices(DeviceIndices),DataSeries(list_val),[]);
+[ListFiles,indices]=list_dir_3(SourceDirNew,ListDevices(DeviceIndices),DataSeries(list_val),[],0);
 set(handles.DataSeries,'String',ListFiles)
 set(handles.DataSeries,'Value',indices)% initialise the menu selection with the folder defined by the input
 
@@ -776,3 +805,13 @@ set(handles.ListExperiments,'Value',1)
 %     set(handles.DataSeries,'String',ListDevices)
 %     set(handles.DataSeries,'Value',Index)
 % end
+
+
+% --- Executes when user attempts to close browse_data.
+function browse_data_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to browse_data (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+delete(hObject);

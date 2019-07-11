@@ -27,14 +27,18 @@
 %=======================================================================
 
 function [ListFiles,errormsg] = dir_uvmat(DirName)
+ListFiles=[];
 errormsg='';
+if ~ischar(DirName)
+    errormsg='the function dir_uvmat needs a character string input';
+    return
+end
 if regexp(DirName,'^http://')
     % OpeNDAP case - read catalog.xml file
     catalog=[DirName,'/catalog.xml'];
     try
     str=urlread(catalog);
     catch ME
-        ListFiles=[];
         errormsg=ME.message;
         return
     end
