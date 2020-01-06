@@ -17,7 +17,7 @@
 %  tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 %=======================================================================
-% Copyright 2008-2019, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2020, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
