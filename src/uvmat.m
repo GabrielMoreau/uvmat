@@ -1006,10 +1006,17 @@ if isfield(UvData,'Field')
                 data.RangeX=UvData.Field.CoordMesh;
                 data.RangeY=UvData.Field.CoordMesh;
             case 'plane_z'
+                data.Type='plane';
+                if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+                    data.RangeY=[UvData.Field.ZMin UvData.Field.ZMax];
+                else
+                    msgbox_uvmat('ERROR','The input field is not 3D: no vertical plane projection')
+                    return
+                end
                 data.Angle=[0 90];
                 data.DX=UvData.Field.CoordMesh;
                 data.DY=UvData.Field.CoordMesh;
-                data.RangeZ=UvData.Field.CoordMesh;
+                data.RangeZ=UvData.Field.CoordMesh;      
                 data.Coord=[];
             otherwise
                 data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
@@ -1020,7 +1027,10 @@ if isfield(UvData,'Field')
         data.ProjMode=UvData.Field.ProjModeRequest;%set the request proj mode option by default
     end
 end
-
+hset_object=findobj(allchild(0),'Tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)%delete existing GUI set_object
+end
 hset_object=set_object(data,handles);% call the GUI set_object
 hchild=get(hset_object,'children');
 set(hchild,'enable','on')
@@ -1437,8 +1447,8 @@ for iobj=1:numel(ListObj);
     end
 end
 if numel(find(select_line))<2
-    msgbox_uvmat('ERROR',{'light rays must be defined by at least two lines created by Projection object/line in the menu bar'; ...
-    'use a third line to get a reference luminosity profile accross the illumination beam'});
+    msgbox_uvmat('ERROR',{'lines must be defined by Projection object in the upper menu bar: ';'1-two lines following the illumination rays'; ...
+    '2-a reference line near the fluid boundary receiving the illumination beam';'a mask polygon to select the area in which the exponential decay is fitted'});
     return
 else
     LineData=UvData.ProjObject(find(select_line));
@@ -1456,11 +1466,18 @@ blackoffset=0;
 if isfield(XmlData,'LIFCalib')&& isfield(XmlData.LIFCalib,'BlackOffset')
     blackoffset=XmlData.LIFCalib.BlackOffset ;% image value for black background, to be determined by taking images with a cover on the objective lens
 end
-answer=msgbox_uvmat('INPUT_TXT','camera offset value in the absence of illumination:', num2str(blackoffset));
+
+prompt = {'offset luminosity value in the absence of illumination';'smoothing length for the reference line (in pixels)'};
+    dlg_title = 'set the parameters for LIF';
+    num_lines= 2;
+    def     = { '0';'20'};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+
 if strcmp(answer,'Cancel')
     return
 else
-    XmlData.LIFCalib.BlackOffset=str2num(answer) ;% image value for black background, to be determined by taking images with a cover on the objective lens
+    XmlData.LIFCalib.BlackOffset=str2num(answer{1}) ;% image value for black background, to be determined by taking images with a cover on the objective lens
+    XmlData.LIFCalib.SmoothingLength=str2num(answer{2}) ;% smoothing length used for the reference line
 end
 
 %% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
@@ -1490,6 +1507,7 @@ XmlData.TransformInput.PolarCentre=[x0 y0];
 DataPol=phys_polar(UvData.Field,XmlData);%transform the input image in polar coordinates with origin at the light source
 
 %% use the third line for reference luminosity, renormalize the image intensity along each ray to get a uniform brightness along this line
+%UvData.Field.CoordMesh
 if numel(find(select_line))==3
     x_ref=linspace(LineData{3}.Coord(1,1),LineData{3}.Coord(2,1),10);
     y_ref=linspace(LineData{3}.Coord(1,2),LineData{3}.Coord(2,2),10);
@@ -1507,7 +1525,7 @@ if numel(find(select_line))==3
     dist_source_pixel=round(size(DataPol.A,2)*(dist_source-DataPol.Coord_x(1))/(DataPol.Coord_x(2)-DataPol.Coord_x(1)));
     line_nan= isnan(dist_source);
     dist_source_pixel(line_nan)=1;
-    width=20; %number of pixels used for reference
+    width=XmlData.LIFCalib.SmoothingLength; %number of pixels used for reference
     DataPol.A=double(DataPol.A)-XmlData.LIFCalib.BlackOffset;% black background substracted
     Anorm=zeros(size(DataPol.A));
     for iline=1:size(DataPol.A,1)
@@ -1515,6 +1533,9 @@ if numel(find(select_line))==3
         Anorm(iline,:)=DataPol.A(iline,:)/lum(iline);% for each ray (iline), renormalise the image by the brightness at the reference line 
     end
     lum(line_nan)=NaN;
+    XmlData.LIFCalib.RefLineAzimuth=DataPol.Coord_y;
+    XmlData.LIFCalib.RefLineRadius=dist_source;
+    XmlData.LIFCalib.RefLineLum=lum;
     figure(11)
     plot(1:size(DataPol.A,1),lum)
     xlabel('azimuth (pixels)')
@@ -1553,18 +1574,18 @@ for iY=1:npy
     ThetaLine=Theta(iY,:)*pi/180;
     [XLine,YLine] = pol2cart(ThetaLine,RLine);
     XLine=XLine+x0;
-    YLine=YLine+y0;  
+    YLine=YLine+y0;
     if ~isempty(index_mask)
         ind_good=inpolygon(XLine,YLine,MaskData.Coord(:,1),MaskData.Coord(:,2));
         if numel(find(ind_good))>100
-        ALine=ALine(ind_good);
-        RLine=RLine(ind_good);
+            ALine=ALine(ind_good);
+            RLine=RLine(ind_good);
         else
             continue
         end
     end
     p = polyfit(RLine,ALine,1);
-        gamma_coeff(iY)=-p(1);
+    gamma_coeff(iY)=-p(1);
 end
 
 %% show and store the rescaled image
@@ -1577,9 +1598,12 @@ plot(Theta(:,1),100*gamma_coeff)
 xlabel('angle(degree)')
 ylabel('decay coeff(m-1)')
 
+%% keep the average of gamma_coeff
+XmlData.LIFCalib.DecayRate=mean(gamma_coeff(gamma_coeff>0));
+
 %% record the calibration data in the xml file
 XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
-answer=msgbox_uvmat('INPUT_Y-N','save the illumination origin in the current xml file?');
+answer=msgbox_uvmat('INPUT_Y-N','save the LIF parameters in the current xml file?');
 if strcmp(answer,'Yes')
     t=xmltree(XmlFileName); %read the file
     title_str=get(t,1,'name');
@@ -1604,33 +1628,61 @@ if strcmp(answer,'Yes')
         [t,uid_illumination]=add(t,1,'element','LIFCalib');
     end
     uid_origin=find(t,'ImaDoc/LIFCalib/LightOrigin');
-    if ~isempty(uid_origin)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_origin);
+    if ~isempty(uid_origin)  %if LightOrigin already exists, delete it
+        t=delete(t,uid_origin);
     end
     uid_line=find(t,'ImaDoc/LIFCalib/Ray1Coord');
-    if ~isempty(uid_line)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_line);
+    if ~isempty(uid_line)  %if Ray1Coord already exists, delete it
+        t=delete(t,uid_line);
     end
-       uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
-    if ~isempty(uid_line)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_line);
+    uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
+    if ~isempty(uid_line)  %if Ray2Coord already exists, delete it
+        t=delete(t,uid_line);
     end
-       uid_mask=find(t,'ImaDoc/LIFCalib/MaskPolygonCoord');
-    if ~isempty(uid_mask)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_mask);
+    uid_line=find(t,'ImaDoc/LIFCalib/RefLineCoord');
+    if ~isempty(uid_line)  %if RefLineCoord already exists, delete it
+        t=delete(t,uid_line);
     end
-     uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
-    if ~isempty(uid_BlackOffset)  %if GeometryCalib does not already exists, create it
-         t=delete(t,uid_BlackOffset);
+    uid_mask=find(t,'ImaDoc/LIFCalib/MaskPolygonCoord');
+    if ~isempty(uid_mask) %if MaskPolygonCoord already exists, delete it
+        t=delete(t,uid_mask);
     end
+    uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
+    if ~isempty(uid_BlackOffset)  %if BlackOffset already exists, delete it
+        t=delete(t,uid_BlackOffset);
+    end
+    uid_DecayRate=find(t,'ImaDoc/LIFCalib/DecayRate');
+    if ~isempty(uid_DecayRate)  %if DecayRate already exists, delete it
+        t=delete(t,uid_DecayRate);
+    end
+    uid_RefLineRadius=find(t,'ImaDoc/LIFCalib/RefLineRadius');
+    if ~isempty(uid_RefLineRadius)  %if RefLineLum already exists, delete it
+        t=delete(t,uid_RefLineRadius);
+    end
+    uid_RefLineLum=find(t,'ImaDoc/LIFCalib/RefLineLum');
+    if ~isempty(uid_RefLineLum)  %if RefLineLum already exists, delete it
+        t=delete(t,uid_RefLineLum);
+    end
+    uid_RefLineAzimuth=find(t,'ImaDoc/LIFCalib/RefLineAzimuth');
+    if ~isempty(uid_RefLineAzimuth)  %if RefLineLum already exists, delete it
+        t=delete(t,uid_RefLineAzimuth);
+    end
+    
     % save the LIF calibration data
     t=struct2xml(XmlData.LIFCalib,t,uid_illumination);
     save(t,XmlFileName);
+    
+    % display the concentration in uvmat
+    InputFileREFRESH_Callback(hObject, eventdata, handles);% refresh the current xml file to apply 'ima2concentration'
+    transform_list=get(handles.TransformName,'String');
+    ichoice=find(strcmp('ima2concentration',transform_list),1);%look for the selected fct in the existing menu
+    if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
+        transform_list=transform_list(1:end-1);
+        ichoice=numel(transform_list)-1;
+    end
+    set(handles.TransformName,'Value',ichoice)
+    TransformName_Callback(hObject, eventdata, handles)
 end
-
-
-
-
 
 
 %------------------------------------------------------------------------
@@ -3148,158 +3200,14 @@ if ~get(handles.movie_pair,'value')
     set(handles.j2,'String','')% the second j index display is suppressed
     set(handles.Dt_txt,'String','')% the time interval indication is suppressed
     return
-end
-
-%% check the input file indexing:
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-NomType=get(handles.NomType,'String');
-if ~isempty(find(regexp(NomType,'-')))
-    msgbox_uvmat('ERROR','The movie pair requires file series with a single index on the first input line')
-    return
-end
-filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
-
-set(handles.movie_pair,'BusyAction','queue')%
-set(handles.CheckFixPair,'Value',1)% impose fixed pair (needed for function runpm)
-set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
-set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
-drawnow
-% list_fields=get(handles.FieldName,'String');% list menu fields
-% index_fields=get(handles.FieldName,'Value');% selected string index
-% FieldName=list_fields{index_fields}; % selected field
-
-
-% if isequal(FieldName,'image')
-%     index=1;
-
-% else
-%     list_fields=get(handles.FieldName_1,'String');% list menu fields
-%     index_fields=get(handles.FieldName_1,'Value');% selected string index
-%     FieldName=list_fields{index_fields}; % selected field
-%     if isequal(FieldName,'image')
-%         index=2;
-%         [RootPath,SubDir,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);% get info from the second input line
-%     else
-%         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
-%         set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-%         set(handles.movie_pair,'Value',0)
-%         return
-%     end
-% end
-num_i1=str2num(get(handles.i1,'String'));
-num_j1=stra2num(get(handles.j1,'String'));
-num_i2=str2num(get(handles.i2,'String'));
-num_j2=stra2num(get(handles.j2,'String'));
-
-%% determine the name 'imaname_1' of the second file in the pair
-imaname_1='';
-if isempty(num_j2)% no second j index indicated
-    if isempty(num_i2)
-        if strcmp(get(handles.j2,'Visible'),'on') %if the j box is visible
-            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1,[],num_j1+1);
-        end
-        if exist(imaname_1,'file')
-            num_j2=num_j1+1;% look by default for the next j index as the second file
-            set(handles.j2,'String',num2stra(num_j2,NomType));
-        else
-            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1+1,[],num_j1);
-            if exist(imaname_1,'file')
-                num_i2=num_i1+1;
-                set(handles.i2,'String',num2str(num_i2));
-            else
-                msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
-                set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-                set(handles.movie_pair,'Value',0)
-                return
-            end
-        end
-    else
-        num_j2=num_j1;%repeat the index i1 by default
-    end
-end
-if isempty(num_i2)
-    num_i2=num_i1;%repeat the index i1 by default
-end
-if isempty(num_j1)
-    num_j1=1;
-end
-if isempty(num_j2)
-    num_j2=num_j1;%repeat the index i1 by default
-end
-imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i2,[],num_j2);
-if strcmp(NomType,'*')
-    num_frame=num_i2;
 else
-    num_frame=num_j2;
-end
-if ~exist(imaname_1,'file')
-      msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
-      set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-       set(handles.movie_pair,'Value',0)
-      return
+    set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow
+    drawnow
 end
 
-%% display the first field in the pair (including possibly a background field from second line input filename_1)
-filename_1='';%default
-FileIndex_1='';
-if get(handles.SubField,'Value')
-    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
-    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
-end
-% num_i1=stra2num(get(handles.i1,'String'));
-% num_i2=stra2num(get(handles.i2,'String'));
-% num_j1=stra2num(get(handles.j1,'String'));
-% num_j2=stra2num(get(handles.j2,'String'));
-[tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);% get the indices of the second series from the string FileIndex_1
-if isempty(j1_1)% case of movies, the index is not given by file index
-    j1_1=num_j1;
-end
-
-errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
-
-if isempty(errormsg)
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
-else
-     msgbox_uvmat('ERROR',errormsg);
-     set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
-end
-UvData=get(handles.uvmat,'UserData');
-Field_a=UvData.Field;% movie on the field defined by the second input line
-
-%% display time interval for the image pair
-if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'Time')...
-        && size(UvData.XmlData{1}.Time,1)>=num_i2+1 && size(UvData.XmlData{1}.Time,2)>=num_j2+1
-    dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
-    if  isfield(UvData,'TimeUnit')
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
-    else
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
-    end
-else
-    set(handles.Dt_txt,'String','')
-end
-
-%% read the second field
-if isempty(UvData.MovieObject)
-    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{index}.FileType,[],num_frame);
-else
-    [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{1}.FileType,UvData.MovieObject{1},num_frame);
-end
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['Error in reading second image: ' errormsg])
-    return
-end
-
-%% apply phys or other transform on the two input fields
-transform=get(handles.TransformPath,'UserData');
-if  ~isempty(transform)
-    if isfield(UvData,'XmlData') && ~isempty(UvData.XmlData) %use geometry calib recorded from the ImaDoc xml file as first priority
-        if nargin(transform)>=2
-            Field_b=transform(Field_b,UvData.XmlData{1});
-        else
-            Field_b=transform(Field_b);
-        end
-    end
+increment=str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+if isnan(increment)% case of free increment: move to next available field index
+    increment='+';
 end
 
 %% make movie until movie speed is set to 0 or STOP is activated
@@ -3307,16 +3215,185 @@ hima=findobj(handles.PlotAxes,'Tag','ima');% %handles.PlotAxes =main plotting wi
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
+set(handles.movie_pair,'BusyAction','queue')
 while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue') % enable STOP command
     % read and plot the series of images in non erase mode
-    set(hima,'CData',Field_b.A); %TODO: generalise to other kinds of fields
+    errormsg=runpm(hObject,eventdata,handles,increment);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg);
+    end
+    
+    %     set(hima,'CData',Field_b.A); %TODO: generalise to other kinds of fields
     pause(1.02-get(handles.speed,'Value'));% wait for next image
-    set(hima,'CData',Field_a.A);
+    errormsg=runpm(hObject,eventdata,handles,-increment);
+    
+    %     set(hima,'CData',Field_a.A);
     pause(1.02-get(handles.speed,'Value'));% wait for next image
 end
 set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
 set(handles.movie_pair,'Value',0)
 set(handles.Dt_txt,'String','')
+
+
+
+
+set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back in red
+
+% 
+% set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
+% drawnow
+% increment=-str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+% if isnan(increment)% case of free increment: move to previous available field index
+%     increment='-';
+% end
+% errormsg=runpm(hObject,eventdata,handles,increment);
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg);
+% end
+% set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back in red
+% 
+% %% check the input file indexing:
+% [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+% NomType=get(handles.NomType,'String');
+% if ~isempty(find(regexp(NomType,'-')))
+%     msgbox_uvmat('ERROR','The movie pair requires file series with a single index on the first input line')
+%     return
+% end
+% filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
+% 
+% set(handles.movie_pair,'BusyAction','queue')%
+% set(handles.CheckFixPair,'Value',1)% impose fixed pair (needed for function runpm)
+% set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
+% set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow to indicate its activity
+% drawnow
+% 
+% num_i1=str2num(get(handles.i1,'String'));
+% num_j1=stra2num(get(handles.j1,'String'));
+% num_i2=str2num(get(handles.i2,'String'));
+% num_j2=stra2num(get(handles.j2,'String'));
+% 
+% %% determine the name 'imaname_1' of the second file in the pair
+% imaname_1='';
+% if isempty(num_j2)% no second j index indicated
+%     if isempty(num_i2)
+%         if strcmp(get(handles.j2,'Visible'),'on') %if the j box is visible
+%             imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1,[],num_j1+1);
+%         end
+%         if exist(imaname_1,'file')
+%             num_j2=num_j1+1;% look by default for the next j index as the second file
+%             set(handles.j2,'String',num2stra(num_j2,NomType));
+%         else
+%             imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i1+1,[],num_j1);
+%             if exist(imaname_1,'file')
+%                 num_i2=num_i1+1;
+%                 set(handles.i2,'String',num2str(num_i2));
+%             else
+%                 msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
+%                 set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
+%                 set(handles.movie_pair,'Value',0)
+%                 return
+%             end
+%         end
+%     else
+%         num_j2=num_j1;%repeat the index i1 by default
+%     end
+% end
+% if isempty(num_i2)
+%     num_i2=num_i1;%repeat the index i1 by default
+% end
+% if isempty(num_j1)
+%     num_j1=1;
+% end
+% if isempty(num_j2)
+%     num_j2=num_j1;%repeat the index i1 by default
+% end
+% imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,num_i2,[],num_j2);
+% if strcmp(NomType,'*')
+%     num_frame=num_i2;
+% else
+%     num_frame=num_j2;
+% end
+% if ~exist(imaname_1,'file')
+%       msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
+%       set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
+%        set(handles.movie_pair,'Value',0)
+%       return
+% end
+% 
+% %% display the first field in the pair (including possibly a background field from second line input filename_1)
+% filename_1='';%default
+% FileIndex_1='';
+% if get(handles.SubField,'Value')
+%     [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+%     filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
+% end
+% [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);% get the indices of the second series from the string FileIndex_1
+% if isempty(j1_1)% case of movies, the index is not given by file index
+%     j1_1=num_j1;
+% end
+% 
+% errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
+% 
+% if isempty(errormsg)
+%     set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
+% else
+%      msgbox_uvmat('ERROR',errormsg);
+%      set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+% end
+% UvData=get(handles.uvmat,'UserData');
+% Field_a=UvData.Field;% movie on the field defined by the second input line
+% 
+% %% display time interval for the image pair
+% if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'Time')...
+%         && size(UvData.XmlData{1}.Time,1)>=num_i2+1 && size(UvData.XmlData{1}.Time,2)>=num_j2+1
+%     dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
+%     if  isfield(UvData,'TimeUnit')
+%         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
+%     else
+%         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
+%     end
+% else
+%     set(handles.Dt_txt,'String','')
+% end
+% 
+% %% read the second field
+% if isempty(UvData.MovieObject)
+%     [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{index}.FileType,[],num_frame);
+% else
+%     [Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileInfo{1}.FileType,UvData.MovieObject{1},num_frame);
+% end
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',['Error in reading second image: ' errormsg])
+%     return
+% end
+% 
+% %% apply phys or other transform on the two input fields
+% transform=get(handles.TransformPath,'UserData');
+% if  ~isempty(transform)
+%     if isfield(UvData,'XmlData') && ~isempty(UvData.XmlData) %use geometry calib recorded from the ImaDoc xml file as first priority
+%         if nargin(transform)>=2
+%             Field_b=transform(Field_b,UvData.XmlData{1});
+%         else
+%             Field_b=transform(Field_b);
+%         end
+%     end
+% end
+% 
+% %% make movie until movie speed is set to 0 or STOP is activated
+% hima=findobj(handles.PlotAxes,'Tag','ima');% %handles.PlotAxes =main plotting window (A GENERALISER)
+% set(handles.STOP,'Visible','on')
+% set(handles.speed,'Visible','on')
+% set(handles.speed_txt,'Visible','on')
+% while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue') % enable STOP command
+%     % read and plot the series of images in non erase mode
+%     set(hima,'CData',Field_b.A); %TODO: generalise to other kinds of fields
+%     pause(1.02-get(handles.speed,'Value'));% wait for next image
+%     set(hima,'CData',Field_a.A);
+%     pause(1.02-get(handles.speed,'Value'));% wait for next image
+% end
+% set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
+% set(handles.movie_pair,'Value',0)
+% set(handles.Dt_txt,'String','')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in InputFileREFRESH.
@@ -5924,6 +6001,8 @@ if check_view %activate set_object
         set(get(hset_object,'children'),'Enable','off')% deactivate the GUI except SAVE
         set(hhset_object.SAVE,'Enable','on')
     end
+else
+    delete(hset_object)
 end
 
 

@@ -316,7 +316,7 @@ if isfield(ParamIn,'Title')
 end
 
 %% set z coordinate menu if relevant
-if Field.MaxDim>=3 && prod(Field.DimValue)<10^8 && ~isempty(ParamIn.Coord_z); % 3D field (with memory content smaller than 400 Mo)
+if Field.MaxDim>=3 && prod(Field.DimValue)<10^8 && ~(isfield(ParamIn,'Coord_z') && isempty(ParamIn.Coord_z)) % 3D field (with memory content smaller than 400 Mo)
     set(handles.Check3D,'Value',1)
 else
     set(handles.Check3D,'Value',0)

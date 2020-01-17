@@ -1451,6 +1451,9 @@ SeriesData=get(handles.series,'UserData'); % hidden parameters
 if isfield(SeriesData,'TransformInput')
     Param.TransformInput=SeriesData.TransformInput;
 end
+if isfield(SeriesData,'ProjObject')
+    Param.ProjObject=SeriesData.ProjObject;
+end
 if ~isfield(SeriesData,'i1_series')
     errormsg='The input field series needs to be refreshed: press REFRESH';
     return
@@ -1601,45 +1604,49 @@ end
 %% Look for processing on multiple experiments set by the GUI browse_data
 NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
 if get(handles.Replicate,'Value')
-    set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
     hh=findobj(allchild(0),'Tag','browse_data');
-    BrowseData=guidata(hh);
-    SourceDir=get(BrowseData.SourceDir,'String');
-    ListExp=get(BrowseData.ListExperiments,'String');
-    ExpIndices=get(BrowseData.ListExperiments,'Value');
-    ListExp=ListExp(ExpIndices);
-    ListDevices=get(BrowseData.ListDevices,'String');
-    DeviceIndices=get(BrowseData.ListDevices,'Value');
-    ListDevices=ListDevices(DeviceIndices);
-    ListDataSeries=get(BrowseData.DataSeries,'String');
-    DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-    ListDataSeries=ListDataSeries(DataSeriesIndices);
-    NbExp=0; % counter of the number of experiments set by the GUI browse_data
-    for iexp=1:numel(ListExp)
-        if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-            if strcmp(get(BrowseData.DataSeries,'enable'),'off');%case of a multiple input line for series
-                NbExp=NbExp+1;
-                ExpIndex{NbExp}=iexp;
-                for idevice=1:numel(ListDevices)
-                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                        regexprep(ListDevices{idevice},'^\+/',''));
-                    ldir=regexprep(ListDataSeries{idevice},'^\+/','');
-                    ListPath{idevice,NbExp}=lpath;
-                    ListSubdir{idevice,NbExp}=ldir;
-                end
-            else
-                for idevice=1:numel(ListDevices)
-                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                        for isubdir=1:numel(ListDataSeries)
-                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                    regexprep(ListDevices{idevice},'^\+/',''));
-                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                                if exist(fullfile(lpath,ldir),'dir')
-                                    NbExp=NbExp+1;
-                                    ExpIndex{NbExp}=iexp;
-                                    ListPath{NbExp}=lpath;
-                                    ListSubdir{NbExp}=ldir;
+    if isempty(hh)
+        set(handles.Replicate,'Value',0)
+    else
+        set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
+        BrowseData=guidata(hh);
+        SourceDir=get(BrowseData.SourceDir,'String');
+        ListExp=get(BrowseData.ListExperiments,'String');
+        ExpIndices=get(BrowseData.ListExperiments,'Value');
+        ListExp=ListExp(ExpIndices);
+        ListDevices=get(BrowseData.ListDevices,'String');
+        DeviceIndices=get(BrowseData.ListDevices,'Value');
+        ListDevices=ListDevices(DeviceIndices);
+        ListDataSeries=get(BrowseData.DataSeries,'String');
+        DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+        ListDataSeries=ListDataSeries(DataSeriesIndices);
+        NbExp=0; % counter of the number of experiments set by the GUI browse_data
+        for iexp=1:numel(ListExp)
+            if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+                if strcmp(get(BrowseData.DataSeries,'enable'),'off');%case of a multiple input line for series
+                    NbExp=NbExp+1;
+                    ExpIndex{NbExp}=iexp;
+                    for idevice=1:numel(ListDevices)
+                        lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                            regexprep(ListDevices{idevice},'^\+/',''));
+                        ldir=regexprep(ListDataSeries{idevice},'^\+/','');
+                        ListPath{idevice,NbExp}=lpath;
+                        ListSubdir{idevice,NbExp}=ldir;
+                    end
+                else
+                    for idevice=1:numel(ListDevices)
+                        if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                            for isubdir=1:numel(ListDataSeries)
+                                if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                        regexprep(ListDevices{idevice},'^\+/',''));
+                                    ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                                    if exist(fullfile(lpath,ldir),'dir')
+                                        NbExp=NbExp+1;
+                                        ExpIndex{NbExp}=iexp;
+                                        ListPath{NbExp}=lpath;
+                                        ListSubdir{NbExp}=ldir;
+                                    end
                                 end
                             end
                         end
@@ -1647,10 +1654,10 @@ if get(handles.Replicate,'Value')
                 end
             end
         end
-    end
-    answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
-    if strcmp(answer,'Cancel')||strcmp(answer,'No')
-        return
+        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
+        if strcmp(answer,'Cancel')||strcmp(answer,'No')
+            return
+        end
     end
 end
 %      set(handles.OutputSubDir,'String',SubDir)
@@ -1677,7 +1684,7 @@ for iexp=1:NbExp
     Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
     Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
     
-    %% create the output data directory if needed, after chcking its existence
+    %% create the output data directory if needed, after checking its existence
     OutputDir='';
     answer='';
     if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
@@ -2653,7 +2660,7 @@ set(handles.CheckObject,'Visible',ProjObjectVisible)
 if ~get(handles.CheckObject,'Value')
     ProjObjectVisible='off';
 end
-set(handles.ProjObject,'Visible',ProjObjectVisible)
+set(handles.ProjObjectName,'Visible',ProjObjectVisible)
 set(handles.DeleteObject,'Visible',ProjObjectVisible)
 set(handles.ViewObject,'Visible',ProjObjectVisible)
 set(handles.EditObject,'Visible',ProjObjectVisible)
@@ -3073,7 +3080,7 @@ if get(handles.CheckObject,'Value')
             set(hset_object,'Name','set_object_series')% name to distinguish from set_object used with uvmat
         end
         ProjObject=read_GUI(hset_object);
-        set(handles.ProjObject,'String',ProjObject.Name); % display the object name
+        set(handles.ProjObjectName,'String',ProjObject.Name); % display the object name
         SeriesData=get(handles.series,'UserData');
         SeriesData.ProjObject=ProjObject;
         set(handles.series,'UserData',SeriesData);
@@ -3081,7 +3088,7 @@ if get(handles.CheckObject,'Value')
     set(handles.EditObject,'Visible','on');
     set(handles.DeleteObject,'Visible','on');
     set(handles.ViewObject,'Visible','on');
-    set(handles.ProjObject,'Visible','on');
+    set(handles.ProjObjectName,'Visible','on');
 else
     set(handles.EditObject,'Visible','off');
     set(handles.DeleteObject,'Visible','off');
@@ -3089,7 +3096,7 @@ else
     if ~ishandle(hset_object)
         set(handles.ViewObject,'Value',0);
     end
-    set(handles.ProjObject,'Visible','off');
+    set(handles.ProjObjectName,'Visible','off');
 end
 
 %------------------------------------------------------------------------
@@ -3130,8 +3137,8 @@ function DeleteObject_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.series,'UserData');
 SeriesData.ProjObject=[];
 set(handles.series,'UserData',SeriesData)
-set(handles.ProjObject,'String','')
-set(handles.ProjObject,'Visible','off')
+set(handles.ProjObjectName,'String','')
+set(handles.ProjObjectName,'Visible','off')
 set(handles.CheckObject,'Value',0)
 set(handles.ViewObject,'Visible','off')
 set(handles.EditObject,'Visible','off')
@@ -3388,13 +3395,13 @@ if isfield(Param,'ProjObject') %introduce projection object if relevant
 end
 set(handles.series,'UserData',SeriesData)
 if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
-    set(handles.ProjObject,'String',Param.ProjObject.Name)
+    set(handles.ProjObjectName,'String',Param.ProjObject.Name)
     set(handles.ViewObject,'Visible','on')
     set(handles.EditObject,'Visible','on')
     set(handles.DeleteObject,'Visible','on')
 else     
-    set(handles.ProjObject,'String','')
-    set(handles.ProjObject,'Visible','off')
+    set(handles.ProjObjectName,'String','')
+    set(handles.ProjObjectName,'Visible','off')
     set(handles.ViewObject,'Visible','off')
     set(handles.EditObject,'Visible','off')
     set(handles.DeleteObject,'Visible','off')     
@@ -3873,3 +3880,6 @@ else
         delete(hh)
     end
 end
+
+
+

@@ -998,6 +998,9 @@ if isfield(ObjectData,'Angle')
         test90y=0;%isequal(ObjectData.Angle,[0 90 0]);
     end
     PlaneAngle=(pi/180)*ObjectData.Angle;
+    if PlaneAngle==0
+        PlaneAngle=[0 0];
+    end
     %     om=norm(PlaneAngle);%norm of rotation angle in radians
     %     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
     %     cos_om=cos(om);
@@ -1008,11 +1011,11 @@ if isfield(ObjectData,'Angle')
     %     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
     %     norm_plane(3)=OmAxis(3)*coeff+cos_om;
     
-    M1=[cos(PlaneAngle(1)) sin(PlaneAngle(1)) 0;-sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
+    M1=[cos(PlaneAngle(1)) -sin(PlaneAngle(1)) 0;sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
     M=M1;
     if checkM2
-        M2=[1 0 0;0 cos(PlaneAngle(2)) sin(PlaneAngle(2));0 -sin(PlaneAngle(2)) cos(PlaneAngle(2))];
-        M=M2*M1;% first rotate in the x,y plane with angle PlaneAngle(1), then slant around the new x axis0 with angle PlaneAngle(2)
+        M2=[1 0 0;0 cos(PlaneAngle(2)) -sin(PlaneAngle(2));0 sin(PlaneAngle(2)) cos(PlaneAngle(2))];
+        M=M1*M2;% first rotate in the x,y plane with angle PlaneAngle(1), then slant around the new x axis0 with angle PlaneAngle(2)
     end
     norm_plane=M*[0 0 1]';
     
@@ -1037,9 +1040,6 @@ if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
     return
 end
 InterpMesh=min(DX,DY);%mesh used for interpolation in a slanted plane
-% if strcmp(ObjectData.Type,'plane_z')
-%     InterpMesh=10*InterpMesh;%TODO: temporary, to shorten computation
-% end
 
 %% extrema along each axis
 testXMin=0;% test if min of X coordinates defined on the projection object, =0 by default
@@ -1125,21 +1125,7 @@ ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
 %     ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
 % end
 icell_grid=[];% field cell index which defines the grid
-if ~strcmp(ObjectData.ProjMode,'projection')&& ~strcmp(ObjectData.Type,'plane_z')% TODO:rationalize
-    %% define the new coordinates in case of interpolation on a imposed grid
-    if ~testYMin
-        errormsg='min Y value not defined for the projection grid';return
-    end
-    if ~testYMax
-        errormsg='max Y value not defined for the projection grid';return
-    end
-    if ~testXMin
-        errormsg='min X value not defined for the projection grid';return
-    end
-    if ~testXMax
-        errormsg='max X value not defined for the projection grid';return
-    end
-else
+if strcmp(ObjectData.ProjMode,'projection')
     %% case of a grid requested by the input field
     for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
         if isfield(CellInfo{icell},'ProjModeRequest')
@@ -1161,19 +1147,34 @@ else
             check_grid(icell)=1;
         end
     end
-    if ~isempty(find(check_grid))% if a grid is requested by the input field
+    if ~isempty(find(check_grid,1))% if a grid is requested by the input field
         if isempty(icell_grid)%  if the grid is not given by cell #icell_grid
             if ~isfield(FieldData,'XMax')
                 FieldData=find_field_bounds(FieldData);
             end
         end
     end
+else
+    %% define the new coordinates in case of interpolation on a imposed grid
+    if ~testYMin
+        errormsg='min Y value not defined for the projection grid';return% %%%%%%%%%%%%%%%%        A REVOIR
+
+    end
+    if ~testYMax
+        errormsg='max Y value not defined for the projection grid';return
+    end
+    if ~testXMin
+        errormsg='min X value not defined for the projection grid';return
+    end
+    if ~testXMax
+        errormsg='max X value not defined for the projection grid';return
+    end
 end
-if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
+if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
     if isempty(icell_grid)||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
         AYName='coord_y';
         AXName='coord_x';
-        if strcmp(ObjectData.ProjMode,'projection')||strcmp(ObjectData.Type,'plane_z')
+        if strcmp(ObjectData.ProjMode,'projection')||strcmp(ObjectData.Type,'plane')
             ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
             ProjData.coord_x=[FieldData.XMin FieldData.XMax];
             coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
@@ -1471,7 +1472,7 @@ for icell=1:length(CellInfo)
                 ProjMode{icell}='interp_lin'; %request linear interpolation for projection on a tilted plane
             end
             
-            if isequal(ProjMode{icell},'projection')% && (~testangle || test90y || test90x)
+            if strcmp(ProjMode{icell},'projection')% && (~testangle || test90y || test90x)
                 if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax% no range restriction
                     ListVarName=[ListVarName FieldData.ListVarName(VarIndex)];
                     VarDimName=[VarDimName FieldData.VarDimName(VarIndex)];
@@ -1652,7 +1653,7 @@ for icell=1:length(CellInfo)
                         VarDimName=[VarDimName {DimCell}];
                         if isfield(FieldData,'VarAttribute')&&length(FieldData.VarAttribute)>=ivar
                             VarAttribute{length(ListVarName)+nbcoord}=FieldData.VarAttribute{ivar};
-                        end;
+                        end
                         ProjData.(FFName)=isnan(ProjData.(VarName));%detact NaN (points outside the interpolation range)
                         ProjData.(VarName)(ProjData.(FFName))=0; %set to 0 the NaN data
                     end
@@ -1660,7 +1661,7 @@ for icell=1:length(CellInfo)
                     ListVarName=[ListVarName FFName];
                     VarDimName=[VarDimName {DimCell}];
                     VarAttribute{numel(ListVarName)}.Role='errorflag';
-                elseif ~testangle
+                elseif ~testangle % 3Dcase without change of angle
                     % unstructured z coordinate
                     test_sup=(Coord{1}>=ObjectData.Coord(1,3));
                     iz_sup=find(test_sup);
@@ -1682,36 +1683,40 @@ for icell=1:length(CellInfo)
                 else   %projection of structured coordinates on oblique plane
                     % determine the boundaries of the projected field,
                     % first find the 8 summits of the initial volume in the
-                    PlaneAngle=ObjectData.Angle*pi/180;
+                    PlaneAngle=[0 0 0];% default
+                    PlaneAngle(1:numel(ObjectData.Angle))=ObjectData.Angle*pi/180;
                     % new coordinates
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});%initial z coordinates
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});%initial y coordinates
                     Coord{3}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(3)});%initial x coordinates
-                    summit=zeros(3,8);% initialize summit coordinates
-                    summit(1,1:4)=[Coord{3}(1) Coord{3}(end) Coord{3}(1) Coord{3}(end)];%square
-                    summit(2,1:4)=[Coord{2}(1) Coord{2}(1) Coord{2}(end) Coord{2}(end)];% square at z= Coord{1}(1)
-                    summit(1:2,5:8)=summit(1:2,1:4);
-                    summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
-                    %Mrot_inv=rodrigues(-PlaneAngle);
-                    newsummit=zeros(3,8);% initialize the rotated summit coordinates
+%                     summit=zeros(3,8);% initialize summit coordinates
+%                     summit(1,1:4)=[Coord{3}(1) Coord{3}(end) Coord{3}(1) Coord{3}(end)];%square
+%                     summit(2,1:4)=[Coord{2}(1) Coord{2}(1) Coord{2}(end) Coord{2}(end)];% square at z= Coord{1}(1)
+%                     summit(1:2,5:8)=summit(1:2,1:4);
+%                     summit(3,:)=[Coord{1}(1)*ones(1,4) Coord{1}(end)*ones(1,4)];
+%                     %Mrot_inv=rodrigues(-PlaneAngle);
+%                     newsummit=zeros(3,8);% initialize the rotated summit coordinates
                     ObjectData.Coord=ObjectData.Coord';% set ObjectData.Coord as a vertical vector
                     if size(ObjectData.Coord,1)<3
                         ObjectData.Coord=[ObjectData.Coord; 0];%add z origin at z=0 by default
                     end
                     
-                    M1=[cos(PlaneAngle(1)) sin(PlaneAngle(1)) 0;-sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
-                    M2=[1 0 0;0 cos(PlaneAngle(2)) sin(PlaneAngle(2));0 -sin(PlaneAngle(2)) cos(PlaneAngle(2))];
-                    M=M2*M1;
+%                     M1=[cos(PlaneAngle(1)) sin(PlaneAngle(1)) 0;-sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
+%                     M2=[1 0 0;0 cos(PlaneAngle(2)) sin(PlaneAngle(2));0 -sin(PlaneAngle(2)) cos(PlaneAngle(2))];
+%                     M=M1*M2;
                     M_inv=inv(M);
                     
-                    for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)
-                        newsummit(:,isummit)=M*(summit(:,isummit)-(ObjectData.Coord));
-                    end
-                    coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));% set of coordinqtes in the projection plane
-                    coord_y_proj=min(newsummit(2,:)):InterpMesh: max(newsummit(2,:));
-                    coord_z_proj=-width:width;
+%                     for isummit=1:8% TODO: introduce a function for rotation of n points (to use also for scattered data)
+%                         newsummit(:,isummit)=M*(summit(:,isummit)-(ObjectData.Coord));
+%                     end
+%                     coord_x_proj=min(newsummit(1,:)):InterpMesh: max(newsummit(1,:));% set of coordinqtes in the projection plane
+%                     coord_y_proj=min(newsummit(2,:)):InterpMesh: max(newsummit(2,:));
+%                     coord_z_proj=-width:width;
+                    coord_x_proj=ObjectData.RangeX(1):InterpMesh:ObjectData.RangeX(2);% set of coordinqtes in the projection plane
+                     coord_y_proj=ObjectData.RangeY(1):InterpMesh:ObjectData.RangeY(2);
+                    coord_z_proj=-floor(ObjectData.RangeInterp/InterpMesh):InterpMesh:floor(ObjectData.RangeInterp/InterpMesh);
                     %Mrot=rodrigues(PlaneAngle);% inverse rotation matrix
-                    Origin=M_inv*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
+                    %Origin=M_inv*[coord_x_proj(1);coord_y_proj(1);coord_z_proj(1)]+ObjectData.Coord;
                     npx=numel(coord_x_proj);
                     npy=numel(coord_y_proj);
                     npz=numel(coord_z_proj);
@@ -1721,7 +1726,11 @@ for icell=1:length(CellInfo)
                     %                     sinphi=PlaneAngle(2)/modangle;
                     iX=[coord_x_proj(end)-coord_x_proj(1);0;0]/(npx-1);
                     iY=[0;coord_y_proj(end)-coord_y_proj(1);0]/(npy-1);
+                    if npz==1
+                        iZ=[0;0;0];
+                    else
                     iZ=[0;0;coord_z_proj(end)-coord_z_proj(1)]/(npz-1);
+                    end
                     %                     iX(1:2)=[cosphi -sinphi;sinphi cosphi]*iX(1:2);
                     %                     iY(1:2)=[-cosphi -sinphi;sinphi cosphi]*iY(1:2);
                     
@@ -1730,25 +1739,28 @@ for icell=1:length(CellInfo)
                     iz=M_inv*iZ;% vector along z coordinates
                     
                     [Grid_x,Grid_y,Grid_z]=meshgrid(0:npx-1,0:npy-1,0:npz-1);
+                    %[Grid_x,Grid_y,Grid_z]=meshgrid(0:npz-1,0:npy-1,0:npx-1);
                     if ismatrix(Grid_x)% add a singleton in case of a single z value
                         Grid_x=shiftdim(Grid_x,-1);
                         Grid_y=shiftdim(Grid_y,-1);
                         Grid_z=shiftdim(Grid_z,-1);
                     end
-                    XI=Origin(1)+ix(1)*Grid_x+iy(1)*Grid_y+iz(1)*Grid_z;
-                    YI=Origin(2)+ix(2)*Grid_x+iy(2)*Grid_y+iz(2)*Grid_z;
-                    ZI=Origin(3)+ix(3)*Grid_x+iy(3)*Grid_y+iz(3)*Grid_z;
-                    [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});% mesh in the initial coordinates
+                    XI=ObjectData.Coord(1)+ix(1)*Grid_x+iy(1)*Grid_y+iz(1)*Grid_z;
+                    YI=ObjectData.Coord(2)+ix(2)*Grid_x+iy(2)*Grid_y+iz(2)*Grid_z;
+                    ZI=ObjectData.Coord(3)+ix(3)*Grid_x+iy(3)*Grid_y+iz(3)*Grid_z;
+                  %  [X,Y,Z]=meshgrid(Coord{3},Coord{2},Coord{1});% grid of initial coordinates
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
                         ListVarName=[ListVarName VarName];
                         VarDimName=[VarDimName {{'coord_y','coord_x'}}];
                         VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
-                        FieldData.(VarName)=permute(FieldData.(VarName),[2 3 1]);
+                        FieldData.(VarName)=permute(FieldData.(VarName),[2 3 1]); %coordinate permutation needed to use interp3
+                        indexnan=isnan(FieldData.(VarName));
+                        FieldData.(VarName)(indexnan)=0;%set to zero the undefined values
                         ProjData.coord_x=coord_x_proj;
                         ProjData.coord_y=coord_y_proj;
-                        ProjData.(VarName)=interp3(X,Y,Z,double(FieldData.(VarName)),XI,YI,ZI,'*linear');
-                        ProjData.(VarName)=nanmean(ProjData.(VarName),3);
+                        ProjData.(VarName)=interp3(Coord{3},Coord{2},Coord{1},double(FieldData.(VarName)),ZI,YI,XI,'*linear');
+                        ProjData.(VarName)=nanmean(ProjData.(VarName),1);
                         ProjData.(VarName)=squeeze(ProjData.(VarName));
                     end
                 end

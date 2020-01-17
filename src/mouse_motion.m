@@ -401,7 +401,7 @@ if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
     XYData=AxeData.CurrentOrigin;
     if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
         switch ObjectData.Type
-            case {'line','polyline','polygon','points','plane_z'}
+            case {'line','polyline','polygon','points'}
                 ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
                 % ObjectData.Coord(end,:)=xy(1,:);
             case {'rectangle','ellipse','volume'}

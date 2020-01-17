@@ -94,7 +94,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         %creating object
     else
         switch ObjectData.Type
-            case {'line','plane_z'}
+            case {'line','plane'}
                 if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
                     check_multiple=1;
                 end
@@ -105,16 +105,16 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                 if isequal(ObjectData.RangeX,0)||isequal(ObjectData.RangeY,0)
                     check_multiple=1;% pass to next mous up if width of height=0
                 end
-            case 'plane' %case of 'plane', TODO: NOT ACTIVATED
-                DX=(xy(1,1)-ObjectData.Coord(1,1));
-                DY=(xy(1,2)-ObjectData.Coord(1,2));
-                ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
-                if isfield(ObjectData,'RangeX')
-                    XMax=sqrt(DX*DX+DY*DY);
-                    if XMax>max(ObjectData.RangeX)
-                        ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
-                    end
-                end
+%             case 'plane' %case of 'plane', TODO: NOT ACTIVATED
+%                 DX=(xy(1,1)-ObjectData.Coord(1,1));
+%                 DY=(xy(1,2)-ObjectData.Coord(1,2));
+%                 ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
+%                 if isfield(ObjectData,'RangeX')
+%                     XMax=sqrt(DX*DX+DY*DY);
+%                     if XMax>max(ObjectData.RangeX)
+%                         ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+%                     end
+%                 end
             otherwise
                 check_multiple=1;
         end

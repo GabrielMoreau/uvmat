@@ -99,11 +99,11 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'DeleteFcn',{@closefcn})
 
 % fill the interface as set in the input data:
-if exist('data','var') 
+if exist('data','var')
     if isfield(data,'Coord')
         set(handles.Coord,'Data',data.Coord)
         if size(data.Coord,2)==3
-        set(handles.z_slider,'Visible','on')
+            set(handles.z_slider,'Visible','on')
         end
     else
         set(handles.z_slider,'Visible','off')
@@ -113,13 +113,13 @@ if exist('data','var')
     end
     if isfield(data,'ProjModeMenu')
         set(handles.ProjMode,'UserData',data.ProjModeMenu)% data.ProjModeMenu as default menu (used in Type_Callback)
-    end      
+    end
     errormsg=fill_GUI(data,handles.set_object);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR','bad data input in set_object')
         return
     end
-    Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type   
+    Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type
     set(handles.REFRESH,'BackgroundColor',[1 0 0])
     if isfield(data,'RangeZ')
         set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
@@ -150,7 +150,7 @@ if exist('data','var')
         set(handles.num_RangeY_2,'String',num2str(max(data.RangeY),3))
         set(handles.num_RangeY_1,'String',num2str(min(data.RangeY),3))
     end
-    if isfield(data,'RangeZ')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
+    if isfield(data,'RangeZ')%&& ~strcmp(data.Type,'plane_z')%TODO: generalise
         if ischar(data.RangeZ)
             data.RangeZ=str2num(data.RangeZ);
         end
@@ -158,19 +158,18 @@ if exist('data','var')
         if numel(data.RangeZ)>=2
             set(handles.num_RangeZ_1,'String',num2str(min(data.RangeZ),3))
         end
-    end  
+    end
     if ~isfield(data,'Angle')
         data.Angle=[0 0];
     end
-%     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
-         set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
-%          set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
-%         set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
-%     end
+    set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
+    if numel(data.Angle)==2
+        set(handles.num_Angle_2,'Visible','on')
+        set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
+    end
 end
 set(get(handles.set_object,'children'),'enable','off')
 set(handles.SAVE,'enable','on')
-% set(handles.REFRESH,'enable','off') 
 
 
 %------------------------------------------------------------------------
@@ -244,7 +243,9 @@ switch Type
             Coord=Coord(1:2,:);
         end
     case {'rectangle','ellipse','plane','volume'}
+        if ~isempty(Coord)
         Coord=Coord(1,:);
+        end
 end
 set(handles.Coord,'Data',Coord)
 

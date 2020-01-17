@@ -287,7 +287,7 @@ if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))
 end
 
 %% selection of an existing projection object (third priority)
-if  test_edit 
+if  test_edit && ~strcmp(get(hcurrentobject,'Type'),'figure')
     testdeform=0;
     if ~(isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'create'))
         userdata=get(hcurrentobject,'UserData');
@@ -359,11 +359,6 @@ if  test_edit
                    end
                end
             end
-%             if testdeform==0
-%                 AxeData.Drawing='translate';
-%                 set(AxeData.CurrentObject,'Selected','on')
-%                 set(gcbo,'Pointer','fleur');
-%             end
         else
             if strcmp(get(hCurrentGUI,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
                IndexObj=get(hhuvmat.ListObject,'Value');
@@ -432,14 +427,26 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
         %get handles of the GUI set_object
     h_set_object=findobj(allchild(0),'Tag','set_object');
     hh_set_object=guidata(h_set_object);
-    if strcmp(ObjectData.Type,'plane_z')&& ~isempty(ObjectData.Coord)
-        Delta_x=(xy(1,1)-ObjectData.Coord(1,1));%displacement along x
-        Delta_y=(xy(1,2)-ObjectData.Coord(1,2));%displacement along y
-        ObjectData.Angle(1)=(180/pi)*angle(Delta_x+i*Delta_y);
-        ObjectData.Angle(2)=90;       
-        set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
-        set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
-         drawing_status='off';
+    if strcmp(ObjectData.Type,'plane')
+        if isempty(ObjectData.Coord)||(isfield(ObjectData,'RangeX') && size(ObjectData.RangeX,2)==2)% draw a new plane
+            ObjectData.Coord=xy(1,1:2);% record the coordinates marked by the mouse as origin of the new plane
+            set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
+            set(hh_set_object.num_RangeX_2,'String','')
+            set(hh_set_object.num_Angle_1,'String','0')
+            drawing_status='create';
+        else
+            Delta_x=(xy(1,1)-ObjectData.Coord(1,1));%displacement along x
+            Delta_y=(xy(1,2)-ObjectData.Coord(1,2));%displacement along y
+            ObjectData.Angle(1)=(180/pi)*angle(Delta_x+i*Delta_y);
+            ObjectData.Angle(2)=90;
+            ObjectData.RangeX(1)=0;
+            ObjectData.RangeX(2)=abs(Delta_x+i*Delta_y);
+            set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
+            set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
+            set(hh_set_object.num_RangeX_1,'String',num2str(ObjectData.RangeX(1)))
+            set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX(2)))
+            drawing_status='off';
+        end
     else
         ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
         set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
