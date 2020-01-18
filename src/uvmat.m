@@ -1425,6 +1425,8 @@ if isfield(XmlData,'LIFCalib')
     if isfield(XmlData.LIFCalib,'MaskPolygonCoord')
         ListObjectName{5}='MaskPolygon';
         data.Name='MaskPolygon';
+        data.Type='polygon';
+        data.ProjMode='mask_outside';
         data.Coord=XmlData.LIFCalib.MaskPolygonCoord;
         UvData.ProjObject{5}=data;
         UvData.ProjObject{5}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{5},UvData.ProjObject{1},handles.PlotAxes,'b');

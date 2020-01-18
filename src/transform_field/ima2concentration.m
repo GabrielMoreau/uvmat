@@ -21,11 +21,13 @@
 function [DataOut]=ima2concentration(DataIn,XmlData)
 
 %% request input parameters
-if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
-    if ~isfield(XmlData,'LIFCalib')
+DataOut=[];
+if (isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0))
+    return
+end
+if ~isfield(XmlData,'LIFCalib')
         msgbox_uvmat('ERROR','no LIF calibration data available, first run LIFCalib in uvmat')
     return
-    end
 end
 cpath=which('uvmat');
 addpath(fullfile(fileparts(cpath),'transform_field'))% define path for phys_polar.m
