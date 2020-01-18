@@ -1438,8 +1438,8 @@ set(handles.uvmat,'UserData',UvData);
 ListObj=UvData.ProjObject;% get the current list of projection objects 
 select_line=zeros(1,numel(ListObj));
 select_mask=zeros(1,numel(ListObj));
-for iobj=1:numel(ListObj);
-    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
+for iobj=1:numel(ListObj)
+    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')&& ~strcmp(ListObj{iobj}.Name,'MaskPolygon')
         select_line(iobj)=1;% select the lines among the projection objects
     end
     if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'polygon')
