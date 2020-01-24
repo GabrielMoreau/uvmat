@@ -268,10 +268,10 @@ end
 if ~isempty(GeometryCalib) % if calibration is not cancelled
     %%%%% use of the option 'replicate'
     if get(handles.Replicate,'Value')% if the option replicate is activated
-        nbcalib=0;
+        %nbcalib=0;
         %% open the GUI browse_data
         hbrowse=findobj(allchild(0),'Tag','browse_data');
-        if ~isempty(hbrowse)% look for the GUI 'replicate'
+        if ~isempty(hbrowse)% look for the GUI browse_data
             BrowseData=guidata(hbrowse);
             SourceDir=get(BrowseData.SourceDir,'String');
             ListExp=get(BrowseData.ListExperiments,'String');
@@ -321,7 +321,7 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     else
                         display([XmlName ' created with calibration parameters'])
                     end
-                    nbcalib=nbcalib+1;
+                    %nbcalib=nbcalib+1;
                 end
             end
         end

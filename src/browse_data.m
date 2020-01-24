@@ -75,11 +75,6 @@ FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
-% if exist('MultiDevices','var') && strcmp(MultiDevices,'on')
-%     set(handles.DataSeries,'Max',2)
-% else
-%     set(handles.DataSeries,'Max',1)
-% end
 if exist('EnableMirror','var') && strcmp(EnableMirror,'on')
     set(handles.CreateMirror,'Visible','on')
     set(handles.mirror_txt,'Visible','on')
@@ -112,15 +107,6 @@ for ilist=1:numel(InputDir)
     end
 end
 s=[];
-% if exist(RootXml,'file')
-%     [s,Heading]=xml2struct(RootXml);%read the xml file
-%     if isfield(s,'SourceDir')
-%         set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
-%         set(handles.MirrorDir,'Visible','on');%  mirror dir display
-%         set(handles.MirrorDir,'String',Campaign);%display the opened mirror dir
-%         set(handles.CreateMirror,'String','update_mirror')
-%     end
-% end
 if isempty(s) %a source dir has been opened
     set(handles.SourceDir,'String',SourceDir{1});
     set(handles.MirrorDir,'Visible','off');% no mirror dir display
@@ -354,7 +340,8 @@ function [ListFiles,indices]=list_dir_1(SourceDir,ListSub)
     ListStruct=dir_uvmat(SourceDir); %list files and dirs, extende to OpenDAP case
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     ListFiles=ListCells(1,:);
-    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+    index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
+    check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
     ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
     cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
     check_keep=cellfun('isempty', cell_remove);
@@ -382,7 +369,8 @@ for ilist=1:numel(ListDir)
     ListStruct=dir_uvmat(fullfile(SourceDir,ListDir{ilist})); %list files and dirs, extende to OpenDAP case
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     ListFiles=ListCells(1,:);
-    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+    index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
+    check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
     ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
     cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
     check_keep=cellfun('isempty', cell_remove);
@@ -429,7 +417,8 @@ for ilist=1:numel(ListDir)
                 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
                 ListFiles=ListCells(1,:);
                 check_xml=~cellfun('isempty',regexp(ListFiles,'(\.xml|~)$'));% detect non xml files and files not marked by ~
-                check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+                index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
+                check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
                 nbfiles=numel(find(~check_xml & ~check_dir));% number of non xml files
                 check_dir=check_dir & cellfun('isempty', regexp(ListFiles,'^(-|\.|\+/\.)'));% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
                 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
@@ -480,7 +469,8 @@ for iexp=1:numel(ListExperiments)
         ListFiles=ListCells(1,:);%list of dir and file  names
         cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
         check_keep=cellfun('isempty', cell_remove);
-        check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+        index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
+        check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
         for ilist=1:numel(ListFiles)
             if check_keep(ilist)% loop on eligible DataSeries folders
                 DataSeries=fullfile(CampaignPath,ListExperiments{iexp},ListFiles{ilist});%source folder

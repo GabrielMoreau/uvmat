@@ -30,7 +30,7 @@ function errormsg=update_imadoc(Struct,outputfile,StructName)
 errormsg='';
 testappend=0;
 %% backup the output file if it already exist, and read it
-if exist(outputfile,'file');%=1 if the output file already exists, 0 else
+if exist(outputfile,'file')%=1 if the output file already exists, 0 else
     testappend=1;
     backupfile=outputfile;
     t=xmltree(outputfile); %read the file

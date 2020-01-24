@@ -1287,19 +1287,19 @@ hreplicate=findobj(hObject,'Tag','Replicate');
 if get(hreplicate,'Value')
     'TEST'
 else
-
-%% store the result in the xml file used for calibration
-errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-if strcmp(errormsg,'')
-    msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
-else
-    msgbox_uvmat('ERROR',errormsg);
-end
-
-%% display image with new calibration in the currently opened uvmat interface
-%set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
+    
+    %% store the result in the xml file used for calibration
+    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+    if strcmp(errormsg,'')
+        msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
+    else
+        msgbox_uvmat('ERROR',errormsg);
+    end
+    
+    %% display image with new calibration in the currently opened uvmat interface
+    %set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+    uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+    set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
 end
 
 delete(hset_slice)
@@ -1322,66 +1322,6 @@ else
     end
 end
 
-% 
-% set(hObject,'BackgroundColor',[1 1 0])
-% drawnow
-% 
-% %% read the GUI set_slice
-% SliceData=read_GUI(get(hObject,'parent'));
-% 
-% %% get info on the GUI uvmat
-% huvmat=findobj(allchild(0),'Tag','uvmat');
-% hhuvmat=guidata(huvmat);
-% RootPath=read_file_boxes(hhuvmat);
-% 
-% OutPutDir=uigetfile_uvmat('choose an image folder to document with slice position?',fileparts(RootPath),'uigetdir');
-% OutPut=browse_data(OutPutDir,'off','on');
-% nbcalib=0;
-% for ilist=1:numel(OutPut.Experiment)
-%     for idevice=1:numel(OutPut.DataSeries)
-%         SubDirBase=regexprep(OutPut.DataSeries{idevice},'\..+$','');
-%         XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
-% 
-%         % read the current xml file
-%         if  exist(XmlFile,'file')
-%             [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
-%             if ~isempty(errormsg)
-%                 msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
-%                 return
-%             end
-%             GeometryCalib=s.GeometryCalib;
-%             GeometryCalib.NbSlice=SliceData.NbSlice;
-%             GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
-%             Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-%             GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-%             GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-%             Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
-%             Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-%             GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
-%             GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
-%             GeometryCalib.SliceAngle(:,3)=0;
-%             if SliceData.CheckRefraction
-%                 GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-%                 GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-%             elseif isfield(GeometryCalib,'RefractionIndex')
-%                 GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
-%                 GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
-%             end
-% 
-%             % update the current xml file
-%             errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-%             if ~strcmp(errormsg,'')
-%                 msgbox_uvmat('ERROR',errormsg);
-%             else
-%                 display([XmlFile ' updated with slice positions'])
-%                 nbcalib=nbcalib+1;
-%             end
-%         end
-%     end
-% end
-% set(hObject,'BackgroundColor',[1 0 0])
-% msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
-% 
 
 %------------------------------------------------------------------------
 % function called by pressing Cancel in the GUI  set_slices
@@ -1430,18 +1370,21 @@ if isfield(XmlData,'LIFCalib')
         data.Coord=XmlData.LIFCalib.MaskPolygonCoord;
         UvData.ProjObject{5}=data;
         UvData.ProjObject{5}.DisplayHandle.uvmat=plot_object(UvData.ProjObject{5},UvData.ProjObject{1},handles.PlotAxes,'b');
-    end      
+    end
+    set(handles.ListObject,'String',ListObjectName)
+    set(handles.ListObject,'Value',1)
+    set(handles.uvmat,'UserData',UvData);
+    answer=msgbox_uvmat('INPUT_Y-N', 'keep calibration lines');  
+    if ~strcmp(answer,'Yes')
+        return
+    end
 end
-set(handles.ListObject,'String',ListObjectName)
-set(handles.ListObject,'Value',1)
-set(handles.uvmat,'UserData',UvData);
-
 %% read lines currently drawn
 ListObj=UvData.ProjObject;% get the current list of projection objects 
 select_line=zeros(1,numel(ListObj));
 select_mask=zeros(1,numel(ListObj));
 for iobj=1:numel(ListObj)
-    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')&& ~strcmp(ListObj{iobj}.Name,'MaskPolygon')
+    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
         select_line(iobj)=1;% select the lines among the projection objects
     end
     if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'polygon')
@@ -1454,7 +1397,7 @@ if numel(find(select_line))<2
     return
 else
     LineData=UvData.ProjObject(find(select_line));
-    for iobj=1:length(LineData)
+    for iobj=1:2
             xA(iobj)=LineData{iobj}.Coord(1,1);
             yA(iobj)=LineData{iobj}.Coord(1,2);
             xB(iobj)=LineData{iobj}.Coord(2,1);
@@ -1464,22 +1407,23 @@ end
 
 
 %% set the image offset
-blackoffset=0;
+BlackOffset=0;
+RefLineWidth=20;
 if isfield(XmlData,'LIFCalib')&& isfield(XmlData.LIFCalib,'BlackOffset')
-    blackoffset=XmlData.LIFCalib.BlackOffset ;% image value for black background, to be determined by taking images with a cover on the objective lens
+    BlackOffset=XmlData.LIFCalib.BlackOffset ;% image value for black background, to be determined by taking images with a cover on the objective lens
+    RefLineWidth=XmlData.LIFCalib.RefLineWidth;
 end
 
-prompt = {'offset luminosity value in the absence of illumination';'smoothing length for the reference line (in pixels)'};
+prompt = {'offset luminosity value in the absence of illumination';'smoothing width for the reference line (in pixels)'};
     dlg_title = 'set the parameters for LIF';
     num_lines= 2;
-    def     = { '0';'20'};
+    def     = { num2str(BlackOffset);num2str(RefLineWidth)};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
-
-if strcmp(answer,'Cancel')
+if isempty(answer) 
     return
 else
-    XmlData.LIFCalib.BlackOffset=str2num(answer{1}) ;% image value for black background, to be determined by taking images with a cover on the objective lens
-    XmlData.LIFCalib.SmoothingLength=str2num(answer{2}) ;% smoothing length used for the reference line
+    XmlData.LIFCalib.BlackOffset=str2double(answer{1}) ;% image value for black background, to be determined by taking images with a cover on the objective lens
+    XmlData.LIFCalib.RefLineWidth=str2double(answer{2}) ;% smoothing width used for the reference line
 end
 
 %% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
@@ -1509,7 +1453,6 @@ XmlData.TransformInput.PolarCentre=[x0 y0];
 DataPol=phys_polar(UvData.Field,XmlData);%transform the input image in polar coordinates with origin at the light source
 
 %% use the third line for reference luminosity, renormalize the image intensity along each ray to get a uniform brightness along this line
-%UvData.Field.CoordMesh
 if numel(find(select_line))==3
     x_ref=linspace(LineData{3}.Coord(1,1),LineData{3}.Coord(2,1),10);
     y_ref=linspace(LineData{3}.Coord(1,2),LineData{3}.Coord(2,2),10);
@@ -1527,11 +1470,10 @@ if numel(find(select_line))==3
     dist_source_pixel=round(size(DataPol.A,2)*(dist_source-DataPol.Coord_x(1))/(DataPol.Coord_x(2)-DataPol.Coord_x(1)));
     line_nan= isnan(dist_source);
     dist_source_pixel(line_nan)=1;
-    width=XmlData.LIFCalib.SmoothingLength; %number of pixels used for reference
     DataPol.A=double(DataPol.A)-XmlData.LIFCalib.BlackOffset;% black background substracted
     Anorm=zeros(size(DataPol.A));
     for iline=1:size(DataPol.A,1)
-        lum(iline)=mean(DataPol.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));% average the luminosity on a band width lying on the reference line
+        lum(iline)=mean(DataPol.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+XmlData.LIFCalib.RefLineWidth));% average the luminosity on a band width lying on the reference line
         Anorm(iline,:)=DataPol.A(iline,:)/lum(iline);% for each ray (iline), renormalise the image by the brightness at the reference line 
     end
     lum(line_nan)=NaN;
@@ -1568,26 +1510,28 @@ if ~isempty(index_mask)
     end
 end
 
-%loop on lines iY (angle in polar coordiantes)
-gamma_coeff=zeros(1,npy);
-for iY=1:npy
-    ALine=A(iY,:);
-    RLine=R(iY,:);
+%% loop on lines iY (angle in polar coordiantes)
+gamma_coeff=NaN(1,npy);
+fitlength=NaN(1,npy);
+for iY=1:npy% loop on the y index of the image in polar coordinate
+    ALine=A(iY,:);%profile of image luminosity log (vs radial index)
+    RLine=R(iY,:);%radius of the reference line (vs radial index)
     ThetaLine=Theta(iY,:)*pi/180;
     [XLine,YLine] = pol2cart(ThetaLine,RLine);
     XLine=XLine+x0;
     YLine=YLine+y0;
     if ~isempty(index_mask)
-        ind_good=inpolygon(XLine,YLine,MaskData.Coord(:,1),MaskData.Coord(:,2));
-        if numel(find(ind_good))>100
-            ALine=ALine(ind_good);
-            RLine=RLine(ind_good);
+        check_good=inpolygon(XLine,YLine,MaskData.Coord(:,1),MaskData.Coord(:,2));
+        if numel(find(check_good))>npx/4;% keep only lines with reasonable length
+            ALine=ALine(check_good);
+            RLine=RLine(check_good);
         else
             continue
         end
     end
     p = polyfit(RLine,ALine,1);
     gamma_coeff(iY)=-p(1);
+    fitlength(iY)=numel(find(check_good));
 end
 
 %% show and store the rescaled image
@@ -1604,76 +1548,11 @@ ylabel('decay coeff(m-1)')
 XmlData.LIFCalib.DecayRate=mean(gamma_coeff(gamma_coeff>0));
 
 %% record the calibration data in the xml file
-XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
-answer=msgbox_uvmat('INPUT_Y-N','save the LIF parameters in the current xml file?');
-if strcmp(answer,'Yes')
-    t=xmltree(XmlFileName); %read the file
-    title_str=get(t,1,'name');
-    if ~strcmp(title_str,'ImaDoc')
-        msgbox_uvmat('ERROR','wrong xml file');
-        return
-    end
-    % backup the output file if it already exist, and read it
-    backupfile=XmlFileName;
-    testexist=2;
-    while testexist==2
-        backupfile=[backupfile '~'];
-        testexist=exist(backupfile,'file');
-    end
-    [success,message]=copyfile(XmlFileName,backupfile);%make backup
-    if success~=1
-        errormsg=['errror in xml file backup: ' message];
-        return
-    end
-    uid_illumination=find(t,'ImaDoc/LIFCalib');
-    if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
-        [t,uid_illumination]=add(t,1,'element','LIFCalib');
-    end
-    uid_origin=find(t,'ImaDoc/LIFCalib/LightOrigin');
-    if ~isempty(uid_origin)  %if LightOrigin already exists, delete it
-        t=delete(t,uid_origin);
-    end
-    uid_line=find(t,'ImaDoc/LIFCalib/Ray1Coord');
-    if ~isempty(uid_line)  %if Ray1Coord already exists, delete it
-        t=delete(t,uid_line);
-    end
-    uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
-    if ~isempty(uid_line)  %if Ray2Coord already exists, delete it
-        t=delete(t,uid_line);
-    end
-    uid_line=find(t,'ImaDoc/LIFCalib/RefLineCoord');
-    if ~isempty(uid_line)  %if RefLineCoord already exists, delete it
-        t=delete(t,uid_line);
-    end
-    uid_mask=find(t,'ImaDoc/LIFCalib/MaskPolygonCoord');
-    if ~isempty(uid_mask) %if MaskPolygonCoord already exists, delete it
-        t=delete(t,uid_mask);
-    end
-    uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
-    if ~isempty(uid_BlackOffset)  %if BlackOffset already exists, delete it
-        t=delete(t,uid_BlackOffset);
-    end
-    uid_DecayRate=find(t,'ImaDoc/LIFCalib/DecayRate');
-    if ~isempty(uid_DecayRate)  %if DecayRate already exists, delete it
-        t=delete(t,uid_DecayRate);
-    end
-    uid_RefLineRadius=find(t,'ImaDoc/LIFCalib/RefLineRadius');
-    if ~isempty(uid_RefLineRadius)  %if RefLineLum already exists, delete it
-        t=delete(t,uid_RefLineRadius);
-    end
-    uid_RefLineLum=find(t,'ImaDoc/LIFCalib/RefLineLum');
-    if ~isempty(uid_RefLineLum)  %if RefLineLum already exists, delete it
-        t=delete(t,uid_RefLineLum);
-    end
-    uid_RefLineAzimuth=find(t,'ImaDoc/LIFCalib/RefLineAzimuth');
-    if ~isempty(uid_RefLineAzimuth)  %if RefLineLum already exists, delete it
-        t=delete(t,uid_RefLineAzimuth);
-    end
-    
-    % save the LIF calibration data
-    t=struct2xml(XmlData.LIFCalib,t,uid_illumination);
-    save(t,XmlFileName);
-    
+hbrowse=browse_data(fullfile(get(handles.RootPath,'String'),get(handles.SubDir,'String')));
+answer = questdlg('Where','record the LIF parameters','Current series', 'Replicate', 'Cancel', 'Cancel');
+if strcmp(answer,'Current series')
+    XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
+    update_imadoc(XmlData.LIFCalib,XmlFileName,'LIFCalib');% introduce the calibration data in the xml file
     % display the concentration in uvmat
     InputFileREFRESH_Callback(hObject, eventdata, handles);% refresh the current xml file to apply 'ima2concentration'
     transform_list=get(handles.TransformName,'String');
@@ -1684,7 +1563,139 @@ if strcmp(answer,'Yes')
     end
     set(handles.TransformName,'Value',ichoice)
     TransformName_Callback(hObject, eventdata, handles)
+elseif strcmp(answer,'Replicate')
+    
+    BrowseData=guidata(hbrowse);
+    SourceDir=get(BrowseData.SourceDir,'String');
+    ListExp=get(BrowseData.ListExperiments,'String');
+    ExpIndices=get(BrowseData.ListExperiments,'Value');
+    ListExp=ListExp(ExpIndices);
+    ListDevices=get(BrowseData.ListDevices,'String');
+    DeviceIndices=get(BrowseData.ListDevices,'Value');
+    ListDevices=ListDevices(DeviceIndices);
+    ListDataSeries=get(BrowseData.DataSeries,'String');
+    DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+    ListDataSeries=ListDataSeries(DataSeriesIndices);
+    NbExp=0; % counter of the number of experiments set by the GUI browse_data
+    for iexp=1:numel(ListExp)
+        if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+            for idevice=1:numel(ListDevices)
+                if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                    for isubdir=1:numel(ListDataSeries)
+                        if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                            lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                regexprep(ListDevices{idevice},'^\+/',''));
+                            ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                            if exist(fullfile(lpath,ldir),'dir')
+                                NbExp=NbExp+1;
+                                ListPath{NbExp}=lpath;
+                                ListSubdir{NbExp}=ldir;
+                                ExpIndex{NbExp}=iexp;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    for iexp=1:NbExp
+        XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+        if exist(XmlName,'file')
+            check_update=1;
+        else
+            check_update=0;
+        end
+        errormsg=update_imadoc(XmlData.LIFCalib,XmlName,'LIFCalib');% introduce the calibration data in the xml file
+        if ~strcmp(errormsg,'')
+            msgbox_uvmat('ERROR',errormsg);
+        else
+            if check_update
+                display([XmlName ' updated with calibration parameters'])
+            else
+                display([XmlName ' created with calibration parameters'])
+            end
+        end
+    end
+    msgbox_uvmat('CONFIMATION',['LIF calibration replicated for ' num2str(NbExp) ' experiments']);
 end
+
+
+
+%     
+%     
+%     t=xmltree(XmlFileName); %read the file
+%     title_str=get(t,1,'name');
+%     if ~strcmp(title_str,'ImaDoc')
+%         msgbox_uvmat('ERROR','wrong xml file');
+%         return
+%     end
+%     % backup the output file if it already exist, and read it
+%     backupfile=XmlFileName;
+%     testexist=2;
+%     while testexist==2
+%         backupfile=[backupfile '~'];
+%         testexist=exist(backupfile,'file');
+%     end
+%     [success,message]=copyfile(XmlFileName,backupfile);%make backup
+%     if success~=1
+%         errormsg=['errror in xml file backup: ' message];
+%         return
+%     end
+%     uid_illumination=find(t,'ImaDoc/LIFCalib');
+%     if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
+%         [t,uid_illumination]=add(t,1,'element','LIFCalib');
+%     end
+%     uid_origin=find(t,'ImaDoc/LIFCalib/LightOrigin');
+%     if ~isempty(uid_origin)  %if LightOrigin already exists, delete it
+%         t=delete(t,uid_origin);
+%     end
+%     uid_line=find(t,'ImaDoc/LIFCalib/Ray1Coord');
+%     if ~isempty(uid_line)  %if Ray1Coord already exists, delete it
+%         t=delete(t,uid_line);
+%     end
+%     uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
+%     if ~isempty(uid_line)  %if Ray2Coord already exists, delete it
+%         t=delete(t,uid_line);
+%     end
+%     uid_line=find(t,'ImaDoc/LIFCalib/RefLineCoord');
+%     if ~isempty(uid_line)  %if RefLineCoord already exists, delete it
+%         t=delete(t,uid_line);
+%     end
+%     uid_mask=find(t,'ImaDoc/LIFCalib/MaskPolygonCoord');
+%     if ~isempty(uid_mask) %if MaskPolygonCoord already exists, delete it
+%         t=delete(t,uid_mask);
+%     end
+%     uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
+%     if ~isempty(uid_BlackOffset)  %if BlackOffset already exists, delete it
+%         t=delete(t,uid_BlackOffset);
+%     end
+%     uid_RefLineWidth=find(t,'ImaDoc/LIFCalib/RefLineWidth');
+%     if ~isempty(uid_RefLineWidth)  %if RefLineWidth already exists, delete it
+%         t=delete(t,uid_RefLineWidth);
+%     end
+%     uid_DecayRate=find(t,'ImaDoc/LIFCalib/DecayRate');
+%     if ~isempty(uid_DecayRate)  %if DecayRate already exists, delete it
+%         t=delete(t,uid_DecayRate);
+%     end
+%     uid_RefLineRadius=find(t,'ImaDoc/LIFCalib/RefLineRadius');
+%     if ~isempty(uid_RefLineRadius)  %if RefLineLum already exists, delete it
+%         t=delete(t,uid_RefLineRadius);
+%     end
+%     uid_RefLineLum=find(t,'ImaDoc/LIFCalib/RefLineLum');
+%     if ~isempty(uid_RefLineLum)  %if RefLineLum already exists, delete it
+%         t=delete(t,uid_RefLineLum);
+%     end
+%     uid_RefLineAzimuth=find(t,'ImaDoc/LIFCalib/RefLineAzimuth');
+%     if ~isempty(uid_RefLineAzimuth)  %if RefLineLum already exists, delete it
+%         t=delete(t,uid_RefLineAzimuth);
+%     end
+%     
+%     % save the LIF calibration data
+%     t=struct2xml(XmlData.LIFCalib,t,uid_illumination);
+%     save(t,XmlFileName);
+    
+
+
 
 
 %------------------------------------------------------------------------
