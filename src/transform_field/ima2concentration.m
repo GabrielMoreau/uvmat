@@ -32,6 +32,14 @@ end
 cpath=which('uvmat');
 addpath(fullfile(fileparts(cpath),'transform_field'))% define path for phys_polar.m
 
+%% rescale the image
+[nby,nbx]=size(DataIn.A);
+x=linspace(DataIn.Coord_x(1),DataIn.Coord_x(2),nbx)-nbx/2;
+y=linspace(DataIn.Coord_y(1),DataIn.Coord_y(2),nby)-nby/2;
+[X,Y]=meshgrid(x,y);
+coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
+DataIn.A=double(DataIn.A).*(1+coeff_quad*(X.*X+Y.*Y));
+
 %% Transform images to polar coordinates with origin at the light source position 
 XmlData.TransformInput.PolarCentre=XmlData.LIFCalib.LightOrigin; %position of the laser origin [x, y]
 DataIn.Action.RUN=1;% avoid input menu in phys_polar

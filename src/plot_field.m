@@ -101,7 +101,7 @@
 function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam)
 
 %% default input and output
-if ~exist('PlotParam','var'),PlotParam=[];end;
+if ~exist('PlotParam','var'),PlotParam=[];end
 PlotType='text'; %default
 if ~isfield(PlotParam,'Axes')
     PlotParam.Axes=[];
@@ -113,14 +113,6 @@ end
 PlotParamOut=PlotParam;%default
 
 %% check input structure
-% check the cells of fields :
-
-% if ~isfield(PlotParam,'FieldName')
-%     index_0D=[];
-%     index_1D=1;
-%     index_2D=[];%find 2D fields
-%     index_3D=[];
-% else
     [CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
@@ -362,7 +354,24 @@ end
 %-------------------------------------------------------------------
 % --- plot 1D fields (usual x,y plots)
 %-------------------------------------------------------------------
-function PlotParamOut=plot_profile(data,CellInfo,haxes,PlotParam,CheckHold)
+%INPUT
+%    Data:   structure describing the field to plot 
+%         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
+%                    .Att_1,Att_2... : values of the global attributes
+%         (requested)  .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
+%         (requested)  .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)
+%                      .VarAttribute: cell of attributes for each element of .ListVarName (cell array of structures of the form VarAtt.key=value)
+%         (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+%  
+%            Variable attribute .Role :
+%    The only variable attribute used for plotting purpose is .Role which can take
+%    the values:
+%       Role = 'coord_x' or 'histo' to label the x coordinate
+%            ='coord_y' or 'discrete' to label the y coordinate, variables labelled as 'discrete'
+%           will be plotted as isolated points while variables labelled as 'coord_y' will be plotted as continuous lines
+%    other variables will not be taken into account for plot_profile
+
+function PlotParamOut=plot_profile(Data,CellInfo,haxes,PlotParam,CheckHold)
 
 %% initialization
 if ~(exist('PlotParam','var')&&~isempty(PlotParam.Axes))
@@ -375,8 +384,8 @@ end
 hfig=get(haxes,'parent');
 legend_str={};
 
-%% suppress existing plot if empty data
-if isempty(data)
+%% suppress existing plot if empty Data
+if isempty(Data)
     hplot=findobj(haxes,'tag','plot_line');
     if ~isempty(hplot)
         delete(hplot)
@@ -406,17 +415,17 @@ MinX=[];
 MaxX=[];
 MinY_cell=[];
 MaxY_cell=[];
-testplot=ones(size(data.ListVarName));%default test for plotted variables
+testplot=ones(size(Data.ListVarName));%default test for plotted variables
 %loop on input  fields
 for icell=1:numel(CellInfo)
-    VarIndex=[CellInfo{icell}.YIndex CellInfo{icell}.YIndex_discrete];%  indices of the selected variables in the list data.ListVarName
+    VarIndex=[CellInfo{icell}.YIndex CellInfo{icell}.YIndex_discrete];%  indices of the selected variables in the list Data.ListVarName
     coord_x_index=CellInfo{icell}.XIndex;
-    coord_x_name{icell}=data.ListVarName{coord_x_index};
-    coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
+    coord_x_name{icell}=Data.ListVarName{coord_x_index};
+    coord_x{icell}=Data.(Data.ListVarName{coord_x_index});%coordinate variable set as coord_x
     if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)), 1)) %xtitle not already selected
         xtitle=[xtitle coord_x_name{icell}];
-        if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=coord_x_index && isfield(data.VarAttribute{coord_x_index},'units')
-            xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units '), '];
+        if isfield(Data,'VarAttribute')&& numel(Data.VarAttribute)>=coord_x_index && isfield(Data.VarAttribute{coord_x_index},'units')
+            xtitle=[xtitle '(' Data.VarAttribute{coord_x_index}.units '), '];
         else
             xtitle=[xtitle ', '];
         end
@@ -431,13 +440,13 @@ for icell=1:numel(CellInfo)
         if isfield(CellInfo{icell},'VarIndex_warnflag')
             testplot(CellInfo{icell}.VarIndex_warnflag)=0;
         end
-        if isfield(data,'VarAttribute')
-            VarAttribute=data.VarAttribute;
+        if isfield(Data,'VarAttribute')
+            VarAttribute=Data.VarAttribute;
             for ivar=1:length(VarIndex)
                 if length(VarAttribute)>=VarIndex(ivar) && isfield(VarAttribute{VarIndex(ivar)},'long_name')
                     plotname{VarIndex(ivar)}=VarAttribute{VarIndex(ivar)}.long_name;
                 else
-                    plotname{VarIndex(ivar)}=data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
+                    plotname{VarIndex(ivar)}=Data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
                 end
             end
         end
@@ -452,20 +461,20 @@ for icell=1:numel(CellInfo)
         nbplot=0;
         for ivar=1:length(VarIndex)
             if testplot(VarIndex(ivar))
-                VarName=data.ListVarName{VarIndex(ivar)};
+                VarName=Data.ListVarName{VarIndex(ivar)};
                 nbplot=nbplot+1;
                 ytitle=[ytitle VarName];
-                if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=VarIndex(ivar) && isfield(data.VarAttribute{VarIndex(ivar)},'units')
-                    ytitle=[ytitle '(' data.VarAttribute{VarIndex(ivar)}.units '), '];
+                if isfield(Data,'VarAttribute')&& numel(Data.VarAttribute)>=VarIndex(ivar) && isfield(Data.VarAttribute{VarIndex(ivar)},'units')
+                    ytitle=[ytitle '(' Data.VarAttribute{VarIndex(ivar)}.units '), '];
                 else
                     ytitle=[ytitle ', '];
                 end
-                eval(['data.' VarName '=squeeze(data.' VarName ');'])
-                MinY(ivar)=min(min(data.(VarName)));
-                MaxY(ivar)=max(max(data.(VarName)));
-                plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
-                eval(['nbcomponent2=size(data.' VarName ',2);']);
-                eval(['nbcomponent1=size(data.' VarName ',1);']);
+                eval(['Data.' VarName '=squeeze(Data.' VarName ');'])
+                MinY(ivar)=min(min(Data.(VarName)));
+                MaxY(ivar)=max(max(Data.(VarName)));
+                plotstr=[plotstr 'coord_x{' num2str(icell) '},Data.' VarName ',' charplot_0 ','];
+                eval(['nbcomponent2=size(Data.' VarName ',2);']);
+                eval(['nbcomponent1=size(Data.' VarName ',1);']);
                 if numel(coord_x{icell})==2
                     coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
                 end
@@ -520,15 +529,15 @@ if  ~isequal(plotstr,'hhh=plot(')
         end 
     end
     title_str='';
-    if isfield(data,'filename')
-       [Path, title_str, ext]=fileparts(data.filename);
+    if isfield(Data,'filename')
+       [Path, title_str, ext]=fileparts(Data.filename);
        title_str=[title_str ext];
     end
-    if isfield(data,'Action')&&isfield(data.Action,'ActionName')
+    if isfield(Data,'Action')&&isfield(Data.Action,'ActionName')
         if ~isequal(title_str,'')
             title_str=[title_str ', '];
         end
-        title_str=[title_str data.Action.ActionName];
+        title_str=[title_str Data.Action.ActionName];
     end
     htitle=title(title_str);
     set(htitle,'Interpreter','none')% desable tex interpreter
@@ -586,8 +595,8 @@ TextDisplay=0;
 for icell=1:numel(CellInfo)
     if isfield(CellInfo{icell},'VarIndex_histo')% case of histogram plot
         TextDisplay=1;
-        VarName=data.ListVarName{CellInfo{icell}.CoordIndex};
-        pdf_val=data.(data.ListVarName{CellInfo{icell}.VarIndex_histo});
+        VarName=Data.ListVarName{CellInfo{icell}.CoordIndex};
+        pdf_val=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_histo});
         x=coord_x{icell};
         if isrow(x)
             x=x';
@@ -609,7 +618,7 @@ for icell=1:numel(CellInfo)
         TableData=[TableData Column];
     end
 end
-if TextDisplay;
+if TextDisplay
     disp(TableData);
     PlotParamOut.TableDisplay=TableData;
 else

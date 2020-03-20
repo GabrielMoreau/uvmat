@@ -193,6 +193,7 @@ DataOut.CurlMean=0;
 DataOut.DivMean=0;
 DataOut.Curl2Mean=0;
 DataOut.Div2Mean=0;
+DataOut.KEflux=0;
 U2Mean=0;
 V2Mean=0;
 UVMean=0;
@@ -230,6 +231,7 @@ for index=1:NbField
     Field.V(FF)=0;
     DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
     DataOut.VMean=DataOut.VMean+Field.V; %increment the sum
+    
     U2Mean=U2Mean+(Field.U).*(Field.U); %increment the U squared sum
     V2Mean=V2Mean+(Field.V).*(Field.V); %increment the V squared sum
     UVMean=UVMean+(Field.U).*(Field.V); %increment the sum

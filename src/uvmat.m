@@ -1414,16 +1414,18 @@ if isfield(XmlData,'LIFCalib')&& isfield(XmlData.LIFCalib,'BlackOffset')
     RefLineWidth=XmlData.LIFCalib.RefLineWidth;
 end
 
-prompt = {'offset luminosity value in the absence of illumination';'smoothing width for the reference line (in pixels)'};
+prompt = {'offset luminosity value in the absence of illumination';'smoothing width for the reference line (in pixels)';...
+    'LIF Temperature Coeff1';'LIF Temperature Coeff2';'LIF Temperature Coeff3'};
     dlg_title = 'set the parameters for LIF';
-    num_lines= 2;
-    def     = { num2str(BlackOffset);num2str(RefLineWidth)};
+    num_lines= 5;
+    def     = { num2str(BlackOffset);num2str(RefLineWidth);'0';'0';'0'};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
 if isempty(answer) 
     return
 else
     XmlData.LIFCalib.BlackOffset=str2double(answer{1}) ;% image value for black background, to be determined by taking images with a cover on the objective lens
     XmlData.LIFCalib.RefLineWidth=str2double(answer{2}) ;% smoothing width used for the reference line
+    XmlData.LIFCalib.TLIFCoeff=[str2double(answer{3}) str2double(answer{4}) str2double(answer{5})];
 end
 
 %% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
@@ -1442,6 +1444,14 @@ XmlData.LIFCalib.LightOrigin=[x0 y0];% origin of the light source to be saved in
 XmlData.LIFCalib.Ray1Coord=LineData{1}.Coord;
 XmlData.LIFCalib.Ray2Coord=LineData{2}.Coord;
 XmlData.LIFCalib.RefLineCoord=LineData{3}.Coord;
+
+%% rescale the image
+[nby,nbx]=size(UvData.Field.A);
+x=linspace(UvData.Field.Coord_x(1),UvData.Field.Coord_x(2),nbx)-nbx/2;
+y=linspace(UvData.Field.Coord_y(1),UvData.Field.Coord_y(2),nby)-nby/2;
+[X,Y]=meshgrid(x,y);
+coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
+UvData.Field.A=double(UvData.Field.A).*(1+coeff_quad*(X.*X+Y.*Y));
 
 %% display the current image in polar axes with origin at the  illumination source
 currentdir=pwd;

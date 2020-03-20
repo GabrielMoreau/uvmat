@@ -718,13 +718,13 @@ for icell=1:length(CellInfo)
                     ProjData.VarDimName=[ProjData.VarDimName FieldData.ListVarName(CellInfo{icell}.CoordIndex(end))];
                     ProjData.VarAttribute{nbvar+ivar}=FieldData.VarAttribute{VarIndex(ivar)};%reproduce var attribute
                     if isfield(ProjData.VarAttribute{nbvar+ivar},'Role')
-                        if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x');
+                        if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x')
                             ivar_U=nbvar+ivar;
-                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');
+                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y')
                             ivar_V=nbvar+ivar;
                         end
                     end
-                    ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuoval(['us lines
+                    ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles as a  set of individual dots
                 end
             elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
                 if ~check_abscissa
@@ -755,9 +755,9 @@ for icell=1:length(CellInfo)
                 for ivar=1:numel(VarAttribute)
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
                     if isfield(VarAttribute{ivar},'Role')
-                        if  strcmp(VarAttribute{ivar}.Role,'vector_x');
+                        if  strcmp(VarAttribute{ivar}.Role,'vector_x')
                             ivar_U=ivar+nbvar;
-                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y');
+                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y')
                             ivar_V=ivar+nbvar;
                         end
                     end
@@ -786,9 +786,9 @@ for icell=1:length(CellInfo)
                 for ivar=1:numel(VarAttribute)
                     ProjData.VarDimName=[ProjData.VarDimName {'X'}];
                     if isfield(VarAttribute{ivar},'Role')
-                        if  strcmp(VarAttribute{ivar}.Role,'vector_x');
+                        if  strcmp(VarAttribute{ivar}.Role,'vector_x')
                             ivar_U=ivar+nbvar;
-                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y');
+                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y')
                             ivar_V=ivar+nbvar;
                         end
                     end
@@ -812,32 +812,32 @@ for icell=1:length(CellInfo)
                 AX=FieldData.(AXName);% set of x positions
                 AY=FieldData.(AYName);% set of y positions
                 AZ=FieldData.(AZName);% set of z positions
-                 AName=FieldData.ListVarName{VarIndex(1)};
+                AName=FieldData.ListVarName{VarIndex(1)};
                 npxy=size(FieldData.(AName));
                 npz=npxy(1);
                 npy=npxy(2);
                 npx=npxy(1);
                 AXI=linspace(AX(1),AX(end), npx);%set of  x  positions for the interpolated input data
                 AYI=linspace(AY(1),AY(end), npy);%set of  x  positions for the interpolated input data
-                 AZI=linspace(AZ(1),AZ(end), npy);%set of  x  positions for the interpolated input data
+                AZI=linspace(AZ(1),AZ(end), npy);%set of  x  positions for the interpolated input data
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
                     FieldData.(VarName)=interp3(FieldData.(AXName),FieldData.(AYName),FieldData.(AZName),FieldData.(VarName),AXI,AYI,AZI);
-
-%                     vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
-%                     if nbcolor==1
-%                         vec_B(ind_in)=vec_A(ICOMB);
-%                         vec_B(ind_out)=zeros(size(ind_out));
-%                         A_out=reshape(vec_B,npY,npX);
-%                         ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
-%                     elseif nbcolor==3
-%                         vec_B(ind_in,1:3)=vec_A(ICOMB,:);
-%                         vec_B(ind_out,1)=zeros(size(ind_out));
-%                         vec_B(ind_out,2)=zeros(size(ind_out));
-%                         vec_B(ind_out,3)=zeros(size(ind_out));
-%                         A_out=reshape(vec_B,npY,npX,nbcolor);
-%                         ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
-%                     end
+                    
+                    %                     vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
+                    %                     if nbcolor==1
+                    %                         vec_B(ind_in)=vec_A(ICOMB);
+                    %                         vec_B(ind_out)=zeros(size(ind_out));
+                    %                         A_out=reshape(vec_B,npY,npX);
+                    %                         ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
+                    %                     elseif nbcolor==3
+                    %                         vec_B(ind_in,1:3)=vec_A(ICOMB,:);
+                    %                         vec_B(ind_out,1)=zeros(size(ind_out));
+                    %                         vec_B(ind_out,2)=zeros(size(ind_out));
+                    %                         vec_B(ind_out,3)=zeros(size(ind_out));
+                    %                         A_out=reshape(vec_B,npY,npX,nbcolor);
+                    %                         ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
+                    %                     end
                     ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
                     ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
                     ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
@@ -940,20 +940,33 @@ for icell=1:length(CellInfo)
                     end
                     ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
                     ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
-                    nbvar=nbvar+1;
-                    ProjData.VarAttribute{nbvar}.Role='coord_y';% for plot with continuous line
+                    nbvar_proj=numel(ProjData.ListVarName);
+                    if isfield(FieldData.VarAttribute{ivar},'Role')
+                        if  strcmp(FieldData.VarAttribute{ivar}.Role,'vector_x')
+                            ivar_U=nbvar_proj;
+                        elseif strcmp(FieldData.VarAttribute{ivar}.Role,'vector_y')
+                            ivar_V=nbvar_proj;
+                        end
+                    end
+                    if isequal(ProjMode,'projection')
+                        ProjData.VarAttribute{nbvar_proj}.Role='discrete';
+                    else
+                        ProjData.VarAttribute{nbvar_proj}.Role='coord_y';
+                    end
                 end
+                
                 if nbcolor==3
                     ProjData.VarDimName{end}={AXName,'rgb'};
                 end
             end
             
     end
-if ~isempty(ivar_U) && ~isempty(ivar_V)
-    vector_x =ProjData.(ProjData.ListVarName{ivar_U});
-    ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-    ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-end
+    % for vector fields, take the components longitudinal and tranverse to the projection line
+    if ~isempty(ivar_U) && ~isempty(ivar_V)
+        vector_x =ProjData.(ProjData.ListVarName{ivar_U});
+        ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+        ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+    end
 end
 
 % %shotarter case for horizontal or vertical line (A FAIRE 
@@ -1174,7 +1187,7 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
     if isempty(icell_grid)||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
         AYName='coord_y';
         AXName='coord_x';
-        if strcmp(ObjectData.ProjMode,'projection')||strcmp(ObjectData.Type,'plane')
+        if strcmp(ObjectData.ProjMode,'projection')%||strcmp(ObjectData.Type,'plane')
             ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
             ProjData.coord_x=[FieldData.XMin FieldData.XMax];
             coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
