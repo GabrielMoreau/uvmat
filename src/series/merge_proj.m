@@ -319,7 +319,9 @@ for index=1:NbField
 
         check_proj_tps= strcmp(FileType{iview},'civdata') && isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)...
             && strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
+        if check_proj_tps
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
+        end
         
         %% projection on object (gridded plane)
         if Param.CheckObject

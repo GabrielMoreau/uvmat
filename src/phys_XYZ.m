@@ -1,6 +1,6 @@
 %------------------------------------------------------------------------
 %'phys_XYZ':transforms image (px) to real world (phys) coordinates using geometric calibration parameters
-% function [Xphys,Yphys]=phys_XYZ(Calib,X,Y,Z)
+% function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 %
 %OUTPUT:
 %
@@ -29,21 +29,13 @@ function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 %------------------------------------------------------------------------
 testangle=0;
 test_refraction=0;
+Zphys=0; %default output
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&size(Calib.SliceCoord,1)>=Zindex
-    if isfield(Calib, 'SliceAngle') && ~isequal(Calib.SliceAngle,[0 0 0]) && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
+    if isfield(Calib, 'SliceAngle') && size(Calib.SliceAngle,1)>=Zindex && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
-        om=norm(Calib.SliceAngle(Zindex,:));%norm of rotation angle in radians
-        OmAxis=Calib.SliceAngle(Zindex,:)/om; %unit vector marking the rotation axis
-        cos_om=cos(pi*om/180);
-        sin_om=sin(pi*om/180);
-        coeff=OmAxis(3)*(1-cos_om);
-        norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-        norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-        norm_plane(3)=OmAxis(3)*coeff+cos_om;
-%         Z0=norm_plane*Calib.SliceCoord(Zindex,:)'/norm_plane(3);
+        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));
     end
     Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
-%     end
     Z0virt=Z0;
     if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
         H=Calib.InterfaceCoord(3);
@@ -133,13 +125,3 @@ else
     Yphys=-Calib.Tx_Ty_Tz(2)+Y/Calib.fx_fy(2);
 end
 
-%'px_XYZ': transform phys coordinates to image coordinates (px)
-%
-% OUTPUT:
-% X,Y: array of coordinates in the image cooresponding to the input physical positions 
-%                    (origin at lower leftcorner, unit=pixel)
-
-% INPUT:
-% Calib: structure containing the calibration parameters (read from the ImaDoc .xml file)
-% Xphys, Yphys: array of x,y physical coordinates
-% [Z0]: corresponding array of z physical coordinates (0 by default)

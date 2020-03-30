@@ -293,7 +293,7 @@ for icell=1:cell_nbre
                 continue %scattered coordinates OK
             end
         else
-            if isfield(CellInfo{icell},'XName'); % only one coordinate x, switch vector field to 1D plot
+            if isfield(CellInfo{icell},'XName') % only one coordinate x, switch vector field to 1D plot
                 for ind=1:numel(CellInfo{icell}.VarIndex)
                     Role{CellInfo{icell}.VarIndex(ind)}='coord_y';
                 end
@@ -501,6 +501,7 @@ end
 %% document roles of non-coordinate variables
 for icell=1:numel(CellInfo)
     if isfield(CellInfo{icell},'VarIndex')
+        check_fieldname=0;
         VarIndex=CellInfo{icell}.VarIndex;
         for ivar=VarIndex
             %         if isfield(CellInfo{icell},['VarIndex_' Role{ivar}])
@@ -513,9 +514,17 @@ for icell=1:numel(CellInfo)
             end
             if ~isempty(FieldName{ivar})
                 CellInfo{icell}.FieldName=FieldName{ivar};
+                check_fieldname=1;
             end
             if CheckSub(ivar)==1
                 CellInfo{icell}.CheckSub=1;
+            end
+        end
+        if ~check_fieldname% default FieldName
+            if isfield(CellInfo{icell},'VarIndex_vector_x')&& isfield(CellInfo{icell},'VarIndex_vector_y')
+                UName=Data.ListVarName{CellInfo{icell}.VarIndex_vector_x};
+                VName=Data.ListVarName{CellInfo{icell}.VarIndex_vector_y};        
+                CellInfo{icell}.FieldName=['vec(' UName ',' VName ')'];
             end
         end
     end

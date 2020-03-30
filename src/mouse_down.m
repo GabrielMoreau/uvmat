@@ -389,28 +389,14 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
     if ~isfield(UvData.ProjObject{IndexObj},'CreateMode')
         IndexObj=IndexObj+1;%start new object
         ObjectData.Coord=[];
-        ObjectNameNew=ObjectData.Name;
-        if isempty(ObjectNameNew)
-            ObjectNameNew=ObjectData.Type;
+        ObjectName=ObjectData.Name;
+        if isempty(ObjectName)
+            ObjectName=ObjectData.Type;
         end
         % add an index to the object name if the proposed name already exists
-        vers=0;% index of the name
+        %vers=0;% index of the name
         ListObject=get(hhuvmat.ListObject,'String');
-        detectname=1;
-        while ~isempty(detectname)
-            detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
-            if detectname% if the object name already exists
-                indstr=regexp(ObjectNameNew,'\D');
-                if indstr(end)<length(ObjectNameNew) %object name ends by a number
-                    vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
-                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
-                else
-                    vers=vers+1;
-                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
-                end
-            end
-        end
-        ObjectName=ObjectNameNew;
+        ObjectName=rename_indexing(ObjectName,ListObject);% add an index or upgrade it if the object naem already exists
         set(sethandles.Name,'String',ObjectName)% display the default name in set_object
         ListObject=[ListObject;{ObjectName}];
         set(hhuvmat.ListObject,'String',ListObject);%complement the object list

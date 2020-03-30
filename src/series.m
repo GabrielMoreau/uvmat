@@ -1458,8 +1458,8 @@ if ~isfield(SeriesData,'i1_series')
     errormsg='The input field series needs to be refreshed: press REFRESH';
     return
 end
-if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequal(Param.InputFields.FieldName,'get_field...')
-    errormsg='input field name(s) not defined, select get_field...';
+if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequal(Param.InputFields.FieldName,'add_field...')
+    errormsg='input field name(s) not defined, select add_field...';
     return
 end
 
@@ -2449,7 +2449,7 @@ if VelTypeRequest && numel(iview_civ)>=1
         set(handles.VelType_1,'String',[{'*'};menu])
         set(handles.VelType_1,'Visible','on')
         set(handles.VelType_title_1,'Visible','on')
-        FieldList_1=[set_field_list('U','V');{'C'};{'get_field...'}]; % standard menu for civx data
+        FieldList_1=[set_field_list('U','V');{'C'};{'add_field...'}]; % standard menu for civx data
         CheckList_1=1;
         set(handles.FieldName_1,'Value',1); % velocity vector choice by default
     else
@@ -2466,6 +2466,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
     set(handles.InputFields,'Visible','on')% set the frame InputFields visible
     if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         set(handles.FieldName,'Visible','on')
+        set(handles.Field_text,'Visible','on')
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
         ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
         for ilist=1:numel(ind_var)
@@ -2490,11 +2491,12 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         end
     else
         set(handles.FieldName,'Visible','off')
+        set(handles.Field_text,'Visible','off')
     end
     
     set(handles_coord,'Visible','on')
-    if isempty(find(strcmp('get_field...',FieldList)))
-    FieldList=[FieldList;{'get_field...'}];%add 'get_field...' to the menu FieldName if it is not already
+    if isempty(find(strcmp('add_field...',FieldList)))
+    FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
     end
     if FieldNameRequest_1 && numel(iview_netcdf)>=2
         set(handles.FieldName_1,'Visible','on')
@@ -2529,8 +2531,10 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         set(handles.FieldName_1,'Visible','off')
     end
     if isempty(FieldList)
+        set(handles.Field_text,'Visible','off')
         set(handles.FieldName,'Visible','off')
     else
+        set(handles.Field_text,'Visible','on')
         set(handles.FieldName,'Visible','on')
         set(handles.FieldName,'String',FieldList)
     end
@@ -2756,14 +2760,25 @@ end
 set(handles.series,'UserData',SeriesData)
 set(handles.ActionInput,'BackgroundColor',[1 0 0])
 
+
+%------------------------------------------------------------------------
+% --- Executes on button press in RefreshField.
+function RefreshField_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.FieldName,'String',{'add_field...'});
+set(handles.FieldName,'Value',1);
+FieldName_Callback(hObject, eventdata, handles)
+
+
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldName.
 function FieldName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-field_str=get(handles.FieldName,'String');
+FieldListInit=get(handles.FieldName,'String');
 field_index=get(handles.FieldName,'Value');
-field=field_str{field_index(1)};
-if isequal(field,'get_field...')
+field=FieldListInit{field_index(1)};
+if isequal(field,'add_field...')
+    FieldListInit(field_index(1))=[];
     SeriesData=get(handles.series,'UserData');
     % input line for which the field choice is relevant
     iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
@@ -2775,7 +2790,7 @@ if isequal(field,'get_field...')
     InputTable=Param.InputTable(iview,:);
     % check the existence of the first file in the series
     first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1; % default setting for index j
-    if isfield(Param.IndexRange,'first_j'); % if index j is used     
+    if isfield(Param.IndexRange,'first_j') % if index j is used     
         first_j=Param.IndexRange.first_j;
         last_j=Param.IndexRange.last_j;
         MinIndex_j=Param.IndexRange.MinIndex_j(iview);
@@ -2788,10 +2803,6 @@ if isequal(field,'get_field...')
     if numel(iview)>1      
         answer=msgbox_uvmat('INPUT_TXT',['select the line of the input table:' num2str(iview)] ,num2str(iview(1)));
         LineIndex=str2num(answer);
-%         InputLine=str2num(get(handles.InputLine,'String'));
-%         if ismember(InputLine,iview)
-%             LineIndex=InputLine;
-%         end
     end
     FirstFileName=fullfile_uvmat(InputTable{LineIndex,1},InputTable{LineIndex,2},InputTable{LineIndex,3},...
         InputTable{LineIndex,5},InputTable{LineIndex,4},i1,i2,j1,j2);
@@ -2825,7 +2836,7 @@ if isequal(field,'get_field...')
                 set(handles.VelType,'Visible','on')
         end
         set(handles.FieldName,'Value',1)
-        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+        set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
            if ~isempty(regexp(FieldList{1},'^vec'))
                 set(handles.FieldName,'Value',1)
@@ -2912,7 +2923,7 @@ function FieldName_1_Callback(hObject, eventdata, handles)
 field_str=get(handles.FieldName_1,'String');
 field_index=get(handles.FieldName_1,'Value');
 field=field_str{field_index(1)};
-if isequal(field,'get_field...')
+if isequal(field,'add_field...')
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
@@ -2972,7 +2983,7 @@ if isequal(field,'get_field...')
             end
         end
         set(handles.FieldName_1,'Value',1)
-        set(handles.FieldName_1,'String',[FieldList; {'get_field...'}]);
+        set(handles.FieldName_1,'String',[FieldList; {'add_field...'}]);
     end
 end   
 
@@ -3377,7 +3388,7 @@ SeriesData=get(handles.series,'UserData');
 if isfield(Param,'InputFields')
     ListField=Param.InputFields.FieldName;
     if ischar(ListField),ListField={ListField}; end
-    set(handles.FieldName,'String',[ListField;{'get-field...'}])
+    set(handles.FieldName,'String',[ListField;{'add_field...'}])
      set(handles.FieldName,'Value',1:numel(ListField))
      set(handles.FieldName,'Visible','on')
 end       
@@ -3865,7 +3876,6 @@ SeriesData=get(handles.series,'UserData');
 system(SeriesData.SeriesParam.DiskQuotaCmd)
 
 
-
 % --- Executes on button press in Replicate.
 function Replicate_Callback(hObject, eventdata, handles)
 if get(handles.Replicate,'Value')
@@ -3880,6 +3890,4 @@ else
         delete(hh)
     end
 end
-
-
 

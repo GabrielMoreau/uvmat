@@ -53,7 +53,7 @@ for ilist=1:numel(FieldName)
         ivar=find(strcmp(FieldName{ilist},Data.ListVarName));
         if isempty(ivar)% the requested variable does not exist
             check_skipped(ilist)=1; %variable not found
-        elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));% the variable exists and has not been already selected
+        elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1))% the variable exists and has not been already selected
             if exist('XI','var')&& isfield(Data.VarAttribute{ivar},'Role') &&...
                     (strcmp(Data.VarAttribute{ivar}.Role,'ancillary')||strcmp(Data.VarAttribute{ivar}.Role,'warnflag')||strcmp(Data.VarAttribute{ivar}.Role,'errorflag'))
                 check_interp(ilist)=0; % ancillary variable, not interpolated ?????
@@ -85,10 +85,10 @@ for ilist=1:numel(FieldName)
         else % case 'norm' for instance
             UName{ilist}=r.UName;
             VName{ilist}=r.VName;
-            if isempty(find(strcmp(r.UName,InputVarList)));
+            if isempty(find(strcmp(r.UName,InputVarList)))
                 InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
             end
-            if isempty(find(strcmp(r.VName,InputVarList), 1));
+            if isempty(find(strcmp(r.VName,InputVarList), 1))
                 InputVarList=[InputVarList VName{ilist}]; %the variable is added to the list if it is not already in the list
             end
             Operator{ilist}=r.Operator;
@@ -161,13 +161,6 @@ for ilist=1:numel(FieldName)
     end
 end
 
-%% put an error flag to indicate NaN data
-% if exist('XI','var')&&~isempty(VarVal)
-%     nbvar=numel(VarVal);
-%     ListVarName{nbvar+1}='FF';
-%     VarVal{nbvar+1}=isnan(VarVal{nbvar});
-%     VarAttribute{nbvar+1}.Role='errorflag';
-% end
 
 
 

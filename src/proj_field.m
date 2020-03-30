@@ -984,26 +984,28 @@ end
 
 
 %-----------------------------------------------------------------
-%project on a plane
-% AJOUTER flux,circul,error
+% proj_plane: project on a plane defined by the structure ObjectData containing:
+%    .Type : = 'plane'
+%    .ProjMode (mode of projection) = 'projection'|'interp_lin'|'interp_tps' ;
+%    .CoordUnit: (for instance 'px','cm') units for the coordinates defining the plane  (the program checks that it fits with the unit of the input Field)
+%    .Angle : angles of rotation of the plane expressed in degrees. The first element
+%         ObjectData.Angle(1) represents a rotation in the plane (x,y) (around the
+%         vertical axis), which can be followed by a rotation with angle ObjectData.Angle(2) around the new (rotated) x axis.
+%    .Coord(1,3): coordinates (x,y,z) of the origin of the new coordinates in the projection plane;
+%    .DX,.DY,.DZ : increments along each coordinate for the projected data (for 'interp_lin' and 'interp_tps')
+%    .RangeX,RangeY: vectors with two elements defining the lower and upper bounds of the respectively X and Y coordinates in the projection plane
+%    .RangeInterp: maximum distance of interpolation from the known data. Interpolation yields NaN beyond this distance.
+
+% TODO: AJOUTER flux,circul,error
 function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
 %-----------------------------------------------------------------
 
-%% rotation angles
+%% rotation matrix
 PlaneAngle=[0 0];
 norm_plane=[0 0 1];
-%cos_om=1;
-%sin_om=0;
 test90x=0;%=1 for 90 degree rotation alround x axis
 test90y=0;%=1 for 90 degree rotation alround y axis
-% if strcmp(ObjectData.Type,'plane_z')
-%     Delta_x=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
-%     Delta_y=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
-%     Delta_mod=sqrt(Delta_x*Delta_x+Delta_y*Delta_y);
-%     ObjectData.Angle=[0 0 0];
-%     ObjectData.Angle(1)=90*Delta_x/Delta_mod;
-%     ObjectData.0(2)=90*Delta_y/Delta_mod;
-% end
+
 if isfield(ObjectData,'Angle')
     checkM2=0;
     if numel(ObjectData.Angle)==2 && ~isequal(ObjectData.Angle,[0 0])
@@ -1013,25 +1015,14 @@ if isfield(ObjectData,'Angle')
     PlaneAngle=(pi/180)*ObjectData.Angle;
     if PlaneAngle==0
         PlaneAngle=[0 0];
-    end
-    %     om=norm(PlaneAngle);%norm of rotation angle in radians
-    %     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-    %     cos_om=cos(om);
-    %     sin_om=sin(om);
-    %     coeff=OmAxis(3)*(1-cos_om);
-    %     %components of the unity vector norm_plane normal to the projection plane
-    %     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-    %     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-    %     norm_plane(3)=OmAxis(3)*coeff+cos_om;
-    
+    end   
     M1=[cos(PlaneAngle(1)) -sin(PlaneAngle(1)) 0;sin(PlaneAngle(1)) cos(PlaneAngle(1)) 0;0 0 1];
     M=M1;
     if checkM2
         M2=[1 0 0;0 cos(PlaneAngle(2)) -sin(PlaneAngle(2));0 sin(PlaneAngle(2)) cos(PlaneAngle(2))];
         M=M1*M2;% first rotate in the x,y plane with angle PlaneAngle(1), then slant around the new x axis0 with angle PlaneAngle(2)
     end
-    norm_plane=M*[0 0 1]';
-    
+    norm_plane=M*[0 0 1]';  
 end
 testangle=~isequal(PlaneAngle,[0 0])||~isequal(ObjectData.Coord(1:2),[0 0 ]) ;% && ~test90y && ~test90x;%=1 for slanted plane
 
@@ -1424,7 +1415,7 @@ for icell=1:length(CellInfo)
                 
                 %rotate coordinates if needed: coord_X,coord_Y= = coordinates in the new plane
                 Phi=PlaneAngle(1);
-                if testangle && ~test90y && ~test90x;%=1 for slanted plane
+                if testangle && ~test90y && ~test90x %=1 for slanted plane
                     new_XI=XI *cos(Phi) - YI* sin(Phi)+ObjectData.Coord(1);
                     YI=XI *sin(Phi) + YI *cos(Phi)+ObjectData.Coord(2);
                     XI=new_XI;

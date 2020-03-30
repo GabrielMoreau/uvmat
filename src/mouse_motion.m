@@ -219,20 +219,10 @@ if strcmp(htype,'axes')
             if isfield(Field,'ProjObjectType') && strcmp(Field.ProjObjectType,'plane') && isfield(Field,'ProjObjectCoord') && length(Field.ProjObjectCoord)>=3
                 pos=[xy(1,1) xy(1,2) 0];%coordinates on the graph
                 if isfield(Field,'ProjObjectAngle')&&~isequal(Field.ProjObjectAngle,[0 0 0])
-                    om=norm(Field.ProjObjectAngle);%norm of rotation angle in radians
-                    OmAxis=Field.ProjObjectAngle/om; %unit vector marking the rotation axis
-                    cos_om=cos(pi*om/180);
-                    sin_om=sin(pi*om/180);
-                    pos=[xy(1,1) xy(1,2) 0];
-                    %pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                    coeff=OmAxis(3)*(1-cos_om);
-                    norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-                    norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-                    norm_plane(3)=OmAxis(3)*coeff+cos_om;
-                    %Z0=norm_plane*Field.ProjObjectCoord'/norm_plane(3);
-                    pos(3)=-(norm_plane(1)*pos(1)+norm_plane(2)*pos(2))/norm_plane(3);                               
+                    norm_plane=angle2normal(Field.ProjObjectAngle);
+                    pos(3)=-(norm_plane(1)*(pos(1)-Field.ProjObjectCoord(1))+norm_plane(2)*(pos(2)-Field.ProjObjectCoord(2)))/norm_plane(3);                               
                 end
-                pos=pos+Field.ProjObjectCoord;
+                pos(3)=pos(3)+Field.ProjObjectCoord(3);
                 text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
             end
             % case of PIV correlation display

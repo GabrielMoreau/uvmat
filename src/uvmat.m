@@ -639,21 +639,20 @@ end
 
 
 %------------------------------------------------------------------------
+% function called by the upper bar menu item Export/make movie
 % --------------------------------------------------------------------
 function MenuExportMovie_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
 
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-FileBase=fullfile(RootPath,RootFile);
+[RootPath,SubDir,RootFile]=read_file_boxes(handles);%read input file path from the GUI uvmat
 
 %% create a fig and axis for movies
-figure_movie=findobj(allchild(0),'name','figure_movie');
-
+figure_movie=findobj(allchild(0),'name','figure_movie');% find existing movie figure
 if ~isempty(figure_movie)
     delete(figure_movie)%delete existing figure_movie
 end
-figure_movie=figure;
+figure_movie=figure;% create a new movie figure 
 nbpix=[640 480];% resolution VGA
 set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
 newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
@@ -670,14 +669,12 @@ colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
 %% create the GUI set_movie
-%set(0,'Units','points')
-%ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
 Position=get(figure_movie,'Position');
 Position(2)=Position(2)+1.2*Position(4);
 Position(3)=1.5*Position(3);
 Position(4)=Position(4)/2;
 hfig=findobj(allchild(0),'Tag','set_movie');
-if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI
+if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
 hfig=figure('name','set_movie','tag','set_movie','MenuBar','none','NumberTitle','off','Units','pixels',...
     'Position',Position);
 BackgroundColor=get(hfig,'Color');
@@ -786,9 +783,22 @@ if exist(MovieName,'file')
         return
     end
 end
-%create avi open
-%aviobj=avifile(MovieName,'Compression','None','fps',fps);
 
+%% create movie
+% duration = 2*FrameNumber/60;
+% [~,name,~] = fileparts(MovieName);
+% ffmpegcmd = ['ffmpeg -i ' ' ' MovieName ' ' '-filter:v "setpts=(',...
+%      num2str(fps/duration),')*PTS"' ' ' strcat(MovieDir,...
+%      strcat('/',name,'.mkv'))];
+% [ffmpeg_err,~] = system(ffmpegcmd);
+% if ffmpeg_err
+%     disp_uvmat('ERROR',['ERROR: Errors in conversion to mkv, close MATLAB and run "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 matlab" in terminal'],1 )
+%     return
+% end
+% msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
+
+
+% 
 aviobj = VideoWriter(MovieName,'Motion JPEG AVI');
 open(aviobj)
 %% get info from uvmat and adjust it
@@ -1179,26 +1189,34 @@ uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-
 hcheckrefraction=uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
     'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
     'String','refraction','Value',CheckRefraction,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.75*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.7*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
     'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
     'String',num2str(RefractionIndex),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
 %  raw 4 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.25*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.0*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
     'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-3*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
+uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-2.8*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
     'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
-uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-3*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
+uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-2.7*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
     'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
 %  raw 5 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-3.5*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-3*ii-3.5*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
-    'String','tild angle x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
-    'String','tild angle y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+1*ww 0.95-2*ii-3.9*hh ww hh],'BackgroundColor',BackgroundColor,...
+    'String','origin','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
+    'String',{'first';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
+    'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
+
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
+    'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
+    'String','tild y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 %  raw 6 of the GUI
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
     'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination around the x axis');%edit box
@@ -1269,6 +1287,8 @@ else
     set(hZ,'String',num2str(Z_plane))% restitute the display qfter reqding by read_GUI
 end
 GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+GeometryCalib.SliceCoord(:,1)=SliceData.SliceCoord(1);
+GeometryCalib.SliceCoord(:,2)=SliceData.SliceCoord(2);
 GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
 Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
 Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
@@ -3553,7 +3573,7 @@ if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldTyp
     end
 end
 switch UvData.FileInfo{1}.FieldType
-    case {'civdata','netcdf'};
+    case {'civdata','netcdf'}
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
         if ~strcmp(FieldName,'get_field...')
@@ -3686,51 +3706,6 @@ if numel(UvData.FileInfo)>1
                 return
             end
     end
-    %     switch UvData.FileType{2}
-    %         case {'civx','civdata','netcdf'};
-    %             list_fields=get(handles.FieldName_1,'String');% list menu fields
-    %             if ischar(list_fields),list_fields={list_fields};end
-    %             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
-    %             if ~strcmp(FieldName_1,'get_field...')
-    %                 if get(handles.FixVelType,'Value')
-    %                     VelTypeList=get(handles.VelType_1,'String');
-    %                     VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
-    %                 end
-    %             end
-    %             if isempty(FieldName_1)
-    %                 FieldName_1=FieldName;% if blank reproduce the field name of the first field
-    %             end
-    %             if ~isempty(regexp(FieldName_1,'^vel', 'once'))&& strcmp(get(handles.ColorCode,'Visible'),'on')
-    %                 list_code=get(handles.ColorCode,'String');% list menu fields
-    %                 index_code=get(handles.ColorCode,'Value');% selected string index
-    %                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-    %                     list_code=get(handles.ColorScalar,'String');% list menu fields
-    %                     index_code=get(handles.ColorScalar,'Value');% selected string index
-    %                     ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display
-    %                 end
-    %             end
-    %         case {'video','mmreader','cine_phantom'}
-    %             ParamIn_1=UvData.MovieObject{2};
-    %             if ~strcmp(NomType_1,'*')
-    %                 frame_index_1=j1_1;%frame index for movies or multimage
-    %             else
-    %                 frame_index_1=i1_1;
-    %             end
-    %          case 'multimage'
-    %             if strcmp(NomType_1,'*')%frame index for movies or multimage
-    %                 frame_index_1=i1_1;
-    %             else
-    %                 frame_index_1=j1_1;
-    %             end
-    %         case 'vol' %TODO: update
-    %             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
-    %                 ParamIn_1.Npy=UvData.XmlData.Npy;
-    %                 ParamIn_1.Npx=UvData.XmlData.Npx;
-    %             else
-    %                 errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
-    %                 return
-    %             end
-    %     end
     
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
     if test_keepdata_1
@@ -3950,7 +3925,6 @@ if isempty(transform)
     UvData.Field=Field{1};
     if numel(Field)==2
         UvData.Field=sub_field(Field{1},[],Field{2});
-       % UvData.Field.(FieldName)=Field{1}.(FieldName)-Field{2}.(FieldName_1);
     end      
 else
     XmlData=[];%default
@@ -4023,14 +3997,9 @@ else
 %% calculate tps coefficients if needed
     UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
-%% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
-% if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
-%     set(handles.num_MinA,'String','0')
-%     set(handles.num_MaxA,'String','255')
-% end
-    set(handles.Objects,'Visible','on')
-
-    %% Plot the projections on the selected  projection objects
+   
+%% Plot the projections on the selected  projection objects
+     set(handles.Objects,'Visible','on')
     %if no projection object exists, create a default one
     if isempty(UvData.ProjObject{1})
         set(handles.ListObject,'Value',1)
@@ -5460,7 +5429,6 @@ update_plot(handles);
 function num_MaxY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5470,7 +5438,6 @@ update_plot(handles);
 function num_MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.CheckFixScalar,'Value',1) %suppress auto mode
-% set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 MinA=str2double(get(handles.num_MinA,'String'));
 MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error

@@ -2,7 +2,7 @@
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields %%%%
 % OUTPUT: 
-% DataOut:   output field structure 
+% Data:   output field structure 
 %      .X=radius, .Y=azimuth angle, .U, .V are radial and azimuthal velocity components
 %
 %INPUT:
@@ -13,11 +13,11 @@
 % XmlData_1: optional second input parameter structure
 %         .GeometryCalib: substructure of the calibration parameters 
 % transform image coordinates (px) to polar physical coordinates 
-%[DataOut,DataOut_1]=phys_polar(varargin)
+%[Data,Data_1]=phys_polar(varargin)
 %
 % OUTPUT: 
-% DataOut: structure of modified data field: .X=radius, .Y=azimuth angle, .U, .V are radial and azimuthal velocity components
-% DataOut_1:  second data field (if two fields are in input)
+% Data: structure of modified data field: .X=radius, .Y=azimuth angle, .U, .V are radial and azimuthal velocity components
+% Data_1:  second data field (if two fields are in input)
 %
 %INPUT:
 % Data:  structure of input data (like UvData)
@@ -43,8 +43,9 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
+function Data=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
 %------------------------------------------------------------------------
+
 %% request input parameters
 if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
     prompt = {'origin [x y] of polar coordinates';'reference radius';'reference angle(degrees)'};
@@ -63,46 +64,61 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
         end
     end
     answer = inputdlg(prompt,dlg_title,num_lines,def);
-    DataOut.TransformInput.PolarCentre=str2num(answer{1}); 
-    DataOut.TransformInput.PolarReferenceRadius=str2num(answer{2}); 
-    DataOut.TransformInput.PolarReferenceAngle=str2num(answer{3}); 
-    if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
-        DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
-    end
+    Data.TransformInput.PolarCentre=str2num(answer{1}); 
+    Data.TransformInput.PolarReferenceRadius=str2num(answer{2}); 
+    Data.TransformInput.PolarReferenceAngle=str2num(answer{3}); 
+%     if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+%         Data.CoordUnit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+%     end
     return
 end
 
+%% default outputs
+Data=DataIn; %default output
+if isfield(Data,'CoordUnit')
+Data=rmfield(Data,'CoordUnit');
+end
+Data.ListVarName = {};
+Data.VarDimName={};
+Data.VarAttribute={};
+DataCell{1}=DataIn;
 Calib{1}=[];
+DataCell{2}=[];%default
+checkpixel(1)=0;
+if isfield(DataCell{1},'CoorUnit')&& strcmp(DataCell{1}.CoorUnit,'px') 
+    checkpixel(1)=1;
+end
 if nargin==2||nargin==4
-    DataOut=DataIn;%default
-    DataOut_1=[];%default
-    if isfield(XmlData,'GeometryCalib')
+    if isfield(XmlData,'GeometryCalib') && ~isempty(XmlData.GeometryCalib)&& checkpixel(1)
         Calib{1}=XmlData.GeometryCalib;
     end
     Calib{2}=Calib{1};
 else
-    DataOut.Txt='wrong input: need two or four structures';
+    Data.Txt='wrong input: need two or four structures';
 end
-test_1=0;
+nbinput=1;
 if nargin==4% case of two input fields
-    test_1=1;
-    DataOut_1=DataIn_1;%default
-    if isfield(XmlData_1,'GeometryCalib')
+    checkpixel(2)=0;
+if isfield(DataCell{2},'CoorUnit')&& strcmp(DataCell{2}.CoorUnit,'px') 
+    checkpixel(2)=1;
+end
+    DataCell{2}=DataIn_1;%default
+    if isfield(XmlData_1,'GeometryCalib')&& ~isempty(XmlData_1.GeometryCalib) && checkpixel(2)
         Calib{2}=XmlData_1.GeometryCalib;
     end
+    nbinput=2;
 end
 
-%parameters for polar coordinates (taken from the calibration data of the first field)
+%% parameters for polar coordinates (taken from the calibration data of the first field)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-XmlData.PolarReferenceRadius=0;%450;
-XmlData.PolarReferenceAngle=0;%450*pi/2;
 origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinates
 radius_offset=0;%reference radius used to offset the radial coordinate r
 angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
-angle_scale=180/pi; 
+angle_scale=180/pi;
+check_degree=1;%angle expressed in degrees by default
 if isfield(XmlData,'TransformInput')
     if isfield(XmlData.TransformInput,'PolarCentre') && isnumeric(XmlData.TransformInput.PolarCentre)
-        if isequal(length(XmlData.TransformInput.PolarCentre),2);
+        if isequal(length(XmlData.TransformInput.PolarCentre),2)
             origin_xy= XmlData.TransformInput.PolarCentre;
         end
     end
@@ -111,8 +127,10 @@ if isfield(XmlData,'TransformInput')
     end
     if radius_offset > 0
         angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
+        check_degree=0; %the output has the same unit asthe input
     else
         angle_scale=180/pi; %polar angle in degrees
+        check_degree=1;%angle expressed in degrees
     end
     if isfield(XmlData.TransformInput,'PolarReferenceAngle') && isnumeric(XmlData.TransformInput.PolarReferenceAngle)
         angle_offset=(pi/180)*XmlData.TransformInput.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
@@ -120,211 +138,348 @@ if isfield(XmlData,'TransformInput')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-iscalar=0;
-%transform first field to cartesian phys coordiantes
-if  ~isempty(Calib{1})
-    DataOut=phys_1(DataIn,Calib{1},origin_xy,radius_offset,angle_offset,angle_scale);
-    %case of images or scalar
-    if isfield(DataIn,'A')&isfield(DataIn,'Coord_x')&~isempty(DataIn.Coord_x) & isfield(DataIn,'Coord_y')&...
-                                           ~isempty(DataIn.Coord_y)&length(DataIn.A)>1
-        iscalar=1;
-        A{1}=DataIn.A;
+%% get fields
+check_scalar=0;
+check_vector=0;
+nbvar=0;%counter for the number of output variables
+nbcoord=0;%counter for the number of variables for radial coordiantes (case of multiple field inputs)
+nbgrid=0;%counter for the number of gridded fields (all linearly interpolated on the same output polar grid)
+nbscattered=0;%counter of scattered fields
+radius_name='radius';
+theta_name='theta';
+U_r_name='U_r';
+U_theta_name='U_theta';
+for ifield=1:nbinput %1 or 2 input fields
+    [CellInfo,NbDim,errormsg]=find_field_cells(DataCell{ifield});
+    if ~isempty(errormsg)
+        Data.Txt=['bad input to phys_polar: ' errormsg];
+        return
     end
+    % end
     %transform of X,Y coordinates for vector fields
-    if isfield(DataIn,'ZIndex')&~isempty(DataIn.ZIndex)
-        ZIndex=DataIn.ZIndex;
+    if isfield(DataCell{ifield},'ZIndex')&& ~isempty(DataCell{ifield}.ZIndex)
+        ZIndex=DataCell{ifield}.ZIndex;
     else
         ZIndex=0;
     end
-end
-
-%transform second field (if exists) to cartesian phys coordiantes
-if test_1
-    DataOut_1=phys_1(Data_1,Calib{2},origin_xy,radius_offset,angle_offset,angle_scale);
-    if isfield(Data_1,'A')&isfield(Data_1,'Coord_x')&~isempty(Data_1.Coord_x) & isfield(Data_1,'Coord_y')&...
-                                       ~isempty(Data_1.Coord_y)&length(Data_1.A)>1
-          iscalar=iscalar+1;
-          Calib{iscalar}=Calib{2};
-          A{iscalar}=Data_1.A;
-          if isfield(Data_1,'ZIndex')&~isequal(Data_1.ZIndex,ZIndex)
-              DataOut.Txt='inconsistent plane indexes in the two input fields';
-          end
-          if iscalar==1% case for which only the second field is a scalar
-               [A,Coord_x,Coord_y]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);
-               DataOut_1.A=A{1};
-               DataOut_1.Coord_x=Coord_x; 
-               DataOut_1.Coord_y=Coord_y;
-               return
-          end
+    for icell=1:numel(CellInfo)
+        if NbDim(icell)==2
+            % case of input field with scattered coordinates
+            if strcmp(CellInfo{icell}.CoordType,'scattered')
+                nbscattered=nbscattered+1;
+                nbcoord=nbcoord+1;
+                radius_name = rename_indexing(radius_name,Data.ListVarName);
+                theta_name = rename_indexing(theta_name,Data.ListVarName);
+                Data.ListVarName = [Data.ListVarName {radius_name} {theta_name}];
+                dim_name = rename_indexing('nb_point',Data.VarDimName);
+                Data.VarDimName=[Data.VarDimName {dim_name} {dim_name}];
+                nbvar=nbvar+2;
+                Data.VarAttribute{nbvar-1}.Role='coord_x';
+                check_unit=1;
+                if isfield(DataCell{ifield},'CoordUnit')
+                    Data=rmfield(Data,'CoordUnit');
+                    Data.VarAttribute{nbvar-1}.unit=DataCell{ifield}.CoordUnit;
+                elseif isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+                    Data.VarAttribute{nbvar-1}.unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+                else
+                    check_unit=0;
+                end
+                Data.VarAttribute{nbvar}.Role='coord_y';
+                if check_degree
+                Data.VarAttribute{nbvar}.unit='degree';
+                elseif check_unit
+                    Data.VarAttribute{nbvar}.unit=Data.VarAttribute{nbvar-1}.unit;
+                end
+  
+                %transform u,v into polar coordinates
+                X=DataCell{ifield}.(CellInfo{icell}.XName);
+                Y=DataCell{ifield}.(CellInfo{icell}.YName);
+                if isfield(CellInfo{icell},'VarIndex_vector_x')&& isfield(CellInfo{icell},'VarIndex_vector_y')
+                    UName=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_x};
+                    VName=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_y};
+                    if ~isempty(Calib{ifield})
+                        [X,Y,Z,DataCell{ifield}.(UName),DataCell{ifield}.(VName)]=...
+                            phys_XYUV(DataCell{ifield},Calib{ifield},ZIndex);
+                    end
+                end
+                [Theta,Radius] = cart2pol(X-origin_xy(1),Y-origin_xy(2));
+                Data.(radius_name)=Radius-radius_offset;
+                Data.(theta_name)=Theta*angle_scale-angle_offset;
+                if Z~=0
+                    Data.Z=Z;
+                    nbvar=nbvar+1;
+                    Data.ListVarName = [Data.ListVarName {'Z'}];
+                    Data.VarDimName=[Data.VarDimName {dim_name}];
+                    Data.VarAttribute{nbvar}.Role='coord_z';
+                end
+                if isfield(CellInfo{icell},'VarIndex_scalar')
+                    ScalarName=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_scalar};
+                    ScalarName=rename_indexing(ScalarName,Data.ListVarName);
+                    Data.(ScalarName)=DataCell{ifield}.(ScalarName);
+                    nbvar=nbvar+1;
+                    Data.ListVarName = [Data.ListVarName {ScalarName}];
+                    Data.VarDimName=[Data.VarDimName {dim_name}];
+                    Data.VarAttribute{nbvar}.Role='scalar';
+                end
+                if isfield(CellInfo{icell},'VarIndex_vector_x')&& isfield(CellInfo{icell},'VarIndex_vector_y')
+                    U_r_name= rename_indexing(U_r_name,Data.ListVarName);
+                    U_theta_name= rename_indexing(U_theta_name,Data.ListVarName);
+                    Data.(U_r_name)=DataCell{ifield}.(UName).*cos(Theta)+DataCell{ifield}.(VName).*sin(Theta);%radial velocity
+                    Data.(U_theta_name)=(-DataCell{ifield}.(UName).*sin(Theta)+DataCell{ifield}.(VName).*cos(Theta));%./(Data.X)%+radius_ref);% azimuthal velocity component
+                    Data.ListVarName = [Data.ListVarName {U_r_name} {U_theta_name}];
+                    Data.VarDimName=[Data.VarDimName {dim_name} {dim_name}];
+                    Data.VarAttribute{nbvar+1}.Role='vector_x';
+                    Data.VarAttribute{nbvar+2}.Role='vector_y';
+                    nbvar=nbvar+2;
+                end
+                if isfield(CellInfo{icell},'VarIndex_errorflag')
+                    error_flag_name=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_errorflag};
+                    error_flag_newname= rename_indexing(error_flag_name,Data.ListVarName);
+                    Data.(error_flag_newname)=DataCell{ifield}.(error_flag_name);
+                    Data.ListVarName = [Data.ListVarName {error_flag_newname}];
+                    Data.VarDimName=[Data.VarDimName {dim_name}];
+                    nbvar=nbvar+1;
+                    Data.VarAttribute{nbvar}.Role='errorflag';
+                end
+                
+           %caseof input fields on gridded coordinates (matrix)
+            elseif strcmp(CellInfo{icell}.CoordType,'grid')
+                if nbgrid==0% no gridded data yet, introduce the coordinate variables common to all gridded data
+                    nbcoord=nbcoord+1;%add new radial coordinates for the first gridded field
+                    radius_name = rename_indexing(radius_name,Data.ListVarName);
+                    theta_name = rename_indexing(theta_name,Data.ListVarName);
+                    Data.ListVarName = [Data.ListVarName {radius_name} {theta_name}];
+                    Data.VarDimName=[Data.VarDimName {radius_name} {theta_name}];
+                    nbvar=nbvar+2;
+                    Data.VarAttribute{nbvar-1}.Role='coord_x';
+                    Data.VarAttribute{nbvar}.Role='coord_y';
+                    check_unit=1;
+                    if isfield(DataCell{ifield},'CoordUnit')
+                        Data.VarAttribute{nbvar-1}.unit=DataCell{ifield}.CoordUnit;
+                    elseif isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+                        Data.VarAttribute{nbvar-1}.unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+                    else
+                        check_unit=0;
+                    end
+                    if check_degree
+                        Data.VarAttribute{nbvar}.unit='degree';
+                    elseif check_unit
+                        Data.VarAttribute{nbvar}.unit=Data.VarAttribute{nbvar-1}.unit;
+                    end
+                end
+                if isfield(CellInfo{icell},'VarIndex_scalar')
+                    nbgrid=nbgrid+1;
+                    nbvar=nbvar+1;
+                    Data.VarAttribute{nbvar}.Role='scalar';
+                    FieldName{nbgrid}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_scalar};
+                    A{nbgrid}=DataCell{ifield}.(FieldName{nbgrid});
+%                     Data.ListVarName=[Data.ListVarName {FieldName{nbgrid}}];
+%                     Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}}];
+                    nbpoint(nbgrid)=numel(A{nbgrid});
+                    check_scalar(nbgrid)=1;
+                    coord_x{nbgrid}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.XIndex});
+                    coord_y{nbgrid}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.YIndex});
+                    ZInd(nbgrid)=ZIndex;
+                    Calib_new{nbgrid}=Calib{ifield};
+                end
+                if isfield(CellInfo{icell},'VarIndex_vector_x')&& isfield(CellInfo{icell},'VarIndex_vector_y')
+                    FieldName{nbgrid+1}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_x};
+                    FieldName{nbgrid+2}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_y};
+                    A{nbgrid+1}=DataCell{ifield}.(FieldName{nbgrid+1});
+                    A{nbgrid+2}=DataCell{ifield}.(FieldName{nbgrid+2});
+                   % Data.ListVarName=[Data.ListVarName {'U_r','U_theta'}];
+                    %Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}} {{theta_name,radius_name}}];
+                    Data.VarAttribute{nbvar+1}.Role='vector_x';
+                    Data.VarAttribute{nbvar+2}.Role='vector_y';
+                    nbpoint([nbgrid+1 nbgrid+2])=numel(A{nbgrid+1});
+                    check_vector(nbgrid+1)=1;
+                    check_vector(nbgrid+2)=1;
+                    coord_x{nbgrid+1}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.XIndex});
+                    coord_y{nbgrid+1}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.YIndex});
+                    coord_x{nbgrid+2}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.XIndex});
+                    coord_y{nbgrid+2}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.YIndex});
+                    ZInd(nbgrid+1)=ZIndex;
+                    ZInd(nbgrid+2)=ZIndex;
+                    Calib_new{nbgrid+1}=Calib{ifield};
+                    Calib_new{nbgrid+2}=Calib{ifield};
+                    nbgrid=nbgrid+2;
+                    nbvar=nbvar+2;
+                end
+            end
+        end
     end
 end
-if iscalar~=0
-    [A,Coord_x,Coord_y]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);%
-    DataOut.A=A{1};
-    DataOut.Coord_x=Coord_x; 
-    DataOut.Coord_y=Coord_y;
-    if iscalar==2
-        DataOut_1.A=A{2};
-        DataOut_1.Coord_x=Coord_x; 
-        DataOut_1.Coord_y=Coord_y;
+
+%% tranform cartesian to polar coordinates for gridded data
+if nbgrid~=0
+    [A,Data.radius,Data.theta]=phys_Ima_polar(A,coord_x,coord_y,Calib_new,ZInd,origin_xy,radius_offset,angle_offset,angle_scale);
+    for icell=1:numel(A)
+        if icell<=numel(A)-1 && check_vector(icell)==1 && check_vector(icell+1)==1   %transform u,v into polar coordiantes
+            theta=Data.theta/angle_scale-angle_offset;
+            [~,Theta]=meshgrid(Data.radius,theta);%grid in physical coordinates
+            U_r_name= rename_indexing(U_r_name,Data.ListVarName);
+            U_theta_name= rename_indexing(U_theta_name,Data.ListVarName);
+            Data.ListVarName=[Data.ListVarName {U_r_name,U_theta_name}];
+            Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}} {{theta_name,radius_name}}];
+            Data.(U_r_name)=A{icell}.*cos(Theta)+A{icell+1}.*sin(Theta);%radial velocity
+            Data.(U_theta_name)=(-A{icell}.*sin(Theta)+A{icell+1}.*cos(Theta));%./(Data.X)%+radius_ref);% azimuthal velocity component
+        elseif ~check_vector(icell)% for scalar fields
+            FieldName{icell}= rename_indexing(FieldName{icell},Data.ListVarName);
+            Data.ListVarName=[Data.ListVarName {FieldName{icell}}];
+            Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}}];
+            Data.(FieldName{icell})=A{icell};
+        end
     end
 end
-
-
 
 
 %------------------------------------------------
-function DataOut=phys_1(Data,Calib,origin_xy,radius_offset,angle_offset,angle_scale)
-
-DataOut=Data;
-% DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
-if isfield(Calib,'SliceCoord')
-    DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
-end
-
-if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
-    if isfield(Calib,'CoordUnit')
-        DataOut.CoordUnit=Calib.CoordUnit;
-    else
-        DataOut.CoordUnit='cm'; %default
+%--- transform a single field into phys coordiantes
+function [X,Y,Z,U,V]=phys_XYUV(Data,Calib,ZIndex)
+%------------------------------------------------
+%% set default output
+%DataOut=Data;%default
+%DataOut.CoordUnit=Calib.CoordUnit;% the output coord unit is set by the calibration parameters
+X=[];%default output
+Y=[];
+Z=0;
+U=[];
+V=[];
+%% transform  X,Y coordinates for velocity fields (transform of an image or scalar done in phys_ima)
+if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
+    [X,Y,Z]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+    Dt=1; %default
+    if isfield(Data,'dt')&&~isempty(Data.dt)
+        Dt=Data.dt;
     end
-    DataOut.TimeUnit='s';
-    %transform of X,Y coordinates for vector fields
-    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
-        Z=Data.ZIndex;
-    else
-        Z=0;
+    if isfield(Data,'Dt')&&~isempty(Data.Dt)
+        Dt=Data.Dt;
     end
-    if isfield(Data,'X') &isfield(Data,'Y')&~isempty(Data.X) & ~isempty(Data.Y)
-        [DataOut.X,DataOut.Y,DataOut.Z]=phys_XYZ(Calib,Data.X,Data.Y,Z); %transform from pixels to physical
-        DataOut.X=DataOut.X-origin_xy(1);%origin of coordinates at the tank center
-        DataOut.Y=DataOut.Y-origin_xy(2);%origin of coordinates at the tank center
-        [theta,DataOut.X] = cart2pol(DataOut.X,DataOut.Y);%theta  and X are the polar coordinates angle and radius
-          %shift and renormalize the polar coordinates
-        DataOut.X=DataOut.X-radius_offset;%shift the origin of radius, taken as the new X coordinate
-        DataOut.Y=(theta-angle_offset)*angle_scale;% normalized angle: distance along reference radius,taken as the new Y coordinate
-        %transform velocity field if exists
-        if isfield(Data,'U') & isfield(Data,'V') & ~isempty(Data.U) & ~isempty(Data.V)& isfield(Data,'Dt') 
-            if ~isempty(Data.Dt)
-            [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z);% X,Y positions of the vector origin in phys
-            [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z);% X,Y positions of the vector end in phys
-            UX=(XOut_2-XOut_1)/Data.Dt;% phys velocity u component
-            VY=(YOut_2-YOut_1)/Data.Dt; % phys velocity v component     
-            %transform u,v into polar coordiantes
-            DataOut.U=UX.*cos(theta)+VY.*sin(theta);%radial velocity
-            DataOut.V=(-UX.*sin(theta)+VY.*cos(theta));%./(DataOut.X)%+radius_ref);% azimuthal velocity component 
-            %shift and renormalize the angular velocity
-            end
-        end
-        %transform of spatial derivatives
-        if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
-                && isfield(Data,'Dt')
-            if ~isempty(Data.Dt)
-                % estimate the Jacobian matrix DXpx/DXphys
-                for ip=1:length(Data.X)
-                    [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),Z);
-                    [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),Z);
-                    [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,Z);
-                    [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,Z);
-                    %Jacobian matrix DXpphys/DXpx
-                    DjXi(1,1)=(Xp1-Xm1);
-                    DjXi(2,1)=(Yp1-Ym1);
-                    DjXi(1,2)=(Xp2-Xm2);
-                    DjXi(2,2)=(Yp2-Ym2);
-                    DjUi(:,:)=Data.DjUi(ip,:,:);
-                    DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
-                    DataOut.DjUi(ip,:,:)=DjUi';
-                end
-                DataOut.DjUi =  DataOut.DjUi/Data.Dt;   %     min(Data.DjUi(:,1,1))=DUDX
-            end
-        end
+    if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)
+        [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
+        [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
+        U=(XOut_2-XOut_1)/Dt;
+        V=(YOut_2-YOut_1)/Dt;
     end
 end
-
 
 %%%%%%%%%%%%%%%%%%%%
-function [A_out,Rangx,Rangy]=phys_Ima_polar(A,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
-xcorner=[];
-ycorner=[];
+% tranform gridded field into polar coordiantes on a regular polar grid,
+% transform to phys coordiantes if requested by calibration input
+function [A_out,radius,theta]=phys_Ima_polar(A,coord_x,coord_y,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
+rcorner=[];
+thetacorner=[];
 npx=[];
 npy=[];
-NbPoints=20; % nbre of points used to determine the image edge
 for icell=1:length(A)
     siz=size(A{icell});
-    npx=[npx siz(2)];
-    npy=[npy siz(1)];
-    zphys=0; %default
-    if isfield(CalibIn{icell},'SliceCoord') %.Z= index of plane
-        if ZIndex==0
-            ZIndex=1;
-        end
-       SliceCoord=CalibIn{icell}.SliceCoord(ZIndex,:);
-       zphys=SliceCoord(3); %to generalize for non-parallel planes
+    npx(icell)=siz(2);
+    npy(icell)=siz(1);
+    x_edge=[linspace(coord_x{icell}(1),coord_x{icell}(end),npx(icell)) coord_x{icell}(end)*ones(1,npy(icell))...
+        linspace(coord_x{icell}(end),coord_x{icell}(1),npx(icell)) coord_x{icell}(1)*ones(1,npy(icell))];%x coordinates of the image edge(four sides)
+    y_edge=[coord_y{icell}(1)*ones(1,npx(icell)) linspace(coord_y{icell}(1),coord_y{icell}(end),npy(icell))...
+        coord_y{icell}(end)*ones(1,npx(icell)) linspace(coord_y{icell}(end),coord_y{icell}(1),npy(icell))];%y coordinates of the image edge(four sides)
+    
+    % transform edges into phys coordinates if requested
+    if ~isempty(CalibIn{icell})
+        [x_edge,y_edge]=phys_XYZ(CalibIn{icell},x_edge,y_edge,ZIndex(icell));% physical coordinates of the image edge
     end
-%     xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
-%     yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
-      edge_x=linspace(0.5,siz(1)-0.5,NbPoints);      
-      edge_y=linspace(0.5,siz(2)-0.5,NbPoints);
-      xima=[edge_y (siz(2)-0.5)*ones(1,NbPoints) edge_y 0.5*ones(1,NbPoints)];%image coordinates of corners
-      yima=[0.5*ones(1,NbPoints) edge_x (siz(1)-0.5)*ones(1,NbPoints) edge_x];%image coordinates of corners
-    [xcorner_new,ycorner_new]=phys_XYZ(CalibIn{icell},xima,yima,ZIndex);%corresponding physical coordinates
-    %transform the corner coordinates into polar ones    
-    xcorner_new=xcorner_new-origin_xy(1);%shift to the origin of the polar coordinates 
-    ycorner_new=ycorner_new-origin_xy(2);%shift to the origin of the polar coordinates       
-    [theta,xcorner_new] = cart2pol(xcorner_new,ycorner_new);%theta  and X are the polar coordinates angle and radius
-    if (max(theta)-min(theta))>pi   %if the polar origin is inside the image
-        xcorner_new=[0 max(xcorner_new)];
-        theta=[-pi pi];
+    
+    %transform the corner coordinates into polar ones
+    x_edge=x_edge-origin_xy(1);%shift to the origin of the polar coordinates
+    y_edge=y_edge-origin_xy(2);%shift to the origin of the polar coordinates
+    [theta_edge,r_edge] = cart2pol(x_edge,y_edge);%theta  and X are the polar coordinates angle and radius
+    if (max(theta_edge)-min(theta_edge))>pi   %if the polar origin is inside the image
+        r_edge=[0 max(r_edge)];
+        theta_edge=[-pi pi];
     end
-          %shift and renormalize the polar coordinates
-    xcorner_new=xcorner_new-radius_offset;%
-    ycorner_new=theta*angle_scale-angle_offset;% normalized angle: distance along reference radius
-    xcorner=[xcorner xcorner_new];
-    ycorner=[ycorner ycorner_new];
+    rcorner=[rcorner r_edge];
+    thetacorner=[thetacorner theta_edge];
 end
-Rangx(1)=min(xcorner);
-Rangx(2)=max(xcorner);
-Rangy(2)=min(ycorner);
-Rangy(1)=max(ycorner);
-% test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
-npx=max(npx);
-npy=max(npy);
-x=linspace(Rangx(1),Rangx(2),npx);
-y=linspace(Rangy(1),Rangy(2),npy);
-[X,Y]=meshgrid(x,y);%grid in physical coordinates
+nbpoint=max(npx.*npy);
+Min_r=min(rcorner);
+Max_r=max(rcorner);
+Min_theta=min(thetacorner)*angle_scale;
+Max_theta=max(thetacorner)*angle_scale;
+Dr=round_uvmat((Max_r-Min_r)/sqrt(nbpoint));
+Dtheta=round_uvmat((Max_theta-Min_theta)/sqrt(nbpoint));% get a simple mesh for the rescaled angle
+radius=Min_r:Dr:Max_r;% polar coordinates for projections
+theta=Min_theta:Dtheta:Max_theta;
+[Radius,Theta]=meshgrid(radius,theta/angle_scale);%grid in polar coordinates (angles in radians)
 %transform X, Y in cartesian
-X=X+radius_offset;%
-Y=(Y+angle_offset)/angle_scale;% normalized angle: distance along reference radius
-[X,Y] = pol2cart(Y,X);
-X=X+origin_xy(1);%shift to the origin of the polar coordinates 
-Y=Y+origin_xy(2);%shift to the origin of the polar coordinates 
-for icell=1:length(A) 
+[X,Y] = pol2cart(Theta,Radius);% cartesian coordinates associated to the grid in polar coordinates
+X=X+origin_xy(1);%shift to the origin of the polar coordinates
+Y=Y+origin_xy(2);%shift to the origin of the polar coordinates
+radius=radius-radius_offset;
+theta=theta-angle_offset*angle_scale;
+[np_theta,np_r]=size(Radius);
+
+for icell=1:length(A)
+    XIMA=X;
+    YIMA=Y;
+    if ~isempty(CalibIn{icell})%transform back to pixel if calibration parameters are introduced
+        Z=0; %default
+        if isfield(CalibIn{icell},'SliceCoord') %.Z= index of plane
+            if ZIndex(icell)==0
+                ZIndex(icell)=1;
+            end
+            SliceCoord=CalibIn{icell}.SliceCoord(ZIndex(icell),:);
+            Z=SliceCoord(3); %to generalize for non-parallel planes
+            if isfield(CalibIn{icell},'SliceAngle')
+            norm_plane=angle2normal(CalibIn{icell}.SliceAngle);
+            Z=Z-(norm_plane(1)*(X-SliceCoord(1))+norm_plane(2)*(Y-SliceCoord(2)))/norm_plane(3); 
+            end
+        end
+        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,Z);%corresponding image indices for each point in the real space grid
+    end
+    Dx=(coord_x{icell}(end)-coord_x{icell}(1))/(npx(icell)-1);
+    Dy=(coord_y{icell}(end)-coord_y{icell}(1))/(npy(icell)-1);
+    indx_ima=1+round((XIMA-coord_x{icell}(1))/Dx);%indices of the initial matrix close to the points of the new grid
+    indy_ima=1+round((YIMA-coord_y{icell}(1))/Dy);
+    Delta_x=1+(XIMA-coord_x{icell}(1))/Dx-indx_ima;%
+    Delta_y=1+(YIMA-coord_y{icell}(1))/Dy-indy_ima;
+    XIMA=reshape(indx_ima,1,[]);%indices reorganized in 'line'
+    YIMA=reshape(indy_ima,1,[]);%indices reorganized in 'line'
+    flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
     siz=size(A{icell});
-    [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);%corresponding image indices for each point in the real space grid
-    XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
-    YIMA=reshape(round(YIMA),1,npx*npy);
-    flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
+    checkuint8=isa(A{icell},'uint8');%check for image input with 8 bits
+    checkuint16=isa(A{icell},'uint8');%check for image input with 16 bits
+    A{icell}=double(A{icell});
     if numel(siz)==2 %(B/W images)
-        vec_A=reshape(A{icell}(:,:,1),1,npx*npy);%put the original image in line
+        vec_A=reshape(A{icell}(:,:,1),1,[]);%put the original image in line
         ind_in=find(flagin);
         ind_out=find(~flagin);
-        ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+        ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
         ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
         vec_B(ind_in)=vec_A(ICOMB);
         vec_B(ind_out)=zeros(size(ind_out));
-        A_out{icell}=reshape(vec_B,npy,npx);%new image in real coordinates
+        A_out{icell}=reshape(vec_B,np_theta,np_r);%new image in real coordinates
+        DA_y=circshift(A_out{icell},-1,1)-A_out{icell};
+        DA_y(end,:)=0;
+        DA_x=circshift(A_out{icell},-1,2)-A_out{icell};
+        DA_x(:,end)=0;
+        A_out{icell}=A_out{icell}+Delta_x.*DA_x+Delta_y.*DA_y;%linear interpolation
     else
         for icolor=1:siz(3)
-                vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
-                ind_in=find(flagin);
-                ind_out=find(~flagin);
-                ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-                ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-                vec_B(ind_in)=vec_A(ICOMB);
-                vec_B(ind_out)=zeros(size(ind_out));
-                A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
+            vec_A=reshape(A{icell}(:,:,icolor),1,[]);%put the original image in line
+            ind_in=find(flagin);
+            ind_out=find(~flagin);
+            ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
+            ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+            vec_B(ind_in)=vec_A(ICOMB);
+            vec_B(ind_out)=zeros(size(ind_out));
+            A_out{icell}(:,:,icolor)=reshape(vec_B,np_theta,np_r);%new image in real coordinates
+            DA_y=circshift(A_out{icell}(:,:,icolor),-1,1)-A_out{icell}(:,:,icolor);
+            DA_y(end,:)=0;
+            DA_x=circshift(A_out{icell}(:,:,icolor),-1,2)-A_out{icell}(:,:,icolor);
+            DA_x(:,end)=0;
+            A_out{icell}(:,:,icolor)=A_out{icell}(:,:,icolor)+Delta_x.*DA_x+Delta_y.*DA_y;%linear interpolation
         end
+    end
+    if checkuint8
+        A_out{icell}=uint8(A_out{icell});
+    elseif checkuint16
+        A_out{icell}=uint16(A_out{icell});
     end
 end
 

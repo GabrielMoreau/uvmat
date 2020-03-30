@@ -133,11 +133,6 @@ if NbDim==3
     FieldOut.ZMin=min(CoordMin(ind,1));
 end
 % adjust the mesh to a value 1, 2 , 5 *10^n
-ord=10^(floor(log10(Mesh)));%order of magnitude
-if Mesh/ord>=5
-    FieldOut.CoordMesh=5*ord;
-elseif Mesh/ord>=2
-    FieldOut.CoordMesh=2*ord;
-else
-    FieldOut.CoordMesh=ord;
-end
+FieldOut.CoordMesh = round_uvmat(Mesh);
+
+
