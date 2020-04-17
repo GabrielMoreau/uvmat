@@ -219,7 +219,7 @@ if strcmp(htype,'axes')
             if isfield(Field,'ProjObjectType') && strcmp(Field.ProjObjectType,'plane') && isfield(Field,'ProjObjectCoord') && length(Field.ProjObjectCoord)>=3
                 pos=[xy(1,1) xy(1,2) 0];%coordinates on the graph
                 if isfield(Field,'ProjObjectAngle')&&~isequal(Field.ProjObjectAngle,[0 0 0])
-                    norm_plane=angle2normal(Field.ProjObjectAngle);
+                    norm_plane=rotate_vector(Field.ProjObjectAngle,0,0,1);%angle2normal(Field.ProjObjectAngle);
                     pos(3)=-(norm_plane(1)*(pos(1)-Field.ProjObjectCoord(1))+norm_plane(2)*(pos(2)-Field.ProjObjectCoord(2)))/norm_plane(3);                               
                 end
                 pos(3)=pos(3)+Field.ProjObjectCoord(3);
@@ -389,15 +389,17 @@ if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
         ProjObject=UvData.ProjObject{get(hhuvmat.ListObject,'Value')};
     end
     XYData=AxeData.CurrentOrigin;
+ 
     if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
         switch ObjectData.Type
             case {'line','polyline','polygon','points'}
                 ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
-                % ObjectData.Coord(end,:)=xy(1,:);
+                plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
             case {'rectangle','ellipse','volume'}
                 ObjectData.Coord=(AxeData.CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate
                 ObjectData.RangeX=abs(ObjectData.Coord(1,1)-xy(1,1));%rectangle width
                 ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height
+                plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
             case 'plane' %case of 'plane'
                 DX=(xy(1,1)-ObjectData.Coord(1,1));
                 DY=(xy(1,2)-ObjectData.Coord(1,2));
@@ -408,8 +410,15 @@ if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
                         ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
                     end
                 end
+                hline=findobj(hPlotAxes,'Tag','mouse_line');
+                if isempty(hline)
+                    hline=line([AxeData.CurrentOrigin(1) xy(1,1)],[AxeData.CurrentOrigin(2) xy(1,2)],'Tag','mouse_line');
+                else
+                    set(hline,'XData',[AxeData.CurrentOrigin(1) xy(1,1)])
+                    set(hline,'YData',[AxeData.CurrentOrigin(2) xy(1,2)])
+                end
         end
-        plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
+
         pointershape='crosshair';
     elseif test_edit_object && isequal(AxeData.Drawing,'translate')
         DX=xy(1,1)-XYData(1);%translation from initial position

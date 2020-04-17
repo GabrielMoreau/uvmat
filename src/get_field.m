@@ -135,10 +135,11 @@ if ~isempty(errormsg)
     return
 end
 if isempty(CellInfo)
-    Field.MaxDim=max(cellfun(@numel,Field.Display.VarDimName));
+    [Field.MaxDim,imax]=max(cellfun(@numel,Field.Display.VarDimName));% maximum number of dimensions for the input fields
+    ListDim=Field.Display.VarDimName{imax};
     check_cellinfo=false;
 else
-    [Field.MaxDim,imax]=max(NbDim);
+    [Field.MaxDim,imax]=max(NbDim);% maximum number of dimensions for the input fields identified by attributes
     check_cellinfo=true;
 end
 
@@ -170,16 +171,21 @@ else
 end
 
 %% select the Time attribute from input
-if isfield(ParamIn,'TimeAttrName')
-    time_index=find(strcmp(ParamIn.TimeAttrName,Field.Display.ListGlobalAttribute),1);
+if Field.MaxDim >=2
+    variable_index=find(strcmp('variable',ListSwitchVarIndexTime),1);
+    set(handles.SwitchVarIndexTime,'Value',variable_index);
 else
-    time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% look for global attribute containing name 'Time'
-end
-if isempty(time_index)
-    set(handles.SwitchVarIndexTime,'Value',1);
-else
-    set(handles.SwitchVarIndexTime,'Value',2);
-    set(handles.TimeName,'UserData',time_index)
+    if isfield(ParamIn,'TimeAttrName')
+        time_index=find(strcmp(ParamIn.TimeAttrName,Field.Display.ListGlobalAttribute),1);
+    else
+        time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% look for global attribute containing name 'Time'
+    end
+    if isempty(time_index)
+        set(handles.SwitchVarIndexTime,'Value',1);
+    else
+        set(handles.SwitchVarIndexTime,'Value',2);
+        set(handles.TimeName,'UserData',time_index)
+    end
 end
 set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
 set(handles.SwitchVarIndexTime,'UserData',ListSwitchVarIndexTime); % keep string in memory for check3D
@@ -257,49 +263,6 @@ end
 
 %% fill menus for coordinates and time
 FieldOption_Callback(handles.variables,[], handles)% list the global attributes
-
-%% Make choices of coordinates from input
-%     check_menu=false(1,numel(Data.ListVarName));
-%     ListCoordMenu=1:numel(Data.ListVarName);
-%     CoordIndex=CellInfo{icell}.CoordIndex(CellInfo{icell}.CoordIndex~=0);
-% 
-%             for ivar=find(check_coord_names)
-%                 check_dim=strcmp(Data.VarDimName{ivar},DimCell_var);
-%                 if ~isempty(find(check_dim))
-%                     check_menu(ivar)=true;
-%                 end
-%             end
-%             CellInfo{icell}.CoordMenu=[CoordIndex find(check_menu)];
-%             ListCoordMenu(CoordIndex)=[];
-%             for ivar=ListCoordMenu
-%                 DimCell=Data.VarDimName{ivar};
-%                 if isequal(DimCell,DimCell_var)
-%                     check_menu(ivar)=true;
-%                 end
-%             end
-%             CellInfo{icell}.CoordMenu=[CellInfo{icell}.CoordMenu find(check_menu)];
-% 
-% if isfield(CellInfo{imax},'CoordIndex')
-%     CoordIndex=CellInfo{imax}.CoordIndex;
-%     if numel(CoordIndex)==2
-%         if isfield(ParamIn,'Coord_x')&& isfield(ParamIn,'Coord_y')
-%             YName=ParamIn.Coord_y;
-%             XName=ParamIn.Coord_x;
-%         else
-%         YName=Field.ListVarName{CoordIndex(1)};
-%         XName=Field.ListVarName{CoordIndex(2)};
-%         end
-%         ListCoord=get(handles.Coord_x,'String');
-%         XIndex=find(strcmp(XName,ListCoord));
-%         if ~isempty(XIndex)
-%             set(handles.Coord_x,'Value',XIndex)
-%         end
-%         YIndex=find(strcmp(YName,ListCoord));
-%         if ~isempty(YIndex)
-%             set(handles.Coord_y,'Value',YIndex)
-%         end
-%     end
-% end
 
 %% put the GUI on the lower right of the sceen
 set(hObject,'Unit','pixels')
@@ -662,8 +625,14 @@ var_coord=find(test_coord);% % list of variable indices elligible as gridded coo
 var_coord(var_coord==scalar_index)=[];
 var_component(var_component==scalar_index)=[];
 ListCoord=Field.Display.ListVarName([var_coord var_component]);
+coord_val=zeros(size(ListCoord));
 
-%% set default coord selection
+%% set default selection for grid coordinates
+coord_val(1)=var_coord(end);
+coord_val(2)=var_coord(end-1);
+if numel(var_coord)>=3
+    coord_val(3)=var_coord(end-2);
+end
 % if numel(find(test_coord))>3
 %     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
 %     if numel(SwitchVarIndexTime)<3
@@ -674,8 +643,7 @@ ListCoord=Field.Display.ListVarName([var_coord var_component]);
 %     SwitchVarIndexTime_Callback([], [], handles)
 % end
 
-coord_val=[0 0];
-% look for labelled unstructured coordinates
+%% default selection for labelled unstructured coordinates
 for ilist=1:numel(var_component)
     ivar=var_component(ilist);
     if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
@@ -695,12 +663,12 @@ if numel(find(coord_val))<2 % no predefiend components
     end
     coord_val([1 2])=[1 2];
 end
+
+%% set menu and default selection for coordinates
 set(handles.Coord_x,'Value',coord_val(1))
 set(handles.Coord_x,'String',ListCoord)
-
 set(handles.Coord_y,'Value',coord_val(2))
 set(handles.Coord_y,'String',ListCoord)
-
 if numel(coord_val)>=3
     set(handles.Coord_z,'Value',coord_val(3))
     set(handles.Coord_z,'String',ListCoord)
@@ -955,7 +923,7 @@ switch option
             PreviousList=get(handles.TimeName, 'String');
             if ~isempty(PreviousList)
                 PreviousAttr=PreviousList{get(handles.TimeName, 'Value')};
-                index=find(strcmp(PreviousAttr,Field.Display.ListGlobalAttributes),1);
+                index=find(strcmp(PreviousAttr,Field.Display.ListGlobalAttribute),1);
             end
         end
         if isempty(time_index)
@@ -1010,13 +978,7 @@ function VarIndex_y=name2index(cell_str,ListVarName)
 
 VarIndex_y=[];
 if ischar(cell_str)
-    for ivar=1:length(ListVarName)
-        varlist=ListVarName{ivar};
-        if isequal(varlist,cell_str)
-            VarIndex_y= ivar;
-            break
-        end
-    end
+    VarIndex_y=find(strcmp(cell_str,ListVarName),1);
 elseif iscell(cell_str)
     for isel=1:length(cell_str)
         varsel=cell_str{isel};
@@ -1029,23 +991,7 @@ elseif iscell(cell_str)
     end
 end
 
-% --- Executes on button press in CheckDimensionY.
-% function CheckDimensionX_Callback(hObject, eventdata, handles)
-% CheckDimensionX=get(handles.CheckDimensionX,'value')
-% if CheckDimensionX
-%     set(handles.Coordinates,'visible','off')
-% else
-%     set(handles.Coordinates,'visible','on')
-% end
-% FieldList=get(handles.FieldOption,'String');
-% FieldOption=FieldList{get(handles.FieldOption,'Value')};
-% switch FieldOption
-%     case '1D plot'
-%         
-%     case {'scalar'}
-%        scalar_Callback(hObject, eventdata, handles)
-%     case 'vectors'
-% end
+
 
 % % --- Executes on button press in CheckDimensionY.
 % function CheckDimensionY_Callback(hObject, eventdata, handles)
@@ -1117,8 +1063,9 @@ switch index
         end
 end
 
-
+%-----------------------------------------------------------------------
 % --- Executes on button press in Check3D.
+%-----------------------------------------------------------------------
 function Check3D_Callback(hObject, eventdata, handles)
 if get(handles.Check3D,'Value')% 3D fields
     status='on';
@@ -1131,8 +1078,8 @@ set(handles.Coord_z,'Visible',status)
 set(handles.Z_title,'Visible',status)
 set(handles.vector_z,'Visible',status)
 set(handles.W_title,'Visible',status)
-if strcmp(status,'on')% ask for 3D input    
-    Field=get(handles.get_field,'UserData');
+Field=get(handles.get_field,'UserData');
+if strcmp(status,'on')% ask for 3D input       
     if Field.MaxDim>3% for 4D fields, propose to use the fourth variable as time
         %set(handles.Time,'Visible','on')
         menu=get(handles.SwitchVarIndexTime,'String');
@@ -1142,10 +1089,14 @@ if strcmp(status,'on')% ask for 3D input
         end
     else
         set(handles.SwitchVarIndexTime,'Value',1)
-        set(handles.SwitchVarIndexTime,'String',{'file index'})
+        set(handles.SwitchVarIndexTime,'String',{'file index';'attribute'})
     end
-else
+else 
    set(handles.SwitchVarIndexTime,'String',get(handles.SwitchVarIndexTime,'UserData'))
+   if Field.MaxDim >=3
+       var_index=find(strcmp('variable',get(handles.SwitchVarIndexTime,'UserData')));
+       set(handles.SwitchVarIndexTime,'Value',var_index)
+   end
 end
 SwitchVarIndexTime_Callback(handles.SwitchVarIndexTime,[], handles)
 

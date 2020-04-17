@@ -85,8 +85,6 @@ if isfield(Calib,'R')
     Tx=Calib.Tx_Ty_Tz(1);
     Ty=Calib.Tx_Ty_Tz(2);
     Tz=Calib.Tx_Ty_Tz(3);
-    f=Calib.fx_fy(1);%dpy=1; sx=1
-    %dpx=Calib.fx_fy(2)/Calib.fx_fy(1);
     Dx=R(5)*R(7)-R(4)*R(8);
     Dy=R(1)*R(8)-R(2)*R(7);
     D0=(R(2)*R(4)-R(1)*R(5));
@@ -100,18 +98,22 @@ if isfield(Calib,'R')
     A12=R(2)*Tz-R(8)*Tx+Z12*Z0virt;
     A21=-R(7)*Ty+R(4)*Tz+Z21*Z0virt;
     A22=-R(1)*Tz+R(7)*Tx+Z22*Z0virt;
-    %     X0=Calib.fx_fy(1)*(R(5)*Tx-R(2)*Ty+Zx0*Z0virt);
-    %     Y0=Calib.fx_fy(2)*(-R(4)*Tx+R(1)*Ty+Zy0*Z0virt);
     X0=(R(5)*Tx-R(2)*Ty+Zx0*Z0virt);
     Y0=(-R(4)*Tx+R(1)*Ty+Zy0*Z0virt);
     %px to camera:
-    %     Xd=dpx*(X-Calib.Cx_Cy(1)); % sensor coordinates
-    %     Yd=(Y-Calib.Cx_Cy(2));
     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
-    dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd);%/(f*f); %distortion factor
-    Xu=Xd./dist_fact;%undistorted sensor coordinates
-    Yu=Yd./dist_fact;
+    dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd);% distortion factor, first approximation Xu,Yu=Xd,Yd
+    test=0;
+    niter=0;
+    while test==0 && niter<10
+        dist_fact_old=dist_fact;     
+        Xu=Xd./dist_fact;%undistorted sensor coordinates, second iteration
+        Yu=Yd./dist_fact;
+        dist_fact=1+Calib.kc*(Xu.*Xu+Yu.*Yu);% distortion factor,next approximation
+        test=max(max(abs(dist_fact-dist_fact_old)))<0.00001; % reducing the relative error to 10^-5 forthe inversion of the quadraticcorrection
+        niter=niter+1;
+    end
     denom=Dx*Xu+Dy*Yu+D0;
     Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
     Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;

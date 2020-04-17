@@ -2,7 +2,8 @@
 %defined by the rotation vector PlaneAngle (in degree) 
 % this gives the equation of the plane as norm_plane(1)x + norm_plane(2)y + norm_plane(2)z = 0
 
-function norm_plane=angle2normal(PlaneAngle)
+function norm_plane=rotate(PlaneAngle)
+
 om=norm(PlaneAngle);%norm of rotation angle in degrees
 OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
 cos_om=cos(pi*om/180);

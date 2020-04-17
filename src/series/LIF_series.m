@@ -1,5 +1,5 @@
 %----------------------------------------------------------------------
-% -process LIF images
+% -process LIF images:old function to update
 %----------------------------------------------------------------------
 
 %=======================================================================
@@ -20,11 +20,11 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function GUI_input=LIF_series(num_i1,num_i2,num_j1,num_j2,Series);
+function ParamOut=LIF_series(Param)
 
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('num_i1','var')
-    GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
+    ParamOut={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
         'FileExt';'on';... %input file extension ('on' by default)
@@ -39,13 +39,6 @@ if ~exist('num_i1','var')
                ''};
     return %exit the function 
 end
-
-%-------------------------------------------------
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
-%-------------------------------------------------
-addpath '/fsnet/project/coriolis/2006/06ICEBOX/0_MATLAB_WORK/LIF'% define path for concentration.m
-% cpath=which('series');
 
 %mode=''; %default
 time=[];

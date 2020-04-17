@@ -36,7 +36,7 @@ end
 if strcmp(get(hCurrentGUI,'Pointer'),'watch')
     return % no action if a calculation is running
 end
-hhCurrentGUI=guidata(hCurrentGUI);% tags of the children of the current GUI
+hhCurrentGUI=guidata(hCurrentGUI);% tags of the children of the current GUI (uvmat or view_field)
 CheckZoom=0;
 if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value');%test for zoom action, first priority
     CheckZoom=1;
@@ -47,7 +47,7 @@ GUI_pos=get(hCurrentGUI,'Position');%position of the GUI series on the screen (i
 set(hCurrentGUI,'Units','normalized')% back to current unit for fig position
 
 %% determine the currently selected items
-hcurrentobject=gco;% current object handle (selected by the mouse)
+hcurrentobject=gco;% current object handle (selected by the mouse: it can be a drawn object, a plot axis, ..;)
 CurrentGUI_tag=get(hCurrentGUI,'Tag');
 obj_tag=get(gco,'Tag');%tag of the currently selected object
 xy=[];%default
@@ -59,10 +59,10 @@ test_ruler=0;
 test_edit=0;
 test_create=0;
 test_edit_vect=0;
-huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls the option of  mouse action
+huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls the option of mouse action
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of elements in uvmat
-    UvData=get(huvmat,'UserData');
+    UvData=get(huvmat,'UserData');% contains the input field as UvData.Field
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
     test_edit=get(hhuvmat.CheckEditObject,'Value');%&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
     hset_object=findobj(allchild(0),'Name','set_object');
@@ -208,14 +208,14 @@ if ~isempty(hchild)
             end
     end
 end
-    if ~strcmp(htype,'axes')
-        currentaxes=get(hObject,'CurrentAxes');
-        if ~isempty(currentaxes)
+if ~strcmp(htype,'axes')
+    currentaxes=get(hObject,'CurrentAxes');
+    if ~isempty(currentaxes)
         AxeData=get(currentaxes,'UserData');% data attached to the axis
         AxeData.Enable='off';% desactivate current axes for mouse up action
         set(currentaxes,'UserData',AxeData);
-        end
     end
+end
     
 %% zoom has first priority, stop here
 if CheckZoom 
@@ -379,7 +379,7 @@ if  test_edit && ~strcmp(get(hcurrentobject,'Type'),'figure')
     end
 end
 
-%%  create  projection  object
+%%  create  projection  object within the GUI uvmat
 if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt')
     % activate this option if the GUI set_object is opened
     sethandles=guidata(hset_object);% handles of the elements in the GUI set_object
@@ -416,21 +416,39 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
     if strcmp(ObjectData.Type,'plane')
         if isempty(ObjectData.Coord)||(isfield(ObjectData,'RangeX') && size(ObjectData.RangeX,2)==2)% draw a new plane
             ObjectData.Coord=xy(1,1:2);% record the coordinates marked by the mouse as origin of the new plane
+            
+            if isfield(FigData,'PlotAxes')
+                Field=FigData.PlotAxes;% field represented on the plot (already projected)
+                if isfield(Field,'ProjObjectType') && strcmp(Field.ProjObjectType,'plane') && isfield(Field,'ProjObjectCoord') && length(Field.ProjObjectCoord)>=3
+                    zpos=Field.ProjObjectCoord(1,3);
+                    if isfield(Field,'ProjObjectAngle')&&~isequal(Field.ProjObjectAngle,[0 0 0])
+                        norm_plane=rotate_vector(Field.ProjObjectAngle,0,0,1);%angle2normal(Field.ProjObjectAngle);
+                        zpos=zpos-(norm_plane(1)*(xy(1,1)-Field.ProjObjectCoord(1))+norm_plane(2)*(xy(1,2)-Field.ProjObjectCoord(2)))/norm_plane(3);
+                    end
+                    ObjectData.Coord(3)=zpos;
+                end
+            end
+            
             set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
             set(hh_set_object.num_RangeX_2,'String','')
             set(hh_set_object.num_Angle_1,'String','0')
             drawing_status='create';
         else
+
             Delta_x=(xy(1,1)-ObjectData.Coord(1,1));%displacement along x
             Delta_y=(xy(1,2)-ObjectData.Coord(1,2));%displacement along y
-            ObjectData.Angle(1)=(180/pi)*angle(Delta_x+i*Delta_y);
-            ObjectData.Angle(2)=90;
-            ObjectData.RangeX(1)=0;
-            ObjectData.RangeX(2)=abs(Delta_x+i*Delta_y);
-            set(hh_set_object.num_Angle_1,'String',num2str(ObjectData.Angle(1)))
-            set(hh_set_object.num_Angle_2,'String',num2str(ObjectData.Angle(2)))
-            set(hh_set_object.num_RangeX_1,'String',num2str(ObjectData.RangeX(1)))
-            set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX(2)))
+            theta=angle(Delta_x+1i*Delta_y);
+            M2=[cos(theta) -sin(theta) 0;sin(theta) cos(theta) 0;0 0 1];% rotation matrix around the vertical axis with angle theta
+            M1=[1 0 0;0 0 -1; 0 1 0]; % rotation matrix around the x axis with angle pi/2
+            Angle=rodrigues(M2*M1);
+              [RangeX,RangeY]=set_plane_bounds(theta,ObjectData.Coord(1,:),UvData.Field);
+            set(hh_set_object.num_Angle_1,'String',num2str(Angle(1)))
+            set(hh_set_object.num_Angle_2,'String',num2str(Angle(2)))
+             set(hh_set_object.num_Angle_3,'String',num2str(Angle(3)))
+            set(hh_set_object.num_RangeX_1,'String',num2str(RangeX(1)))
+            set(hh_set_object.num_RangeX_2,'String',num2str(RangeX(2)))
+            set(hh_set_object.num_RangeY_1,'String',num2str(RangeY(1)))
+            set(hh_set_object.num_RangeY_2,'String',num2str(RangeY(2)))
             drawing_status='off';
         end
     else
@@ -438,7 +456,7 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
         set(hh_set_object.Coord,'Data',ObjectData.Coord);%append the current mouse cordinates in the GUI set_object
         drawing_status='create';
     end
-    drawing_status='create';
+    %drawing_status='create';
     %TODO replace 0 by z coord for 3D
     hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(CurrentGUI_tag);
     if isempty(hobject)
@@ -542,4 +560,31 @@ if test_edit_vect && ~isempty(ivec)
     set(hCurrentGUI,'UserData',FigData);
 end  
 set(haxes,'UserData',AxeData);
+
+function [RangeX,RangeY]=set_plane_bounds(theta,OriginCoord,Field)   
+
+iX=[1;0;0];
+iY=[0;1;0];
+iZ=[0;0;1];
+% [iX_proj,iY_proj]=rotate_vector(-PlaneAngle,iX,iY,iZ);%initial coordinates of the new base vector along X and Y
+maxnX=[];
+minnX=[];
+Max_vec=[Field.XMax Field.YMax Field.ZMax];
+Min_vec=[Field.XMin Field.YMin Field.ZMin];
+RangeY=[Field.ZMin Field.ZMax]-OriginCoord(3);% bound on Z become bound on the new z axis at 90 ?
+iX_proj(1)=cos(theta);%cosine of the angle of the new axis with x
+iX_proj(2)=sin(theta);
+OriginCoord(3)=[];% work of the bounds in x, y
+%bounds from the input field acting on the new X axis
+ind_bound=find(iX_proj~=0);% dimensions for which the bound acts
+Max_vec_X=(Max_vec(ind_bound)-OriginCoord(ind_bound))./iX_proj(ind_bound);%Abscissa of upper edge in the new coordinates
+Min_vec_X=(Min_vec(ind_bound)-OriginCoord(ind_bound))./iX_proj(ind_bound);%Abscissa of lower edge in the new coordinates
+%lower bound of X
+RangeX(1)=max(min(Max_vec_X,Min_vec_X));
+%upper bound of X 
+RangeX(2)=min(max(Max_vec_X,Min_vec_X));%must be with the field range along each coordinate x,y,z
+
+
+
+
 

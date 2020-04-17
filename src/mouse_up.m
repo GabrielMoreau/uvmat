@@ -198,7 +198,7 @@ if CheckZoomFig && isequal(get(hcurrentfig,'SelectionType'),'normal')&&...%if le
      ~isempty(CurrentOrigin) && ~isequal(CurrentOrigin(1),xy(1,1)) && ~isequal(CurrentOrigin(2),xy(1,2))%if mouse moved in x and y since presed down
     hparentfig=hcurrentfig;
     %open or update a new zoom figure if a rectangle has been drawn
-    if ishandle(hcurrentaxes);
+    if ishandle(hcurrentaxes)
         if isfield(AxeData,'CurrentRectZoom') && ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
             %PosRect=get(AxeData.CurrentRectZoom,'Position');
             if isfield(AxeData,'CurrentVec') && ~isempty(AxeData.CurrentVec) && ishandle(AxeData.CurrentVec)

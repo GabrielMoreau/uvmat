@@ -37,7 +37,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 09-Nov-2016 15:46:04
+% Last Modified by GUIDE v2.5 01-Apr-2020 22:25:49
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -95,6 +95,7 @@ set(handles.set_object,'Position',[Left Bottom Width Height])
 if ~exist('ZBounds','var')
     ZBounds=0; %default 
 end
+test3D=(ZBounds~=0); % =1 for 3D fleds
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'DeleteFcn',{@closefcn})
 
@@ -136,7 +137,7 @@ if exist('data','var')
             end
         end
     end
-    if isfield(data,'RangeX')&& ~strcmp(data.Type,'plane_z')%TODO: generalise
+    if isfield(data,'RangeX')
         if ischar(data.RangeX)
             data.RangeX=str2num(data.RangeX);
         end
@@ -159,13 +160,15 @@ if exist('data','var')
             set(handles.num_RangeZ_1,'String',num2str(min(data.RangeZ),3))
         end
     end
-    if ~isfield(data,'Angle')
-        data.Angle=[0 0];
+    if ~(isfield(data,'Angle') && size(data.Angle,2)==3)
+        data.Angle=[0 0 0];
     end
     set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
-    if numel(data.Angle)==2
-        set(handles.num_Angle_2,'Visible','on')
-        set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
+    set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
+    set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
+    if test3D
+        set(handles.num_Angle_1,'Visible','on')
+    set(handles.num_Angle_2,'Visible','on')
     end
 end
 set(get(handles.set_object,'children'),'enable','off')
@@ -285,19 +288,13 @@ ProjMode=menu{value};
 menu=get(handles.Type,'String');
 value=get(handles.Type,'Value');
 ObjectStyle=menu{value};
-%%%%%%%%% TODO
-test3D=strcmp(ObjectStyle,'plane_z'); %TODO: generalize
-%%%%%%%%%
+
 %default setting
-set(handles.num_Angle_1,'Visible','off')
-set(handles.num_Angle_2,'Visible','off')
-%set(handles.num_Angle_3,'Visible','off')
+% set(handles.num_Angle_1,'Visible','off')
+% set(handles.num_Angle_2,'Visible','off')
+% set(handles.num_Angle_3,'Visible','off')
 set(handles.num_RangeX_1,'Visible','off')
 set(handles.num_RangeY_1,'Visible','off')
-% if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
-%     set(handles.num_RangeY_2,'Visible','off')
-% else
-%     set(handles.num_RangeY_2,'Visible','on')
 
 set(handles.num_RangeZ_1,'Visible','off')
 set(handles.num_RangeZ_2,'Visible','off')
@@ -335,20 +332,20 @@ switch ObjectStyle
             set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
             set(handles.num_RangeInterp,'Visible','on')
         end       
-    case {'plane','plane_z'}  
-        set(handles.num_Angle_1,'Visible','on')
+    case {'plane'}  
+        set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeX_1,'Visible','on')
         set(handles.num_RangeX_2,'Visible','on')
         set(handles.num_RangeY_1,'Visible','on')
         set(handles.num_RangeY_2,'Visible','on')
         set(handles.num_RangeZ_2,'TooltipString','num_ZMax: range of projection normal to the plane')
-        if test3D
-            set(handles.num_Angle_2,'Visible','on')
-            set(handles.num_Angle_1,'Visible','on')
-            set(handles.num_Angle_1,'String','90')
-            %set(handles.Coord,'Data',[0 0 0])
-            set(handles.num_RangeZ_2,'Visible','on')
-        end
+%         if test3D
+%             set(handles.num_Angle_2,'Visible','on')
+%             set(handles.num_Angle_1,'Visible','on')
+%             %set(handles.num_Angle_1,'String','90')
+%             %set(handles.Coord,'Data',[0 0 0])
+%             set(handles.num_RangeZ_2,'Visible','on')
+%         end
         if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DY,'Visible','on')
@@ -825,13 +822,12 @@ else
 end
 
 
-
 function num_RangeInterp_Callback(hObject, eventdata, handles)
-
-
-% 
 
 
 % --- Executes on key press with focus on num_RangeX_2 and none of its controls.
 function suggest_refresh(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])
+
+
+function num_Angle_3_Callback(hObject, eventdata, handles)

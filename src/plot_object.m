@@ -149,12 +149,12 @@ if test_line
         case 'polygon'
             xline=[xline; ObjectData.Coord(1,1)];%closing the line
             yline=[yline; ObjectData.Coord(1,2)];
-        case {'plane','plane_z','volume'}
+        case {'plane','volume'}
             if ~isfield(ObjectData,'Angle')
-                ObjectData.Angle=[0 0];
+                ObjectData.Angle=[0 0 0];
             end
-            cosphi=cos(ObjectData.Angle(1)*pi/180);%angle in radians
-            sinphi=sin(ObjectData.Angle(1)*pi/180);%angle in radians
+            cosphi=cos(ObjectData.Angle(3)*pi/180);%angle in radians
+            sinphi=sin(ObjectData.Angle(3)*pi/180);%angle in radians
             x0=xline(1); y0=yline(1);
             xlim=get(haxes,'XLim');
             ylim=get(haxes,'YLim');
@@ -330,7 +330,7 @@ end
 PlotData=[];%default
 
 %% MODIFY AN EXISTING OBJECT PLOT
-if test_newobj==0;
+if test_newobj==0
     hh=hplot;
     PlotData=get(hplot,'UserData');
     if test_line
@@ -374,7 +374,7 @@ if test_newobj==0;
         if isfield(PlotData,'DeformPoint')
             NbDeformPoint=length(PlotData.DeformPoint);
             if NbDeformPoint>nbpoints% fpoints in excess on the graph
-                for ii=nbpoints+1:NbDeformPoint;
+                for ii=nbpoints+1:NbDeformPoint
                     if ishandle(PlotData.DeformPoint(ii))
                         delete(PlotData.DeformPoint(ii))
                     end
@@ -471,7 +471,7 @@ if test_newobj
                     PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
                         col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
                 end
-        case {'plane','volume','plane_z'}
+        case {'plane','volume'}
             hh=line(xline,yline,'Color',col);
             PlotData.SubObject(1)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
         case 'rectangle'

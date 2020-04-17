@@ -1023,7 +1023,7 @@ if isfield(UvData,'Field')
                     msgbox_uvmat('ERROR','The input field is not 3D: no vertical plane projection')
                     return
                 end
-                data.Angle=[0 90];
+                data.Angle=[90 0 0];
                 data.DX=UvData.Field.CoordMesh;
                 data.DY=UvData.Field.CoordMesh;
                 data.RangeZ=UvData.Field.CoordMesh;      
@@ -6098,7 +6098,7 @@ if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObjec
             ishandle(hdisplay(iview))
         end
         for iobj=IndexObj+1:length(UvData.ProjObject)
-            hdisplay=UvData.ProjObject{iobj}.DisplayHandle.uvmat;
+            hdisplay=UvData.ProjObject{iobj}.DisplayHandle.uvmat;%handle of the object drawing
             for iview=1:length(hdisplay)
                 if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                     PlotData=get(hdisplay(iview),'UserData');
