@@ -628,10 +628,12 @@ ListCoord=Field.Display.ListVarName([var_coord var_component]);
 coord_val=zeros(size(ListCoord));
 
 %% set default selection for grid coordinates
+if ~isempty(var_coord)
 coord_val(1)=var_coord(end);
 coord_val(2)=var_coord(end-1);
 if numel(var_coord)>=3
     coord_val(3)=var_coord(end-2);
+end
 end
 % if numel(find(test_coord))>3
 %     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');

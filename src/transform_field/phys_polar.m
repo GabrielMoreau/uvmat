@@ -443,7 +443,7 @@ for icell=1:length(A)
     flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
     siz=size(A{icell});
     checkuint8=isa(A{icell},'uint8');%check for image input with 8 bits
-    checkuint16=isa(A{icell},'uint8');%check for image input with 16 bits
+    checkuint16=isa(A{icell},'uint16');%check for image input with 16 bits
     A{icell}=double(A{icell});
     if numel(siz)==2 %(B/W images)
         vec_A=reshape(A{icell}(:,:,1),1,[]);%put the original image in line

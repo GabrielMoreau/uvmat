@@ -59,12 +59,20 @@ fct2_y=cos(iy/((Param.TransformInput.FilterBoxSize_y-1)/2)*pi/2);
 Mfiltre=fct2_y'*fct2_x;
 Mfiltre=Mfiltre/(sum(sum(Mfiltre)));%normalize filter
 
-Atype=class(DataIn.A);% detect integer 8 or 16 bits
-if numel(size(DataIn.A))==3
-    DataOut.A=filter2(Mfiltre,sum(DataIn.A,3));%filter the input image, after summation on the color component (for color images)
-    DataOut.A=uint16(DataOut.A); %transform to 16 bit images
-else
-    DataOut.A=filter2(Mfiltre,DataIn.A);
-    DataOut.A=feval(Atype,DataOut.A);%transform to the initial image format
+[CellInfo,NbDim,errormsg]=find_field_cells(DataIn)
+for icell=1:numel(CellInfo)
+    if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
+        for ivar=1:numel(CellInfo{icell}.VarIndex)
+            VarName=DataIn.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+            Atype=class(DataIn.(VarName));% detect integer 8 or 16 bits
+            if numel(size(DataIn.(VarName)))==3
+                DataOut.(VarName)=filter2(Mfiltre,sum(DataIn.(VarName),3));%filter the input image, after summation on the color component (for color images)
+                DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+            else
+                DataOut.(VarName)=filter2(Mfiltre,DataIn.(VarName));
+                DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+            end
+        end
+    end
 end
  
