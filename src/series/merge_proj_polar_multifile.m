@@ -269,7 +269,7 @@ TimeData=[];
 
 for index=1:NbField
     disp(['index=' num2str(index)])
-    disp(['ellapsed time ' num2str(toc(tstart)/60,4) ' minutes'])
+    %disp(['ellapsed time ' num2str(toc(tstart)/60,4) ' minutes'])
     update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
@@ -373,14 +373,14 @@ for index=1:NbField
         ProjData{iview}.ListVarName= [ProjData{iview}.ListVarName ListVarName];
         ProjData{iview}.VarDimName={'radius','azimuth'};
         ProjData{iview}.VarAttribute=[{'coord_x'} {'coord_y'} VarAttribute];
-        for ivar=1:numel(ListVarName)
-            ProjData{iview}.VarDimName{ivar+2}={'radius','azimuth'};
-            VarName=ListVarName{ivar};
-            if ~isempty(thresh2)
-                DataOut.(VarName)(Dist>thresh2)=NaN;% put to NaN interpolated positions further than RangeInterp from initial data
-            end
-            ProjData{iview}.(VarName)=(DataOut.(VarName))';
-        end
+%         for ivar=1:numel(ListVarName)
+%             ProjData{iview}.VarDimName{ivar+2}={'radius','azimuth'};
+%             VarName=ListVarName{ivar};
+%             if ~isempty(thresh2)
+%                 DataOut.(VarName)(Dist>thresh2)=NaN;% put to NaN interpolated positions further than RangeInterp from initial data
+%             end
+%             ProjData{iview}.(VarName)=(DataOut.(VarName))';
+%         end
         
     end
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%

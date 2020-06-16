@@ -199,8 +199,8 @@ set(handles.vector_z,'String',[{''} Field.Display.ListVarName])% fill the menu o
 set(handles.vec_color,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
 set(handles.scalar,'Value',1)% fill the menu of y vector components
 set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu for scalar
-set(handles.ordinate,'Value',1)% fill the menu of y vector components
-set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y coordinate for 1D plots
+%set(handles.ordinate,'Value',1)% fill the menu of y vector components
+%set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y coordinate for 1D plots
 checkseries=0;
 if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput% case of call by series
     set(handles.FieldOption,'value',1)
@@ -404,12 +404,12 @@ FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
         set(handles.Coordinates,'Visible','on')
-        set(handles.PanelOrdinate,'Visible','on')
-        pos=get(handles.PanelOrdinate,'Position');
-        pos(1)=2;
-        pos_coord=get(handles.Coordinates,'Position');
-        pos(2)=pos_coord(2)-pos(4)-2;
-        set(handles.PanelOrdinate,'Position',pos)
+        %set(handles.PanelOrdinate,'Visible','on')
+        %pos=get(handles.PanelOrdinate,'Position');
+%         pos(1)=2;
+%         pos_coord=get(handles.Coordinates,'Position');
+%         pos(2)=pos_coord(2)-pos(4)-2;
+        %set(handles.PanelOrdinate,'Position',pos)
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','off')
         set(handles.Coord_y,'Visible','on')
@@ -419,7 +419,7 @@ switch FieldOption
         %ordinate_Callback(hObject, VarName, handles)       
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
-        set(handles.PanelOrdinate,'Visible','off')
+        %set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','on')
         set(handles.PanelVectors,'Visible','off')
         pos=get(handles.PanelScalar,'Position');
@@ -455,7 +455,7 @@ switch FieldOption
     case 'vectors'
         set(handles.PanelVectors,'Visible','on')
         set(handles.Coordinates,'Visible','on')
-        set(handles.PanelOrdinate,'Visible','off')
+        %set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
         pos=get(handles.PanelVectors,'Position');
         pos(1)=2;
@@ -495,13 +495,13 @@ switch FieldOption
         end
         vector_Callback(handles)      
     case 'civdata...'
-        set(handles.PanelOrdinate,'Visible','off')
+        %set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','off')
         set(handles.Coordinates,'Visible','off')
 end
 
-%------------------------------------------------------------------------
+%NOT USED : TO DELETE------------------------------------------------------------------------
 function ordinate_Callback(hObject, DimCell, handles)
 %------------------------------------------------------------------------
 Field=get(handles.get_field,'UserData');
@@ -628,12 +628,12 @@ ListCoord=Field.Display.ListVarName([var_coord var_component]);
 coord_val=zeros(size(ListCoord));
 
 %% set default selection for grid coordinates
-if ~isempty(var_coord)
-coord_val(1)=var_coord(end);
-coord_val(2)=var_coord(end-1);
-if numel(var_coord)>=3
-    coord_val(3)=var_coord(end-2);
-end
+if numel(var_coord)>=2
+    coord_val(1)=var_coord(end);
+    coord_val(2)=var_coord(end-1);
+    if numel(var_coord)>=3
+        coord_val(3)=var_coord(end-2);
+    end
 end
 % if numel(find(test_coord))>3
 %     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');

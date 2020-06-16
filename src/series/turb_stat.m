@@ -62,7 +62,7 @@ function ParamOut=turb_stat(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice=1; %nbre of slices ('off' by default)
+    ParamOut.NbSlice='on'; %nbre of slices ('on' if needed as input, fixed value e.g. 1, 'off' by default)
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -178,9 +178,8 @@ nbmissing=0;
 %initialisation
 DataOut.ListGlobalAttribute= {'Conventions'};
 DataOut.Conventions= 'uvmat';
-DataOut.ListVarName={'coord_y', 'coord_x' ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','CurlMean','DivMean','Curl2Mean','Div2Mean','Counter'};
-DataOut.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
-    {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
+DataOut.ListVarName={};
+DataOut.VarDimName={};
 DataOut.UMean=0;
 DataOut.VMean=0;
 DataOut.u2Mean=0;
@@ -212,9 +211,21 @@ for index=1:NbField
 
     %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %initiate the output data structure in the first field
-        
-        DataOut.coord_y=Field.coord_y;
-        DataOut.coord_x=Field.coord_x;
+        [CellInfo,NbDim,errormsg]=find_field_cells(Field);
+        YName='coord_y';%default
+        XName='coord_x';%default
+        for icell=1:numel(NbDim)
+            if NbDim(icell)==2 && strcmp(CellInfo{icell}.CoordType,'grid')
+                  YName=CellInfo{icell}.YName;
+                  XName=CellInfo{icell}.XName;
+                  break
+            end
+        end
+        DataOut.ListVarName={YName, XName ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','CurlMean','DivMean','Curl2Mean','Div2Mean','Counter'};
+        DataOut.VarDimName={YName,XName,{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},...
+    {YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName}};
+        DataOut.(YName)=Field.(YName);
+        DataOut.(XName)=Field.(XName);
         Uprev=Field.U;% store the current field for next iteration
         Vprev=Field.V;
         if isfield(Field,'FF')
@@ -275,19 +286,19 @@ DataOut.Div2Mean=DataOut.Div2Mean./DataOut.Counter-DataOut.DivMean.*DataOut.DivM
 % for ivar=3:numel(DataOut.ListVarName)-1
 %     VarName=DataOut.ListVarName{ivar};% name of the variable
 %     DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Profile']}];%append the name of the profile variable
-%     DataOut.VarDimName=[DataOut.VarDimName {'coord_y'}];
+%     DataOut.VarDimName=[DataOut.VarDimName {'(YName)'}];
 %    DataOut.([VarName 'Profile'])=mean(DataOut.(VarName)(:,band),2); %take the mean profile of U, excluding the edges
 % end
 
 %% writing the result file as netcdf file
 OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
  %case of netcdf input file , determine global attributes
- errormsg=struct2nc(OutputFile,DataOut); %save result file
- if isempty(errormsg)
+errormsg=struct2nc(OutputFile,DataOut); %save result file
+if isempty(errormsg)
      disp([OutputFile ' written']);
- else
+else
      disp(['error in writting result file: ' errormsg])
- end
+end
 
 
 %% open the result file with uvmat (in RUN mode)

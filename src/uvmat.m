@@ -4686,7 +4686,7 @@ switch field
                 end
                 FieldList={AName};
             case '1D plot'
-                YName=GetFieldData.PanelOrdinate.ordinate;
+                YName=GetFieldData.Coordinates.Coord_y;
                 FieldList={''};  
                 set(handles.uvmat,'ToolBar','figure')
                 set(handles.Coord_y,'Max',2)

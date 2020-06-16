@@ -61,7 +61,7 @@ if isempty(varargin)
 end
 hhh=which('netcdf.open');% look for built-in matlab NetCDF library
 
-if ~isequal(hhh,'')
+if ~isempty(hhh)
     %% default output
     Data=[];%default
     var_detect=[];%default
@@ -112,7 +112,7 @@ if ~isequal(hhh,'')
         TimeVarName=varargin{2};
         CheckTimeVar=1;
         TimeIndex=varargin{3};
-        input_index=4;% list of varibles to read is at fourth argument
+        input_index=4;% list of variables to read is at fourth argument
     elseif isequal(varargin{1},'TimeDimName')
         TimeDimName=varargin{2};
         TimeIndex=varargin{3};
