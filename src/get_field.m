@@ -171,14 +171,14 @@ else
 end
 
 %% select the Time attribute from input
-if Field.MaxDim >=2
+if Field.MaxDim >2
     variable_index=find(strcmp('variable',ListSwitchVarIndexTime),1);
     set(handles.SwitchVarIndexTime,'Value',variable_index);
 else
-    if isfield(ParamIn,'TimeAttrName')
+    if isfield(ParamIn,'TimeAttrName')&& ~isempty(ParamIn.TimeAttrName)
         time_index=find(strcmp(ParamIn.TimeAttrName,Field.Display.ListGlobalAttribute),1);
     else
-        time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% look for global attribute containing name 'Time'
+        time_index=find(strcmp('Time',Field.Display.ListGlobalAttribute));% look for global attribute containing name 'Time'
     end
     if isempty(time_index)
         set(handles.SwitchVarIndexTime,'Value',1);
@@ -795,7 +795,7 @@ if check_consistent
     if numel(find(test_coord))>3
         set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
     end
-    if numel(var_component)<2
+    if numel(var_component)<2 %unstructured coordinates excluded
         if numel(find(test_coord))<2
             ListCoord={''};
         else
@@ -827,13 +827,12 @@ if check_consistent
             coord_val=var_coord;% case of dimension coordinates
         end
         if numel(find(coord_val))<2
-            %coord_val=[numel(var_component)+2 numel(var_component)+1];
             coord_val=[1 2 3];
         end
-        set(handles.Coord_x,'Value',coord_val(1))
-        set(handles.Coord_y,'Value',coord_val(2))
+        set(handles.Coord_x,'Value',coord_val(end))
+        set(handles.Coord_y,'Value',coord_val(end-1))
         if numel(coord_val)>=3
-            set(handles.Coord_z,'Value',coord_val(3))
+            set(handles.Coord_z,'Value',coord_val(end-2))
         end
     end
 end

@@ -2185,7 +2185,7 @@ switch FieldType
                 FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
             else
                 FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
-                msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
+%                 msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
             end
             set(handles.FileIndex_1,'String',FileIndex_1)
         end

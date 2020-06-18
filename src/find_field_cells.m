@@ -66,7 +66,8 @@
 
 function [CellInfo,NbDim,errormsg]=find_field_cells(Data)
 CellInfo={};%default output
-NbDim=0;
+%NbDim=0;
+NbDim=[];
 errormsg='';
 if ~isfield(Data,'ListVarName'), errormsg='the list of variables .ListVarName is missing';return;end
 if ~isfield(Data,'VarDimName'), errormsg='the list of dimensions .VarDimName is missing';return;end
@@ -146,91 +147,145 @@ else
 end
 
 
-%% initate cells around each scalar field
-index_remove=[];
-cell_nbre=numel(ind_scalar)+numel(ind_vector_x);
-flag_remove=false(1,cell_nbre);
-NbDim=zeros(1,cell_nbre);
-index_coord_x=zeros(size(ind_coord_x));
-for icell=1:numel(ind_scalar)
-    CellInfo{icell}.VarType='scalar';
-    CellInfo{icell}.VarIndex_scalar=ind_scalar(icell);
-    CellInfo{icell}.VarIndex=ind_scalar(icell);
-    DimCell_var=Data.VarDimName{ind_scalar(icell)};% cell of dimension names for ivar_coord_x(icell)
-    %look for errorflag
-    for ivar=ind_errorflag
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            CellInfo{icell}.VarIndex(2)=ivar;
-            CellInfo{icell}.VarIndex_errorflag=ivar;
+%% initate cells around each scalar field with different coordinates
+% index_remove=[];
+% index_coord_x=zeros(size(ind_coord_x));
+cell_counter=0;
+DimCell={};
+for iscalar=1:numel(ind_scalar) 
+    icell=[];
+    for iprev=1:numel(DimCell)-1
+        if isequal(DimCell{iprev},Data.VarDimName{ind_scalar(iscalar)})
+            icell=iprev;
             break
+        end
+    end
+    if isempty(icell)
+        cell_counter=cell_counter+1;
+        icell=cell_counter;
+        CellInfo{icell}.VarType='scalar';
+        DimCell{icell}=Data.VarDimName{ind_scalar(iscalar)};
+        DimCell_var=Data.VarDimName{ind_scalar(iscalar)};% cell of dimension names for ivar_coord_x(icell)
+        CellInfo{icell}.VarIndex_scalar=ind_scalar(iscalar);
+        CellInfo{icell}.VarIndex=ind_scalar(iscalar);
+    else
+        CellInfo{iprev}.VarIndex_scalar=[CellInfo{iprev}.VarIndex_scalar ind_scalar(iscalar)];
+        CellInfo{iprev}.VarIndex=[CellInfo{iprev}.VarIndex ind_scalar(iscalar)];
+    end
+end
+
+%% initate or complement cells around each vector field with different coordinates
+for index_list=1:numel(ind_vector_x)
+    icell=[];
+    for iprev=1:numel(DimCell)% look for previous cells of vectors with the same dimensions
+        if isequal(DimCell{iprev},Data.VarDimName{ind_vector_x(index_list)})&& ~strcmp(CellInfo{iprev}.VarType, 'scalar')
+            icell=iprev;
+            break
+        end
+    end
+    if isempty(icell)% new cell
+        cell_counter=cell_counter+1;    
+        icell=cell_counter;
+        CellInfo{icell}.VarType='vector';
+        DimCell{icell}=Data.VarDimName{ind_vector_x(index_list)};   
+        CellInfo{icell}.VarIndex=ind_vector_x(index_list);
+        CellInfo{icell}.VarIndex_vector_x=ind_vector_x(index_list);
+    else
+        CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_vector_x(index_list)];
+        if isfield(CellInfo{icell},'VarIndex_vector_x')
+            CellInfo{icell}.VarIndex_vector_x=[CellInfo{icell}.VarIndex_vector_x ind_vector_x(index_list)];
+        else
+            CellInfo{icell}.VarIndex_vector_x=ind_vector_x(index_list);
         end
     end
 end
 
-%% initate cells around each vector field
-for icell=numel(ind_scalar)+1:cell_nbre
-    CellInfo{icell}.VarType='vector';
-    CellInfo{icell}.VarIndex(1)=ind_vector_x(icell-numel(ind_scalar));
-    CellInfo{icell}.VarIndex_vector_x=ind_vector_x(icell-numel(ind_scalar));
-    DimCell_var=Data.VarDimName{ind_vector_x(icell-numel(ind_scalar))};% cell of dimension names for ivar_coord_x(icell)
-    % look for the associated y vector component
-    nbvar=1;
-    for ivar=ind_vector_y
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            CellInfo{icell}.VarIndex(2)=ivar;
-            nbvar=2;
-            CellInfo{icell}.VarIndex_vector_y=ivar;
-            break
+%% complement with vector_y
+if ~isempty(ind_vector_x)
+    for index_list=1:numel(ind_vector_y)
+        for iprev=1:numel(DimCell)
+            if isequal(DimCell{iprev},Data.VarDimName{ind_vector_y(index_list)})&& ~strcmp(CellInfo{iprev}.VarType, 'scalar')
+                icell=iprev;
+                break
+            end
+        end
+        CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_vector_y(index_list)];
+        if isfield(CellInfo{icell},'VarIndex_vector_y')
+             CellInfo{icell}.VarIndex_vector_y=[CellInfo{icell}.VarIndex_vector_y ind_vector_y(index_list)];
+        else
+            CellInfo{icell}.VarIndex_vector_y=ind_vector_y(index_list);
         end
     end
-    if ~isfield(CellInfo{icell},'VarIndex_vector_y')
-        flag_remove(icell)=true;% no vector_y found , mark cell to remove
+    
+    %% look for the associated z vector component
+    for index_list=1:numel(ind_vector_z)
+        for iprev=1:numel(DimCell)
+            if isequal(DimCell{iprev},Data.VarDimName{ind_vector_z(index_list)})&& ~strcmp(CellInfo{iprev}.VarType, 'scalar')
+                icell=iprev;
+                break
+            end
+        end
+        CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_vector_z(index_list)];
+        if isfield(CellInfo{icell},'VarIndex_vector_z')
+            CellInfo{icell}.VarIndex_vector_z=[CellInfo{icell}.VarIndex_vector_z ind_vector_z(index_list)];
+        else
+            CellInfo{icell}.VarIndex_vector_z=ind_vector_z(index_list);
+        end
+        nbvar=3;
     end
-    % look for the associated z vector component
-    for ivar=ind_vector_z
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            CellInfo{icell}.VarIndex(3)=ivar;
-            nbvar=3;
-            break
+    
+    %% look for the associated vector color scalar (ancillary)
+    for index_list=1:numel(ind_ancillary)
+        for iprev=1:numel(DimCell)
+            if isequal(DimCell{iprev},Data.VarDimName{ind_ancillary(index_list)})&& ~strcmp(CellInfo{iprev}.VarType, 'scalar')
+                icell=iprev;
+                break
+            end
+        end
+        CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_ancillary(index_list)];
+        if isfield(CellInfo{icell},'VarIndex_ancillary')
+            CellInfo{icell}.VarIndex_ancillary=[CellInfo{icell}.VarIndex_ancillary ind_ancillary(index_list)];
+        else
+             CellInfo{icell}.VarIndex_ancillary=ind_ancillary(index_list);
         end
     end
-    %look for the vector color scalar (ancillary)
-    for ivar=ind_ancillary
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            nbvar=nbvar+1;
-            CellInfo{icell}.VarIndex(nbvar)=ivar;
-            CellInfo{icell}.VarIndex_ancillary=ivar;
-            break
+    
+    %% look for the associated warnflag
+    for index_list=1:numel(ind_warnflag)
+        for iprev=1:numel(DimCell)
+            if isequal(DimCell{iprev},Data.VarDimName{ind_warnflag(index_list)})
+                icell=iprev;
+                break
+            end
         end
-    end
-    %look for warnflag
-    for ivar=ind_warnflag
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            nbvar=nbvar+1;
-            CellInfo{icell}.VarIndex(nbvar)=ivar;
-            CellInfo{icell}.VarIndex_warnflag=ivar;
-            break
-        end
-    end
-    %look for errorflag
-    for ivar=ind_errorflag
-        DimCell=Data.VarDimName{ivar};
-        if isequal(DimCell,DimCell_var)
-            nbvar=nbvar+1;
-            CellInfo{icell}.VarIndex(nbvar)=ivar;
-            CellInfo{icell}.VarIndex_errorflag=ivar;
-            break
+        CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_warnflag(index_list)];
+        if isfield(CellInfo{icell},'VarIndex_warnflag')
+            CellInfo{icell}.VarIndex_warnflag=[CellInfo{icell}.VarIndex_warnflag ind_ancillary(index_list)];
+        else
+            CellInfo{icell}.VarIndex_warnflag=ind_warnflag(index_list);
         end
     end
 end
+
+%% look for the associated errorflag
+for index_list=1:numel(ind_errorflag)
+    for iprev=1:numel(DimCell)
+        if isequal(DimCell{iprev},Data.VarDimName{ind_errorflag(index_list)})
+            icell=iprev;
+            break
+        end
+    end
+    CellInfo{icell}.VarIndex=[CellInfo{icell}.VarIndex ind_errorflag(index_list)];
+    if isfield(CellInfo{icell},'VarIndex_errorflag')
+        CellInfo{icell}.VarIndex_errorflag=[CellInfo{icell}.VarIndex_errorflag ind_errorflag(index_list)];
+    else
+        CellInfo{icell}.VarIndex_errorflag=ind_errorflag(index_list);
+    end
+end
+
 
 %% find coordinates for each cell around field variables, scalars or vectors
-for icell=1:cell_nbre
+for icell=1:numel(CellInfo)
     CellInfo{icell}.CoordType='';
     ind_var=CellInfo{icell}.VarIndex(1);
     DimCell_var=Data.VarDimName{ind_var};% cell of dimension names for ivar_coord_x(icell)
@@ -319,8 +374,6 @@ for icell=1:cell_nbre
                         DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
                         check_coord=~isempty(DimRank);
                     end
-                    %                 check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{1}))||...% coord varbable
-                    %                     (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{1})); % rasrewr coord defined by min and max
                     if check_coord
                         CellInfo{icell}.CoordType='grid';
                         CellInfo{icell}.CoordIndex(1)=ivar;
@@ -340,8 +393,6 @@ for icell=1:cell_nbre
                 DimRank=find(strcmp(Data.ListVarName{ivar},DimCell_var));
                 check_coord=~isempty(DimRank);
             end
-            %             check_coord= (check_coord_names(ivar) && strcmp(Data.VarDimName{ivar},DimCell_var{NbDim(icell)-1}))||...% coord variable
-            %                 (check_coord_raster(ivar) && strcmp(Data.ListVarName{ivar},DimCell_var{NbDim(icell)-1})); % rasrewr coord defined by min and max
             if check_coord
                 CellInfo{icell}.CoordType='grid';
                 CellInfo{icell}.CoordIndex(NbDim(icell)-1)=ivar;
@@ -417,50 +468,10 @@ else
         CellInfo{icell}.CoordSize=size(Data.DimValue(CellInfo{icell}.DimIndex));
     end
 end
-%
-% %% loop on the tps coordinate sets
-%
-%     for icell_tps=1:numel(ind_coord_tps)
-%         check_cell=zeros(1,nbvar);% =1 for the variables selected in the current cell
-%         check_cell(ivar_tps(icell_tps))=1;% mark the coordinate variable as selected
-%         DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
-%         icell=numel(CellInfo)+icell_tps; % new field cell index
-%         CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
-%         if numel(DimCell)==3
-%             VarDimName=Data.VarDimName(~check_select);
-%             for ivardim=1:numel(VarDimName)
-%                 if strcmp(VarDimName{ivardim},DimCell{3})
-%                     CellInfo{icell}.NbCentres_tps= ivar_remain(ivardim);% nbre of sites for each tps subdomain
-%                     check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                 elseif strcmp(VarDimName{ivardim}{1},DimCell{2}) && numel(VarDimName{ivardim})>=3 && strcmp(VarDimName{ivardim}{3},DimCell{3})
-%                     CellInfo{icell}.SubRange_tps=ivar_remain(ivardim);% subrange definiton for tps
-%                     check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                 elseif strcmp(VarDimName{ivardim}{1},DimCell{1}) && strcmp(VarDimName{ivardim}{2},DimCell{3})% variable
-%                     check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                 end
-%             end
-%         end
-%         CellInfo{icell}.CoordType='tps';
-%         CellInfo{icell}.VarIndex=find(check_cell);
-%         if check_var
-%             NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);
-%             CellInfo{icell}.CoordSize=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),1)*size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),3);
-%         else
-%             check_index_1= strcmp(DimCell{1},Data.ListDimName);
-%             check_index_2= strcmp(DimCell{2},Data.ListDimName);
-%             NbDim(icell)=Data.DimValue(check_index_2);
-%             if numel(DimCell)>=3
-%                 check_index_3= strcmp(DimCell{3},Data.ListDimName);
-%                 CellInfo{icell}.CoordSize=Data.DimValue(check_index_1)*Data.DimValue(check_index_3);
-%             end
-%         end
-%         check_select=check_select|check_cell;
-%     end
 
-
-%% cell for ordinary plots
+%% cell for ordinary plots: look for coord_x not included in scalar or vector cells
 iremove=false(1,numel(ind_coord_y));
-for ilist=1:numel(ind_coord_y)% remove the y coordinates which have been used yet in scalar or vector fields
+for ilist=1:numel(ind_coord_y)% remove the y coordinates which have been used already in scalar or vector fields
     for icell=1:numel(CellInfo)
         if isfield(CellInfo{icell},'YIndex')&& isequal(CellInfo{icell}.YIndex,ind_coord_y(ilist))
             iremove(ilist)=true;
@@ -478,8 +489,8 @@ if ~isempty(ind_coord_x)
         Cell1DPlot{icell}.YIndex=[];
         Cell1DPlot{icell}.YIndex_discrete=[];
         DimCell_x=Data.VarDimName{ind_coord_x(icell)};
-        for ivar=[ind_coord_y ind_histo]
-            DimCell=Data.VarDimName{ivar};
+        for ivar=[ind_coord_y ind_histo]% look for y coordinate corresponding to coord_x
+            DimCell=Data.VarDimName{ivar};%dimensions of coord_y
             if  numel(DimCell_x)==1 && strcmp(DimCell_x{1},DimCell{1})
                 y_nbre(icell)=y_nbre(icell)+1;
                 Cell1DPlot{icell}.YIndex(y_nbre(icell))=ivar;
@@ -529,191 +540,6 @@ for icell=1:numel(CellInfo)
         end
     end
 end
-% for icell=ind_coord_tps
-%     VarIndex=CellInfo{icell}.VarIndex;
-%     for ivar=VarIndex
-%         if isfield(CellInfo{icell},['VarIndex_' Role{ivar}])
-%             CellInfo{icell}.(['VarIndex_' Role{ivar}])=[CellInfo{icell}.(['VarIndex_' Role{ivar}]) ivar];
-%         else
-%             CellInfo{icell}.(['VarIndex_' Role{ivar}])= ivar;
-%         end
-%         if ~isempty(ProjModeRequest{ivar})
-%             CellInfo{icell}.ProjModeRequest=ProjModeRequest{ivar};
-%         end
-%         if ~isempty(FieldName{ivar})
-%             CellInfo{icell}.FieldName=FieldName{ivar};
-%         end
-%         if CheckSub(ivar)==1
-%             CellInfo{icell}.CheckSub=1;
-%         end
-%     end
-% end
 
 
 
-% 
-% %% analyse vector fields
-% if ~isempty(ind_vector_x) && ~isempty(ind_vector_y)
-%     if numel(ind_vector_x)>1
-%         errormsg='multiply defined vector x component'
-%         return
-%     end
-%     DimCell_vec=Data.VarDimName{ind_vector_x};% cell of dimension names for ivar_coord_x(icell)
-%     if ischar(DimCell),DimCell={DimCell};end % transform char to cell for a single dimension
-%     DimCell_y=Data.VarDimName{ind_vector_y};% cell of dimension names for ivar_coord_x(icell)
-%     if ischar(DimCell_y),DimCell_y={DimCell_y};end % transform char to cell for a single dimension
-%     if ~isequal(DimCell,DimCell_y)
-%         errormsg='inconsistent x and y vector components';
-%         return
-%     end
-%     %look for coordinates
-%     for ivar=ind_coord_y
-%         DimCell=Data.VarDimName{ivar};
-%         if ischar(DimCell),DimCell={DimCell};end % transform char to cell for a single dimension
-%         if isequal(DimCell,DimCell_vec)
-%             CoordType='scattered';
-%             coordy=ivar;
-%         else
-%             if isempty(ind_coord_z) && strcmp(DimCell{1},DimCell_vec{1})
-%                 CoordType='grid';
-%                 coordy=ivar;
-%             elseif ~isempty(ind_coord_z) && strcmp(DimCell{1},DimCell_vec{2})
-%                 CoordType='grid';
-%                 coordy=ivar;
-%                 coordz=ind_coord_z;
-%             end
-%         end
-%         
-%         %% find scattered (unstructured) coordinates
-%         ivar_coord_x=find(strcmp('coord_x',Role));%find variables with Role='coord_x'
-%         check_select=false(1,nbvar);
-%         check_coord=false(1,nbvar);
-%         CellInfo=cell(1,numel(ivar_coord_x));
-%         NbDim=zeros(1,numel(ivar_coord_x));
-%         % loop on unstructured coordinate x -> different field cells
-%         for icell=1:numel(ivar_coord_x)
-%             DimCell=Data.VarDimName{ivar_coord_x(icell)};% cell of dimension names for ivar_coord_x(icell)
-%             if ischar(DimCell),DimCell={DimCell};end % transform char to cell for a single dimension
-%             % look for variables sharing dimension(s) with ivar_coord_x(icell)
-%             check_cell=zeros(numel(DimCell),nbvar);
-%             for idim=1:numel(DimCell);% for each variable with role coord_x, look at which other variables contain the same dimension
-%                 for ivar=1:nbvar
-%                     check_cell(idim,ivar)=max(strcmp(DimCell{idim},Data.VarDimName{ivar}));
-%                 end
-%             end
-%             check_cell=sum(check_cell,1)==numel(DimCell);%logical array=1 for variables belonging to the current cell
-%             VarIndex=find(check_cell);% list of detected variable indices
-%             if ~(numel(VarIndex)==1 && numel(DimCell)==1)% exclude case of isolated coord_x variable (treated later)
-%                 if ~(numel(VarIndex)==1 && numel(DimCell)>1)% a variable is associated to coordinate
-%                     CellInfo{icell}.CoordIndex=ivar_coord_x(icell);
-%                     % size of coordinate var
-%                     if check_var
-%                         CellInfo{icell}.CoordSize=numel(Data.(Data.ListVarName{ivar_coord_x(icell)}));
-%                     else
-%                         for idim=1:numel(DimCell)
-%                             check_index= strcmp(DimCell{idim},Data.ListDimName);
-%                             CellInfo{icell}.CoordSize(idim)=Data.DimValue(check_index);
-%                         end
-%                         CellInfo{icell}.CoordSize=prod(CellInfo{icell}.CoordSize);
-%                     end
-%                     %             ind_scalar=find(strcmp('scalar',Role(VarIndex)));
-%                     %             ind_vector_x=find(strcmp('vector_x',Role(VarIndex)));
-%                     %             ind_vector_y=find(strcmp('vector_y',Role(VarIndex)));
-%                     ind_y=find(strcmp('coord_y',Role(VarIndex)));
-%                     if numel([ind_scalar ind_vector_x ind_vector_y])==0
-%                         %             if numel(VarIndex)==2||isempty(ind_y)% no variable, except possibly y
-%                         NbDim(icell)=1;
-%                     else
-%                         CellInfo{icell}.CoordType='scattered';
-%                         ind_z=find(strcmp('coord_z',Role(VarIndex)));
-%                         if numel(VarIndex)==3||isempty(ind_z)% no z variable, except possibly as a fct z(x,y)
-%                             CellInfo{icell}.CoordIndex=[VarIndex(ind_y) CellInfo{icell}.CoordIndex];
-%                             NbDim(icell)=2;
-%                         else
-%                             CellInfo{icell}.CoordIndex=[VarIndex(ind_z) CellInfo{icell}.CoordIndex];
-%                             NbDim(icell)=3;
-%                         end
-%                     end
-%                 end
-%                 CellInfo{icell}.VarIndex=VarIndex;
-%                 check_select=check_select|check_cell;
-%             end
-%         end
-%         
-%         %% look for tps coordinates
-%         ivar_remain=find(~check_select);% indices of remaining variables (not already selected)
-%         check_coord_tps= strcmp('coord_tps',Role(~check_select));
-%         ivar_tps=ivar_remain(check_coord_tps);% variable indices corresponding to tps coordinates
-%         
-%         % loop on the tps coordinate sets
-%         for icell_tps=1:numel(ivar_tps)
-%             check_cell=zeros(1,nbvar);% =1 for the variables selected in the current cell
-%             check_cell(ivar_tps(icell_tps))=1;% mark the coordinate variable as selected
-%             DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
-%             icell=numel(CellInfo)+icell_tps; % new field cell index
-%             CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
-%             if numel(DimCell)==3
-%                 VarDimName=Data.VarDimName(~check_select);
-%                 for ivardim=1:numel(VarDimName)
-%                     if strcmp(VarDimName{ivardim},DimCell{3})
-%                         CellInfo{icell}.NbCentres_tps= ivar_remain(ivardim);% nbre of sites for each tps subdomain
-%                         check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                     elseif strcmp(VarDimName{ivardim}{1},DimCell{2}) && numel(VarDimName{ivardim})>=3 && strcmp(VarDimName{ivardim}{3},DimCell{3})
-%                         CellInfo{icell}.SubRange_tps=ivar_remain(ivardim);% subrange definiton for tps
-%                         check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                     elseif strcmp(VarDimName{ivardim}{1},DimCell{1}) && strcmp(VarDimName{ivardim}{2},DimCell{3})% variable
-%                         check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-%                     end
-%                 end
-%             end
-%             CellInfo{icell}.CoordType='tps';
-%             CellInfo{icell}.VarIndex=find(check_cell);
-%             if check_var
-%                 NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);
-%                 CellInfo{icell}.CoordSize=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),1)*size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),3);
-%             else
-%                 check_index_1= strcmp(DimCell{1},Data.ListDimName);
-%                 check_index_2= strcmp(DimCell{2},Data.ListDimName);
-%                 NbDim(icell)=Data.DimValue(check_index_2);
-%                 if numel(DimCell)>=3
-%                     check_index_3= strcmp(DimCell{3},Data.ListDimName);
-%                     CellInfo{icell}.CoordSize=Data.DimValue(check_index_1)*Data.DimValue(check_index_3);
-%                 end
-%             end
-%             check_select=check_select|check_cell;
-%         end
-%         
-%      
-%         
-%         % determine dimension sizes
-%         CoordSize=zeros(size(ListCoordIndex));
-%         for ilist=1:numel(ListCoordIndex)
-%             if iscell(ListDimName{ilist})
-%                 ListDimName(ilist)=ListDimName{ilist};%transform cell to string
-%             end
-%             if check_var% if the list of dimensions has been directly defined, no variable data available
-%                 CoordSize(ilist)=numel(Data.(ListCoordName{ilist}));% number of elements in the variable corresponding to the dimension #ilist
-%             else
-%                 check_index= strcmp(ListDimName{ilist},Data.ListDimName);% find the  index in the list of dimensions
-%                 CoordSize(ilist)=Data.DimValue(check_index);% find the  corresponding dimension value
-%             end
-%             if CoordSize(ilist)==2% case of uniform grid coordinate defined by lower and upper bounds only
-%                 ListDimName{ilist}=ListCoordName{ilist};% replace the dimension name by the coordinate variable name
-%             end
-%         end
-%     end
-% end
-% 
-% 
-% 
-% %% suppress empty cells or cells with a single coordinate variable 
-% check_remove=false(size(CellInfo));
-% for icell=1:numel(check_remove)
-%     if isempty(CellInfo{icell})||(numel(CellInfo{icell}.VarIndex)==1 && numel(check_coord)>=icell && check_coord(icell))
-%         check_remove(icell)=1;
-%     end
-% end
-% CellInfo(check_remove)=[];
-% NbDim(check_remove)=[];
-% 
-% 
