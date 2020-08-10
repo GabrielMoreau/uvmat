@@ -1622,14 +1622,14 @@ for icell=1:length(CellInfo)
                     end
                     [X,Y]=meshgrid(Coord{2},Coord{1});%initial coordinates
                     %name of error flag variable
-                    FFName='FF';%default name (if not already used)
-                    if isfield(ProjData,'FF')
-                        ind=1;
-                        while isfield(ProjData,['FF_' num2str(ind)])
-                            ind=ind+1;
-                        end
-                        FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
-                    end
+%                     FFName='FF';%default name (if not already used)
+%                     if isfield(ProjData,'FF')
+%                         ind=1;
+%                         while isfield(ProjData,['FF_' num2str(ind)])
+%                             ind=ind+1;
+%                         end
+%                         FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
+%                     end
                     % project all variables in the cell
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
@@ -1652,13 +1652,13 @@ for icell=1:length(CellInfo)
                         if isfield(FieldData,'VarAttribute')&&length(FieldData.VarAttribute)>=ivar
                             VarAttribute{length(ListVarName)+nbcoord}=FieldData.VarAttribute{ivar};
                         end
-                        ProjData.(FFName)=isnan(ProjData.(VarName));%detact NaN (points outside the interpolation range)
-                        ProjData.(VarName)(ProjData.(FFName))=0; %set to 0 the NaN data
+%                         ProjData.(FFName)=isnan(ProjData.(VarName));%detact NaN (points outside the interpolation range)
+%                         ProjData.(VarName)(ProjData.(FFName))=0; %set to 0 the NaN data
                     end
                     %update list of variables with error flag
-                    ListVarName=[ListVarName FFName];
-                    VarDimName=[VarDimName {DimCell}];
-                    VarAttribute{numel(ListVarName)}.Role='errorflag';
+%                     ListVarName=[ListVarName FFName];
+%                     VarDimName=[VarDimName {DimCell}];
+%                     VarAttribute{numel(ListVarName)}.Role='errorflag';
                 elseif ~testangle % 3Dcase without change of angle
                     % unstructured z coordinate
                     test_sup=(Coord{1}>=ObjectData.Coord(1,3));

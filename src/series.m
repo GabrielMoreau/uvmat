@@ -3327,7 +3327,7 @@ if ~isempty(TransformName)
     end
     DataOut=feval(transform_handle,Field,ParamIn);% execute the transform fct to get the required conditions
     Field.Action.RUN=0; % indicate that the transform fct is called only to get input param
-    DataOut=feval(transform_handle,Field,[]); % execute the transform fct to get the required conditions
+    %DataOut=feval(transform_handle,Field,[]); % execute the transform fct to get the required conditions
     if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
         SeriesData.TransformInput=DataOut.TransformInput;
         set(handles.series,'UserData',SeriesData)

@@ -288,7 +288,7 @@ for index=1:NbField
         %% reading input file(s)      
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},ParamIn{iview},frame_index{iview}(index));
         if isempty(errormsg)
-            disp([filecell{iview,index} ' read'])
+            disp([filecell{iview,index} ' read OK'])
         else
             disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return

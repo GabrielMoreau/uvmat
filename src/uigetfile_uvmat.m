@@ -92,7 +92,7 @@ if isempty(hfig)% create the browser fig if it does not exist
         'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory'); 
     uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.36 0.77 0.2 0.05],'Callback',@refresh_GUI,...
         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
-    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.74 0.23 0.05],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
+    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.74 0.23 0.05],'tag','sort_option','Callback',@refresh_GUI,'Visible','on',...
         'String',{'sort name';'sort date'},'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''sort_option'': sort the files by names or dates');
     uicontrol('Style','listbox','Units','normalized', 'Position',[0.02 0.08 0.96 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
         'FontUnits','points','FontSize',12,'TooltipString','''list'':current list of directories, marked by +/, and files');
@@ -101,13 +101,10 @@ if isempty(hfig)% create the browser fig if it does not exist
         'String','OK','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@(src,event)OK_Callback(option,FilterExt,src,event));
     close_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
         'FontWeight','bold','FontUnits','points','FontSize',12);
-    %set(hrefresh,'UserData',StatusData)
     if strcmp(option,'status_display') %put a run advancement display
         set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
         uicontrol('Style','frame','Units','normalized', 'Position', [0.02 0.85 0.9 0.04]);
         uicontrol('Style','frame','Units','normalized', 'Position',[0.02 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
-        %             uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
-        %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
         delete(home_button)
         set(OK_button,'String','Open')
         set(close_button,'String','Close')
@@ -197,7 +194,7 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
 end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activatio
 fig_struct=get(hObject,'parent');
-if isstruct(fig_struct);%recent Matlab
+if isstruct(fig_struct)%recent Matlab
 uiresume(fig_struct.Number)
 else
    uiresume(fig_struct) 
@@ -336,6 +333,7 @@ set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate act
 function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option,filter_ext)
 %-------------------------------------------------------------------------
 ListStruct=dir_uvmat(DirName);% get structure of the current directory
+date_index=find(strcmp('datenum',fieldnames(ListStruct)));% find the index of the date displayin the list of fields
 NumFiles=0; %default
 if numel(ListStruct)<1  % case of empty dir
     ListFiles={};
@@ -362,9 +360,9 @@ if exist('filter_ext','var') && ~strcmp(filter_ext,'*') &&~strcmp(filter_ext,'ui
     ListCells=ListCells(:,check_keep);
     check_dir=check_dir(check_keep);
 end
-check_emptydate=cellfun('isempty',ListCells(5,:));% = 1 if datenum undefined 
-ListCells(5,find(check_emptydate))={0}; %set to 0 the empty dates
-ListDates=cell2mat(ListCells(5,:));%list of numerical dates
+check_emptydate=cellfun('isempty',ListCells(date_index,:));% = 1 if datenum undefined 
+ListCells(date_index,find(check_emptydate))={0}; %set to 0 the empty dates
+ListDates=cell2mat(ListCells(date_index,:));%list of numerical dates
 if isnumeric(sort_option)
     check_old=ListDates<sort_option-1;% -1 is put to account for a 1 s delay in the record of starting time
     NumFiles=numel(find(~check_old&~check_dir));
@@ -383,7 +381,7 @@ cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' 
 check_keep=cellfun('isempty', cell_remove);
 ListFiles=[{'+/..'} ListFiles(check_keep)];
 if check_date
-    ListDateString=ListCells(2,:);%list of file dates
+    ListDateString=ListCells(3,:);%list of file dates
     if isnumeric(sort_option)
         ListDateString(check_old)={'--OLD--'};
     end

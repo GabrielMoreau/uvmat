@@ -413,10 +413,14 @@ switch FieldOption
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','off')
         set(handles.Coord_y,'Visible','on')
+        set(handles.Coord_y,'Max',2)%allow multiple selection
         set(handles.Y_title,'Visible','on')
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
-        %ordinate_Callback(hObject, VarName, handles)       
+        set(handles.Coord_x,'String',Field.Display.ListVarName')
+        Coord_x_Callback(hObject, VarName, handles) 
+        %set(handles.Coord_y,'String',Field.Display.ListVarName')
+        %Coord_x_Callback(hObject, VarName, handles)       
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
         %set(handles.PanelOrdinate,'Visible','off')
@@ -501,93 +505,97 @@ switch FieldOption
         set(handles.Coordinates,'Visible','off')
 end
 
-%NOT USED : TO DELETE------------------------------------------------------------------------
-function ordinate_Callback(hObject, DimCell, handles)
+
+function set_coord_y_options(handles,VarName)
 %------------------------------------------------------------------------
 Field=get(handles.get_field,'UserData');
-y_index=get(handles.ordinate,'Value');
-y_menu=get(handles.ordinate,'String');
-if isempty(y_menu)
-    return
-else
-YName=y_menu{y_index};
-end
+VarIndex=find(strcmp(VarName,Field.Display.ListVarName),1);
+DimCell=Field.Display.VarDimName{VarIndex};
+% y_index=get(handles.Coord_y,'Value');
+% y_menu=get(handles.Coord_y,'String');
+% if isempty(y_menu)
+%     return
+% else
+% YName=y_menu{y_index};
+% end
 
 %% set list of possible coordinates
-test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
+% test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
-ListCoord={''};
-dim_var=Field.Display.VarDimName{y_index};%list of dimensions of the selected variable
+% ListCoord={''};
+% dim_var=Field.Display.VarDimName{y_index};%list of dimensions of the selected variable
 
 for ilist=1:numel(Field.Display.VarDimName)
     dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-    if isequal(dimnames,dim_var)
-        test_component(ilist)=1;
-    elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var)))%variable ilist is a 1D array which can be coordinate variable
+    if isequal(dimnames,DimCell)||isequal(dimnames(1:end-1),DimCell)||isequal(dimnames(2:end),DimCell)
         test_coord(ilist)=1;
     end
 end
-var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
-var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
-ListCoord=Field.Display.ListVarName([var_component var_coord]);
+ListCoord=Field.Display.ListVarName(find(test_coord));
+set(handles.Coord_y,'String',ListCoord)
+val_y=1;
+if strcmp(VarName,ListCoord{1})&& numel(ListCoord)>=2
+    val_y=2;
+end
+set(handles.Coord_y,'Value',val_y)
 
 %% set default coord selection
-if numel(find(test_coord))>3
-     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
-    if numel(SwitchVarIndexTime)<3
-        SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
-        set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
-    end
-    set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
-    SwitchVarIndexTime_Callback([], [], handles)
-end
-if numel(var_component)<2
-    if numel(test_coord)<2
-        ListCoord={''};
-    else
-        set(handles.Coord_x,'Value',2)
-        set(handles.Coord_y,'Value',1)
-    end
-else
-    coord_val=1;
-    for ilist=1:numel(var_component)
-        ivar=var_component(ilist);
-        if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
-            Role=Field.Display.VarAttribute{ivar}.Role;
-            if strcmp(Role,'coord_x')
-                coord_val=ilist;
-            end
-        end
-    end
-    set(handles.Coord_x,'Value',coord_val+1)
-end
-set(handles.Coord_x,'String',[{''}; ListCoord])
+% if numel(find(test_coord))>3
+%      SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+%     if numel(SwitchVarIndexTime)<3
+%         SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
+%         set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
+%     end
+%     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
+%     SwitchVarIndexTime_Callback([], [], handles)
+% end
+% if numel(var_component)<2
+%     if numel(test_coord)<2
+%         ListCoord={''};
+%     else
+%         set(handles.Coord_x,'Value',2)
+%         set(handles.Coord_y,'Value',1)
+%     end
+% else
+%     coord_val=1;
+%     for ilist=1:numel(var_component)
+%         ivar=var_component(ilist);
+%         if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
+%             Role=Field.Display.VarAttribute{ivar}.Role;
+%             if strcmp(Role,'coord_x')
+%                 coord_val=ilist;
+%             end
+%         end
+%     end
+%     set(handles.Coord_x,'Value',coord_val+1)
+% end
+% set(handles.Coord_x,'String',[{''}; ListCoord])
 
 
-%% set list of time coordinates
-menu=get(handles.SwitchVarIndexTime,'String');
-TimeOption=menu{get(handles.SwitchVarIndexTime,'Value')};
-switch TimeOption
-    case 'variable'
-        if numel(find(test_coord))<3
-            ListTime={''};
-        else
-            ListTime=Field.Display.ListVarName(find(test_coord,end));
-        end
-        set(handles.TimeName,'Value',1)
-        set(handles.TimeName,'String',ListTime)
-    case 'matrix index'
-        if numel(find(test_coord))<3
-            ListTime={''};
-        else
-            ListTime=Field.Display.VarDimName{find(test_coord,end)};
-        end
-        set(handles.TimeName,'Value',1)
-        set(handles.TimeName,'String',ListTime)
-end  
-if ~ischar(DimCell)
-update_field(handles,YName)
-end
+% %% set list of time coordinates
+% menu=get(handles.SwitchVarIndexTime,'String');
+% TimeOption=menu{get(handles.SwitchVarIndexTime,'Value')};
+% switch TimeOption
+%     case 'variable'
+%         if numel(find(test_coord))<3
+%             ListTime={''};
+%         else
+%             ListTime=Field.Display.ListVarName(find(test_coord,end));
+%         end
+%         set(handles.TimeName,'Value',1)
+%         set(handles.TimeName,'String',ListTime)
+%     case 'matrix index'
+%         if numel(find(test_coord))<3
+%             ListTime={''};
+%         else
+%             ListTime=Field.Display.VarDimName{find(test_coord,end)};
+%         end
+%         set(handles.TimeName,'Value',1)
+%         set(handles.TimeName,'String',ListTime)
+% end  
+% if ~ischar(DimCell)
+% update_field(handles,YName)
+% end
          
 %------------------------------------------------------------------------
 % --- Executes on selection change in scalar menu.
@@ -671,7 +679,7 @@ set(handles.Coord_x,'Value',coord_val(1))
 set(handles.Coord_x,'String',ListCoord)
 set(handles.Coord_y,'Value',coord_val(2))
 set(handles.Coord_y,'String',ListCoord)
-if numel(coord_val)>=3
+if numel(find(coord_val))>=3
     set(handles.Coord_z,'Value',coord_val(3))
     set(handles.Coord_z,'String',ListCoord)
     set(handles.Coord_z,'Visible','on')
@@ -872,13 +880,17 @@ function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 % --- Executes on selection change in Coord_x.
 %------------------------------------------------------------------------
 function Coord_x_Callback(hObject, DimCell, handles)
-
+DimCell
 index=get(handles.Coord_x,'Value');
 string=get(handles.Coord_x,'String');
 VarName=string{index};
 if ~ischar(DimCell)
-update_field(handles,VarName)
+    update_field(handles,VarName)
 end
+if isequal(get(handles.FieldOption,'Value'),1)
+set_coord_y_options(handles,VarName)
+end
+
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_y.
 %------------------------------------------------------------------------
@@ -963,6 +975,7 @@ end
 TimeName_Callback(hObject, [], handles)
 
 %-----------------------------------------------------------------------
+% update the display of the variable 'VarName' and its dimensions in the list of variables
 function update_field(handles,VarName)
 %-----------------------------------------------------------------------
 Field=get(handles.get_field,'UserData');
