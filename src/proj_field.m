@@ -671,7 +671,7 @@ for icell=1:length(CellInfo)
     
     %identify error flag
     errorflag=0; %default, no error flag
-    if isfield(CellInfo{icell},'VarIndex_errorflag');% test for error flag
+    if isfield(CellInfo{icell},'VarIndex_errorflag')% test for error flag
         FFName=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
         errorflag=FieldData.(FFName);
     end

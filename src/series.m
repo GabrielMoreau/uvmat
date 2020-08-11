@@ -2092,13 +2092,16 @@ for iexp=1:NbExp
             end
             % create file containing the list of jobs
             ListProcess=fullfile(DIR_CLUSTER,'job_list.txt'); % name of the file containing the list of executables
-            fid=fopen(ListProcess,'w'); % open it for writting
+            [fid,errormsg]=fopen(ListProcess,'w'); % open it for writting
+            if isempty(errormsg)
             for iprocess=1:length(batch_file_list)
                 fprintf(fid,[batch_file_list{iprocess} '\n']); % write list of exe files
             end
             fclose(fid);
             system(['chmod +x ' ListProcess]); % set the file to executable
-            
+            else
+                errormsg=['error for writting the executable file:' errormsg];
+            end       
             CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
             LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)

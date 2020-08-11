@@ -80,12 +80,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
     hhseries=guidata(hseries);
     if  ~isfield(Param,'ProjObject')
-        answer=msgbox_uvmat('INPUT_Y-N','use a projection object for the time_series?');
-        if strcmp(answer,'Yes')
-            set(hhseries.CheckObject,'Visible','on')
-            set(hhseries.CheckObject,'Value',1)
-            series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
-        end
+        msgbox_uvmat('WARNING','you may need to introduce a projection object for the time_series');
     end
     
     % introduce bin size for histograms

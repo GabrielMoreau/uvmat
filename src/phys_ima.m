@@ -65,7 +65,7 @@ for icell=1:length(A)
     else
         % the image needs to be interpolated to the new coordinates
         Z=0; %default
-        if isfield(Calib,'SliceCoord') %.Z= index of plane
+        if isfield(Calib,'SliceCoord')&& size(Calib.SliceCoord,1)>=ZIndex %.Z= index of plane
             SliceCoord=Calib.SliceCoord(ZIndex,:);
             Z=SliceCoord(3);
             if isfield(Calib, 'SliceAngle') && size(Calib.SliceAngle,1)>=ZIndex && ~isequal(Calib.SliceAngle(ZIndex,:),[0 0 0])

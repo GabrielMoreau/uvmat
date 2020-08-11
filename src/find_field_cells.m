@@ -154,7 +154,7 @@ cell_counter=0;
 DimCell={};
 for iscalar=1:numel(ind_scalar) 
     icell=[];
-    for iprev=1:numel(DimCell)-1
+    for iprev=1:numel(DimCell)
         if isequal(DimCell{iprev},Data.VarDimName{ind_scalar(iscalar)})
             icell=iprev;
             break
