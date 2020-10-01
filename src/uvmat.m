@@ -1231,8 +1231,8 @@ uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-
 wwp=(1-4*ii)/3; %width of the push buttons
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Replicate'': select to replicate the output of APPLY to a series of experiments');
+uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'tag','CheckReplicate','BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''CheckReplicate'': select to replicate the output of APPLY to a series of experiments');
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
     'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
 drawnow
@@ -1303,9 +1303,64 @@ elseif isfield(GeometryCalib,'RefractionIndex')
     GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
 end
 
-hreplicate=findobj(hObject,'Tag','Replicate');
+hreplicate=findobj(hset_slice,'Tag','CheckReplicate');
 if get(hreplicate,'Value')
-    'TEST'
+    %% open the GUI browse_data
+    hbrowse=findobj(allchild(0),'Tag','browse_data');
+    if ~isempty(hbrowse)% look for the GUI browse_data
+        BrowseData=guidata(hbrowse);
+        SourceDir=get(BrowseData.SourceDir,'String');
+        ListExp=get(BrowseData.ListExperiments,'String');
+        ExpIndices=get(BrowseData.ListExperiments,'Value');
+        ListExp=ListExp(ExpIndices);
+        ListDevices=get(BrowseData.ListDevices,'String');
+        DeviceIndices=get(BrowseData.ListDevices,'Value');
+        ListDevices=ListDevices(DeviceIndices);
+        ListDataSeries=get(BrowseData.DataSeries,'String');
+        DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+        ListDataSeries=ListDataSeries(DataSeriesIndices);
+        NbExp=0; % counter of the number of experiments set by the GUI browse_data
+        for iexp=1:numel(ListExp)
+            if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+                for idevice=1:numel(ListDevices)
+                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                        for isubdir=1:numel(ListDataSeries)
+                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                    regexprep(ListDevices{idevice},'^\+/',''));
+                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                                if exist(fullfile(lpath,ldir),'dir')
+                                    NbExp=NbExp+1;
+                                    ListPath{NbExp}=lpath;
+                                    ListSubdir{NbExp}=ldir;
+                                    ExpIndex{NbExp}=iexp;
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        for iexp=1:NbExp
+            XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+            if exist(XmlName,'file')
+                check_update=1;
+            else
+                check_update=0;
+            end
+            errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+            if ~strcmp(errormsg,'')
+                msgbox_uvmat('ERROR',errormsg);
+            else
+                if check_update
+                    display([XmlName ' updated with calibration parameters'])
+                else
+                    display([XmlName ' created with calibration parameters'])
+                end
+            end
+        end
+    end
+    msgbox_uvmat('CONFIMATION',['slices replicated for ' num2str(NbExp) ' experiments']);
 else
     
     %% store the result in the xml file used for calibration
