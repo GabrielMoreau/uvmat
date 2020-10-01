@@ -219,7 +219,7 @@ if strcmp(htype,'axes')
             if isfield(Field,'ProjObjectType') && strcmp(Field.ProjObjectType,'plane') && isfield(Field,'ProjObjectCoord') && length(Field.ProjObjectCoord)>=3
                 pos=[xy(1,1) xy(1,2) 0];%coordinates on the graph
                 if isfield(Field,'ProjObjectAngle')&&~isequal(Field.ProjObjectAngle,[0 0 0])
-                    norm_plane=rotate_vector(Field.ProjObjectAngle,0,0,1);%angle2normal(Field.ProjObjectAngle);
+                    [norm_plane(1) norm_plane(2) norm_plane(3)] =rotate_vector(Field.ProjObjectAngle*pi/180,0,0,1);%angle2normal(Field.ProjObjectAngle);
                     pos(3)=-(norm_plane(1)*(pos(1)-Field.ProjObjectCoord(1))+norm_plane(2)*(pos(2)-Field.ProjObjectCoord(2)))/norm_plane(3);                               
                 end
                 pos(3)=pos(3)+Field.ProjObjectCoord(3);
