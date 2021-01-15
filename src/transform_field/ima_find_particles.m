@@ -47,7 +47,7 @@ Mask(1:SizePart,:)=0;
 Mask(end-SizePart:end,:)=0;
 Mask(:,1:SizePart)=0;
 Mask(:,end-SizePart:end)=0;
-[Js,Is]=find(A<AbsThreshold &abs(double(DataIn.A(:,:,1))-double(DataIn.A(:,:,3)))<20 & Mask==1);%indices (I,J) of dark pixels
+[Js,Is]=find(A<AbsThreshold & Mask==1);%indices (I,J) of dark pixels
 X=zeros(size(Is));
 Y=zeros(size(Js));
 F=zeros(size(Js));

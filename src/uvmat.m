@@ -2174,6 +2174,14 @@ switch FieldType
     case 'xls'% Excel file opended by editxml
         editxml(fileinput);
         return
+    case 'mat'% matlab data file
+        global Data_uvmat
+Data_uvmat.Field=load(fileinput);
+evalin('base','global Data_uvmat')%make CurData global in the workspace
+disp('Data_uvmat.Field=')
+evalin('base','Data_uvmat.Field') %display CurData in the workspace
+commandwindow; %brings the Matlab command window to the front
+return
     otherwise
         set(handles_RootPath,'String',RootPath);
         set(handles_SubDir,'String',['/' SubDir]);

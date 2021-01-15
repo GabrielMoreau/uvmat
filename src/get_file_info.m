@@ -68,6 +68,8 @@ end
 switch FileExt
     case '.fig'
         FileInfo.FileType='figure';
+    case '.mat'
+        FileInfo.FileType='mat';
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}

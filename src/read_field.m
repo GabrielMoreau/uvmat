@@ -238,7 +238,8 @@ switch FileType
             Field.VarDimName=[Field.VarDimName(1:NbCoord) VarDimName];
             Field.VarAttribute=[Field.VarAttribute(1:NbCoord) VarAttribute];
         end
-        
+    case 'mat'
+         Field=load(FileName);  
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);
