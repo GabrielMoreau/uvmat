@@ -1,4 +1,4 @@
-%'civ_series': PIV function activated by the general GUI series
+%'civ_3D': PIV function activated by the general GUI series
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria
@@ -45,15 +45,16 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Data,errormsg,result_conv]= civ_series(Param)
+function [Data,errormsg,result_conv]= civ_3D(Param)
 errormsg='';
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
-    %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
+    Data=civ_input_3D(Param);% introduce the civ parameters using the GUI civ_input
+    %Data=civ_input_App(Param);% introduce the civ parameters using the GUI
+    %civ_input %%%%  TO MOVE
     if isempty(Data)
         Data=Param;% if  civ_input has been cancelled, keep previous parameters
     end

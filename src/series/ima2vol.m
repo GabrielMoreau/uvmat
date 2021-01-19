@@ -136,7 +136,7 @@ for ifile=1:nbfield_i
             VolData.Coord_z=1:nbfield_j;%default Z values
         end
         VolData.A(jfile,:,:)=Data.A;%concacene along y
-        VolData.Coord_z(jfile)=Data.PlaneCoord(3);
+        VolData.Coord_z(jfile)=XmlData{1}.GeometryCalib.SliceCoord(jfile,3);
     end
 %         npx=size(Data.A,2);
 %         npy=size(Data.A,1);

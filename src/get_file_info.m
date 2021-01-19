@@ -6,6 +6,7 @@
 % FileInfo: structure containing info on the file (case of images or video), in particular
 %      .FileType: type of file, needed as input of read_field.m
 %               ='figure': Matlab figure
+%               ='mat': Matlab data file
 %               ='xml': xml file
 %               ='xls': Excel file
 %               ='dat': text file for data,
@@ -190,7 +191,7 @@ switch FileExt
         end
 end
 
-if ismember (FileInfo.FileType,{'image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
+if ismember (FileInfo.FileType,{'mat','image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
         FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 else
     FileInfo.FileIndexing='off';
