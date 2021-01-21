@@ -128,7 +128,7 @@ end
 %project on a set of points
 function  [ProjData,errormsg]=proj_points(FieldData,ObjectData)%%
 %-------------------------------------------------------------------
-
+ProjData=[];%default output
 siz=size(ObjectData.Coord);
 width=0;
 if isfield(ObjectData,'Range')
@@ -142,6 +142,9 @@ if isfield(ObjectData,'RangeY')&&~isempty(ObjectData.RangeY)
 end
 if isfield(ObjectData,'RangeZ')&&~isempty(ObjectData.RangeZ)
     width=max(width,max(ObjectData.RangeZ));
+end
+if isfield(ObjectData,'RangeInterp')&&~isempty(ObjectData.RangeInterp)
+    width=ObjectData.RangeInterp;
 end
 if isequal(ObjectData.ProjMode,'projection') 
     if width==0

@@ -152,66 +152,75 @@ function CreateMirror_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.SourceDir,'BackgroundColor',[1 1 0])% indicate action of button by yellow color
 drawnow
-SourceDir=get(handles.SourceDir,'String');
-[SourcePath,ProjectName]=fileparts(SourceDir);
+SourcePath=get(handles.SourceDir,'String');
+if ~isempty(regexp(SourcePath,'^http'))
+    SourcePath=pwd;
+    SourcePath=regexprep(SourcePath,'^\/.fsnet','/fsnet');
+end
+
+
+ProjectList=get(handles.ListExperiments,'String');
+ProjectName=ProjectList{get(handles.ListExperiments,'Value')};
+ProjectName=regexprep(ProjectName,'^\+/','');
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
-MirrorDir=get(handles.MirrorDir,'String');% name of the mirror folder
+    MirrorDir=get(handles.MirrorDir,'String');% name of the mirror folder
 else% create the mirror folder if it does not exist
-MirrorRoot=uigetfile_uvmat('select the folder which must contain the mirror directory:',SourcePath,'uigetdir');
-if isempty(MirrorRoot)
-return
-elseif strcmp(MirrorRoot,SourcePath)
-msgbox_uvmat('ERROR','The mirror folder must be different from the source')
-return
-else
-MirrorDir=fullfile(MirrorRoot,ProjectName);
-end
-if exist(MirrorDir,'dir')
-msgbox_uvmat('ERROR',['The folder ' MirrorDir ' chosen as new mirror campaign already exists'])
-return
-else
-[s,errormsg]=mkdir(MirrorDir)% create the mirror dir
-if s~=1
-msgbox_uvmat('ERROR',['error in creating ' MirrorDir ': ' errormsg])
-return
-end
-end
-MirrorDoc.SourceDir=SourceDir;
-t=struct2xml(MirrorDoc);
-set(t,1,'name','DataTree');
-save(t,fullfile(MirrorDir,[ProjectName '.xml']))% create an xml file in the mirror folder to indicate its source folder
-set(handles.MirrorDir,'String',MirrorDir)
-set(handles.MirrorDir,'Visible','on')
-set(handles.CreateMirror,'String','update_mirror')
+    MirrorRoot=uigetfile_uvmat('select the folder which must contain the mirror directory:',SourcePath,'uigetdir');
+    if isempty(MirrorRoot)
+        return
+    elseif strcmp(MirrorRoot,SourcePath)
+        msgbox_uvmat('ERROR','The mirror folder must be different from the source')
+        return
+    else
+        MirrorDir=fullfile(MirrorRoot,ProjectName);
+    end
+    if exist(MirrorDir,'dir')
+        msgbox_uvmat('ERROR',['The folder ' MirrorDir ' chosen as new mirror campaign already exists'])
+        return
+    else
+        [s,errormsg]=mkdir(MirrorDir);% create the mirror dir
+        if s~=1
+            msgbox_uvmat('ERROR',['error in creating ' MirrorDir ': ' errormsg])
+            return
+        end
+    end
+    SourceDir=fullfile(SourcePath,ProjectName);
+    MirrorDoc.SourceDir=SourceDir;
+    t=struct2xml(MirrorDoc);
+    set(t,1,'name','DataTree');
+    save(t,fullfile(MirrorDir,[ProjectName '.xml']))% create an xml file in the mirror folder to indicate its source folder
+    set(handles.MirrorDir,'String',MirrorDir)
+    set(handles.MirrorDir,'Visible','on')
+    set(handles.CreateMirror,'String','update_mirror')
 end
 ExpName={''};
 
 %% update the mirror from the source dir
 if exist(SourceDir,'dir')
-hdir=dir(SourceDir); %list files and dirs
-idir=0;
-for ilist=1:length(hdir)
-if hdir(ilist).isdir% scan all subfolders
-dirname=hdir(ilist).name;%
-if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')%skip subfolder beginning by '0'
-idir=idir+1;
-mirror=fullfile(MirrorDir,hdir(ilist).name);% corresponding name in the mirror
-if ~exist(mirror,'dir')
-mkdir(mirror)% create the mirror folder if it does not exist
-end
-ExpName{idir}=['+/' hdir(ilist).name];% insert '+/' in the list to show that it is a folder
-end
-% look for the list of 'devices'
+    hdir=dir(SourceDir); %list files and dirs
+    idir=0;
+    for ilist=1:length(hdir)
+        if hdir(ilist).isdir% scan all subfolders
+            dirname=hdir(ilist).name;%
+            if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')%skip subfolder beginning by '0'
+                idir=idir+1;
+                mirror=fullfile(MirrorDir,hdir(ilist).name);% corresponding name in the mirror
+                if ~exist(mirror,'dir')
+                    mkdir(mirror)% create the mirror folder if it does not exist
+                end
+                ExpName{idir}=['+/' hdir(ilist).name];% insert '+/' in the list to show that it is a folder
+            end
+            % look for the list of 'devices'
+        else
+            %warning for isolated files
+        end
+    end
+    set(handles.ListExperiments,'String',[{'*'};ExpName'])
+    set(handles.ListExperiments,'Value',1)
+    update_experiments(handles,[{'*'};ExpName'],SourceDir,MirrorDir)
+    % ListExperiments_Callback(hObject, eventdata, handles) % list the content of the experiment
 else
-%warning for isolated files
-end
-end
-set(handles.ListExperiments,'String',[{'*'};ExpName'])
-set(handles.ListExperiments,'Value',1)
-update_experiments(handles,[{'*'};ExpName'],SourceDir,MirrorDir)
-% ListExperiments_Callback(hObject, eventdata, handles) % list the content of the experiment
-else
-msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
+    msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
 end
 set(handles.SourceDir,'BackgroundColor',[1 1 1])
 

@@ -251,6 +251,7 @@ CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
+OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -275,7 +276,7 @@ for index=1:NbField
             j2=j1;
         end
     end
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1,i2,j1,j2);
+    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1,i2,j1,j2);
     if ~CheckOverwrite && exist(OutputFile,'file')
             disp(['existing output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists

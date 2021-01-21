@@ -967,15 +967,6 @@ if test_ima
         else
             colormap('jet'); % default matlab colormap ('jet')
         end
-        
-        if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
-            set(haxes,'DataAspectRatioMode','manual')
-            if isfield(PlotParam.Axes,'AspectRatio')
-                set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
-            else
-                set(haxes,'DataAspectRatio',[1 1 1])
-            end
-        end
     else %usual images (no contour)
         % set  colormap for  image display
         if BW
@@ -1051,6 +1042,14 @@ if test_ima
             else
                 set(hima,'AlphaData',1)% full opacity (no transparency) by default
             end
+        end
+    end
+    if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
+        set(haxes,'DataAspectRatioMode','manual')
+        if isfield(PlotParam.Axes,'AspectRatio')
+            set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
+        else
+            set(haxes,'DataAspectRatio',[1 1 1])
         end
     end
     test_ima=1;

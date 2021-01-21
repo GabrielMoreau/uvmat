@@ -97,15 +97,13 @@ for ilist=1:length(FieldName)
             check_grid=1;
             DataOut.(FieldNameType)=zeros(nb_sites,1);
             VarAttributeNew{1}.Role='scalar';
-        case {'curl','div','strain'}
+        case {'curl','div','strain','DUDX','DUDY','DVDX','DVDY'}
             check_der=1;
             DataOut.(FieldNameType)=zeros(nb_sites,1);
             VarAttributeNew{1}.Role='scalar';
     end
     VarAttribute=[VarAttribute VarAttributeNew];
 end
-%Attr_FF.Role='errorflag';
-%VarAttribute=[VarAttribute {Attr_FF}];
 FieldName(check_remove)=[];
 
 %% loop on subdomains
@@ -137,10 +135,16 @@ for isub=1:NbSubDomain
                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'div(U,V)'
                 DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
-%             case 'curl_polar(U,V)'
-%                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)+(-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *(Coord_interp(ind_sel,1).*FieldVar(1:nbvec_sub+3,isub,2)))./Coord_interp(ind_sel,1);
             case 'strain(U,V)'
                 DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
+            case 'DUDX(U,V)'
+                DataOut.DUDX(ind_sel)=DataOut.DUDX(ind_sel)+EMDX *FieldVar(1:nbvec_sub+3,isub,1);
+            case 'DUDY(U,V)'
+                DataOut.DUDY(ind_sel)=DataOut.DUDY(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1);
+            case 'DVDX(U,V)'
+                DataOut.DVDX(ind_sel)=DataOut.DVDX(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,2);
+            case 'DVDY(U,V)'
+                DataOut.DVDY(ind_sel)=DataOut.DVDY(ind_sel)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
         end
     end
 end

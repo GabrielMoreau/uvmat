@@ -330,8 +330,9 @@ for ifield=1:NbField
         end
     end
     if CheckInputFile
+        OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
         if iview_A==0 % no nc file has been entered
-            ncfile=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
+            ncfile=fullfile_uvmat(OutputPath,Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
                 NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),j1_series_Civ1(ifield),j2_series_Civ1(ifield));
         else% an existing nc file has been entered
             if iview_A==1% if Civ1 is performed
@@ -340,14 +341,15 @@ for ifield=1:NbField
                 Civ1Dir=Param.InputTable{1,2};
             end
             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-                ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+                ncfile=fullfile_uvmat(OutputPath,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
                     j1_series_Civ1(ifield),j2_series_Civ1(ifield));
             else
-                ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+                ncfile=fullfile_uvmat(OutputPath,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
                     j1_series_Civ1(ifield),j2_series_Civ1(ifield));
             end
         end
         ncfile_out=ncfile;% by default
+        
         if isfield (Param.ActionInput,'Civ2')
             i1_civ2=i1_series_Civ2(ifield);
             i2_civ2=i1_civ2;
@@ -408,7 +410,7 @@ for ifield=1:NbField
                             Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
                         end
                     end
-                    if ~exist(ImageName_A,'file')
+                    if isempty(regexp(ImageName_A,'(^http://)|(^https://)')) && ~exist(ImageName_A,'file')
                         disp([ImageName_A ' missing'])
                         continue
                     end
@@ -424,7 +426,7 @@ for ifield=1:NbField
                         [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
                         FileType_B=FileInfo_B.FileType;
                     end
-                    if ~exist(ImageName_B,'file')
+                    if isempty(regexp(ImageName_B,'(^http://)|(^https://)')) && ~exist(ImageName_B,'file')
                         disp([ImageName_B ' missing'])
                         continue
                     end
@@ -491,7 +493,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
-                if exist(maskname,'file')
+                if ~isempty(regexp(maskname,'(^http://)|(^https://)'))|| exist(maskname,'file')
                     try
                         par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
                     catch ME

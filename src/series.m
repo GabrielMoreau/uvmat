@@ -705,7 +705,7 @@ else% input set when series is opened (called by the GUI uvmat)
 end
     
 %% get the input root name, indices, file extension and nomenclature NomType
-if ~exist(fileinput,'file')
+if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (refresh still needed)
@@ -1600,6 +1600,7 @@ end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
+OutputPath=get(handles.OutputPath,'String');
 
 %% Look for processing on multiple experiments set by the GUI browse_data
 NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
@@ -1623,14 +1624,17 @@ if get(handles.Replicate,'Value')
         NbExp=0; % counter of the number of experiments set by the GUI browse_data
         for iexp=1:numel(ListExp)
             if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-                if strcmp(get(BrowseData.DataSeries,'enable'),'off');%case of a multiple input line for series
+                if strcmp(get(BrowseData.DataSeries,'enable'),'off') %case of a multiple input line for series
                     NbExp=NbExp+1;
                     ExpIndex{NbExp}=iexp;
                     for idevice=1:numel(ListDevices)
                         lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
                             regexprep(ListDevices{idevice},'^\+/',''));
+                        lpathout=fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
+                            regexprep(ListDevices{idevice},'^\+/',''));
                         ldir=regexprep(ListDataSeries{idevice},'^\+/','');
                         ListPath{idevice,NbExp}=lpath;
+                        ListPathOut{idevice,NbExp}=lpathout;
                         ListSubdir{idevice,NbExp}=ldir;
                     end
                 else
@@ -1640,11 +1644,14 @@ if get(handles.Replicate,'Value')
                                 if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
                                     lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
                                         regexprep(ListDevices{idevice},'^\+/',''));
+                                    lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
+                                        regexprep(ListDevices{idevice},'^\+/',''));
                                     ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
                                     if exist(fullfile(lpath,ldir),'dir')
                                         NbExp=NbExp+1;
                                         ExpIndex{NbExp}=iexp;
                                         ListPath{NbExp}=lpath;
+                                        ListPathOut{NbExp}=lpathout;
                                         ListSubdir{NbExp}=ldir;
                                     end
                                 end
@@ -1660,9 +1667,9 @@ if get(handles.Replicate,'Value')
         end
     end
 end
-%      set(handles.OutputSubDir,'String',SubDir)
-%      Param.OutputSubDir=SubDir;
+
 %%%%%%%%%%%%%%%%%%% LOOP ON EXPERIMENTS POSSIBLY SET BY THE GUI browse_data, NbExp=1 otherwise %%%%%%%%%
+
 for iexp=1:NbExp
     if get(handles.Replicate,'Value')
         if ~strcmp(get(handles.RUN,'BusyAction'),'queue')% allow for STOP action
@@ -1688,13 +1695,34 @@ for iexp=1:NbExp
     OutputDir='';
     answer='';
     if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
+        PathOut=get(handles.OutputPath,'String');
+        if ~exist(PathOut,'dir') % test if  the dir  already exist
+        PathOut=uigetdir(PathOut,'pick the output root path')
+        set(handles.OutputPath,'String',PathOut);
+        end
+        PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
+        if ~exist(PathExpOut,'dir')
+            [tild,msg1]=mkdir(PathExpOut);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' PathExpOut ': ' msg1]; % error message for directory creation
+                return
+            end
+        end
+        PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
+        if ~exist(PathExpDeviceOut,'dir')
+            [tild,msg1]=mkdir(PathExpDeviceOut);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' PathExpDeviceOut ': ' msg1]; % error message for directory creation
+                return
+            end
+        end
         SubDirOut=[Param.OutputSubDir Param.OutputDirExt];
         SubDirOutNew=SubDirOut;
-        detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exist
+        detect=exist(fullfile(PathExpDeviceOut,SubDirOutNew),'dir'); % test if  the dir  already exist
         check_create=1; % need to create the result directory by default
         CheckOverwrite=1;
         if isfield(Param,'CheckOverwrite')
-            CheckOverwrite=Param.CheckOverwrite;
+            CheckOverwrite=Param.CheckOverwrite;% will overwrite previous data if it is equal to 1
         end
         while detect
             if CheckOverwrite
@@ -1702,7 +1730,7 @@ for iexp=1:NbExp
             else
                 comment=', will complement existing result files (no overwriting)';
             end
-            answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(Param.InputTable{1,1},SubDirOutNew) comment]);
+            answer=msgbox_uvmat('INPUT_Y-N-Cancel',['use existing ouput directory: ' fullfile(PathExpDeviceOut,SubDirOutNew) comment]);
             if strcmp(answer,'Cancel')
                 break
             elseif strcmp(answer,'Yes')
@@ -1715,7 +1743,7 @@ for iexp=1:NbExp
                     r(1).num1='0';
                 end
                 SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
-                detect=exist(fullfile(Param.InputTable{1,1},SubDirOutNew),'dir'); % test if  the dir  already exists
+                detect=exist(fullfile(PathExpDeviceOut,SubDirOutNew),'dir'); % test if  the dir  already exists
                 check_create=1;
             end
         end
@@ -1724,7 +1752,7 @@ for iexp=1:NbExp
         end
         Param.OutputDirExt=regexprep(SubDirOutNew,['^' Param.OutputSubDir],'');
         Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
-        OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
+        OutputDir=fullfile(PathExpDeviceOut,[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
         if check_create    % create output directory if it does not exist
             [tild,msg1]=mkdir(OutputDir);
             if ~strcmp(msg1,'')
@@ -2444,7 +2472,7 @@ if VelTypeRequest && numel(iview_civ)>=1
     set(handles.VelType_title,'Visible','on')
     FieldList=set_field_list('U','V'); % standard menu for civx data
     if max(get(handles.FieldName,'Value'))>numel(FieldList)
-    set(handles.FieldName,'Value',1); % velocity vector choice by default
+        set(handles.FieldName,'Value',1); % velocity vector choice by default
     end
     if  VelTypeRequest_1 && numel(iview_civ)>=2
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
@@ -2499,7 +2527,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
     
     set(handles_coord,'Visible','on')
     if isempty(find(strcmp('add_field...',FieldList)))
-    FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
+        FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
     end
     if FieldNameRequest_1 && numel(iview_netcdf)>=2
         set(handles.FieldName_1,'Visible','on')
@@ -2563,7 +2591,7 @@ if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& s
     set(handles.MinIndex_i,'Data',MinIndex_i(iview,:));
     set(handles.MinIndex_j,'Data',MinIndex_j(iview,:));
     set(handles.MaxIndex_i,'Data',MaxIndex_i(iview,:));
-    set(handles.MaxIndex_j,'Data',MaxIndex_j(iview,:));;
+    set(handles.MaxIndex_j,'Data',MaxIndex_j(iview,:));
     TimeTable=get(handles.TimeTable,'Data');
     if size(TimeTable,1)<size(Param.InputTable,1)%if the time table is not complete, copy the missing lines from the previous ones
         for iline=size(TimeTable,1)+1:size(Param.InputTable,1)
@@ -2652,7 +2680,7 @@ if isfield(ParamOut,'FieldTransform')
     TransformName_Callback([],[], handles)
 end
 set(handles.FieldTransform,'Visible',FieldTransformVisible)
-if isfield(ParamOut,'TransformPath');% record the path of transform function requested for compilation
+if isfield(ParamOut,'TransformPath')% record the path of transform function requested for compilation
     set(handles.TransformPath,'UserData',ParamOut.TransformPath)
 else
     set(handles.TransformPath,'UserData',[])
@@ -2683,7 +2711,29 @@ if isfield(ParamOut,'CPUTime')
     set(handles.num_CPUTime,'String',num2str(ParamOut.CPUTime));
 end
 
-%% definition of the directory containing the output files 
+%% definition of the path for the output files 
+InputTable=get(handles.InputTable,'Data');
+[OutputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
+[OutputPath,Experiment,ExperimentExt]=fileparts(OutputPath);
+set(handles.Device,'String',[Device DeviceExt])
+set(handles.Device,'Visible','on')
+set(handles.Device_title,'Visible','on')
+set(handles.Experiment,'String',[Experiment ExperimentExt])
+set(handles.Experiment,'Visible','on')
+set(handles.Experiment_title,'Visible','on')
+OutputPathOld=get(handles.OutputPath,'String')
+if isempty(OutputPathOld)
+    if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
+        OutputPath=uigetdir(pwd,'pick a root folder for output data');
+    end
+    set(handles.OutputPath,'String',OutputPath)
+end
+set(handles.Experiment_title,'Visible','on')
+set(handles.OutputPath,'Visible','on')
+set(handles.OutputPathBrowse,'Visible','on')
+    
+%% definition of the subdirectory containing the output files 
+
 if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))
     OutputDirExt='.series'; % default
     if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
@@ -2697,9 +2747,8 @@ SubDirOut='';
 if isfield(ParamOut,'OutputSubDirMode')
     OutputSubDirMode=ParamOut.OutputSubDirMode;
 end
-InputTable=get(handles.InputTable,'Data');
 switch OutputSubDirMode
-    case 'auto'; % default
+    case 'auto' % default
         OutputDirVisible='on';
         SubDir=InputTable(1:end,2); % set of subdirectories
         SubDirOut=SubDir{1};
@@ -2726,7 +2775,6 @@ set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
-%set(handles.CheckOverwrite,'Visible',OutputDirVisible)
 set(handles.OutputDir_title,'Visible',OutputDirVisible)
 SeriesData.ActionName=ActionName; % record ActionName for next use
 
@@ -2809,7 +2857,7 @@ if isequal(field,'add_field...')
     end
     FirstFileName=fullfile_uvmat(InputTable{LineIndex,1},InputTable{LineIndex,2},InputTable{LineIndex,3},...
         InputTable{LineIndex,5},InputTable{LineIndex,4},i1,i2,j1,j2);
-    if exist(FirstFileName,'file')
+    if exist(FirstFileName,'file') || ~isempty(regexp(InputTable{LineIndex,1},'^http'))
         ParamIn.Title='get_field: pick input variables and coordinates for series processing';
         ParamIn.SeriesInput=1;
         GetFieldData=get_field(FirstFileName,ParamIn);
@@ -3476,7 +3524,7 @@ if get(handles.status,'Value')
     set(handles.status,'BackgroundColor',[1 1 0])
     drawnow
     Param=read_GUI(handles.series);
-    RootPath=Param.InputTable{1,1};
+    RootPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
     if ~isfield(Param,'OutputSubDir')   
         msgbox_uvmat('ERROR','no standard sub-directory definition for output files, use a browser to check the output')
         set(handles.status,'BackgroundColor',[0 1 0])
@@ -3894,3 +3942,36 @@ else
     end
 end
 
+
+
+
+function OutputPath_Callback(hObject, eventdata, handles)
+% hObject    handle to OutputPath (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of OutputPath as text
+%        str2double(get(hObject,'String')) returns contents of OutputPath as a doubl
+
+
+
+function Experiment_Callback(hObject, eventdata, handles)
+% hObject    handle to Experiment (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Experiment as text
+%        str2double(get(hObject,'String')) returns contents of Experiment as a double
+
+
+function Device_Callback(hObject, eventdata, handles)
+% hObject    handle to Device (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+% --- Executes on button press in OutputPathBrowse.
+function OutputPathBrowse_Callback(hObject, eventdata, handles)
+OutputPath=uigetdir(get(handles.OutputPath,'String'));
+set(handles.OutputPath,'String',OutputPath)

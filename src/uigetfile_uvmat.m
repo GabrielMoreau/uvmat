@@ -195,9 +195,9 @@ end
 set(hObject,'backgroundColor',[0 1 0])% indicate end button activatio
 fig_struct=get(hObject,'parent');
 if isstruct(fig_struct)%recent Matlab
-uiresume(fig_struct.Number)
+    uiresume(fig_struct.Number)
 else
-   uiresume(fig_struct) 
+    uiresume(fig_struct)
 end
 
 %------------------------------------------------------------------------

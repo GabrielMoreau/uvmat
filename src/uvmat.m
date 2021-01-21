@@ -467,6 +467,23 @@ else
     end
 end
 
+% --------------------------------------------------------------------
+function MenuBrowseOpendap_Callback(hObject, eventdata, handles)
+    oldfile=get(hObject,'Label');
+fileinput=uigetfile_uvmat('pick an input file',oldfile);
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+else
+
+    %% display the selected field and related information
+    if ~isempty(fileinput)
+        set(handles.SubField,'Value',0)
+        desable_subfield(handles)
+        display_file_name(handles,fileinput)
+    end
+end
+
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile
 function MenuFile_Callback(hObject, eventdata, handles)
@@ -485,6 +502,8 @@ if ~isempty(errormsg)
         set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
     end
 end
+
+
 
 % -----------------------------------------------------------------------
 % --- Executes on the menu Open/Browse campaign...
@@ -2103,7 +2122,7 @@ function errormsg=display_file_name(handles,fileinput,index)
 %------------------------------------------------------------------------
 %% look for the input file existence
 errormsg='';%default
-if isempty(regexp(fileinput,'^http://')) && ~exist(fileinput,'file')
+if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -2254,7 +2273,7 @@ return
         end
         
         %enable other menus
-        set(handles.MenuOpenCampaign,'Enable','on')
+%         set(handles.MenuOpenCampaign,'Enable','on')
         set(handles.MenuExport,'Enable','on')
         set(handles.MenuExportFigure,'Enable','on')
         set(handles.MenuExportMovie,'Enable','on')
@@ -6298,6 +6317,8 @@ if get(handles.CheckTable,'Value')
 else
     set(handles.TableDisplay,'Visible','off')
 end
+
+
 
 
 
