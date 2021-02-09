@@ -247,6 +247,7 @@ else
     first_j=j1_series{1}(1);
     last_j=j1_series{1}(end);
 end
+OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device)
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -304,7 +305,7 @@ if isfield(Param,'ProjObject')
     checkhisto=1;
     if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VarMesh')%case of histograms
         VarMesh=Param.ActionInput.VarMesh;
-    else
+    elseif isequal(Param.IndexRange.NbSlice,1)
         VarMesh=[];
         disp_uvmat('WARNING','automatic bin size for histograms, select time_series again to set the value',checkrun)
     end
@@ -571,7 +572,7 @@ if ~isequal(nbmissing,0)
 end
 
 %% name of result file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
+OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
 errormsg=struct2nc(OutputFile,DataOut); %save result file
 if isempty(errormsg)
     display([OutputFile ' written'])
@@ -580,20 +581,10 @@ else
 end
 
 %% plot the time series for  (the last one in case of multislices)
-if checkrun %&& isfield(Param,'ProjObject') && strcmp(Param.ProjObject.Type,'points')
+if checkrun && isequal(Param.IndexRange.NbSlice,1)%&& isfield(Param,'ProjObject') && strcmp(Param.ProjObject.Type,'points')
     %% open the result file with uvmat (in RUN mode)
     uvmat(OutputFile)% open the last result file with uvmat
 end
-%     figure
-%     haxes=axes;
-%     plot_field(DataOut,haxes)
-%     
-%     %% display the result file using the GUI get_field
-%     hget_field=findobj(allchild(0),'name','get_field');
-%     if ~isempty(hget_field)
-%         delete(hget_field)
-%     end
-%     get_field(OutputFile,DataOut)
-% end
+
 
 

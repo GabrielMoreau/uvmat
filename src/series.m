@@ -1902,6 +1902,7 @@ for iexp=1:NbExp
             disp('program stopped by user')
             return
         end
+        Param.IndexRange.incr_slice=incr_i;
         if isempty(Param.IndexRange.NbSlice)
             Param.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
             if Param.IndexRange.first_i>last_i
@@ -1911,7 +1912,7 @@ for iexp=1:NbExp
             Param.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
         else %multislices (then incr_i is not empty)
             Param.IndexRange.first_i= first_i+iprocess-1;
-            Param.IndexRange.incr_i=incr_i*Param.IndexRange.NbSlice;
+            Param.IndexRange.incr_slice=incr_i*Param.IndexRange.NbSlice;
         end
         for ilist=1:size(Param.InputTable,1)
             Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/'); % correct path name for PCWIN system

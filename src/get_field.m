@@ -630,8 +630,14 @@ end
 %end
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
 var_coord=find(test_coord);% % list of variable indices elligible as gridded coordinates
-var_coord(var_coord==scalar_index)=[];
-var_component(var_component==scalar_index)=[];
+index_coord=[];
+index_component=[];
+for iscalar=1:numel(scalar_index)
+    index_component=[index_component find(var_component==scalar_index(iscalar),1)];
+    index_coord=[index_coord find(var_coord==scalar_index(iscalar),1)];
+end
+var_component(index_component)=[];
+var_coord(index_coord)=[];
 ListCoord=Field.Display.ListVarName([var_coord var_component]);
 coord_val=zeros(size(ListCoord));
 

@@ -35,7 +35,7 @@ function [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Para
 filecell={};
 InputTable=Param.InputTable;
 first_i=Param.IndexRange.first_i;
-incr_i=Param.IndexRange.incr_i;
+incr_i=Param.IndexRange.incr_slice;
 last_i=Param.IndexRange.last_i;
 first_j=[];last_j=[];incr_j=1;%default
 if isfield(Param.IndexRange,'first_j')&& isfield(Param.IndexRange,'last_j')
