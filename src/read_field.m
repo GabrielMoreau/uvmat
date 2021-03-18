@@ -25,7 +25,7 @@
 % see also read_image.m,read_civxdata.m,read_civdata.m,
 
 %=======================================================================
-% Copyright 2008-2020, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2021, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
