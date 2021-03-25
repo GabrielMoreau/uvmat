@@ -1124,10 +1124,6 @@ end
 check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for each field cell
 ProjMode=num2cell(blanks(numel(CellInfo)));
 ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
-%ProjMode=cell(size(CellInfo));
-% for icell=1:numel(CellInfo)
-%     ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
-% end
 icell_grid=[];% field cell index which defines the grid
 if strcmp(ObjectData.ProjMode,'projection')
     %% case of a grid requested by the input field
@@ -1191,8 +1187,6 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
         end
         [XI,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
         ProjData.VarDimName={AYName,AXName};
-        %         XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
-        %         YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
     else% we use the existing grid from field cell #icell_grid
         NbDim=NbDimArray(icell_grid);
         AYName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim-1)};%name of input x coordinate (name preserved on projection)
@@ -1203,10 +1197,19 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
         ProjData.(AYName)=FieldData.(AYName); % new (projected ) y coordinates
         ProjData.(AXName)=FieldData.(AXName); % new (projected ) y coordinates
     end
-    ProjData.ListVarName={AYName,AXName};
-    
+    ProjData.ListVarName={AYName,AXName};   
     ProjData.VarAttribute{1}.Role='coord_y';
     ProjData.VarAttribute{2}.Role='coord_x';
+            YAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim-1)};
+        XAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim)};
+    if ~testangle 
+        if isfield(YAttribute,'units')
+            ProjData.VarAttribute{1}.units=YAttribute.units;
+        end
+         if isfield(XAttribute,'units')
+            ProjData.VarAttribute{2}.units=XAttribute.units;
+         end
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1243,7 +1246,7 @@ for icell=1:length(CellInfo)
             end
             coord_x=FieldData.(CellInfo{icell}.XName);% initial x coordinates
             coord_y=FieldData.(CellInfo{icell}.YName);% initial y coordinates
-      
+            
             if check3D
                 coord_z=FieldData.(CellInfo{icell}.ZName);
             end
@@ -1347,6 +1350,10 @@ for icell=1:length(CellInfo)
                     if isfield(CellInfo{icell},'VarIndex_errorflag')
                         VarName_FF=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
                         indsel=find(FieldData.(VarName_FF)==0);
+                        if isempty(indsel)
+                            errormsg='bad projection plane: no data found in the projection domain';
+                            return
+                        end
                         coord_X=coord_X(indsel);
                         coord_Y=coord_Y(indsel);
                         for ivar=1:numel(CellInfo{icell}.VarIndex)
@@ -1624,15 +1631,7 @@ for icell=1:length(CellInfo)
                         Coord{2}=linspace(Coord{2}(1),Coord{2}(2),CellInfo{icell}.CoordSize(2));
                     end
                     [X,Y]=meshgrid(Coord{2},Coord{1});%initial coordinates
-                    %name of error flag variable
-%                     FFName='FF';%default name (if not already used)
-%                     if isfield(ProjData,'FF')
-%                         ind=1;
-%                         while isfield(ProjData,['FF_' num2str(ind)])
-%                             ind=ind+1;
-%                         end
-%                         FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
-%                     end
+
                     % project all variables in the cell
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
@@ -1655,13 +1654,7 @@ for icell=1:length(CellInfo)
                         if isfield(FieldData,'VarAttribute')&&length(FieldData.VarAttribute)>=ivar
                             VarAttribute{length(ListVarName)+nbcoord}=FieldData.VarAttribute{ivar};
                         end
-%                         ProjData.(FFName)=isnan(ProjData.(VarName));%detact NaN (points outside the interpolation range)
-%                         ProjData.(VarName)(ProjData.(FFName))=0; %set to 0 the NaN data
                     end
-                    %update list of variables with error flag
-%                     ListVarName=[ListVarName FFName];
-%                     VarDimName=[VarDimName {DimCell}];
-%                     VarAttribute{numel(ListVarName)}.Role='errorflag';
                 elseif ~testangle % 3Dcase without change of angle
                     % unstructured z coordinate
                     test_sup=(Coord{1}>=ObjectData.Coord(1,3));
@@ -1690,7 +1683,6 @@ for icell=1:length(CellInfo)
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});%initial z coordinates
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});%initial y coordinates
                     Coord{3}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(3)});%initial x coordinates
-
                     coord_x_proj=ObjectData.RangeX(1):InterpMesh:ObjectData.RangeX(2);% set of coordinates in the projection plane
                     coord_y_proj=ObjectData.RangeY(1):InterpMesh:ObjectData.RangeY(2);
                     %coord_z_proj=-floor(ObjectData.RangeInterp/InterpMesh):InterpMesh:floor(ObjectData.RangeInterp/InterpMesh);
@@ -1699,8 +1691,6 @@ for icell=1:length(CellInfo)
                     XI_proj=M(1,1)*XI+M(2,1)*YI+ObjectData.Coord(1,1);
                     YI_proj=M(2,1)*XI+M(2,2)*YI+ObjectData.Coord(1,2);
                     ZI_proj=M(3,1)*XI+M(3,2)*YI+ObjectData.Coord(1,3);
-                    
-    
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
                         ListVarName=[ListVarName VarName];
@@ -1762,28 +1752,6 @@ for icell=1:length(CellInfo)
         end
     end
 end
-% %prepare substraction in case of two input fields
-% SubData.ListVarName={};
-% SubData.VarDimName={};
-% SubData.VarAttribute={};
-% check_remove=zeros(size(ProjData.ListVarName));
-% for iproj=1:numel(ProjData.VarAttribute)
-%     if isfield(ProjData.VarAttribute{iproj},'CheckSub')&&isequal(ProjData.VarAttribute{iproj}.CheckSub,1)
-%         VarName=ProjData.ListVarName{iproj};
-%         SubData.ListVarName=[SubData.ListVarName {VarName}];
-%         SubData.VarDimName=[SubData.VarDimName ProjData.VarDimName{iproj}];
-%         SubData.VarAttribute=[SubData.VarAttribute ProjData.VarAttribute{iproj}];
-%         SubData.(VarName)=ProjData.(VarName);
-%         check_remove(iproj)=1;
-%     end
-% end
-% if ~isempty(find(check_remove))
-%     ind_remove=find(check_remove);
-%     ProjData.ListVarName(ind_remove)=[];
-%     ProjData.VarDimName(ind_remove)=[];
-%     ProjData.VarAttribute(ind_remove)=[];
-%     ProjData=sub_field(ProjData,[],SubData);
-% end
 
 %-----------------------------------------------------------------
 %projection in a volume

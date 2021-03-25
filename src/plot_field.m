@@ -767,14 +767,14 @@ for icell=1:numel(CellInfo)
             Coord_x=Data.(XName);
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
-            if isfield(Data,'VarAttribute')
-                if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end)},'units')
-                    x_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end)}.units;
-                end
-                if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end-1) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)},'units')
-                    y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
-                end
-            end
+%             if isfield(Data,'VarAttribute')
+%                 if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end)},'units')
+%                     x_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end)}.units;
+%                 end
+%                 if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end-1) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)},'units')
+%                     y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
+%                 end
+%             end
             if numel(Coord_y)>2
                 DCoord_y=diff(Coord_y);
                 DCoord_y_min=min(DCoord_y);
@@ -789,7 +789,7 @@ for icell=1:numel(CellInfo)
                 DCoord_x=diff(Coord_x);
                 DCoord_x_min=min(DCoord_x);
                 DCoord_x_max=max(DCoord_x);
-                if sign(DCoord_x_min)~=sign(DCoord_x_max);% =1 for increasing values, 0 otherwise
+                if sign(DCoord_x_min)~=sign(DCoord_x_max)% =1 for increasing values, 0 otherwise
                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(2)} ];
                     return
                 end
@@ -820,12 +820,22 @@ for icell=1:numel(CellInfo)
         end
     end
     %define coordinates as CoordUnits, if not defined as attribute for each variable
+%     if isfield(Data,'VarAttribute')&& numel(Data.VarAttribute)>=1 && isfield(Data.VarAttribute{1},'unit')
+%         y_units=Data.VarAttribute{1}.unit;
+%     end
     if isfield(Data,'CoordUnit')
         if isempty(x_units)
             x_units=Data.CoordUnit;
         end
         if isempty(y_units)
             y_units=Data.CoordUnit;
+        end
+    elseif isfield(Data,'VarAttribute')
+        if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end)},'units')
+            x_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end)}.units;
+        end
+        if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end-1) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)},'units')
+            y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
         end
     end
 end

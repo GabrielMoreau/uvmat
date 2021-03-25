@@ -1537,6 +1537,10 @@ y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
 XmlData.LIFCalib.LightOrigin=[x0 y0];% origin of the light source to be saved in the current xml file
 XmlData.LIFCalib.Ray1Coord=LineData{1}.Coord;
 XmlData.LIFCalib.Ray2Coord=LineData{2}.Coord;
+if numel(LineData)<3
+    msgbox_uvmat('ERROR','draw a reference line of direct laser illumination (without dye absorbsion)');
+    return
+end
 XmlData.LIFCalib.RefLineCoord=LineData{3}.Coord;
 
 %% rescale the image
@@ -1544,8 +1548,8 @@ XmlData.LIFCalib.RefLineCoord=LineData{3}.Coord;
 x=linspace(UvData.Field.Coord_x(1),UvData.Field.Coord_x(2),nbx)-nbx/2;
 y=linspace(UvData.Field.Coord_y(1),UvData.Field.Coord_y(2),nby)-nby/2;
 [X,Y]=meshgrid(x,y);
-coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
-UvData.Field.A=double(UvData.Field.A).*(1+coeff_quad*(X.*X+Y.*Y));
+%coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
+%UvData.Field.A=double(UvData.Field.A).*(1+coeff_quad*(X.*X+Y.*Y));
 
 %% display the current image in polar axes with origin at the  illumination source
 currentdir=pwd;
@@ -1563,13 +1567,13 @@ if numel(find(select_line))==3
     x_ref=x_ref-x0;
     y_ref=y_ref-y0;
     [theta_ref,r_ref] = cart2pol(x_ref,y_ref);%theta_ref  and r_ref are the polar coordinates of the points on the line
-    theta_ref=theta_ref*180/pi;% theta_ref in radians
+    theta_ref=theta_ref*180/pi;% theta_ref in degrees
     figure(10)
     plot(theta_ref,r_ref)
     xlabel('azimuth(degrees)')
     ylabel('radius from light source')
     title('ref line in polar coordinates')
-    azimuth_ima=linspace(DataPol.Coord_y(1),DataPol.Coord_y(2),size(DataPol.A,1));%array of angular index on the transformed image
+    azimuth_ima=linspace(DataPol.Coord_y(1),DataPol.Coord_y(2),size(DataPol.A,1))-360;%array of angular indices on the transformed image
     dist_source = interp1(theta_ref,r_ref,azimuth_ima);% get the polar position of the reference line
     dist_source_pixel=round(size(DataPol.A,2)*(dist_source-DataPol.Coord_x(1))/(DataPol.Coord_x(2)-DataPol.Coord_x(1)));
     line_nan= isnan(dist_source);
@@ -3718,7 +3722,10 @@ Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
 
 %% choose and read a second field FileName_1 if defined
 ParamOut_1=[];
-if numel(UvData.FileInfo)>1
+if ~isempty(FileName_1)
+    if numel(UvData.FileInfo)==1
+        UvData.FileInfo{2}=UvData.FileInfo{1};
+    end
     VelType_1=[];%default
     FieldName_1=[];
     ParamIn_1=[];
@@ -3735,7 +3742,7 @@ if numel(UvData.FileInfo)>1
     else
         NomType_1=get(handles.NomType,'String');
     end
-    if strcmp(UvData.FileInfo{2}.FieldType,'image')
+    if strcmp(UvData.FileInfo{2}.FileType,'image')
         FieldName_1='image';
         frame_index_1=1;%default
         if UvData.FileInfo{2}.NumberOfFrames>1
@@ -3760,7 +3767,7 @@ if numel(UvData.FileInfo)>1
         end
     end
     switch UvData.FileInfo{2}.FileType
-        case {'civx','civdata','netcdf','pivdata_fluidimage'};
+        case {'civx','civdata','netcdf','pivdata_fluidimage'}
             list_fields=get(handles.FieldName_1,'String');% list menu fields
             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
             if ~strcmp(FieldName_1,'get_field...')
@@ -3848,9 +3855,9 @@ end
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
-if isempty(FileName_1)
-elseif ~test_keepdata_1
-    if strcmp(UvData.FileInfo{2}.FieldType,'civdata')&& ~strcmp(FieldName_1,'get_field...')
+if ~isempty(FileName_1)
+
+    if strcmp(UvData.FileInfo{2}.FileType,'civdata')&& ~strcmp(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
         menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileInfo{2}.FileType);

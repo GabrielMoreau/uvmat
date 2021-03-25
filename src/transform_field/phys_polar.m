@@ -51,7 +51,7 @@ if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Ac
     prompt = {'origin [x y] of polar coordinates';'reference radius';'reference angle(degrees)';'angle direction and switch x y(+/-)'};
     dlg_title = 'set the parameters for the polar coordinates';
     num_lines= 2;
-    def     = { '[0 0]';'0';'0';'+'};
+    def     = { '[0 0]';'';'0';'+'};
     if isfield(XmlData,'TransformInput')
         if isfield(XmlData.TransformInput,'PolarCentre')
             def{1}=num2str(XmlData.TransformInput.PolarCentre);
@@ -86,7 +86,7 @@ DataCell{1}=DataIn;
 Calib{1}=[];
 DataCell{2}=[];%default
 checkpixel(1)=0;
-if isfield(DataCell{1},'CoorUnit')&& strcmp(DataCell{1}.CoorUnit,'px') 
+if isfield(DataCell{1},'CoordUnit')&& strcmp(DataCell{1}.CoordUnit,'pixel') 
     checkpixel(1)=1;
 end
 if nargin==2||nargin==4
@@ -100,7 +100,7 @@ end
 nbinput=1;
 if nargin==4% case of two input fields
     checkpixel(2)=0;
-if isfield(DataCell{2},'CoorUnit')&& strcmp(DataCell{2}.CoorUnit,'px') 
+if isfield(DataCell{2},'CoordUnit')&& strcmp(DataCell{2}.CoordUnit,'pixel') 
     checkpixel(2)=1;
 end
     DataCell{2}=DataIn_1;%default
@@ -123,12 +123,12 @@ if isfield(XmlData,'TransformInput')
             origin_xy= XmlData.TransformInput.PolarCentre;
         end
     end
-    if isfield(XmlData.TransformInput,'PolarReferenceRadius') && isnumeric(XmlData.TransformInput.PolarReferenceRadius)
+    if isfield(XmlData.TransformInput,'PolarReferenceRadius') && ~isempty(XmlData.TransformInput.PolarReferenceRadius)
         radius_offset=XmlData.TransformInput.PolarReferenceRadius;
     end
     if radius_offset > 0
         angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
-        check_degree=0; %the output has the same unit asthe input
+        check_degree=0; %the output has the same unit as the input
     else
         angle_scale=180/pi; %polar angle in degrees
         check_degree=1;%angle expressed in degrees
@@ -143,7 +143,7 @@ end
 %% get fields
 
 nbvar=0;%counter for the number of output variables
-nbcoord=0;%counter for the number of variables for radial coordiantes (case of multiple field inputs)
+nbcoord=0;%counter for the number of variablecheck_degrees for radial coordiantes (case of multiple field inputs)
 nbgrid=0;%counter for the number of gridded fields (all linearly interpolated on the same output polar grid)
 nbscattered=0;%counter of scattered fields
 radius_name='radius';
@@ -156,7 +156,6 @@ for ifield=1:nbinput %1 or 2 input fields
         Data.Txt=['bad input to phys_polar: ' errormsg];
         return
     end
-    % end
     %transform of X,Y coordinates for vector fields
     if isfield(DataCell{ifield},'ZIndex')&& ~isempty(DataCell{ifield}.ZIndex)
         ZIndex=DataCell{ifield}.ZIndex;
@@ -179,20 +178,35 @@ for ifield=1:nbinput %1 or 2 input fields
                 nbvar=nbvar+2;
                 Data.VarAttribute{nbvar-1}.Role='coord_x';
                 check_unit=1;
-                if isfield(DataCell{ifield},'CoordUnit')
-                    Data=rmfield(Data,'CoordUnit');
-                    Data.VarAttribute{nbvar-1}.unit=DataCell{ifield}.CoordUnit;
-                elseif isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
-                    Data.VarAttribute{nbvar-1}.unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+                %unit of output field
+                if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+                    radius_unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+                elseif isfield(DataCell{ifield},'CoordUnit')
+                    radius_unit=DataCell{ifield}.CoordUnit;
                 else
-                    check_unit=0;
+                    radius_unit='';
                 end
-                Data.VarAttribute{nbvar}.Role='coord_y';
+                Data.VarAttribute{nbvar-1}.units=radius_unit;
                 if check_degree
-                Data.VarAttribute{nbvar}.unit='degree';
-                elseif check_unit
-                    Data.VarAttribute{nbvar}.unit=Data.VarAttribute{nbvar-1}.unit;
+                     Data.VarAttribute{nbvar}.units='degree';
+                else %case of a reference radius
+                    Data.VarAttribute{nbvar}.units=radius_unit;
+                    Data.CoordUnit=radius_unit;
                 end
+%                 if isfield(DataCell{ifield},'CoordUnit')
+%                     Data=rmfield(Data,'CoordUnit');
+%                     Data.VarAttribute{nbvar-1}.unit=DataCell{ifield}.CoordUnit;
+%                 elseif isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+%                     Data.VarAttribute{nbvar-1}.unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+%                 else
+%                     check_unit=0;
+%                 end
+                Data.VarAttribute{nbvar}.Role='coord_y';
+%                 if check_degree
+%                 Data.VarAttribute{nbvar}.units='degree';
+%                 elseif check_unit
+%                     Data.VarAttribute{nbvar}.units=Data.VarAttribute{nbvar-1}.units;
+%                 end
   
                 %transform u,v into polar coordinates
                 X=DataCell{ifield}.(CellInfo{icell}.XName);
@@ -249,30 +263,31 @@ for ifield=1:nbinput %1 or 2 input fields
             elseif strcmp(CellInfo{icell}.CoordType,'grid')
                 if nbgrid==0% no gridded data yet, introduce the coordinate variables common to all gridded data
                     nbcoord=nbcoord+1;%add new radial coordinates for the first gridded field
-                    radius_name = rename_indexing(radius_name,Data.ListVarName);
-                    theta_name = rename_indexing(theta_name,Data.ListVarName);
-                    Data.ListVarName = [Data.ListVarName {radius_name} {theta_name}];
+                    radius_name = rename_indexing(radius_name,Data.ListVarName);% add an index to the name, or increment an existing index,
+                    theta_name = rename_indexing(theta_name,Data.ListVarName);% if the proposed Name already exists in the list
+                    Data.ListVarName = [Data.ListVarName {radius_name} {theta_name}];%add polar coordinates to the list of variables
                     Data.VarDimName=[Data.VarDimName {radius_name} {theta_name}];
                     nbvar=nbvar+2;
                     if check_reverse
-                                            Data.VarAttribute{nbvar-1}.Role='coord_y';
-                    Data.VarAttribute{nbvar}.Role='coord_x';
+                        Data.VarAttribute{nbvar-1}.Role='coord_y';
+                        Data.VarAttribute{nbvar}.Role='coord_x';
                     else
-                    Data.VarAttribute{nbvar-1}.Role='coord_x';
-                    Data.VarAttribute{nbvar}.Role='coord_y';
+                        Data.VarAttribute{nbvar-1}.Role='coord_x';
+                        Data.VarAttribute{nbvar}.Role='coord_y';
                     end
                     check_unit=1;
-                    if isfield(DataCell{ifield},'CoordUnit')
-                        Data.VarAttribute{nbvar-1}.unit=DataCell{ifield}.CoordUnit;
-                    elseif isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
-                        Data.VarAttribute{nbvar-1}.unit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+
+                    if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+                        Data.VarAttribute{nbvar-1}.units=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
+                    elseif isfield(DataCell{ifield},'CoordUnit')
+                        Data.VarAttribute{nbvar-1}.units=DataCell{ifield}.CoordUnit;%radius in coord units
                     else
                         check_unit=0;
                     end
                     if check_degree
-                        Data.VarAttribute{nbvar}.unit='degree';
+                        Data.VarAttribute{nbvar}.units='degree';%angle in degree
                     elseif check_unit
-                        Data.VarAttribute{nbvar}.unit=Data.VarAttribute{nbvar-1}.unit;
+                        Data.VarAttribute{nbvar}.units=Data.VarAttribute{nbvar-1}.units;% angle in coord unit (normalised by reference radiuss)
                     end
                 end
                 if isfield(CellInfo{icell},'VarIndex_scalar')
@@ -281,8 +296,6 @@ for ifield=1:nbinput %1 or 2 input fields
                     Data.VarAttribute{nbvar}.Role='scalar';
                     FieldName{nbgrid}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_scalar};
                     A{nbgrid}=DataCell{ifield}.(FieldName{nbgrid});
-%                     Data.ListVarName=[Data.ListVarName {FieldName{nbgrid}}];
-%                     Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}}];
                     nbpoint(nbgrid)=numel(A{nbgrid});
                     check_scalar(nbgrid)=1;
                     coord_x{nbgrid}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.XIndex});
@@ -295,7 +308,7 @@ for ifield=1:nbinput %1 or 2 input fields
                     FieldName{nbgrid+2}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_y};
                     A{nbgrid+1}=DataCell{ifield}.(FieldName{nbgrid+1});
                     A{nbgrid+2}=DataCell{ifield}.(FieldName{nbgrid+2});
-                   % Data.ListVarName=[Data.ListVarName {'U_r','U_theta'}];
+                    % Data.ListVarName=[Data.ListVarName {'U_r','U_theta'}];
                     %Data.VarDimName=[Data.VarDimName {{theta_name,radius_name}} {{theta_name,radius_name}}];
                     Data.VarAttribute{nbvar+1}.Role='vector_x';
                     Data.VarAttribute{nbvar+2}.Role='vector_y';
