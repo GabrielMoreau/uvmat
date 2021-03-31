@@ -120,7 +120,7 @@ for iview=1:NbView
         msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
         return
     end
-    [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});900
+    [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
     FileType{iview}=FileInfo{iview}.FileType;
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
@@ -136,7 +136,7 @@ XmlData=[];
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
 if size(time,1)>1
     diff_time=max(max(diff(time)));
-    if diff_time>0series
+    if diff_time>0
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
@@ -184,7 +184,7 @@ nbfiles=0;
 nbmissing=0;
 
 %% initialisation
-T=24.2; %main wave period
+T=24.4; %main wave period
 t0=3; % time for motion start (torus at its maximum x)
 NbPeriod=2; %number of periods for the sliding average
 omega=2*pi/T;
@@ -194,11 +194,11 @@ Uscale=amplitude*omega;
 
 DataOut.ListGlobalAttribute= {'Conventions','Time'};
 DataOut.Conventions='uvmat';
-DataOut.ListVarName={'coord_y','coord_x','Umean','Vmean','Ucos','Vcos','DUDXsin','DUDXcos','DUDYsin','DVDXsin','DVDXcos'...
+DataOut.ListVarName={'coord_y','coord_x','Umean','Vmean','Ucos','Vcos','Usin','Vsin','DUDXsin','DUDXcos','DUDYsin','DVDXsin','DVDXcos'...
     ,'DVDYsin','Ustokes','Vstokes'};
 DataOut.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
     {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},...
-    {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
+    {'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'},{'coord_y','coord_x'}};
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 % First get time %
@@ -236,6 +236,8 @@ for index=1:NbField
         Vmean=zeros(NpTime,npy,npx);
         Ucos=zeros(NpTime,npy,npx);
         Vcos=zeros(NpTime,npy,npx);
+        Usin=zeros(NpTime,npy,npx);
+        Vsin=zeros(NpTime,npy,npx);
         DUDXcos=zeros(NpTime,npy,npx);
         DUDXsin=zeros(NpTime,npy,npx);
         DUDYsin=zeros(NpTime,npy,npx);
@@ -248,6 +250,8 @@ for index=1:NbField
     Vmean=circshift(Vmean,[-1 0 0]); %shift U by ishift along the first index
     Ucos=circshift(Ucos,[-1 0 0]); %shift U by ishift along the first index
     Vcos=circshift(Vcos,[-1 0 0]); %shift U by ishift along the first index
+    Usin=circshift(Usin,[-1 0 0]); %shift U by ishift along the first index
+    Vsin=circshift(Vsin,[-1 0 0]); %shift U by ishift along the first index
     DUDXcos=circshift(DUDXcos,[-1 0 0]);
     DUDXsin=circshift(DUDXsin,[-1 0 0]);
     DUDYsin=circshift(DUDYsin,[-1 0 0]);        
@@ -258,6 +262,8 @@ for index=1:NbField
     Vmean(end,:,:)=Field.V;
     Ucos(end,:,:)=Field.U*cos(omega*Time(index));
     Vcos(end,:,:)=Field.V*cos(omega*Time(index));
+    Usin(end,:,:)=Field.U*sin(omega*Time(index));
+    Vsin(end,:,:)=Field.V*sin(omega*Time(index));
     DUDXcos(end,:,:)=Field.DUDX*cos(omega*Time(index));
     DUDXsin(end,:,:)=Field.DUDX*sin(omega*Time(index));
     DUDYsin(end,:,:)=Field.DUDY*sin(omega*Time(index));% ParamOut=[];%default output
@@ -268,8 +274,10 @@ for index=1:NbField
     DataOut.Time=(Time(index)-(NpTime-1)*dt/2)/T;%time inperiods from the beginning of the oscillation (torus at max abscissa)
     DataOut.Umean=(1/Uscale)*squeeze(nanmean(Umean,1));
     DataOut.Vmean=(1/Uscale)*squeeze(nanmean(Vmean,1));
-    DataOut.Ucos=2*squeeze(nanmean(Ucos,1));
-    DataOut.Vcos=2*squeeze(nanmean(Vcos,1));
+    DataOut.Ucos=2*(1/Uscale)*squeeze(nanmean(Ucos,1));
+    DataOut.Vcos=2*(1/Uscale)*squeeze(nanmean(Vcos,1));
+    DataOut.Usin=2*(1/Uscale)*squeeze(nanmean(Usin,1));
+    DataOut.Vsin=2*(1/Uscale)*squeeze(nanmean(Vsin,1));
     DataOut.DUDXcos=2*squeeze(nanmean(DUDXcos,1));
     DataOut.DUDXsin=2*squeeze(nanmean(DUDXsin,1));
     DataOut.DUDYsin=2*squeeze(nanmean(DUDYsin,1));

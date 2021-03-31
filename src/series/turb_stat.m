@@ -302,6 +302,6 @@ end
 
 
 %% open the result file with uvmat (in RUN mode)
-if checkrun
+if checkrun && isequal(Param.IndexRange.NbSlice,1)
     uvmat(OutputFile)% open the last result file with uvmat
 end

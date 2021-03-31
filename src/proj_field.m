@@ -1125,13 +1125,14 @@ check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for ea
 ProjMode=num2cell(blanks(numel(CellInfo)));
 ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
 icell_grid=[];% field cell index which defines the grid
+icell_scattered=[];% field cell index which defines fields with scattered coordinates
 if strcmp(ObjectData.ProjMode,'projection')
     %% case of a grid requested by the input field
     for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
         if isfield(CellInfo{icell},'ProjModeRequest')
             switch CellInfo{icell}.ProjModeRequest
-                case 'interp_lin'
-                    ProjMode{icell}='interp_lin';
+%                 case 'interp_lin'
+%                     ProjMode{icell}='interp_lin';
                 case 'interp_tps'
                     ProjMode{icell}='interp_tps';
             end
@@ -1145,6 +1146,8 @@ if strcmp(ObjectData.ProjMode,'projection')
                 ProjMode{icell}='projection';
             end
             check_grid(icell)=1;
+        elseif strcmp(CellInfo{icell}.CoordType,'scattered')
+            icell_scattered=icell;
         end
     end
     if ~isempty(find(check_grid,1))% if a grid is requested by the input field
@@ -1200,8 +1203,14 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
     ProjData.ListVarName={AYName,AXName};   
     ProjData.VarAttribute{1}.Role='coord_y';
     ProjData.VarAttribute{2}.Role='coord_x';
+    if ~isempty(icell_grid)
             YAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim-1)};
         XAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim)};
+    elseif ~isempty(icell_scattered)
+        NbDim=NbDimArray(icell_scattered);
+        YAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim-1)};
+        XAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim)};
+    end
     if ~testangle 
         if isfield(YAttribute,'units')
             ProjData.VarAttribute{1}.units=YAttribute.units;

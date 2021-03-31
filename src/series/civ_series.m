@@ -365,9 +365,10 @@ for ifield=1:NbField
                 j2_civ2=j2_series_Civ2(ifield);
             end
             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-                ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+                ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
             else % displacement
-                ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
+                ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
             end
         end
         if ~CheckOverwrite && exist(ncfile_out,'file')

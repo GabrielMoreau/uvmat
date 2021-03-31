@@ -148,8 +148,6 @@ end
 
 
 %% initate cells around each scalar field with different coordinates
-% index_remove=[];
-% index_coord_x=zeros(size(ind_coord_x));
 cell_counter=0;
 DimCell={};
 for iscalar=1:numel(ind_scalar) 

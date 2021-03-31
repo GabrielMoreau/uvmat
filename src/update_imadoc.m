@@ -89,9 +89,9 @@ if ~testappend
 end
 
 %% save the output file
-t=struct2xml(Struct,t,uid_calib); 
+t=struct2xml(Struct,t,uid_calib);
 try
-save(t,outputfile);
+    save(t,outputfile);
 catch ME
-    errormsg=['error in update_imadoc' ME.message];
+    errormsg=['error in saving ' outputfile ': ' ME.message];
 end

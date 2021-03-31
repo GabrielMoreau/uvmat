@@ -37,23 +37,27 @@ switch(nargin)
         elseif ischar(varargin{1})
             % Input argument is an XML string
             if (~exist(varargin{1},'file') && ...
-                ~isempty(xml_findstr(varargin{1},'<',1,1)))
+                    ~isempty(xml_findstr(varargin{1},'<',1,1)))
                 tree.tree = xml_parser(varargin{1});
                 tree.filename = '';
-            % Input argument is an XML filename
+                % Input argument is an XML filename
             else
-                fid = fopen(varargin{1},'rt');
-                if (fid == -1) 
-                    error(['[XMLTree] Cannot open ' varargin{1}]);
+                if isempty(regexp(varargin{1},'^http://'))%ordinary file (not OpenDAP)
+                    fid = fopen(varargin{1},'rt');
+                    if (fid == -1)
+                        error(['[XMLTree] Cannot open ' varargin{1}]);
+                    end
+                    xmlstr = fread(fid,'*char')';
+                    %xmlstr = fscanf(fid,'%c');
+                    fclose(fid);
+                else
+                    xmlstr=webread(varargin{1});%OpenDAP case
                 end
-                xmlstr = fread(fid,'*char')';
-                %xmlstr = fscanf(fid,'%c');
-                fclose(fid);
                 tree.tree = xml_parser(xmlstr);
-                tree.filename = varargin{1};
+                tree.filename = varargin{1};             
             end
             tree = class(tree,'xmltree');
-        else 
+        else
             error('[XMLTree] Bad input argument');
         end
     otherwise

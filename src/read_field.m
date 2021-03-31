@@ -92,13 +92,10 @@ switch FileType
         [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civxdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
-    case 'netcdf'% general netcdf file (not recognized as civ)
+    case {'netcdf','mat'}% general netcdf file (not recognized as civ)
         ListVarName={};
         Role={};
         ProjModeRequest={};
-        %ListInputField={};
-        %checkU=0;
-        %checkV=0;
         % scan the list InputField
         Operator=cell(1,numel(InputField));
         InputVar=cell(1,numel(InputField));
@@ -107,8 +104,6 @@ switch FileType
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if isempty(r)%  no operator used
                 ListVarName=[ListVarName InputField(ilist)];%append the variable name
-                %InputVar{ilist}=InputField(ilist);
-                %ListInputField=[ListInputField InputField(ilist)];
                 if check_colorvar(ilist)% case of field used for vector color
                     Role{numel(ListVarName)}='ancillary';% not projected with interpolation
                     ProjModeRequest{numel(ListVarName)}='';
@@ -128,10 +123,8 @@ switch FileType
                 else
                      Role=[Role {'vector_x'}];
                 end
-                %ListInputField=[ListInputField InputField(ilist)];
                 ListVarName=[ListVarName {r.VName}];% append the variable in the list if not previously listed
                 Role=[Role {'vector_y'}];
-                %ListInputField=[ListInputField InputField(ilist)];
                 Operator{numel(ListVarName)-1}=r.Operator;
                 Operator{numel(ListVarName)}='';           
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
@@ -237,9 +230,7 @@ switch FileType
             Field.ListVarName=[Field.ListVarName(1:NbCoord) ListVarName];% complement the list of vqriables, which may be listed twice
             Field.VarDimName=[Field.VarDimName(1:NbCoord) VarDimName];
             Field.VarAttribute=[Field.VarAttribute(1:NbCoord) VarAttribute];
-        end
-    case 'mat'
-         Field=load(FileName);  
+        end  
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);

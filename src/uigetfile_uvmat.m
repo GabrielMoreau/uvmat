@@ -53,7 +53,7 @@ if ischar(InputName)
             InputFileName='';
         elseif exist(InputName,'file')
             [InputDir,InputFileName,Ext]=fileparts(InputName);
-            if isempty(InputFileName)% if InputName is already the root
+            if isempty(InputFileName)% if InputName is alr2eady the root
                 InputFileName=InputDir;
                 if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
                     %                 InputDir=[InputDir '\'];% append '\' for a correct action of dir
@@ -307,7 +307,8 @@ else
     else
         FullSelectName=[DirName '/' SelectName];
     end
-end
+end%     end
+% end
 if CheckSubDir%exist(FullSelectName,'dir')% a directory has been selected
     set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
     drawnow
@@ -343,11 +344,7 @@ ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 index_dir=find(strcmp('isdir',fieldnames(ListStruct)));
 check_dir=cell2mat(ListCells(index_dir,:));% =1 for directories, =0 for files
-% for ilist=1:numel(check_dir)
-%     if check_dir(ilist)
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-%     end
-% end
 if exist('filter_ext','var') && ~strcmp(filter_ext,'*') &&~strcmp(filter_ext,'uigetdir')
     if strcmp(filter_ext,'image')
         check_keep=cellfun(@isimage,ListFiles) ;

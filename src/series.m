@@ -3422,8 +3422,11 @@ filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml'); % get the x
 if isempty(filexml), return, end % quit function if an xml file has not been opened
 
 %% fill the GUI series with the content of the xml file
-Param=xml2struct(filexml); % read the input xml file as a Matlab structure
-
+[Param,RootTag,errormsg]=xml2struct(filexml); % read the input xml file as a Matlab structure
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg);
+    return
+end
 % ask to stop current Action if button RUN is in action (another process is already running)
 if isequal(get(handles.RUN,'Value'),1)
     answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');

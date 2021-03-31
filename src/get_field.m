@@ -78,7 +78,12 @@ set(hObject,'CloseRequestFcn',{@closefcn,handles})
 %% enter input data
 if ischar(filename) % input file name
     set(handles.inputfile,'String',filename)% fill the input file name
+    if ~isempty(regexp(filename,'.mat$'))%case of .mat file
+        Field=mat2struct(filename);
+        errormsg='';
+    else
     [Field,tild,tild,errormsg]=nc2struct(filename,[]);% reads the  field structure, without the variables
+    end
 else
     msgbox_uvmat('ERROR','get_field requires a file name as input')% display error message for input file reading
     return
@@ -404,12 +409,6 @@ FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
         set(handles.Coordinates,'Visible','on')
-        %set(handles.PanelOrdinate,'Visible','on')
-        %pos=get(handles.PanelOrdinate,'Position');
-%         pos(1)=2;
-%         pos_coord=get(handles.Coordinates,'Position');
-%         pos(2)=pos_coord(2)-pos(4)-2;
-        %set(handles.PanelOrdinate,'Position',pos)
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','off')
         set(handles.Coord_y,'Visible','on')
@@ -418,12 +417,9 @@ switch FieldOption
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
         set(handles.Coord_x,'String',Field.Display.ListVarName')
-        Coord_x_Callback(hObject, VarName, handles) 
-        %set(handles.Coord_y,'String',Field.Display.ListVarName')
-        %Coord_x_Callback(hObject, VarName, handles)       
+        Coord_x_Callback(hObject, VarName, handles)     
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
-        %set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','on')
         set(handles.PanelVectors,'Visible','off')
         pos=get(handles.PanelScalar,'Position');
@@ -468,6 +464,7 @@ switch FieldOption
         set(handles.PanelVectors,'Position',pos)
         set(handles.Coord_y,'Visible','on')
         set(handles.Y_title,'Visible','on')
+        set(handles.Coord_x,'Visible','on')
         %default vector selection
         vector_x_value=get(handles.vector_x,'UserData');
         vector_y_value=get(handles.vector_y,'UserData');
@@ -769,6 +766,7 @@ vector_Callback(handles)
 if ~ischar(DimCell)
 update_field(handles,VarName)
 end
+
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_x or vector_y
 function vector_Callback( handles)
@@ -802,7 +800,7 @@ if check_consistent
     var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
     var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
     var_component(var_component==vector_x_index|var_component==vector_y_index)=[];
-    var_coord(var_coord==vector_x_index|var_coord==vector_y_index)=[];% remove vector components form te possible list of coordinates
+    var_coord(var_coord==vector_x_index|var_coord==vector_y_index)=[];% remove vector components from the possible list of coordinates
     ListCoord=Field.Display.ListVarName([var_coord var_component]);
     
     %% set default coord selection
@@ -843,8 +841,8 @@ if check_consistent
         if numel(find(coord_val))<2
             coord_val=[1 2 3];
         end
-        set(handles.Coord_x,'Value',coord_val(end))
-        set(handles.Coord_y,'Value',coord_val(end-1))
+        set(handles.Coord_x,'Value',min(coord_val(end),numel(ListCoord)))
+        set(handles.Coord_y,'Value',min(coord_val(end-1),numel(ListCoord)))
         if numel(coord_val)>=3
             set(handles.Coord_z,'Value',coord_val(end-2))
         end
@@ -886,7 +884,7 @@ function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 % --- Executes on selection change in Coord_x.
 %------------------------------------------------------------------------
 function Coord_x_Callback(hObject, DimCell, handles)
-DimCell
+
 index=get(handles.Coord_x,'Value');
 string=get(handles.Coord_x,'String');
 VarName=string{index};

@@ -118,9 +118,9 @@ for ind=1:numel(imax)
         if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_tps')
             FieldOut.ProjModeRequest='interp_tps';
         end
-        if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_lin')&& ~strcmp(FieldOut.ProjModeRequest,'interp_tps')
-            FieldOut.ProjModeRequest='interp_lin';
-        end
+%         if strcmp(CellInfo{imax(ind)}.ProjModeRequest,'interp_lin')&& ~strcmp(FieldOut.ProjModeRequest,'interp_tps')
+%             FieldOut.ProjModeRequest='interp_lin';
+%         end
     end
 end
 Mesh=min(Mesh);
