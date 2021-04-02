@@ -41,36 +41,31 @@ if ~ischar(flname)
     errormsg='invalid input for the netcf file name';
     return
 end
+FilePath=fileparts(flname);
+if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
+    errormsg=['directory ' FilePath ' needs to be created'];
+    return
+end
 if ~exist('Data','var')
      errormsg='no data  input for the netcdf file';
     return
 end 
 
-
 %% check the validity of the input field structure
 if ~ (exist('action','var') && strcmp(action,'keep_open'))
-[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
-if ~isempty(errormsg)
-    errormsg=['error in struct2nc:invalid input structure_' errormsg];
-    return
-end
+    [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
+    if ~isempty(errormsg)
+        errormsg=['error in struct2nc:invalid input structure_' errormsg];
+        return
+    end
 end
 ListVarName=Data.ListVarName;
 
 %% create the netcdf file with name flname in format NETCDF4
-% if ischar(flname)
-    FilePath=fileparts(flname);
-    if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
-        errormsg=['directory ' FilePath ' needs to be created'];
-        return
-    end
-    cmode = netcdf.getConstant('NETCDF4');
-    cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
-    cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
-    nc = netcdf.create(flname, cmode);
-% else
-%     nc=flname;
-% end
+cmode = netcdf.getConstant('NETCDF4');
+cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
+cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
+nc = netcdf.create(flname, cmode);
 
 %% write global constants
 if isfield(Data,'ListGlobalAttribute')

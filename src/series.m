@@ -626,7 +626,7 @@ empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
     empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));
 end
-if ~isempty(find(empty_line));
+if ~isempty(find(empty_line,1))
     InputTable(empty_line,:)=[]; % remove empty lines
     set(handles.InputTable,'Data',InputTable)
     ListTable={'MinIndex_i','MaxIndex_i','MinIndex_j','MaxIndex_j','PairString','TimeTable'};
@@ -742,12 +742,6 @@ elseif strcmp(FileType,'figure')
 end
 
 %% enable other menus and uicontrols
-% set(handles.MenuOpenCampaign,'Enable','on')
-% set(handles.MenuCampaign_1,'Enable','on')
-% set(handles.MenuCampaign_2,'Enable','on')
-% set(handles.MenuCampaign_3,'Enable','on')
-% set(handles.MenuCampaign_4,'Enable','on')
-% set(handles.MenuCampaign_5,'Enable','on')
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
@@ -757,13 +751,12 @@ drawnow
 %% fill the list of file series
 InputTable=get(handles.InputTable,'Data');
 SeriesData=get(handles.series,'UserData');
+
 if strcmp(iview,'append') % display the input data as a new line in the table
     iview=size(InputTable,1)+1; % the next line in InputTable becomes the current line
-%     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; % the first line in InputTable becomes the current line
     InputTable={'','','','',''};
-%     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{''},{[]},{[]},{[]},{[]}])
     set(handles.MinIndex_i,'Data',[])
     set(handles.MaxIndex_i,'Data',[])
@@ -859,6 +852,29 @@ SeriesData.Ref_i1=i1;
 SeriesData.Ref_i2=i2;
 SeriesData.Ref_j1=j1;
 SeriesData.Ref_j2=j2;
+
+%% define the path for the output files 
+[InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
+[InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
+[~,InputPath,InputPathExt]=fileparts(InputPath);
+set(handles.Device,'String',[Device DeviceExt])
+set(handles.Experiment,'String',[Experiment ExperimentExt])
+if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
+    set(handles.OutputPathBrowse,'Value',1)% an output folder needs to be specified for OpenDAP data
+end
+
+%update the output path if needed
+if ~(isfield(SeriesData,'InputPath') && strcmp(SeriesData.InputPath,InputPath))
+    if get(handles.OutputPathBrowse,'Value')==1  % fix the output path in manual mode
+        OutputPathOld=get(handles.OutputPath,'String');
+        OutputPath=uigetdir(OutputPathOld,'pick a root folder for output data');
+        set(handles.OutputPath,'String',OutputPath)
+    else %reproduce the input path for output
+        set(handles.OutputPath,'String',InputPath)
+    end
+    SeriesData.InputPath=InputPath;
+end
+
 set(handles.series,'UserData',SeriesData)
 
 set(handles.InputTable,'BackgroundColor',[1 1 1])
@@ -1028,18 +1044,6 @@ if ~isempty(XmlFileName)
             NbSlice=NbSlice_motor;
         end
     end
-   
-%     if isfield(XmlData,'GeometryCalib')
-%         check_calib=1;
-%         if isfield(XmlData.GeometryCalib,'SliceCoord')
-%             siz=size(XmlData.GeometryCalib.SliceCoord);
-%             if ~isempty(NbSlice)&& ~isequal(size(1),NbSlice)
-%                 msgbox_uvmat('WARNING','inconsistent numbers of Z indices between motor and calibration');
-%             else
-%                 NbSlice=siz(1);
-%             end
-%         end
-%     end
 end
 if ~isempty(NbSlice)
 set(handles.num_NbSlice,'String',num2str(NbSlice))
@@ -1049,7 +1053,7 @@ end
 %% read timing  from the current file (prioritary)
 if ~isempty(VideoObject)% case of movies
     imainfo=get(VideoObject);
-    if isempty(j1_series); % frame index along i
+    if isempty(j1_series) % frame index along i
         Time=zeros(imainfo.NumberOfFrames+1,2);
         Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
     else
@@ -1068,7 +1072,7 @@ if ~isempty(TimeName)
     if size(Time)>=[last_i+1 last_j+1]
         TimeLast=Time(last_i+1,last_j+1);
     end
-    if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1];
+    if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
         TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
     end
 end
@@ -1133,8 +1137,8 @@ for iline=1:nbview
     pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); % max on pair index
     j_max{iline}=max(pair_max,[],1); % max on j index
     if ~isempty(j_max{iline})
-    MaxIndex_i(iline)=max(find(j_max{iline}))-1; % max ref index i
-    MinIndex_i(iline)=min(find(j_max{iline}))-1; % min ref index i
+    MaxIndex_i(iline)=find(j_max{iline}, 1, 'last' )-1; % max ref index i
+    MinIndex_i(iline)=find(j_max{iline}, 1 )-1; % min ref index i
     end
 end
 MinIndex_i=min(MinIndex_i);
@@ -1148,7 +1152,7 @@ for iline=1:nbview
     ind_y=1+(iline-1)*range_y:iline*range_y;
     LineData=zeros(size(file_indices));
     file_select=file_indices(file_indices<=numel(j_max{iline}));
-    ind_select=find(file_indices<=numel(j_max{iline}));
+    ind_select=file_indices<=numel(j_max{iline});
     LineData(ind_select)=j_max{iline}(file_select)~=0;
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
 end
@@ -1197,6 +1201,7 @@ end
 
 
 %------------------------------------------------------------------------
+%fill the menu of possible pairs as input
 function displ_pair=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo)
 %------------------------------------------------------------------------
 displ_pair={};
@@ -1211,9 +1216,9 @@ switch mode
         min_diff=min(diff_i(diff_i>0));
         max_diff=max(diff_i(diff_i>0));
         for ipair=min_diff:max_diff
-            if numel(diff_i(diff_i==ipair))>0
+            if ~isempty(find(diff_i==ipair,1))% if the considered difference exists as input
                 pair_string=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-                if ~isempty(time)
+                if size(time,1)>=ref_i+ceil(ipair/2)
                     if ref_i<=floor(ipair/2)
                         ref_i=floor(ipair/2)+1; % shift ref_i to get the first pair
                     end
@@ -2136,7 +2141,11 @@ for iexp=1:NbExp
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
             [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
             filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
-            fid=fopen(filename_oarcommand,'w');
+            [fid,errormsg]=fopen(filename_oarcommand,'w');
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',['cannot create ' filename_oarcommand ': ' errormsg])
+                return
+            end
             fprintf(fid,oar_command); % store the command
             fprintf(fid,result); % store the result (job ID number)
             fclose(fid);
@@ -2722,13 +2731,6 @@ set(handles.Device_title,'Visible','on')
 set(handles.Experiment,'String',[Experiment ExperimentExt])
 set(handles.Experiment,'Visible','on')
 set(handles.Experiment_title,'Visible','on')
-OutputPathOld=get(handles.OutputPath,'String')
-if isempty(OutputPathOld)
-    if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
-        OutputPath=uigetdir(pwd,'pick a root folder for output data');
-    end
-    set(handles.OutputPath,'String',OutputPath)
-end
 set(handles.Experiment_title,'Visible','on')
 set(handles.OutputPath,'Visible','on')
 set(handles.OutputPathBrowse,'Visible','on')
@@ -2776,7 +2778,7 @@ set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
-set(handles.OutputDir_title,'Visible',OutputDirVisible)
+% set(handles.OutputDir_title,'Visible',OutputDirVisible)
 SeriesData.ActionName=ActionName; % record ActionName for next use
 
 
@@ -3950,32 +3952,21 @@ end
 
 
 function OutputPath_Callback(hObject, eventdata, handles)
-% hObject    handle to OutputPath (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of OutputPath as text
-%        str2double(get(hObject,'String')) returns contents of OutputPath as a doubl
-
 
 
 function Experiment_Callback(hObject, eventdata, handles)
-% hObject    handle to Experiment (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Experiment as text
-%        str2double(get(hObject,'String')) returns contents of Experiment as a double
 
 
 function Device_Callback(hObject, eventdata, handles)
-% hObject    handle to Device (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 
 % --- Executes on button press in OutputPathBrowse.
 function OutputPathBrowse_Callback(hObject, eventdata, handles)
+CheckValue=get(handles.OutputPathBrowse,'Value');
+if CheckValue
 OutputPath=uigetdir(get(handles.OutputPath,'String'));
 set(handles.OutputPath,'String',OutputPath)
+else
+    InputTable=get(handles.InputTable,'Data');
+    set(handles.OutputPath,'String',InputTable{1,1})
+end

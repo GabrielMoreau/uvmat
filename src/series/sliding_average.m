@@ -184,11 +184,27 @@ nbfiles=0;
 nbmissing=0;
 
 %% initialisation
-T=24.4; %main wave period
-t0=3; % time for motion start (torus at its maximum x)
+char_index=regexp(SubDir{1},'waves_L1_');
+switch(SubDir{1}(char_index+9))
+    case '1'
+        amplitude=2.5 %oscillation amplitude
+        T=24.46;
+        t0=3 ;% dt=0.5 s, torus at its max x at the beginning of motion, i0=7
+    case '2'
+        amplitude=5 %oscillation amplitude
+        T=24.47;
+        t0=8.5; % dt=1/3 s -> image index of starting motion = 26, % torus at its max x at the beginning of motion
+    case '3'
+        amplitude=10 %oscillation amplitude
+        T=24.45;
+        t0=6.5-T/2;% dt=0.25, torus at its minimum x at the beginning of motion
+    case '4'  
+        amplitude=15 %oscillation amplitude
+        T=24.48;
+        t0=3.4;     %dt=0.2 -> i0=18 image index of starting motion, % torus at its max x at the beginning of motion
+end
 NbPeriod=2; %number of periods for the sliding average
 omega=2*pi/T;
-amplitude=2.5; %oscillation amplitude
 Lscale=15;%diameter of the torus, length scale for normalisation
 Uscale=amplitude*omega;
 
@@ -213,7 +229,7 @@ Time_end=Data.Time;
 dt=(Time_end-Time_1)/(NbField-1); %time interval 
 NpTime=round(NbPeriod*T/dt+1);
 
-OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
 RootFileOut=RootFile{1};
 NomTypeOut='_1';
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%

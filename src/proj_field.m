@@ -1073,7 +1073,7 @@ if isfield(ObjectData,'RangeInterp')
     thresh2=ObjectData.RangeInterp*ObjectData.RangeInterp;%square of interpolation range (do not interpolate beyond this range)
 end
 
-%% initiate Matlab  structure for physical field
+%% initiate Matlab  structure for physical fieldopen
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 if ~isempty(errormsg)
     return
@@ -1203,6 +1203,8 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
     ProjData.ListVarName={AYName,AXName};   
     ProjData.VarAttribute{1}.Role='coord_y';
     ProjData.VarAttribute{2}.Role='coord_x';
+    YAttribute=[];
+    XAttribute=[];
     if ~isempty(icell_grid)
             YAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim-1)};
         XAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim)};

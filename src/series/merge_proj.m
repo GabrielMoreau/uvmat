@@ -82,8 +82,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    elseif isequal(size(Param.InputTable,1),1) && ~isfield(Param,'ProjObject')
-        msgbox_uvmat('WARNING','You may need a projection object of type plane for merge_proj')
     end
     return
 end
@@ -251,7 +249,7 @@ CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
-OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
 
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
