@@ -224,6 +224,8 @@ if isfield(Param,'ProjObject') && ~strcmp(Param.ProjObject.Type,'plane')
 end
 
 %% settings for the output file
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
 first_i=i1_series{1}(1);
 last_i=i1_series{1}(end);
@@ -466,7 +468,7 @@ for islice=index_j
     end
     
     %% writing the result file
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
+    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
     if strcmp(FileExtOut,'.png') %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);

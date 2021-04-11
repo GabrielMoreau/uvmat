@@ -278,6 +278,7 @@ if strcmp(htype,'axes')
                 Param.CheckPatch1=0;%desactivate all calculations except Civ2 or Civ1
                 Param.Action.RUN=1;
                 Param.ActionInput.ListCompareMode='PIV';
+                Param.ActionInput.PairIndices=read_GUI(hhciv.PairIndices);
                 par_civ.ImageA=Field.A;
                 par_civ.ImageB=Field.B;
                 par_civ.ImageHeight=size(par_civ.ImageA,1);

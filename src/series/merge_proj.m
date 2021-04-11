@@ -238,10 +238,6 @@ end
 
 %% MAIN LOOP ON FIELDS
 %%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-% for i_slice=1:NbSlice
-%     index_slice=i_slice:NbSlice:NbField;% select file indices of the slice
-%     NbFiles=0;
-%     nbmissing=0;
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 tstart=tic; %used to record the computing time

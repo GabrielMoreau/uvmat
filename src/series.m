@@ -167,24 +167,13 @@ ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
 [s,w]=system(SeriesData.SeriesParam.ClusterParam.ExistenceTest); % look for cluster system presence
-% [s,w]=system('oarstat'); % look for cluster system 'oar'
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
     set(handles.num_CPUTime,'Visible','on'); % make visible button for CPU time estimate for one ref index
-    set(handles.num_CPUTime,'String','1')% defqult CPU time estimate 1 minute
+    set(handles.num_CPUTime,'String','')% default CPU time undefined
     set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time title
 end
-% [s,w]=system('qstat -help'); % look for cluster system 'sge'
-% if isequal(s,0)
-%     if regexp(w,'^pbs')
-%         RunModeList=[RunModeList;{'cluster_pbs'}];
-%     elseif regexp(w,'^SGE')
-%         RunModeList=[RunModeList;{'cluster_sge'}];
-%     else
-%         RunModeList=[RunModeList;{'cluster_qstat_unknown'}];
-%     end
-% end
 set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
 
 %% list of builtin transform functions in the menu TransformName
@@ -207,12 +196,6 @@ if exist(profil_perso,'file')
             set(handles.(['MenuFile_' num2str(ifile+5)]),'Label',h.MenuFile{ifile});
         end
     end
-    %get the list of previous campaigns in the upper bar menu Open campaign
-%     if isfield(h,'MenuCampaign')
-%         for ifile=1:min(length(h.MenuCampaign),5)
-%             set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
-%         end
-%     end
     %get the menu of actions
     if isfield(h,'ActionListUser') && iscell(h.ActionListUser) && isfield(h,'ActionPathListUser') && iscell(h.ActionPathListUser)
         ActionList=[ActionList;h.ActionListUser];
@@ -286,9 +269,9 @@ end
 set(handles.series,'UserData',SeriesData)% initiate Userdata
 if isfield(Param,'InputFile')
     
-    %% fill the list of file series
+    %% fill the list of input file series
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
-    if isempty(find(cellfun('isempty',InputTable)==0)); % if there is no input file, do not introduce input info
+    if isempty(find(cellfun('isempty',InputTable)==0)) % if there is no input file, do not introduce input info
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
         return
     end
@@ -298,6 +281,27 @@ if isfield(Param,'InputFile')
         TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
+    
+    %% define the default path for the output files 
+    [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
+    [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
+    set(handles.Device,'String',[Device DeviceExt])
+    set(handles.Experiment,'String',[Experiment ExperimentExt])
+    if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
+    set(handles.OutputPathBrowse,'Value',1)% an output folder needs to be specified for OpenDAP data
+    end
+
+    %update the output path if needed
+    if ~(isfield(SeriesData,'InputPath') && strcmp(SeriesData.InputPath,InputPath))
+    if get(handles.OutputPathBrowse,'Value')==1  % fix the output path in manual mode
+        OutputPathOld=get(handles.OutputPath,'String');
+        OutputPath=uigetdir(OutputPathOld,'pick a root folder for output data');
+        set(handles.OutputPath,'String',OutputPath)
+    else %reproduce the input path for output
+        set(handles.OutputPath,'String',InputPath)
+    end
+    end
+    
     %% determine the selected reference field indices for pair display
     
     [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
@@ -856,7 +860,6 @@ SeriesData.Ref_j2=j2;
 %% define the path for the output files 
 [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
 [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
-[~,InputPath,InputPathExt]=fileparts(InputPath);
 set(handles.Device,'String',[Device DeviceExt])
 set(handles.Experiment,'String',[Experiment ExperimentExt])
 if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
@@ -1842,15 +1845,22 @@ for iexp=1:NbExp
             ref_j=first_j:incr_j:last_j;
         end
     end
-    CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
-    if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
-        CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
-    end
+%     CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
+%     if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
+%         CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+%     end
     nbfield_j=numel(ref_j); % number of j indices
     BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
     NbProcess=1;
     switch RunMode
         case 'cluster'
+            if (isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime))
+        CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+            else
+               answer=msgbox_uvmat('INPUT_TXT','estimate the CPU time(in minutes) for each value of index i:' ,''); 
+               CPUTime=str2num(answer);
+               set(handles.num_CPUTime,'String',answer)
+            end
             JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
             JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;
             if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
@@ -2423,7 +2433,7 @@ try
 end
 set(handles.ActionName,'BackgroundColor',[1 1 1])
 set(handles.ActionInput,'BackgroundColor',[1 0 1])% set ActionInput button to magenta color to indicate that input refr
-
+set(handles.num_CPUTime,'String','')
 
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
@@ -2636,7 +2646,7 @@ else  % check index ranges
         last_j=Param.IndexRange.last_j;
     end
     if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
-            set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
+            set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end
 end
 
 %% enable or desable j index visibility

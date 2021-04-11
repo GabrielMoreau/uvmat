@@ -70,7 +70,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    if isfield(Data.ActionInput,'PairIndices') && strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices') && strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
         if isfield(Data.ActionInput.PairIndices,'ListPairCiv2')
             str_civ=Data.ActionInput.PairIndices.ListPairCiv2;
         else
@@ -89,41 +89,41 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         end
     end
     % estimated CPUTime
-    CPUtime_unit=0.01;%estimated time for a multiplication (in microsecond)
-    if isfield(Param.SeriesData,'FileInfo')&&isfield(Param.SeriesData.FileInfo{1},'Height')&&isfield(Param.SeriesData.FileInfo{1},'Width')
-        pixnbre=Param.SeriesData.FileInfo{1}.Height*Param.SeriesData.FileInfo{1}.Width; % total number of pxels for input images  
-        CPUtime=0;
-        if isfield(Data.ActionInput,'Civ1')
-            %BoxSize=Data.ActionInput.Civ1.CorrBoxSize(1)*Data.ActionInput.Civ1.CorrBoxSize(2);
-            tic
-            testboxa=rand(Data.ActionInput.Civ1.CorrBoxSize(1),Data.ActionInput.Civ1.CorrBoxSize(2));
-            testboxb=rand(Data.ActionInput.Civ1.SearchBoxSize(1),Data.ActionInput.Civ1.SearchBoxSize(2));
-            anss=conv2(testboxa,testboxb);
-            CPUtime_unit=toc;
-            nb_box=pixnbre/(Data.ActionInput.Civ1.Dx*Data.ActionInput.Civ1.Dy);    
-            %nbpos=Data.ActionInput.Civ1.SearchBoxSize-Data.ActionInput.Civ1.CorrBoxSize;
-            CPUtime=2*CPUtime_unit*nb_box%*BoxSize*nbpos(1)*nbpos(2);% adjustement factor 2 used
-        end
-        if isfield(Data.ActionInput,'Patch1')
-            CPUtime=2*CPUtime;
-        end
-        if isfield(Data.ActionInput,'Civ2')
-            tic
-            testboxa=rand(Data.ActionInput.Civ2.CorrBoxSize(1),Data.ActionInput.Civ2.CorrBoxSize(2));
-            testboxb=rand(Data.ActionInput.Civ2.SearchBoxSize(1),Data.ActionInput.Civ2.SearchBoxSize(2));
-            anss=conv2(testboxa,testboxb);
-            CPUtime_unit=toc;
-            nb_box=pixnbre/(Data.ActionInput.Civ2.Dx*Data.ActionInput.Civ2.Dy);
-            %BoxSize=Data.ActionInput.Civ2.CorrBoxSize(1)*Data.ActionInput.Civ2.CorrBoxSize(2);
-            %nbpos=Data.ActionInput.Civ2.SearchBoxSize-Data.ActionInput.Civ2.CorrBoxSize;
-            CPUtime=CPUtime+2*CPUtime_unit*nb_box;%*BoxSize*nbpos(1)*nbpos(2);
-        end
-        if isfield(Data.ActionInput,'Patch2')
-            CPUtime=(4/3)*CPUtime;
-        end
-        Data.CPUTime=ceil(CPUtime/6); % estimated CPU time per field pair in minute
-        Data.CPUTime=Data.CPUTime/10; % displqy CPU time with 1 digit beyond dot
-    end
+%     CPUtime_unit=0.01;%estimated time for a multiplication (in microsecond)
+%     if isfield(Param.SeriesData,'FileInfo')&&isfield(Param.SeriesData.FileInfo{1},'Height')&&isfield(Param.SeriesData.FileInfo{1},'Width')
+%         pixnbre=Param.SeriesData.FileInfo{1}.Height*Param.SeriesData.FileInfo{1}.Width; % total number of pxels for input images  
+%         CPUtime=0;
+%         if isfield(Data.ActionInput,'Civ1')
+%             %BoxSize=Data.ActionInput.Civ1.CorrBoxSize(1)*Data.ActionInput.Civ1.CorrBoxSize(2);
+%             tic
+%             testboxa=rand(Data.ActionInput.Civ1.CorrBoxSize(1),Data.ActionInput.Civ1.CorrBoxSize(2));
+%             testboxb=rand(Data.ActionInput.Civ1.SearchBoxSize(1),Data.ActionInput.Civ1.SearchBoxSize(2));
+%             anss=conv2(testboxa,testboxb);
+%             CPUtime_unit=toc;
+%             nb_box=pixnbre/(Data.ActionInput.Civ1.Dx*Data.ActionInput.Civ1.Dy);    
+%             %nbpos=Data.ActionInput.Civ1.SearchBoxSize-Data.ActionInput.Civ1.CorrBoxSize;
+%             CPUtime=2*CPUtime_unit*nb_box%*BoxSize*nbpos(1)*nbpos(2);% adjustement factor 2 used
+%         end
+%         if isfield(Data.ActionInput,'Patch1')
+%             CPUtime=2*CPUtime;
+%         end
+%         if isfield(Data.ActionInput,'Civ2')
+%             tic
+%             testboxa=rand(Data.ActionInput.Civ2.CorrBoxSize(1),Data.ActionInput.Civ2.CorrBoxSize(2));
+%             testboxb=rand(Data.ActionInput.Civ2.SearchBoxSize(1),Data.ActionInput.Civ2.SearchBoxSize(2));
+%             anss=conv2(testboxa,testboxb);
+%             CPUtime_unit=toc;
+%             nb_box=pixnbre/(Data.ActionInput.Civ2.Dx*Data.ActionInput.Civ2.Dy);
+%             %BoxSize=Data.ActionInput.Civ2.CorrBoxSize(1)*Data.ActionInput.Civ2.CorrBoxSize(2);
+%             %nbpos=Data.ActionInput.Civ2.SearchBoxSize-Data.ActionInput.Civ2.CorrBoxSize;
+%             CPUtime=CPUtime+2*CPUtime_unit*nb_box;%*BoxSize*nbpos(1)*nbpos(2);
+%         end
+%         if isfield(Data.ActionInput,'Patch2')
+%             CPUtime=(4/3)*CPUtime;
+%         end
+%         Data.CPUTime=ceil(CPUtime/6); % estimated CPU time per field pair in minute
+%         Data.CPUTime=Data.CPUTime/10; % displqy CPU time with 1 digit beyond dot
+%     end
     return
 end
 
@@ -473,6 +473,8 @@ for ifield=1:NbField
             end
             Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
             Data.CivStage=1;
+        else
+            i1=Param.ActionInput.PairIndices.ref_i; %case of TESTmode
         end
         % set the list of variables
         Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record

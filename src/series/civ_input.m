@@ -248,7 +248,6 @@ CivInputData.NomTypeIma=NomTypeImaA;
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
-%set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
 
 
@@ -318,27 +317,18 @@ end
 
 %% set the menu and default choice of civ pairs
 if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
-    set(handles.ListPairMode,'Value',1)
     PairMenu={'series(Di)'};
 elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     PairMenu={'pair j1-j2';'series(Dj)'};
-    if  MaxIndex_j <= 10
-        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
-    end
 else
     PairMenu={'pair j1-j2';'series(Dj)';'series(Di)'};%multiple choice
-    if strcmp(NomTypeNc,'_1-2_1')
-        set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
-    elseif  MaxIndex_j <= 10
-        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
-    end
 end
 set(handles.ListPairMode,'String',PairMenu)
 
 %% set default choice of pair mode
-PairIndex=1;
+PairIndex=[];
 if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'PairIndices')
-    PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));
+    PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));%retrieve the previous option
 end
 if isempty(PairIndex)
     if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
@@ -352,6 +342,8 @@ if isempty(PairIndex)
             PairIndex=3;% advise 'series(Di)'
         elseif  MaxIndex_j <= 10
             PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+        else
+            PairIndex=2;% advice 'Dj' 
         end
     end
 end
@@ -1747,6 +1739,9 @@ if get(handles.TestCiv1,'Value')
  %% create image data ImageData for display
      ImageData.ListVarName={'ny','nx','A'};
      ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
+     ImageData.VarAttribute{1}.Role='coord_y';
+     ImageData.VarAttribute{2}.Role='coord_x';
+     ImageData.VarAttribute{3}.Role='scalar';
      ImageData.A=imread(Data.Civ1_ImageA); % read the first image
      if ndims(ImageData.A)==3 %case of color image
          ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};

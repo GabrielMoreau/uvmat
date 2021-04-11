@@ -68,14 +68,18 @@ fctblock= inline('median(x(:))');
 Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
 fctblock= inline('mean(x(:))');
 B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
-A=(A-B);%substract background
-AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
-fctblock= inline('var(x(:))');
-AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
-Avalue=AVar./AMean% typical value of particle luminosity
-Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
-DataOut.A=uint16(1000*tanh(A./(2*Avalue)));
+DataOut.A=B;
+
+% A=(A-B);%substract background
+% AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+% fctblock= inline('var(x(:))');
+% AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+% Avalue=AVar./AMean;% typical value of particle luminosity
+% Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
+% DataOut.A=uint16(1000*tanh(A./(2*Avalue)));
 %Bmin=blkproc(Aflagmin,[nblock_y nblock_x],sumblock);% find the number of minima in blocks
 %Backg=Backg./Bmin; % find the average of minima in blocks
+
+
 
 

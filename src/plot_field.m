@@ -126,7 +126,6 @@ PlotParamOut=PlotParam;%default
         msgbox_uvmat('ERROR','volume plot not implemented yet');
         return
     end
-% end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)
@@ -265,7 +264,9 @@ end
 if ~isempty(index_2D)|| ~isempty(index_1D)
     FigData=get(hfig,'UserData');
     if strcmp(get(hfig,'tag'),'view_field')||strcmp(get(hfig,'tag'),'uvmat')
+        if ~isempty(get(haxes,'tag'))
         FigData.(get(haxes,'tag'))=Data;
+        end
         set(hfig,'UserData',FigData)
     end
 end
