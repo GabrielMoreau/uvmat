@@ -821,7 +821,7 @@ if check_consistent
             end
         end
     else
-        coord_val=[0 0 0];
+        coord_val=[0 0];
         for ilist=1:numel(var_component)
             ivar=var_component(ilist);
             if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')

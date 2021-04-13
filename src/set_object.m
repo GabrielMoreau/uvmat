@@ -595,7 +595,7 @@ else
 end
 
 %% update the object refresh 
-hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
+%hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
 % if we are editing the object used for projection in uvmat
 if isequal(IndexObj_1,IndexObj)
     %update the representation of the current object for projection field represented in view_field

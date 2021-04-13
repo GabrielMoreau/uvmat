@@ -338,10 +338,8 @@ if ~isempty(text_displ_1)
     if ~isempty(ind_blank)
         text_displ(ind_blank)=[];
     end
-    %set(handles.text_display,'String',text_displ)
     set(htext_display,'String',text_displ)
 else
-   %set(handles.text_display,'String',get(handles.text_display,'UserData'))
    set(htext_display,'String',get(handles.text_display,'UserData'))
 end
 

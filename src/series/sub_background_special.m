@@ -49,7 +49,7 @@
 %
 %     UVMAT is free software; you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published
-%     by the Free Software Foundation; either version 2 of the license,
+%     by the Free Software Foundation; either version 2 of the license,series
 %     or (at your option) any later version.
 %
 %     UVMAT is distributed in the hope that it will be useful,
@@ -65,7 +65,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.NbViewMax=1;% max nbre of input file series (default , no limitation)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -92,14 +92,20 @@ else% interactive mode in Matlab
     WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
 %% estimate the position of bottom and mask for each Z Index
-BottomIndex=[1900 1800 1700 1650 1650 1600 1600 1600 1600 1600 1600];
+NbSlice=Param.IndexRange.NbSlice;
+switch NbSlice
+    case 11
+        BottomIndex=[1900 1800 1700 1650 1650 1600 1600 1600 1600 1600 1600];
+    case 4
+        BottomIndex=[1950 1850 1740 1700];
+end
 MaxIndex=BottomIndex+100;
 MinIndex=BottomIndex-100;
+
 maskindex=[665 1080];% range of x index perturbed by shadows 
-NbSlice=11;
 Bfilter=ones(1,20)/20;
 %% root input file names and nomenclature type (cell arrays with one element)
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];4
 nbj=numel(Param.IndexRange.first_i:Param.IndexRange.last_i);
 for i_ind=Param.IndexRange.first_i:Param.IndexRange.last_i
     ZIndex=mod(i_ind-1,NbSlice)+1; 

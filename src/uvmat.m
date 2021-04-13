@@ -5278,36 +5278,36 @@ if ~isempty(list_path{ichoice})
 end
 
 %% delete drawn objects if the output CooordUnit is different from the previous one
-if  ~strcmp(CoordUnit,CoordUnitPrev)
-    set(handles.CheckFixLimits,'Value',0)
-    hother=findobj('Tag','proj_object');%find all the proj objects
-    for iobj=1:length(hother)
-        delete(hother(iobj))
-    end
-    hother=findobj('Tag','DeformPoint');%find all the proj objects
-    for iobj=1:length(hother)
-        delete(hother(iobj))
-    end
-    hh=findobj('Tag','calib_points');
-    if ~isempty(hh)
-        delete(hh)
-    end
-    hhh=findobj('Tag','calib_marker');
-    if ~isempty(hhh)
-        delete(hhh)
-    end
-    set(handles.ListObject,'Value',1)
-    set(handles.ListObject,'String',{''})
-    set(handles.ListObject_1,'Value',1)
-    set(handles.ListObject_1,'String',{''})
-    set(handles.CheckViewObject,'value',0)
-    CheckViewObject_Callback(hObject, eventdata, handles)
-    set(handles.CheckViewField,'value',0)
-    CheckViewField_Callback(hObject, eventdata, handles)
-    set(handles.CheckEditObject,'Value',0)
-    CheckEditObject_Callback(hObject, eventdata, handles)
-    UvData.ProjObject={[]};
-end
+% if  ~strcmp(CoordUnit,CoordUnitPrev)
+%     set(handles.CheckFixLimits,'Value',0)
+%     hother=findobj('Tag','proj_object');%find all the proj objects
+%     for iobj=1:length(hother)
+%         delete(hother(iobj))
+%     end
+%     hother=findobj('Tag','DeformPoint');%find all the proj objects
+%     for iobj=1:length(hother)
+%         delete(hother(iobj))
+%     end
+%     hh=findobj('Tag','calib_points');
+%     if ~isempty(hh)
+%         delete(hh)
+%     end
+%     hhh=findobj('Tag','calib_marker');
+%     if ~isempty(hhh)
+%         delete(hhh)
+%     end
+%     set(handles.ListObject,'Value',1)
+%     set(handles.ListObject,'String',{''})
+%     set(handles.ListObject_1,'Value',1)
+%     set(handles.ListObject_1,'String',{''})
+%     set(handles.CheckViewObject,'value',0)
+%     CheckViewObject_Callback(hObject, eventdata, handles)
+%     set(handles.CheckViewField,'value',0)
+%     CheckViewField_Callback(hObject, eventdata, handles)
+%     set(handles.CheckEditObject,'Value',0)
+%     CheckEditObject_Callback(hObject, eventdata, handles)
+%     UvData.ProjObject={[]};
+% end
 set(handles.uvmat,'UserData',UvData)
 set(handles.TransformName,'backgroundColor',[1 1 1])% indicate desactivation  of the menu
 drawnow

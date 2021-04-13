@@ -171,7 +171,10 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             end
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',errormsg)
-                return
+%                 AxeData.Drawing='off';%exit the ruler drawing mode
+%                 set(hcurrentaxes,'UserData',AxeData);
+%                 set(gcf,'Pointer','arrow')
+%                 return
             end
             set(hhuvmat.CheckViewField,'Value',1);%
             set(hhuvmat.CheckEditObject,'Value',1);%   

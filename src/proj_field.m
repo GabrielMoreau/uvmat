@@ -816,7 +816,7 @@ for icell=1:length(CellInfo)
                 if size(ObjectData.Coord,2)<3
                     ObjectData.Coord(1,3)=0;
                 end
-                dline=ObjectData.Coord(2,:)-ObjectData.Coord(1,:); 
+                dline=ObjectData.Coord(2,:)-ObjectData.Coord(1,:);
                 linelength=norm(dline);
                 if isfield(FieldData,'RangeX')
                     XMin=min(FieldData.RangeX);%shift of the origin on the line
@@ -824,7 +824,7 @@ for icell=1:length(CellInfo)
                     XMin=0;
                 end
                 ProjData.(AXName)=XMin:ObjectData.DX:XMin+linelength;%abscissa of the projected data along the line
-               
+                
                 XI_proj=ObjectData.Coord(1,1)*ones(size(ProjData.(AXName)));
                 YI_proj=ObjectData.Coord(1,2)*ones(size(ProjData.(AXName)));
                 ZI_proj=ObjectData.Coord(1,3)*ones(size(ProjData.(AXName)));
@@ -838,7 +838,7 @@ for icell=1:length(CellInfo)
                     ZI_proj=ZI_proj+ProjData.(AXName)/dline(1,3);
                 end
                 for ivar=VarIndex
-                                      VarName=FieldData.ListVarName{ivar};
+                    VarName=FieldData.ListVarName{ivar};
                     %                         ListVarName=[ListVarName VarName];
                     %                         VarDimName=[VarDimName {{'coord_y','coord_x'}}];
                     %                         VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
@@ -851,8 +851,8 @@ for icell=1:length(CellInfo)
                     FieldData.(VarName)(indexnan)=0;%set to zero the undefined values
                     ProjData.(VarName)=interp3(Coord{3},Coord{2},Coord{1},double(FieldData.(VarName)),XI_proj,YI_proj,ZI_proj,'*linear');
                     ProjData.(VarName)=squeeze(ProjData.(VarName));
-                end            
-            
+                end
+                
             else
                 AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
                 AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
@@ -894,7 +894,7 @@ for icell=1:length(CellInfo)
                 dlinx=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
                 dliny=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
                 linelength=sqrt(dlinx*dlinx+dliny*dliny);
-                theta=angle(dlinx+i*dliny);%angle of the line
+                theta=angle(dlinx+1i*dliny);%angle of the line
                 if isfield(FieldData,'RangeX')
                     XMin=min(FieldData.RangeX);%shift of the origin on the line
                 else
@@ -922,7 +922,6 @@ for icell=1:length(CellInfo)
                     nbcolor=npxy(3);
                 else
                     errormsg='multicomponent field not projected';
-                    display(errormsg)
                     return
                 end
                 ProjData.ListVarName=[ProjData.ListVarName {AXName}];
@@ -930,7 +929,6 @@ for icell=1:length(CellInfo)
                 nbvar=numel(ProjData.VarDimName);
                 ProjData.VarAttribute{nbvar}.Role='coord_x';
                 for ivar=VarIndex
-                    %VarName{ivar}=FieldData.ListVarName{ivar};
                     if test_interp2% interpolate on new grid
                         FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI');
                     end
@@ -968,15 +966,15 @@ for icell=1:length(CellInfo)
                 if nbcolor==3
                     ProjData.VarDimName{end}={AXName,'rgb'};
                 end
+            end
+            
     end
-    
-end
-% for vector fields, take the components longitudinal and tranverse to the projection line
-if ~isempty(ivar_U) && ~isempty(ivar_V)
-    vector_x =ProjData.(ProjData.ListVarName{ivar_U});
-    ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-    ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
-end
+    % for vector fields, take the components longitudinal and tranverse to the projection line
+    if ~isempty(ivar_U) && ~isempty(ivar_V)
+        vector_x =ProjData.(ProjData.ListVarName{ivar_U});
+        ProjData.(ProjData.ListVarName{ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+        ProjData.(ProjData.ListVarName{ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{ivar_V});
+    end
 end
 
 % %shotarter case for horizontal or vertical line (A FAIRE 

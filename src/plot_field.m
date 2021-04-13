@@ -113,19 +113,19 @@ end
 PlotParamOut=PlotParam;%default
 
 %% check input structure
-    [CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
-        return
-    end
-    index_0D=find(NbDimArray==0);
-    index_1D=find(NbDimArray==1);
-    index_2D=find(NbDimArray==2);%find 2D fields
-    index_3D=find(NbDimArray>2,1);
-    if ~isempty(index_3D)
-        msgbox_uvmat('ERROR','volume plot not implemented yet');
-        return
-    end
+[CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
+    return
+end
+index_0D=find(NbDimArray==0);
+index_1D=find(NbDimArray==1);
+index_2D=find(NbDimArray==2);%find 2D fields
+index_3D=find(NbDimArray>2,1);
+if ~isempty(index_3D)
+    msgbox_uvmat('ERROR','volume plot not implemented yet');
+    return
+end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)

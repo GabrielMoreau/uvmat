@@ -428,7 +428,7 @@ for icell=1:numel(CellInfo)
             if check_var
                 NbDim(icell)=size(Data.(Data.ListVarName{ivar}),2);
             else
-                DimIndex=find(strcmp(Data.VarDimName{ivar},Data.ListDimName));
+                DimIndex=find(strcmp(Data.VarDimName{ivar}{2},Data.ListDimName));
                 NbDim(icell)= Data.DimValue(DimIndex);
             end
             for ivardim=1:numel(Data.VarDimName)
@@ -496,7 +496,8 @@ if ~isempty(ind_coord_x)
         end
         for ivar=ind_discrete
             DimCell=Data.VarDimName{ivar};
-            if  numel(DimCell)==1 && strcmp(DimCell_x{1},DimCell{1})
+            %if  numel(DimCell)==1 && strcmp(DimCell_x{1},DimCell{1})
+            if  strcmp(DimCell_x{1},DimCell{1})
                 y_nbre(icell)=y_nbre(icell)+1;
                 Cell1DPlot{icell}.YIndex_discrete(y_nbre(icell))=ivar;
             end

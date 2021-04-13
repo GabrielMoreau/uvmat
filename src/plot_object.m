@@ -135,10 +135,6 @@ end
 sizcoord=size(ObjectData.Coord);
 
 %% determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
-%test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||...
-%   isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')|| isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume');
-%test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Type,'volume')...
-%    ||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside');
 test_line=ismember(ObjectData.Type,{'points','line','polyline','polygon','plane','plane_z','volume'});
 test_patch=ismember(ObjectData.ProjMode,{'inside','outside','mask_inside','mask_outside'});
 if test_line
@@ -345,14 +341,12 @@ if test_newobj==0
                     end
                     %complement missing points
                     if length(PlotData.SubObject)>nbpoints% fpoints in excess on the graph
-                        for ii=nbpoints+1: length(PlotData.SubObject);
+                        for ii=nbpoints+1: length(PlotData.SubObject)
                             if ishandle(PlotData.SubObject(ii))
                                 delete(PlotData.SubObject(ii))
                             end
                         end
                     end
-                    %                NbDeformPoint=nbpoints;
-                    
                     if nbpoints>length(PlotData.SubObject)
                         for ipt=length(PlotData.SubObject)+1:nbpoints
                             PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
@@ -373,7 +367,8 @@ if test_newobj==0
         end
         if isfield(PlotData,'DeformPoint')
             NbDeformPoint=length(PlotData.DeformPoint);
-            if NbDeformPoint>nbpoints% fpoints in excess on the graph
+            % delete deformpoints in excess on the graph
+            if NbDeformPoint>nbpoints
                 for ii=nbpoints+1:NbDeformPoint
                     if ishandle(PlotData.DeformPoint(ii))
                         delete(PlotData.DeformPoint(ii))
@@ -381,6 +376,7 @@ if test_newobj==0
                 end
                 NbDeformPoint=nbpoints;
             end
+            % update the position of the existing deformpoints
             for ipt=1:NbDeformPoint
                 if ishandle(PlotData.DeformPoint(ipt))
                     if nbpoints>=ipt
@@ -388,10 +384,11 @@ if test_newobj==0
                     end
                 end
             end
+            % add neww deform points if requested
             if nbpoints>length(PlotData.DeformPoint)
                 for ipt=length(PlotData.DeformPoint)+1:nbpoints
                     PlotData.DeformPoint(ipt)=line(xline(ipt),yline(ipt),'Color',col,'LineStyle','-','Tag','DeformPoint',...
-                        'SelectionHighlight','off','UserData',hplot);
+                        'Marker','.','MarkerSize',12,'SelectionHighlight','off','UserData',hplot);
                 end
                 set(hplot,'UserData',PlotData)
             end
@@ -430,7 +427,6 @@ end
 
 %% create the object
 if test_newobj
-%     axes(haxes)
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         if strcmp(get(hother(iobj),'Type'),'rectangle')|| strcmp(get(hother(iobj),'Type'),'patch')
@@ -455,7 +451,7 @@ if test_newobj
             hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color',col,'LineStyle','none','Marker','+');
             for ipt=1:length(xline)
                 PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
-                    col,'LineStyle','none','SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
+                    col,'LineStyle','none','Marker','.','MarkerSize',12,'SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
                 %create circle around each point
                 if ~isequal(YMax,0)
                     PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
@@ -469,7 +465,7 @@ if test_newobj
                 PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
                 for ipt=1:sizcoord(1)
                     PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
-                        col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
+                        col,'LineStyle','none','Marker','.','MarkerSize',12,'Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
                 end
         case {'plane','volume'}
             hh=line(xline,yline,'Color',col);
