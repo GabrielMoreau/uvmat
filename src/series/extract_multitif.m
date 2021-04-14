@@ -1,8 +1,7 @@
-%'ima2netcdf': read image series and transform to netcdf
+%'extract_multitif': read image series from PCO cameras (tiff image series) and write .png images
 %------------------------------------------------------------------------
-
     
-% function ParamOut=ima2netcdf(Param)
+% function ParamOut=extract_multitif(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -58,7 +57,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=extract_multitif_parallel(Param)
+function ParamOut=extract_multitif(Param)
 
 %%%%%%%%%%%%%%%%%    INPUT PREPARATION MODE (no RUN)    %%%%%%%%%%%%%%%%%
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -73,7 +72,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.OutputDirExt='.png';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    ParamOut.CPUTime=7;% expected time for writting one image ( in minute)
+    ParamOut.CPUTime=10;% expected time for writting the output of one source image ( in minute)
     %% root input file(s) and type
     % check the existence of the first file in the series
         first_j=[];% note that the function will propose to cover the whole range of indices
@@ -125,15 +124,36 @@ if ~isempty(errormsg)
 end
 ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
 
-%% create the xml file of PCO camera if it does not exist
-Newxml=fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']);
-if ~exist(Newxml,'file')
-XmlInput.Camera.CameraName='PCO';
-XmlInput=rmfield(XmlInput,'Time');
-XmlInput=rmfield(XmlInput,'TimeUnit');
-t=struct2xml(XmlInput);
-t=set(t,1,'name','ImaDoc');
-save(t,Newxml);
+%% create the xml file for timing if it does not exist : example to adapt
+TEST=0;
+if TEST
+    count0=14;
+    Dtj=0.05;% time interval between frames
+    ImagesPerLevel=455;% total number of images per position, ImagesPerLevel-Nbj images skiiped during motion between two positions
+    Nbj=390; %Nbre of images kept at a given position
+    Dti=Dtj*ImagesPerLevel;
+    NbLevel=11;
+    NbScan=3;
+    TimeReturn=268.5; %time needed to return back to the first position (in sec)
+    NbReturn=round(TimeReturn/Dtj);
+    NbSkipReturn=NbReturn+1-NbLevel*ImagesPerLevel;
+    
+    Newxml=fullfile(Param.InputTable{1,1},[Param.InputTable{1,2} '.xml']);
+    if ~exist(Newxml,'file')
+        XmlInput.Camera.CameraName='PCO';
+        XmlInput.Camera.TimeUnit='s';
+        XmlInput.Camera.BurstTiming.FrameFrequency=1;
+        XmlInput.Camera.BurstTiming.Time=0;% for 200
+        XmlInput.Camera.BurstTiming.Dtj=Dtj;
+        XmlInput.Camera.BurstTiming.NbDtj=Nbj-1;
+        XmlInput.Camera.BurstTiming.Dti=Dti;
+        XmlInput.Camera.BurstTiming.NbDti=NbLevel-1;
+        XmlInput.Camera.BurstTiming.Dtk=TimeReturn;
+        XmlInput.Camera.BurstTiming.NbDtk=NbScan-1;
+        t=struct2xml(XmlInput);
+        t=set(t,1,'name','ImaDoc');
+        save(t,Newxml);
+    end
 end
 
 %% loop on the files

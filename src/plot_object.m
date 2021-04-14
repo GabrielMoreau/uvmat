@@ -244,7 +244,8 @@ if isfield(ObjectData,'ProjMode')
         SubLineStyle=':';%range of projection not visible
     end
 end
-if ismember(ObjectData.Type,{'line','polyline','polygon'})
+if ismember(ObjectData.Type,{'line','polyline','polygon'})&&...
+        ismember(ObjectData.ProjMode,{'projection','interp_lin','interp_tps'})
     if length(xline)<2
         theta=0;
     else
@@ -356,13 +357,21 @@ if test_newobj==0
                     end
                 end
             elseif length(PlotData.SubObject)==2
-                set(PlotData.SubObject(1),'XData',xinf);
-                set(PlotData.SubObject(1),'YData',yinf);
-                set(PlotData.SubObject(2),'XData',xsup);
-                set(PlotData.SubObject(2),'YData',ysup);
+                if ismember(ObjectData.ProjMode,{'projection','interp_lin','interp_tps'})
+                    set(PlotData.SubObject(1),'XData',xinf);
+                    set(PlotData.SubObject(1),'YData',yinf);
+                    set(PlotData.SubObject(2),'XData',xsup);
+                    set(PlotData.SubObject(2),'YData',ysup);
+                end
             elseif length(PlotData.SubObject)==1
-                set(PlotData.SubObject(1),'XData',xsup);
-                set(PlotData.SubObject(1),'YData',ysup);
+                if ismember(ObjectData.ProjMode,{'projection','interp_lin','interp_tps'})
+                    set(PlotData.SubObject(1),'XData',xsup);
+                    set(PlotData.SubObject(1),'YData',ysup);
+                end
+            end
+            if strcmp(ObjectData.ProjMode,'none')
+                delete(PlotData.SubObject)
+                PlotData=rmfield(PlotData,'SubObject');
             end
         end
         if isfield(PlotData,'DeformPoint')
@@ -397,28 +406,30 @@ if test_newobj==0
         set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])
     end
     if test_patch
+        createimage=1;
         if isfield(PlotData,'SubObject')
-        for iobj=1:length(PlotData.SubObject)
-            if ~ishandle(PlotData.SubObject(iobj))
-                hold on
-                hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');
-                set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
-                PlotData.SubObject(iobj)=hhh;
-            else
+            for iobj=1:length(PlotData.SubObject)
                 objtype=get(PlotData.SubObject(iobj),'Type');
                 if isequal(objtype,'image')
                     set(PlotData.SubObject(iobj),'CData',imflag,'AlphaData',(flag)*0.2)
                     set(PlotData.SubObject(iobj),'XData',[xlim(1)+dx/2 xlim(2)-dx/2])
                     set(PlotData.SubObject(iobj),'YData',[ylim(1)+dy/2 ylim(2)-dy/2])
+                    createimage=0;
                 end
             end
-        end 
+        end
+        if createimage
+            hold on
+            hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');
+            set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
+            PlotData.SubObject(1)=hhh;
         end
     else% no patch image requested, erase existing ones
         if isfield(PlotData,'SubObject')
             for iobj=1:length(PlotData.SubObject)
                 if ishandle(PlotData.SubObject(iobj)) && strcmp(get(PlotData.SubObject(iobj),'Type'),'image')
                     delete(PlotData.SubObject(iobj))
+                    PlotData=rmfield(PlotData,SubObject(iobj));
                 end
             end
         end
@@ -461,8 +472,10 @@ if test_newobj
             end
         case {'line','polyline','polygon'}
             hh=line(xline,yline,'Color',col);
+            if ismember(ObjectData.ProjMode,{'projection','interp_lin','interp_tps'})
                 PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
                 PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
+            end
                 for ipt=1:sizcoord(1)
                     PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
                         col,'LineStyle','none','Marker','.','MarkerSize',12,'Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
@@ -495,4 +508,9 @@ if test_newobj
         set(PlotData.DeformPoint,'UserData',hh)%record the parent handles in the SubObjects
     end
 end
+%put the deformpoints to the front
+            listc=get(gca,'children');
+            checkdeform=strcmp(get(listc,'tag'),'DeformPoint');
+            [nn,Index]=sort(checkdeform,'descend');
+            set(gca,'children',listc(Index))
 set(hh,'UserData',PlotData)
