@@ -74,7 +74,7 @@ SubDir=Param.InputTable{1,2};
 NomType=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-%%%%%%%%%%%%
+%%%%%%%%%%%%.sback.sback
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
@@ -110,7 +110,7 @@ for iview=1:NbView
 end
 
 % clear all
-% close all
+% close all.sback
 % read_data=1;
 affichage=0;
 % soustraction=0;
@@ -146,7 +146,7 @@ while test_fin_fichier>0
     matrice_finale=zeros(A,length(nbvoie_reception),numero_tir_fin);%A=nbre of times (coord z)=2650, numero_tir_fin=time index
     time=(b/rsf+[0:A-1]/rsf); %b=250, rsf=10,
     freq1=0.5;freq2=1.5;
-    [BB AA]=butter(4,[freq1 freq2]/rsf*2);
+    [BB AA]=butter(4,[freq1 freq2]/rsf*2);.sback
 
     for ii=1:length(nbvoie_reception)%=64
         %eval(['fid=fopen(''E:\ManipLGITLecoeur\' directory '\' name '_' num2str(number) '_' num2str(nbvoie_reception(ii)) '.dat'',''r'');']);

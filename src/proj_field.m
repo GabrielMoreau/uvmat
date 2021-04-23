@@ -1124,13 +1124,19 @@ ProjMode=num2cell(blanks(numel(CellInfo)));
 ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
 icell_grid=[];% field cell index which defines the grid
 icell_scattered=[];% field cell index which defines fields with scattered coordinates
+for icell=1:numel(CellInfo)
+    if strcmp(ObjectData.ProjMode,'interp_lin')&& ~strcmp(ProjMode{icell},'interp_tps')
+        errormsg='ProjMode interp_tps needed ';
+        return
+    end
+end
 if strcmp(ObjectData.ProjMode,'projection')
     %% case of a grid requested by the input field
     for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
         if isfield(CellInfo{icell},'ProjModeRequest')
             switch CellInfo{icell}.ProjModeRequest
-%                 case 'interp_lin'
-%                     ProjMode{icell}='interp_lin';
+                case 'interp_lin'
+                    ProjMode{icell}='interp_lin';
                 case 'interp_tps'
                     ProjMode{icell}='interp_tps';
             end
@@ -1235,6 +1241,10 @@ for icell=1:length(CellInfo)
     if NbDim<2
         continue % only cells represnting 2D or 3D fields are involved
     end
+%     if isfield(CellInfo{icell},'ProjModeRequest') && ~strcmp(CellInfo{icell}.ProjModeRequest,ProjMode{icell})
+%         msgbox_uvmat('ERROR',['ProjMode ' CellInfo{icell}.ProjModeRequest ' needed'])
+%         return
+%     end
     VarIndex= CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
     %dimensions
     DimCell=FieldData.VarDimName{VarIndex(1)};
@@ -1246,8 +1256,8 @@ for icell=1:length(CellInfo)
     VarDimName={};% initiate coresponding list of dimensions for cell # icell
     VarAttribute={};% initiate coresponding list of var attributes  for cell # icell
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    check3D=(numel(CellInfo{icell}.CoordIndex)==3);
-    switch CellInfo{icell}.CoordType   
+    check3D=(numel(CellInfo{icell}.CoordIndex)==3); 
+    switch CellInfo{icell}.CoordType 
         case 'scattered'
             %% case of input fields with unstructured coordinates (applies for projMode ='projection' or 'interp_lin')
             if strcmp(ProjMode{icell},'interp_tps')

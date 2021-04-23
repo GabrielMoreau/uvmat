@@ -122,7 +122,9 @@ for iview=1:nbview
         [FileInfo]=get_file_info(filecell{iview,1});
         Tabchar{1}=filecell{iview,1};%info.Filename;
         Tabchar{2}='';
+        if isfield(FileInfo,'FrameRate')
         Tabchar{3}=[num2str(FileInfo.FrameRate) ' frames/s '];
+        end
         message='';
     else
         Tabchar={};

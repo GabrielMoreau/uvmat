@@ -201,106 +201,103 @@ V2Mean_1=0;
 Counter_1=0;
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
-    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        break
-    end
-    [Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
-
-    %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-    if index==1 %initiate the output data structure in the first field
-        [CellInfo,NbDim,errormsg]=find_field_cells(Field);
-        YName='coord_y';%default
-        XName='coord_x';%default
-        for icell=1:numel(NbDim)
-            if NbDim(icell)==2 && strcmp(CellInfo{icell}.CoordType,'grid')
-                  YName=CellInfo{icell}.YName;
-                  XName=CellInfo{icell}.XName;
-                  break
+% for i_slice=1:Param.IndexRange.NbSlice
+%     i_slice
+    ind_first=Param.IndexRange.first_i
+    for index_i=ind_first:Param.IndexRange.NbSlice:Param.IndexRange.last_i
+        if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+            disp('program stopped by user')
+            break
+        end
+        for index_j=Param.IndexRange.first_j:Param.IndexRange.last_j
+            InputFile=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},index_i,index_i,index_j,index_j);
+            [Field,tild,errormsg] = read_field(InputFile,FileType{iview},InputFields{iview});
+            
+            %[Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+            
+            %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+            if index_i==ind_first && index_j==Param.IndexRange.first_j %initiate the output data structure in the first field
+                [CellInfo,NbDim,errormsg]=find_field_cells(Field);
+                YName='coord_y';%default
+                XName='coord_x';%default
+                for icell=1:numel(NbDim)
+                    if NbDim(icell)==2 && strcmp(CellInfo{icell}.CoordType,'grid')
+                        YName=CellInfo{icell}.YName;
+                        XName=CellInfo{icell}.XName;
+                        break
+                    end
+                end
+                DataOut.ListVarName={YName, XName ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','CurlMean','DivMean','Curl2Mean','Div2Mean','Counter'};
+                DataOut.VarDimName={YName,XName,{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},...
+                    {YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName}};
+                DataOut.(YName)=Field.(YName);
+                DataOut.(XName)=Field.(XName);
+                Uprev=Field.U;% store the current field for next iteration
+                Vprev=Field.V;
+                if isfield(Field,'FF')
+                    FFprev=Field.FF;% possible flag for false data
+                else
+                    %FFprev=true(size(Field.U));
+                    FFprev=isnan(Field.U);
+                end
+            end
+            FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
+            DataOut.Counter=DataOut.Counter+ (~FF);% add 1 to the couter for non NaN point
+            Counter_1=Counter_1+(~FF & ~FFprev);
+            Field.U(FF)=0;% set to 0 the nan values
+            Field.V(FF)=0;
+            DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
+            DataOut.VMean=DataOut.VMean+Field.V; %increment the sum
+            
+            U2Mean=U2Mean+(Field.U).*(Field.U); %increment the U squared sum
+            V2Mean=V2Mean+(Field.V).*(Field.V); %increment the V squared sum
+            UVMean=UVMean+(Field.U).*(Field.V); %increment the sum
+            U2Mean_1=U2Mean_1+(Field.U).*Uprev; %increment the U squared sum
+            V2Mean_1=V2Mean_1+(Field.V).*Vprev; %increment the V squared sum
+            Uprev=Field.U; %store for next iteration
+            Vprev=Field.V;
+            FFprev=FF;
+            if isfield(Field,'curl') && isfield(Field,'div')
+                Field.curl(FF)=0;% set to 0 the nan values
+                Field.div(FF)=0;
+                DataOut.CurlMean=DataOut.CurlMean+Field.curl;
+                DataOut.DivMean=DataOut.DivMean+Field.div;
+                DataOut.Curl2Mean=DataOut.Curl2Mean+Field.curl.*Field.curl;
+                DataOut.Div2Mean=DataOut.Div2Mean+Field.div.*Field.div;
             end
         end
-        DataOut.ListVarName={YName, XName ,'UMean' , 'VMean','u2Mean','v2Mean','u2Mean_1','v2Mean_1','uvMean','CurlMean','DivMean','Curl2Mean','Div2Mean','Counter'};
-        DataOut.VarDimName={YName,XName,{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},...
-    {YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName},{YName,XName}};
-        DataOut.(YName)=Field.(YName);
-        DataOut.(XName)=Field.(XName);
-        Uprev=Field.U;% store the current field for next iteration
-        Vprev=Field.V;
-        if isfield(Field,'FF')
-        FFprev=Field.FF;% possible flag for false data 
-        else
-            %FFprev=true(size(Field.U));
-            FFprev=isnan(Field.U);
-        end
     end
-    FF=isnan(Field.U);%|Field.U<-60|Field.U>30;% threshold on U
-    DataOut.Counter=DataOut.Counter+ (~FF);% add 1 to the couter for non NaN point
-    Counter_1=Counter_1+(~FF & ~FFprev);
-    Field.U(FF)=0;% set to 0 the nan values
-    Field.V(FF)=0;
-    DataOut.UMean=DataOut.UMean+Field.U; %increment the sum
-    DataOut.VMean=DataOut.VMean+Field.V; %increment the sum
+    %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
     
-    U2Mean=U2Mean+(Field.U).*(Field.U); %increment the U squared sum
-    V2Mean=V2Mean+(Field.V).*(Field.V); %increment the V squared sum
-    UVMean=UVMean+(Field.U).*(Field.V); %increment the sum
-    U2Mean_1=U2Mean_1+(Field.U).*Uprev; %increment the U squared sum
-    V2Mean_1=V2Mean_1+(Field.V).*Vprev; %increment the V squared sum
-    Uprev=Field.U; %store for next iteration
-    Vprev=Field.V;
-    FFprev=FF;
-    if isfield(Field,'curl') && isfield(Field,'div')
-        Field.curl(FF)=0;% set to 0 the nan values
-        Field.div(FF)=0;
-        DataOut.CurlMean=DataOut.CurlMean+Field.curl;
-        DataOut.DivMean=DataOut.DivMean+Field.div;
-        DataOut.Curl2Mean=DataOut.Curl2Mean+Field.curl.*Field.curl;
-        DataOut.Div2Mean=DataOut.Div2Mean+Field.div.*Field.div;
+    DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
+    DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
+    DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
+    U2Mean=U2Mean./DataOut.Counter; % normalize the mean
+    V2Mean=V2Mean./DataOut.Counter; % normalize the mean
+    UVMean=UVMean./DataOut.Counter; % normalize the mean
+    U2Mean_1=U2Mean_1./Counter_1; % normalize the mean
+    V2Mean_1=V2Mean_1./Counter_1; % normalize the mean
+    DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the mean
+    DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
+    DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \
+    DataOut.u2Mean_1=U2Mean_1-DataOut.UMean.*DataOut.UMean; % normalize the mean
+    DataOut.v2Mean_1=V2Mean_1-DataOut.VMean.*DataOut.VMean; % normalize the mean
+    DataOut.CurlMean=DataOut.CurlMean./DataOut.Counter;
+    DataOut.DivMean=DataOut.DivMean./DataOut.Counter;
+    DataOut.Curl2Mean=DataOut.Curl2Mean./DataOut.Counter-DataOut.CurlMean.*DataOut.CurlMean;
+    DataOut.Div2Mean=DataOut.Div2Mean./DataOut.Counter-DataOut.DivMean.*DataOut.DivMean;    
+    
+    %% writing the result file as netcdf file
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,ind_first,ind_first,first_j,last_j);
+    %case of netcdf input file , determine global attributes
+    errormsg=struct2nc(OutputFile,DataOut); %save result file
+    if isempty(errormsg)
+        disp([OutputFile ' written']);
+    else
+        disp(['error in writting result file: ' errormsg])
     end
-end
-%%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-
-DataOut.Counter(DataOut.Counter==0)=1;% put counter to 1 when it is zero
-DataOut.UMean=DataOut.UMean./DataOut.Counter; % normalize the mean
-DataOut.VMean=DataOut.VMean./DataOut.Counter; % normalize the mean
-U2Mean=U2Mean./DataOut.Counter; % normalize the mean
-V2Mean=V2Mean./DataOut.Counter; % normalize the mean
-UVMean=UVMean./DataOut.Counter; % normalize the mean
-U2Mean_1=U2Mean_1./Counter_1; % normalize the mean
-V2Mean_1=V2Mean_1./Counter_1; % normalize the mean
-DataOut.u2Mean=U2Mean-DataOut.UMean.*DataOut.UMean; % normalize the mean
-DataOut.v2Mean=V2Mean-DataOut.VMean.*DataOut.VMean; % normalize the mean
-DataOut.uvMean=UVMean-DataOut.UMean.*DataOut.VMean; % normalize the mean \
-DataOut.u2Mean_1=U2Mean_1-DataOut.UMean.*DataOut.UMean; % normalize the mean
-DataOut.v2Mean_1=V2Mean_1-DataOut.VMean.*DataOut.VMean; % normalize the mean
-DataOut.CurlMean=DataOut.CurlMean./DataOut.Counter;
-DataOut.DivMean=DataOut.DivMean./DataOut.Counter;
-DataOut.Curl2Mean=DataOut.Curl2Mean./DataOut.Counter-DataOut.CurlMean.*DataOut.CurlMean;
-DataOut.Div2Mean=DataOut.Div2Mean./DataOut.Counter-DataOut.DivMean.*DataOut.DivMean;
-
-%% calculate the profiles
-% npx=numel(DataOut.coord_x);
-% band=ceil(npx/5) :floor(4*npx/5);% keep only the central band
-% for ivar=3:numel(DataOut.ListVarName)-1
-%     VarName=DataOut.ListVarName{ivar};% name of the variable
-%     DataOut.ListVarName=[DataOut.ListVarName {[VarName 'Profile']}];%append the name of the profile variable
-%     DataOut.VarDimName=[DataOut.VarDimName {'(YName)'}];
-%    DataOut.([VarName 'Profile'])=mean(DataOut.(VarName)(:,band),2); %take the mean profile of U, excluding the edges
+    
 % end
-
-%% writing the result file as netcdf file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
- %case of netcdf input file , determine global attributes
-errormsg=struct2nc(OutputFile,DataOut); %save result file
-if isempty(errormsg)
-     disp([OutputFile ' written']);
-else
-     disp(['error in writting result file: ' errormsg])
-end
-
-
 %% open the result file with uvmat (in RUN mode)
 if checkrun && isequal(Param.IndexRange.NbSlice,1)
     uvmat(OutputFile)% open the last result file with uvmat

@@ -1772,13 +1772,17 @@ for iexp=1:NbExp
     elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
         OutputDir=Param.ActionInput.LogPath;
     end
-    
+    if isfield(Param,'OutputSubDir') 
     set(handles.OutputSubDir,'String',Param.OutputSubDir)
     set(handles.OutputDirExt,'String',Param.OutputDirExt)
     drawnow
+    end
     if get(handles.Replicate,'Value')
         set(handles.InputTable,'Data',Param.InputTable)
-        check_input_file_series(handles)
+        set(handles.OutputPath,'String',Pathout)
+        set(handles.Experiment,'String',ListExp{iexp})
+        set(handles.Device,'String',ListDevices{iexp})
+        check_input_file_series(handles)      
     end
     DirXml=fullfile(OutputDir,'0_XML');
     if ~exist(DirXml,'dir')
@@ -2476,7 +2480,10 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
+if ~isfield(SeriesData,'FileType')
+    SeriesData.FileType={'none'};
+end
+iview_civ=find( strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
 iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)); % all nc files, icluding civ
 FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
@@ -2651,7 +2658,7 @@ end
 
 %% enable or desable j index visibility
 status_j='on'; % default
-if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
+if isfield(SeriesData,'j1_series') && isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)) % case of empty j indices
     status_j='off'; % no j index needed
 elseif strcmp(get(handles.PairString,'Visible'),'on')
     check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j')); % =0 for burst case, 1 otherwise

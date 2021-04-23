@@ -3987,6 +3987,9 @@ else
         PlotParam{1}.Vectors.ColCode2=0.66;
         PlotParam{1}.Vectors.ColorScalar={''};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
+        if isfield(ParamOut,'ColorVar')
+            PlotParam{1}.Vectors.ColorScalar=ParamOut.ColorVar;
+        end
     end
 
     %% second projection object (view_field display)
