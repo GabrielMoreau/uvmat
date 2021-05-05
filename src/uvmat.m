@@ -594,12 +594,36 @@ function MenuExportFigure_Callback(hObject, eventdata, handles)
 hfig=figure;
 hc=copyobj(handles.PlotAxes,hfig);
 set(hc,'Position',[0.1 0.1 0.8 0.8])
+title_menu=get(handles.FieldName,'String');
+title_string=title_menu{get(handles.FieldName,'Value')};
+title(title_string);
 h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
 if ~isempty(h)
     map=colormap(handles.PlotAxes);
     colormap(map);%transmit the current colormap to the new fig
     colorbar
 end
+%% copy the colormap of the vector color if relevant
+if strcmp(get(handles.Vectors,'Visible'),'on')
+    color_menu=get(handles.ColorCode,'String');
+    color_mode=color_menu{get(handles.ColorCode,'Value')};
+    if ~(strcmp(color_mode,'black')||strcmp(color_mode,'white'))
+        hveccolor=axes('Position',[0.93 0.1 0.02 0.5]);
+        ima=permute(get(handles.VecColBar,'CData'),[2 1 3]);
+        ymin=str2num(get(handles.num_MinVec,'String'));
+        ymax=str2num(get(handles.num_MaxVec,'String'));
+        set(hveccolor,'YLim',[ymin ymax])
+        imagesc([0 1],[ymin ymax],ima)
+        set(hveccolor,'YDir','normal')
+        set(hveccolor,'YAxisLocation', 'right')
+        set(hveccolor,'XTickLabel','')
+        scalar_menu=get(handles.ColorScalar,'String');
+        scalar_title=scalar_menu{get(handles.ColorScalar,'Value')};
+        htitle=get(hveccolor,'Title');
+        set(htitle,'String',scalar_title)
+    end
+end
+
 
 % --------------------------------------------------------------------
 function MenuExportAxis_Callback(hObject, eventdata, handles)
