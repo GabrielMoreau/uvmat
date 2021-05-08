@@ -215,8 +215,12 @@ transform_path=fullfile(path_uvmat,'transform_field');
 path_list=cell(UvData.OpenParam.NbBuiltin,1);
 path_list{1}='';
 for ilist=2:UvData.OpenParam.NbBuiltin
-path_list{ilist}=transform_path; % set transform_path to the path_list
+    path_list{ilist}=transform_path; % set transform_path to the path_list
 end
+
+%% EXPORT menu
+export_menu={'as field in workspace';'in new figure';'on existing axis';'make movie';'more...'};
+export_path=fullfile(path_uvmat,'export_fct');
 
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
 dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
@@ -237,11 +241,19 @@ if exist(profil_perso,'file')% if the file exists
         set(handles.RootPath,'UserData',h.RootPath); %store the previous campaign in the UserData of RootPath
     end
     if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
-        for ilist=1:length(h.transform_fct);
+        for ilist=1:length(h.transform_fct)
             if exist(h.transform_fct{ilist},'file')
                 [path,file]=fileparts(h.transform_fct{ilist});
                 transform_menu=[transform_menu; {file}];
                 path_list=[path_list; {path}];
+            end
+        end
+    end
+    if isfield(h,'export_fct') && iscell(h.export_fct) % load the menu of export fct set by user
+        for ilist=1:length(h.export_fct)
+            if exist(h.export_fct{ilist},'file')
+                [path,file]=fileparts(h.export_fct{ilist});
+                export_menu=[export_menu; {file}];
             end
         end
     end
@@ -251,6 +263,8 @@ set(handles.TransformName,'String',transform_menu)% display the menu of transfor
 set(handles.TransformName,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
 set(handles.TransformPath,'String','')
 set(handles.TransformPath,'UserData',[])
+export_menu=[export_menu;{'more...'}];%append the option more.. to the menu
+%set(handles.TransformName,'String',transform_menu)% display the menu of transform fcts
 
 %% case of an input argument for uvmat
 %testinputfield=0;
@@ -876,6 +890,26 @@ function set_movie_Cancel_Callback(hObject,eventdata)
 %------------------------------------------------------------------------
 delete(hObject)
 
+% --------------------------------------------------------------------
+function MenuExportCustom_Callback(hObject, eventdata, handles)
+export_fct_name=get(handles.MenuExportCustom,'label');
+current_dir=pwd;%current working dir
+cd(fullfile(fileparts(which('uvmat')),'export_fct'))
+export_handle=str2func(export_fct_name);
+cd(current_dir)
+export_handle(handles)
+        
+% --------------------------------------------------------------------
+function MenuExportMore_Callback(hObject, eventdata, handles)
+
+prev_path=fullfile(fileparts(which('uvmat')),'export_fct');
+transform_fct_chosen=uigetfile_uvmat('Pick the export function',prev_path,'.m');
+if ~isempty(transform_fct_chosen)
+    [PathName,transform_name]=fileparts(transform_fct_chosen);
+    set(handles.MenuExportCustom,'label',transform_name)
+    set(handles.MenuExportCustom,'checked','on')
+    MenuExportCustom_Callback(hObject, eventdata, handles)
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Projection Objects Menu Callbacks
