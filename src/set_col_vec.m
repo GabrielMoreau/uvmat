@@ -1,16 +1,17 @@
 %'set_col_vec': % sets the color code for vectors depending on a scalar and input parameters (used for plot_field)
 %-----------------------------------------------------------------------
-%function [colorlist,col_vec,minC,ColCode1,ColCode2,maxC]=colvec(colcode,vec_C)
+%function [colorlist,col_vec,minC,ColCode1,ColCode2,maxC]=set_col_vec(colcode,vec_C)
 %-----------------------------------------------------------------------
 %OUTPUT
 %colorlist(nb,3); %list of nb colors
 %col_vec, size=[length(vec_C),3)];%list of color indices corresponding to vec_C
 %minC, maxC: min and max of vec_C
 %ColCode1, ColCode2: absolute threshold in vec_C corresponding to colcode.ColCode1 and colcode.ColCode2
+%
 %INPUT
 % colcode: struture setting the colorcode for vectors
 %    colcode.CName: 'ima_cor','black','white',...
-%    colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'
+%    colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors','BuYlRd'
 %    colcode.CheckFixVecColor =0; thresholds scaling relative to min and max, =1 fixed thresholds
 %    colcode.MinVec; min
 %    colcode.MaxVec; max
@@ -41,7 +42,7 @@
 function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)
 col_vec=ones(size(vec_C));%all vectors at color#1 by default
 
-if ~isstruct(colcode),colcode=[];end;
+if ~isstruct(colcode),colcode=[];end
 colcode_out=colcode;%default
 if isempty(vec_C) || ~isnumeric(vec_C)
     colorlist=[0 0 1]; %blue
@@ -54,15 +55,16 @@ check_multicolors=0;
 if ~isfield(colcode,'ColorCode') || isempty(colcode.ColorCode)
     colorlist=[0 0 1]; %blue
 else
-    if strcmp(colcode.ColorCode,'black')
+    if strcmp(colcode.ColorCode,'black')% black vectors
         colorlist(1,:)=[0 0 0];%black
-    elseif strcmp(colcode.ColorCode,'white')
+    elseif strcmp(colcode.ColorCode,'white')% white vectors
         colorlist(1,:)=[1 1 1];%white
     else
         check_multicolors=1;
     end
 end
 
+%% colored vectors
 if check_multicolors
     if (isfield(colcode,'CheckFixVecColor') && isequal(colcode.CheckFixVecColor,1))
         minC=colcode.MinVec;
@@ -96,14 +98,19 @@ if check_multicolors
             colorlist(3,:)=[1 0 0];%red
         end
     else
+        switch colcode.ColorCode
+            case '64 colors'
         colorjet=jet;% ususal colormap from blue to red
-        sizlist=size(colorjet);
+            case 'BuYlRd'
+            hh=load('BuYlRd.mat');
+            colorjet=hh.BuYlRd;
+        end
+        sizlist=size(colorjet,1);
         indsel=ceil((sizlist(1)/64)*(1:64));
         colorlist(:,1)=colorjet(indsel,1);
         colorlist(:,2)=colorjet(indsel,2);
         colorlist(:,3)=colorjet(indsel,3);
-        sizlist=size(colorlist);
-        nblevel=sizlist(1);
+        nblevel=size(colorlist,1);
         col2_1=maxC-minC;
         col_vec=1+floor(nblevel*(vec_C-minC)/col2_1);
         col_vec=col_vec.*(col_vec<= nblevel)+nblevel*(col_vec >nblevel);% take color #nblevel at saturation

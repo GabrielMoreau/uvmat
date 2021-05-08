@@ -864,13 +864,13 @@ if test_ima
     end
     
     %set for grey scale setting
+    ColorMap='default';
     if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
-        BW=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
-    else % BW imposed automatically chosen
-        BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
-        PlotParamOut.Scalar.CheckBW=BW;
+        ColorMap=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
+    elseif ((siz==2) && (isa(A,'uint8')|| isa(A,'uint16')))% non color images represented in gray scale by default
+        ColorMap='grayscale';
     end
-    
+    PlotParamOut.Scalar.CheckBW=ColorMap;
     % determine the plot option 'image' or 'contours'
     CheckContour=0; %default
     if isfield(PlotParam.Scalar,'ListContour')
@@ -914,7 +914,7 @@ if test_ima
     PlotParamOut.Scalar.MaxA=MaxA;
     PlotParamOut.Scalar.Npx=size(A,2);
     PlotParamOut.Scalar.Npy=size(A,1);
-    %     if siz==2
+    
     % case of contour plot
     if CheckContour
         if ~isempty(hima) && ishandle(hima)
@@ -945,9 +945,6 @@ if test_ima
         x_cont=Coord_x(1):sizpx:Coord_x(end); % pixel x coordinates for image display
         y_cont=Coord_y(1):-sizpy:Coord_y(end); % pixel x coordinates for image display
         
-        %axes(haxes)% set the input axes handle as current axis
-        
-        % colormap(map);
         tag_axes=get(haxes,'Tag');% axes tag
         Opacity=1;
         if isfield(PlotParam.Scalar,'Opacity')&&~isempty(PlotParam.Scalar.Opacity)
@@ -971,27 +968,33 @@ if test_ima
         
         %determine the color scale and map
         caxis([abscontmin abscontmax])
-        if BW
+        if strcmp(ColorMap,'grayscale')
             vec=linspace(0,1,(abscontmax-abscontmin)/interval);%define a greyscale colormap with steps interval
             map=[vec' vec' vec'];
             colormap(map);
+        elseif strcmp(ColorMap,'BuYlRd')
+            hh=load('BuYlRd.mat');
+            colormap(hh.BuYlRd);
         else
-            colormap('jet'); % default matlab colormap ('jet')
+            colormap(ColorMap); 
         end
     else %usual images (no contour)
         % set  colormap for  image display
-        if BW
+        if strcmp(ColorMap,'grayscale')
             vec=linspace(0,1,255);%define a linear greyscale colormap
             map=[vec' vec' vec'];
             colormap(map);  %grey scale color map
             if siz==3% true color images visualized in BW
                 A=uint16(sum(A,3));%sum the three color components for color images displayed with BW option
             end
+        elseif strcmp(ColorMap,'BuYlRd')
+            hh=load('BuYlRd.mat');
+            colormap(hh.BuYlRd);
         else
             if siz==3 && CheckFixScalar % true color images rescaled by MaxA
                   A=uint8(255*double(A)/double(MaxA));
             end
-            colormap('default'); % standard false colors for div, vort , scalar fields
+            colormap(ColorMap); % standard false colors for div, vort , scalar fields
         end
         
         % interpolate field to increase resolution of image display
@@ -1122,7 +1125,7 @@ end
 %%   vector plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 if test_vec
    %vector scale representation
-    if size(vec_U,1)==numel(vec_Y) && size(vec_U,2)==numel(vec_X); % x, y  coordinate variables
+    if size(vec_U,1)==numel(vec_Y) && size(vec_U,2)==numel(vec_X) % x, y  coordinate variables
         [vec_X,vec_Y]=meshgrid(vec_X,vec_Y);
     end   
     vec_X=reshape(vec_X,1,numel(vec_X));%reshape in matlab vectors
@@ -1200,8 +1203,7 @@ if test_vec
     [colorlist,col_vec,PlotParamOut.Vectors]=set_col_vec(PlotParam.Vectors,vec_C);
     
     % take flags into account: add flag colors to the list of colors
-    sizlist=size(colorlist);
-    nbcolor=sizlist(1);
+    nbcolor=size(colorlist,1);
     if test_black 
        nbcolor=nbcolor+1;
        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
@@ -1222,7 +1224,6 @@ if test_vec
     end
     %plot vectors:
     quiresetn(haxes,vec_X,vec_Y,vec_U,vec_V,scale,colorlist,col_vec);   
-
 else
     hvec=findobj(haxes,'Tag','vel');
     if ~isempty(hvec)
@@ -1230,7 +1231,6 @@ else
     end
     PlotParamOut=rmfield(PlotParamOut,'Vectors');
 end
-% nbvar=0;
 
 %store the coordinate extrema occupied by the field
 if ~isempty(Data)
@@ -1296,21 +1296,19 @@ function quiresetn(haxes,x,y,u,v,scale,colorlist,col_vec)
 theta=0.5 ;%angle arrow
 alpha=0.3 ;%length arrow
 rot=alpha*[cos(theta) -sin(theta); sin(theta) cos(theta)]';
+
 %find the existing lines
 h=findobj(haxes,'Tag','vel');% search existing lines in the current axes
 sizh=size(h);
-%set(h,'EraseMode','xor');
 set(haxes,'NextPlot','replacechildren');
 
-%drawnow
 %create lines (if no lines) or modify them
 if ~isequal(size(col_vec),size(x))
     col_vec=ones(size(x));% case of error in col_vec input
 end
-sizlist=size(colorlist);
-ncolor=sizlist(1);
+nbcolor=size(colorlist,1);
 
-for icolor=1:ncolor
+for icolor=1:nbcolor
     %determine the line positions for each color icolor
     ind=find(col_vec==icolor);
     xc=x(ind);
@@ -1362,8 +1360,8 @@ for icolor=1:ncolor
         end
     end
 end
-if sizh(1) > 2*ncolor
-    for icolor=ncolor+1 : sizh(1)/2%delete additional objects
+if sizh(1) > 2*nbcolor
+    for icolor=nbcolor+1 : sizh(1)/2 %delete additional objects
         delete(h(2*icolor-1))
         delete(h(2*icolor))
     end
