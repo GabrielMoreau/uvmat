@@ -203,7 +203,8 @@ switch(SubDir{1}(char_index+9))
         T=24.48;
         t0=3.4;     %dt=0.2 -> i0=18 image index of starting motion, % torus at its max x at the beginning of motion
 end
-NbPeriod=2; %number of periods for the sliding average
+%NbPeriod=2; %number of periods for the sliding average
+NbPeriod=4; %number of periods for the sliding average
 omega=2*2*pi/T;%harmonic
 Lscale=15;%diameter of the torus, length scale for normalisation
 Uscale=amplitude*omega;

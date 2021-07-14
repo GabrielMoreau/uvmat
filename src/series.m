@@ -1632,20 +1632,20 @@ if get(handles.Replicate,'Value')
         NbExp=0; % counter of the number of experiments set by the GUI browse_data
         for iexp=1:numel(ListExp)
             if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-                if strcmp(get(BrowseData.DataSeries,'enable'),'off') %case of a multiple input line for series
-                    NbExp=NbExp+1;
-                    ExpIndex{NbExp}=iexp;
-                    for idevice=1:numel(ListDevices)
-                        lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                            regexprep(ListDevices{idevice},'^\+/',''));
-                        lpathout=fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
-                            regexprep(ListDevices{idevice},'^\+/',''));
-                        ldir=regexprep(ListDataSeries{idevice},'^\+/','');
-                        ListPath{idevice,NbExp}=lpath;
-                        ListPathOut{idevice,NbExp}=lpathout;
-                        ListSubdir{idevice,NbExp}=ldir;
-                    end
-                else
+               %if strcmp(get(BrowseData.DataSeries,'enable'),'off') %case of a multiple input line for series
+%                     NbExp=NbExp+1;
+%                     ExpIndex{NbExp}=iexp;
+%                     for idevice=1:numel(ListDevices)
+%                         lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+%                             regexprep(ListDevices{idevice},'^\+/',''));
+%                         lpathout=fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
+%                             regexprep(ListDevices{idevice},'^\+/',''));
+%                         ldir=regexprep(ListDataSeries{idevice},'^\+/','');
+%                         ListPath{idevice,NbExp}=lpath;
+%                         ListPathOut{idevice,NbExp}=lpathout;
+%                         ListSubdir{idevice,NbExp}=ldir;
+%                     end
+                %else
                     for idevice=1:numel(ListDevices)
                         if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
                             for isubdir=1:numel(ListDataSeries)
@@ -1657,16 +1657,19 @@ if get(handles.Replicate,'Value')
                                     ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
                                     if exist(fullfile(lpath,ldir),'dir')
                                         NbExp=NbExp+1;
-                                        ExpIndex{NbExp}=iexp;
+                                        ExpIndex(NbExp)=ExpIndices(iexp);
+                                        DeviceIndex(NbExp)=DeviceIndices(idevice);
                                         ListPath{NbExp}=lpath;
                                         ListPathOut{NbExp}=lpathout;
+                                        ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
+                                        ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
                                         ListSubdir{NbExp}=ldir;
                                     end
                                 end
                             end
                         end
                     end
-                end
+%                 end
             end
         end
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
@@ -1684,7 +1687,8 @@ for iexp=1:NbExp
             disp('program stopped by user')
             return
         end
-        set(BrowseData.ListExperiments,'Value',ExpIndex{iexp})
+        set(BrowseData.ListExperiments,'Value',ExpIndex(iexp))
+        set(BrowseData.ListDevices,'Value',DeviceIndex(iexp))
         Param.InputTable(:,1)=ListPath(:,iexp);
         Param.InputTable(:,2)=ListSubdir(:,iexp);
         OutputSubDir=unique(ListSubdir(:,iexp));
@@ -1705,10 +1709,11 @@ for iexp=1:NbExp
     if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
         PathOut=get(handles.OutputPath,'String');
         if ~exist(PathOut,'dir') % test if  the dir  already exist
-        PathOut=uigetdir(PathOut,'pick the output root path')
-        set(handles.OutputPath,'String',PathOut);
+            PathOut=uigetdir(PathOut,'pick the output root path');
+            set(handles.OutputPath,'String',PathOut);
         end
-        PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
+        %PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
+        PathExpOut=fileparts(ListPath{iexp});
         if ~exist(PathExpOut,'dir')
             [tild,msg1]=mkdir(PathExpOut);
             if ~strcmp(msg1,'')
@@ -1716,7 +1721,8 @@ for iexp=1:NbExp
                 return
             end
         end
-        PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
+        %PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
+        PathExpDeviceOut=ListPath{iexp};
         if ~exist(PathExpDeviceOut,'dir')
             [tild,msg1]=mkdir(PathExpDeviceOut);
             if ~strcmp(msg1,'')
@@ -1779,9 +1785,11 @@ for iexp=1:NbExp
     end
     if get(handles.Replicate,'Value')
         set(handles.InputTable,'Data',Param.InputTable)
-        set(handles.OutputPath,'String',Pathout)
-        set(handles.Experiment,'String',ListExp{iexp})
-        set(handles.Device,'String',ListDevices{iexp})
+        set(handles.OutputPath,'String',OutputPath)
+         set(handles.Experiment,'String',ListExpOut{iexp})
+        set(handles.Device,'String',ListDeviceOut{iexp})
+        Param.Experiment=ListExpOut{iexp};
+        Param.Device=ListDeviceOut{iexp};
         check_input_file_series(handles)      
     end
     DirXml=fullfile(OutputDir,'0_XML');
@@ -1849,21 +1857,18 @@ for iexp=1:NbExp
             ref_j=first_j:incr_j:last_j;
         end
     end
-%     CPUTime=1; % job time estimated at 1 min per iteration (on index i and j) by default
-%     if isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime)
-%         CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
-%     end
     nbfield_j=numel(ref_j); % number of j indices
     BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
     NbProcess=1;
     switch RunMode
         case 'cluster'
             if (isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime))
-        CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
+                CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
             else
-               answer=msgbox_uvmat('INPUT_TXT','estimate the CPU time(in minutes) for each value of index i:' ,''); 
-               CPUTime=str2num(answer);
-               set(handles.num_CPUTime,'String',answer)
+                answer=msgbox_uvmat('INPUT_TXT','estimate the CPU time(in minutes) for each value of index i:' ,'');
+                CPUTime=str2num(answer);
+                set(handles.num_CPUTime,'String',answer)
+                Param.Action.CPUTime=CPUTime;
             end
             JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
             JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;

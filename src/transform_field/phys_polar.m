@@ -116,6 +116,7 @@ origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinate
 radius_offset=0;%reference radius used to offset the radial coordinate r
 angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
 angle_scale=180/pi;
+check_reverse=false;
 check_degree=1;%angle expressed in degrees by default
 if isfield(XmlData,'TransformInput')
     if isfield(XmlData.TransformInput,'PolarCentre') && isnumeric(XmlData.TransformInput.PolarCentre)

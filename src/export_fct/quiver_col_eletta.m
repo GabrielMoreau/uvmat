@@ -1,11 +1,11 @@
-%'quiver_col_eletta': plot vector fields and save figures for project Coriolis/2019/TUBE
+%'export_mat': plot vector fields and save figures for project Coriolis/2019/TUBE
 %------------------------------------------------------------------------
 
 %INPUT:
 % handles: Matlab structure containing all the information displyed in the GUI uvmat
 
 
-function quiver_col_eletta(handles)
+function export_mat(handles)
 %------------------------------------------------------------------------
 
 %% get input data

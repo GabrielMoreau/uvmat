@@ -89,7 +89,7 @@ if ~isempty(hmovie)
     plot(X-0.5,size(A,1)-Y+0.5,'+')
     set(hmovies,'NextPlot','replace')
 end
-
+0.03187
         
         %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
