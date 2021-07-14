@@ -1712,8 +1712,13 @@ for iexp=1:NbExp
             PathOut=uigetdir(PathOut,'pick the output root path');
             set(handles.OutputPath,'String',PathOut);
         end
-        %PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
+        if get(handles.Replicate,'Value')
         PathExpOut=fileparts(ListPath{iexp});
+        PathExpDeviceOut=ListPath{iexp};
+        else
+            PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
+            PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'))
+        end
         if ~exist(PathExpOut,'dir')
             [tild,msg1]=mkdir(PathExpOut);
             if ~strcmp(msg1,'')
@@ -1721,8 +1726,6 @@ for iexp=1:NbExp
                 return
             end
         end
-        %PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
-        PathExpDeviceOut=ListPath{iexp};
         if ~exist(PathExpDeviceOut,'dir')
             [tild,msg1]=mkdir(PathExpDeviceOut);
             if ~strcmp(msg1,'')
