@@ -36,7 +36,7 @@ function [A,FileInfo,timestamps,errormsg]=read_rdvision(filename,frame_idx)
 %   -------
 %   IMGS        : Images de sortie.
 %   TIMESTAMPS  : Timestaps des images lues.
-%   NB_FRAMES   : Nombres d'images dans la s???quence.
+%   NB_FRAMES   : Nombres d'images dans la sequence.
 
 errormsg='';
 if nargin<2% no frame indices specified
@@ -126,6 +126,9 @@ if ~isempty(frame_idx)
         binfile=fullfile(RootPath,binrepertoire,sprintf('%s%.5d.bin',bin_file,data(ii).file_idx));
         if ~exist(binfile,'file')
             errormsg=[binfile ' does not exist'];
+            FileInfo.StartTime=regexprep(FileInfo.binrepertoire,'T',' ');
+            FileInfo.EndTime=datestr(datenum(FileInfo.StartTime,'yyyy-mm-dd HH.MM.SS')+timestamps(end)/86400);
+            disp(FileInfo)
             return
         else
         fid=fopen(binfile,'rb');
@@ -137,8 +140,13 @@ if ~isempty(frame_idx)
     
     if ~isempty(frame_idx)
         timestamps=timestamps(frame_idx);
-    end
+    end  
+    FileInfo.StartTime=regexprep(FileInfo.binrepertoire,'T',' ');
+    FileInfo.EndTime=datestr(datenum(FileInfo.StartTime,'yyyy-mm-dd HH.MM.SS')+timestamps(end)/86400);
+    disp(FileInfo)
 end
+
+
 
 function Result = ini2struct(FileName)
 %==========================================================================
