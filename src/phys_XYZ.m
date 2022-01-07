@@ -40,7 +40,7 @@ Zphys=0; %default output
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&size(Calib.SliceCoord,1)>=Zindex
     if isfield(Calib, 'SliceAngle') && size(Calib.SliceAngle,1)>=Zindex && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
-        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));% coordinates of the unit vector normal to the current illumination plane
+        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));% coordinates UVMAT-httpsof the unit vector normal to the current illumination plane
     end
     Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
     Z0virt=Z0;
@@ -83,8 +83,11 @@ if isfield(Calib,'R')
         if test_refraction
             avirt=a/Calib.RefractionIndex;
             bvirt=b/Calib.RefractionIndex;
+        else
+            avirt=a;
+            bvirt=b;
         end
-        c=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
+        cvirt=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
                                % c=z coordinate at (x,y)=(0,0)
         R(1)=R(1)+avirt*R(3);
         R(2)=R(2)+bvirt*R(3);
@@ -105,12 +108,12 @@ if isfield(Calib,'R')
     Z22=R(3)*R(7)-R(1)*R(9);
      Zx0=R(3)*R(5)-R(2)*R(6);
      Zy0=R(1)*R(6)-R(3)*R(4);
-    B11=R(8)*Ty-R(5)*Tz+Z11*c;
-    B12=R(2)*Tz-R(8)*Tx+Z12*c;
-    B21=-R(7)*Ty+R(4)*Tz+Z21*c;
-    B22=-R(1)*Tz+R(7)*Tx+Z22*c;
-    X0=(R(5)*Tx-R(2)*Ty+Zx0*c);
-    Y0=(-R(4)*Tx+R(1)*Ty+Zy0*c);
+    B11=R(8)*Ty-R(5)*Tz+Z11*cvirt;
+    B12=R(2)*Tz-R(8)*Tx+Z12*cvirt;
+    B21=-R(7)*Ty+R(4)*Tz+Z21*cvirt;
+    B22=-R(1)*Tz+R(7)*Tx+Z22*cvirt;
+    X0=R(5)*Tx-R(2)*Ty+Zx0*cvirt;
+    Y0=-R(4)*Tx+R(1)*Ty+Zy0*cvirt;
     %px to camera:
     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
@@ -129,7 +132,7 @@ if isfield(Calib,'R')
     Xphys=(B11.*Xu+B12.*Yu+X0)./denom;%world coordinates
     Yphys=(B21.*Xu+B22.*Yu+Y0)./denom;
     if testangle
-        Zphys=Z0+a*Xphys+b*Yphys;
+        Zphys=c+a*Xphys+b*Yphys;
     else
         Zphys=Z0;
     end
