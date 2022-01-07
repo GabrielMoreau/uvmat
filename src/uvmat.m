@@ -1373,8 +1373,8 @@ GeometryCalib.SliceCoord(:,2)=SliceData.SliceCoord(2);
 GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
 Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
 Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation around x axis (to generalise)
-GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation around y axis (to generalise)
+GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
+GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
 GeometryCalib.SliceAngle(:,3)=0;
 if SliceData.CheckRefraction
     GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
@@ -1434,9 +1434,9 @@ if get(hreplicate,'Value')
                 msgbox_uvmat('ERROR',errormsg);
             else
                 if check_update
-                    display([XmlName ' updated with calibration parameters'])
+                    display([XmlName ' updated with slice positions'])
                 else
-                    display([XmlName ' created with calibration parameters'])
+                    display([XmlName ' created with slice positions'])
                 end
             end
         end

@@ -3,9 +3,16 @@
 % function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 %
 %OUTPUT:
-%
+% Xphys,Yphys,Zphys: vector of phys coordinates corresponding to the input vector of image coordinates
 %INPUT:
-%Z: index of plane
+% Calib: Matlab structure containing the calibration parameters (pinhole camera model, see 
+% http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#GeometryCalib) and the
+%    parameters describing the illumination plane(s)
+%    .Tx_Ty_Tz: translation (3 phys coordinates) defining the origine of the camera frame
+%    .R : rotation matrix from phys to camera frame
+%    .fx_fy: focal length along each direction of the image
+% X, Y: vectors of X and Y image coordinates
+% ZIndex: index defining the current illumination plane in a volume scan
 
 %=======================================================================
 % Copyright 2008-2022, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -27,18 +34,18 @@
 
 function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 %------------------------------------------------------------------------
-testangle=0;
-test_refraction=0;
+testangle=0;% =1 if the illumination plane is tilted with respect to the horizontal plane Xphys Yphys
+test_refraction=0;% =1 if the considered points are viewed through an horizontal interface (located at z=Calib.InterfaceCoord(3)') 
 Zphys=0; %default output
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&size(Calib.SliceCoord,1)>=Zindex
     if isfield(Calib, 'SliceAngle') && size(Calib.SliceAngle,1)>=Zindex && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
-        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));
+        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));% coordinates of the unit vector normal to the current illumination plane
     end
     Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
     Z0virt=Z0;
     if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
-        H=Calib.InterfaceCoord(3);
+        H=Calib.InterfaceCoord(3);% z position of the water surface
         if H>Z0
             Z0virt=H-(H-Z0)/Calib.RefractionIndex; %corrected z (virtual object)
             test_refraction=1;
@@ -68,19 +75,23 @@ if ~isfield(Calib,'kc')
 end
 if isfield(Calib,'R')
     R=(Calib.R)';
+    c=Z0virt;
     if testangle
+        % equation of the illumination plane: z=ax+by+c
         a=-norm_plane(1)/norm_plane(3);
         b=-norm_plane(2)/norm_plane(3);
         if test_refraction
-            a=a/Calib.RefractionIndex;
-            b=b/Calib.RefractionIndex;
+            avirt=a/Calib.RefractionIndex;
+            bvirt=b/Calib.RefractionIndex;
         end
-        R(1)=R(1)+a*R(3);
-        R(2)=R(2)+b*R(3);
-        R(4)=R(4)+a*R(6);
-        R(5)=R(5)+b*R(6);
-        R(7)=R(7)+a*R(9);
-        R(8)=R(8)+b*R(9);
+        c=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
+                               % c=z coordinate at (x,y)=(0,0)
+        R(1)=R(1)+avirt*R(3);
+        R(2)=R(2)+bvirt*R(3);
+        R(4)=R(4)+avirt*R(6);
+        R(5)=R(5)+bvirt*R(6);
+        R(7)=R(7)+avirt*R(9);
+        R(8)=R(8)+bvirt*R(9);          
     end
     Tx=Calib.Tx_Ty_Tz(1);
     Ty=Calib.Tx_Ty_Tz(2);
@@ -92,14 +103,14 @@ if isfield(Calib,'R')
     Z12=R(2)*R(9)-R(3)*R(8);
     Z21=R(4)*R(9)-R(6)*R(7);
     Z22=R(3)*R(7)-R(1)*R(9);
-    Zx0=R(3)*R(5)-R(2)*R(6);
-    Zy0=R(1)*R(6)-R(3)*R(4);
-    A11=R(8)*Ty-R(5)*Tz+Z11*Z0virt;
-    A12=R(2)*Tz-R(8)*Tx+Z12*Z0virt;
-    A21=-R(7)*Ty+R(4)*Tz+Z21*Z0virt;
-    A22=-R(1)*Tz+R(7)*Tx+Z22*Z0virt;
-    X0=(R(5)*Tx-R(2)*Ty+Zx0*Z0virt);
-    Y0=(-R(4)*Tx+R(1)*Ty+Zy0*Z0virt);
+     Zx0=R(3)*R(5)-R(2)*R(6);
+     Zy0=R(1)*R(6)-R(3)*R(4);
+    B11=R(8)*Ty-R(5)*Tz+Z11*c;
+    B12=R(2)*Tz-R(8)*Tx+Z12*c;
+    B21=-R(7)*Ty+R(4)*Tz+Z21*c;
+    B22=-R(1)*Tz+R(7)*Tx+Z22*c;
+    X0=(R(5)*Tx-R(2)*Ty+Zx0*c);
+    Y0=(-R(4)*Tx+R(1)*Ty+Zy0*c);
     %px to camera:
     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
@@ -115,8 +126,8 @@ if isfield(Calib,'R')
         niter=niter+1;
     end
     denom=Dx*Xu+Dy*Yu+D0;
-    Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
-    Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
+    Xphys=(B11.*Xu+B12.*Yu+X0)./denom;%world coordinates
+    Yphys=(B21.*Xu+B22.*Yu+Y0)./denom;
     if testangle
         Zphys=Z0+a*Xphys+b*Yphys;
     else

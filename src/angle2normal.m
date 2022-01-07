@@ -1,6 +1,6 @@
 %calculate the components of the unit vector norm_plane normal to the plane
 %defined by the rotation vector PlaneAngle (in degree) 
-% this gives the equation of the plane as norm_plane(1)x + norm_plane(2)y + norm_plane(2)z = 0
+% this gives the equation of the plane as norm_plane(1)x + norm_plane(2)y +norm_plane(3)z = cte
 
 function norm_plane=rotate(PlaneAngle)
 

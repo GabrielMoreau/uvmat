@@ -1056,6 +1056,9 @@ end
 %% read timing  from the current file (prioritary)
 if ~isempty(VideoObject)% case of movies
     imainfo=get(VideoObject);
+    if isfield(imainfo,'NumFrames')
+        imainfo.NumberOfFrames=imainfo.NumFrames;
+    end
     if isempty(j1_series) % frame index along i
         Time=zeros(imainfo.NumberOfFrames+1,2);
         Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
@@ -1706,7 +1709,7 @@ for iexp=1:NbExp
     %% create the output data directory if needed, after checking its existence
     OutputDir='';
     answer='';
-    if isfield(Param,'OutputSubDir')% possibly update the output dir if it already exists
+    if isfield(Param,'OutputSubDir')&& isfield(Param,'OutputDirExt')% possibly update the output dir if it already exists
         PathOut=get(handles.OutputPath,'String');
         if ~exist(PathOut,'dir') % test if  the dir  already exist
             PathOut=uigetdir(PathOut,'pick the output root path');
@@ -1733,6 +1736,7 @@ for iexp=1:NbExp
                 return
             end
         end
+
         SubDirOut=[Param.OutputSubDir Param.OutputDirExt];
         SubDirOutNew=SubDirOut;
         detect=exist(fullfile(PathExpDeviceOut,SubDirOutNew),'dir'); % test if  the dir  already exist
@@ -1781,10 +1785,10 @@ for iexp=1:NbExp
     elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
         OutputDir=Param.ActionInput.LogPath;
     end
-    if isfield(Param,'OutputSubDir') 
-    set(handles.OutputSubDir,'String',Param.OutputSubDir)
-    set(handles.OutputDirExt,'String',Param.OutputDirExt)
-    drawnow
+    if isfield(Param,'OutputSubDir')&& isfield(Param,'OutputDirExt')
+        set(handles.OutputSubDir,'String',Param.OutputSubDir)
+        set(handles.OutputDirExt,'String',Param.OutputDirExt)
+        drawnow
     end
     if get(handles.Replicate,'Value')
         set(handles.InputTable,'Data',Param.InputTable)
@@ -2550,7 +2554,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 set(handles.Coord_y,'String','')
             end
             Coord_z=get(handles.Coord_z,'String');
-            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
+            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))REFRESH
                 FieldList={};
                 set(handles.Coord_z,'String','')
             end
