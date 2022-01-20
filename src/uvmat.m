@@ -3418,6 +3418,7 @@ while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyActio
     errormsg=runpm(hObject,eventdata,handles,-increment);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg);
+        return
     end
     pause(1.02-get(handles.speed,'Value'));% wait for next image
     get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue')
@@ -3493,7 +3494,7 @@ if ~exist('Field','var')
     Field={};
 end
 UvData=get(handles.uvmat,'UserData');
-if ishandle(handles.UVMAT_title) %remove title panel on uvmat
+if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at the first openning of the GUI)
     delete(handles.UVMAT_title)
 end
 
@@ -3997,7 +3998,7 @@ else
 %% Plot the projections on the selected  projection objects
      set(handles.Objects,'Visible','on')
     %if no projection object exists, create a default one
-    if isempty(UvData.ProjObject{1})
+    if isempty(UvData.ProjObject{1})% if no projection object is specified
         set(handles.ListObject,'Value',1)
         set(handles.ListObject,'String',{'plane'})
         UvData.ProjObject{1}.Type='plane';%main plotting plane
@@ -4014,7 +4015,8 @@ else
             if isfield(UvData.Field,'CoordUnit')
                 UvData.ProjObject{1}.CoordUnit=UvData.Field.CoordUnit;
             end
-        elseif isfield(UvData,'Z')
+        %elseif isfield(UvData,'Z')
+        else
             %multilevel case (single menuplane in a 3D space)
             if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
                 XmlData=UvData.XmlData{1};

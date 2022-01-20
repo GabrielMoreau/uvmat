@@ -1085,7 +1085,7 @@ if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(Pr
             return
         end
     else % the z coordinate is set only by the field plane (by calibration)
-        ProjData.ProjObjectCoord(3)=FieldData.PlaneCoord(3);
+        ProjData.ProjObjectCoord=FieldData.PlaneCoord;
     end
     if isfield(FieldData,'PlaneAngle')
         if isfield(ProjData,'ProjObjectAngle')

@@ -76,6 +76,7 @@ end
 if isfield(Calib,'R')
     R=(Calib.R)';
     c=Z0virt;
+    cvirt=Z0virt;
     if testangle
         % equation of the illumination plane: z=ax+by+c
         a=-norm_plane(1)/norm_plane(3);
@@ -89,6 +90,7 @@ if isfield(Calib,'R')
         end
         cvirt=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
                                % c=z coordinate at (x,y)=(0,0)
+        c=Z0virt-a*Calib.SliceCoord(Zindex,1)-b*Calib.SliceCoord(Zindex,2);
         R(1)=R(1)+avirt*R(3);
         R(2)=R(2)+bvirt*R(3);
         R(4)=R(4)+avirt*R(6);

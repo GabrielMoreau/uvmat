@@ -507,6 +507,7 @@ for index=1:NbField
     end
     
     % record the time:
+    if isempty(errormsg)
     if isempty(time)% time not set by xml filer(s)
         if isfield(Data{1},'Time')
             DataOut.Time(index,1)=Field.Time;
@@ -515,6 +516,7 @@ for index=1:NbField
         end
     else % time from ImaDoc prevails  TODO: correct
         DataOut.Time(index,1)=time(index);%
+    end
     end
     index
     % record the number of missing input fields

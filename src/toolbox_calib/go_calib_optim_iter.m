@@ -29,48 +29,46 @@
 %In the future, a more general function will be there.
 %For now, if using a 3D calibration rig, quick_init is set to 1 for an easy initialization of the focal length
 
-if ~exist('desactivated_images'),
+if ~exist('desactivated_images','var')
     desactivated_images = [];
-end;
+end
 
-
-
-if ~exist('est_aspect_ratio'),
+if ~exist('est_aspect_ratio','var')
     est_aspect_ratio = 1;
-end;
+end
 
-if ~exist('est_fc');
+if ~exist('est_fc','var')
     est_fc = [1;1]; % Set to zero if you do not want to estimate the focal length (it may be useful! believe it or not!)
-end;
+end
 
-if ~exist('recompute_extrinsic'),
+if ~exist('recompute_extrinsic','var')
     recompute_extrinsic = 1; % Set this variable to 0 in case you do not want to recompute the extrinsic parameters
     % at each iterstion.
-end;
+end
 
-if ~exist('MaxIter'),
+if ~exist('MaxIter','var')
     MaxIter = 30; % Maximum number of iterations in the gradient descent
 end;
 
-if ~exist('check_cond'),
+if ~exist('check_cond','var'),
     check_cond = 1; % Set this variable to 0 in case you don't want to extract view dynamically
 end;
 
-if ~exist('center_optim'),
+if ~exist('center_optim','var'),
     center_optim = 1; %%% Set this variable to 0 if your do not want to estimate the principal point
 end;
 
-if exist('est_dist'),
+if exist('est_dist','var'),
     if length(est_dist) == 4,
         est_dist = [est_dist ; 0];
     end;
 end;
 
-if ~exist('est_dist'),
+if ~exist('est_dist','var'),
     est_dist = [1;1;1;1;0];
 end;
 
-if ~exist('est_alpha'),
+if ~exist('est_alpha','var'),
     est_alpha = 0; % by default, do not estimate skew
 end;
 
@@ -86,7 +84,7 @@ est_aspect_ratio = double(~~est_aspect_ratio);
 
 fprintf(1,'\n');
 
-if ~exist('nx')&~exist('ny'),
+if ~exist('nx','var')&~exist('ny','var'),
     fprintf(1,'WARNING: No image size (nx,ny) available. Setting nx=640 and ny=480. If these are not the right values, change values manually.\n');
     nx = 640;
     ny = 480;
@@ -115,7 +113,7 @@ if center_optim & (length(ind_active) < 2) & ~rig3D,
     est_alpha = 0;
 end;
 
-if ~exist('dont_ask'),
+if ~exist('dont_ask','var'),
     dont_ask = 0;
 end;
 
@@ -160,7 +158,7 @@ end;
 
 if ~center_optim, % In the case where the principal point is not estimated, keep it at the center of the image
     fprintf(1,'Principal point not optimized (center_optim=0). ');
-    if ~exist('cc'),
+    if ~exist('cc','var'),
         fprintf(1,'It is kept at the center of the image.\n');
         cc = [(nx-1)/2;(ny-1)/2];
     else
@@ -227,42 +225,42 @@ thresh_cond = 1e6;
 
 % Initialization of the intrinsic parameters (if necessary)
 
-if ~exist('cc'),
+if ~exist('cc','var')
     fprintf(1,'Initialization of the principal point at the center of the image.\n');
     cc = [(nx-1)/2;(ny-1)/2];
     alpha_smooth = 0.1; % slow convergence
-end;
+end
 
 
-if exist('kc'),
-    if length(kc) == 4;
+if exist('kc','var')
+    if length(kc) == 4
         fprintf(1,'Adding a new distortion coefficient to kc -> radial distortion model up to the 6th degree');
         kc = [kc;0];
-    end;
-end;
+    end
+end
 
-if ~exist('alpha_c'),
+if ~exist('alpha_c','var')
     fprintf(1,'Initialization of the image skew to zero.\n');
     alpha_c = 0;
     alpha_smooth = 0.1; % slow convergence
-end;
+end
 
-if ~exist('fc') && quick_init,
+if ~exist('fc','var') && quick_init
     FOV_angle = 35; % Initial camera field of view in degrees
     fprintf(1,['Initialization of the focal length to a FOV of ' num2str(FOV_angle) ' degrees.\n']);
     fc = (nx/2)/tan(pi*FOV_angle/360) * ones(2,1);
     est_fc = [1;1];
     alpha_smooth = 0.1; % slow 
-end;
+end
 
 
-if ~exist('fc'),
+if ~exist('fc','var')
     % Initialization of the intrinsic parameters:
     fprintf(1,'Initialization of the intrinsic parameters using the vanishing points of planar patterns.\n')
     init_intrinsic_param; % The right way to go (if quick_init is not active)!
     alpha_smooth = 0.1; % slow convergence
     est_fc = [1;1];
-end;
+end
 
 
 if ~exist('kc'),
