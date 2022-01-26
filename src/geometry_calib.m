@@ -254,11 +254,16 @@ answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];
     [num2str(numel(ind_removed)) ' points removed']});
-SliceCoord_ref=[0 0 0]; %default reference plane
+% SliceCoord_ref=[0 0 0]; %default reference plane
 if strcmp(answer,'Yes') %store the calibration data
-    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-        answer=msgbox_uvmat('INPUT_Y-N',{['Assume that the current image is in the plane of the calib points z=' num2str(Z_plane) ] ; 'can be later modified by MenuSetSlice in the upper bar menu of uvmat'});
-        SliceCoord_ref=Z_plane'*[0 0 1];
+    Z=Coord(:,3);
+    if strcmp(calib_cell{val}(1:2),'3D') && isequal(max(Z),min(Z))%set the plane position for 3D (projection) calibration
+        %set the Z position of the reference plane used for calibration
+        answer=msgbox_uvmat('INPUT_Y-N',{['Assume that the illuminated plane is at z=' num2str(Z(1)) ] ; 'can be later modified by MenuSetSlice in the upper bar menu of uvmat'});
+        if strcmp(answer,'Yes')
+            GeometryCalib.NbSlice=1;
+            GeometryCalib.SliceCoord=[0 0 Z(1)];
+        end
     end
 else
     GeometryCalib=[];
@@ -389,8 +394,10 @@ index=[];
 GeometryCalib=[];
 ind_max=[];ind_removed=[];Z_plane=[];
 % apply the calibration, whose type is selected in  handles.calib_type
+CoordFlip=Coord;
+CoordFlip(:,3)=-Coord(:,3);
 if ~isempty(Coord)
-    GeometryCalib=feval(CalibFcn,Coord,Intrinsic);
+    GeometryCalib=feval(CalibFcn,CoordFlip,Intrinsic);
 else
     msgbox_uvmat('ERROR','No calibration points, abort')
 end
@@ -400,12 +407,12 @@ end
 Z_plane=[];
 
 % estimate calibration error rms and max
-X=Coord(:,1);
-Y=Coord(:,2);
+% X=Coord(:,1);
+% Y=Coord(:,2);
 Z=Coord(:,3);
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
+[Xpoints,Ypoints]=px_XYZ(GeometryCalib,Coord(:,1),Coord(:,2),Coord(:,3));% convention of downward z coordinate (facing the camera)
 GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
 GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 [ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
@@ -433,12 +440,12 @@ if ~isempty(ind_removed)
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 end
 GeometryCalib.ErrorMax=ErrorMax;
-%set the Z position of the reference plane used for calibration
-if isequal(max(Z),min(Z))%Z constant
-    Z_plane=Z(1);
-    GeometryCalib.NbSlice=1;
-    GeometryCalib.SliceCoord=[0 0 Z_plane];
-end
+% %set the Z position of the reference plane used for calibration
+% if isequal(max(Z),min(Z))%Z constant
+%     Z_plane=Z(1);
+%     GeometryCalib.NbSlice=1;
+%     GeometryCalib.SliceCoord=[0 0 Z_plane];
+% end
 
 
 %------------------------------------------------------------------------

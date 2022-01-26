@@ -75,6 +75,9 @@ if ~isfield(Calib,'kc')
 end
 if isfield(Calib,'R')
     R=(Calib.R)';
+    R(3)=-R(3);
+    R(6)=-R(6);
+    R(9)=-R(9);
     c=Z0virt;
     cvirt=Z0virt;
     if testangle
@@ -90,7 +93,7 @@ if isfield(Calib,'R')
         end
         cvirt=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
                                % c=z coordinate at (x,y)=(0,0)
-        c=Z0virt-a*Calib.SliceCoord(Zindex,1)-b*Calib.SliceCoord(Zindex,2);
+        c=Z0-a*Calib.SliceCoord(Zindex,1)-b*Calib.SliceCoord(Zindex,2);
         R(1)=R(1)+avirt*R(3);
         R(2)=R(2)+bvirt*R(3);
         R(4)=R(4)+avirt*R(6);
