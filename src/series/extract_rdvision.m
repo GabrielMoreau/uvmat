@@ -1,4 +1,4 @@
-%'extract_rdvision': relabel an image series with two indices, and correct errors from the RDvision transfer program
+%'extunningact_rdvision': relabel an image series with two indices, and correct errors from the RDvision transfer program
 %------------------------------------------------------------------------
 % function ParamOut=extract_rdvision(Param)
 %------------------------------------------------------------------------

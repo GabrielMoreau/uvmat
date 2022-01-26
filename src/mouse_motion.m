@@ -496,7 +496,7 @@ end
 
 %% draw ruler
 if test_ruler && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'ruler')
-    if isfield(AxeData,'RulerHandle')
+    if isfield(AxeData,'RulerHandle') && ~isempty(findobj(AxeData.RulerHandle)) && size(xy,2)>=2
         pointershape='crosshair'; %give  the mouse pointer a cross shape
         RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)]; %coordinates defining the ruler segment
         set(AxeData.RulerHandle,'XData',RulerCoord(:,1));% updtate the x coordinates for the ruler graphic object

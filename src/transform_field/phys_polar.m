@@ -77,35 +77,44 @@ end
 %% default outputs
 Data=DataIn; %default output
 if isfield(Data,'CoordUnit')
-Data=rmfield(Data,'CoordUnit');
+    Data=rmfield(Data,'CoordUnit');
 end
 Data.ListVarName = {};
 Data.VarDimName={};
 Data.VarAttribute={};
 DataCell{1}=DataIn;
 Calib{1}=[];
+Slice{1}=[];
 DataCell{2}=[];%default
 checkpixel(1)=0;
-if isfield(DataCell{1},'CoordUnit')&& strcmp(DataCell{1}.CoordUnit,'pixel') 
+if isfield(DataCell{1},'CoordUnit')&& strcmp(DataCell{1}.CoordUnit,'pixel')
     checkpixel(1)=1;
 end
 if nargin==2||nargin==4
     if isfield(XmlData,'GeometryCalib') && ~isempty(XmlData.GeometryCalib)&& checkpixel(1)
         Calib{1}=XmlData.GeometryCalib;
     end
+    Slice{1}=Calib{1};
+    if isfield(XmlData,'Slice')
+        Slice{1}=XmlData.Slice;
+    end
     Calib{2}=Calib{1};
+    Slice{2}=Slice{1};
 else
     Data.Txt='wrong input: need two or four structures';
 end
 nbinput=1;
 if nargin==4% case of two input fields
     checkpixel(2)=0;
-if isfield(DataCell{2},'CoordUnit')&& strcmp(DataCell{2}.CoordUnit,'pixel') 
-    checkpixel(2)=1;
-end
+    if isfield(DataCell{2},'CoordUnit')&& strcmp(DataCell{2}.CoordUnit,'pixel')
+        checkpixel(2)=1;
+    end
     DataCell{2}=DataIn_1;%default
     if isfield(XmlData_1,'GeometryCalib')&& ~isempty(XmlData_1.GeometryCalib) && checkpixel(2)
         Calib{2}=XmlData_1.GeometryCalib;
+    end
+    if isfield(XmlData_1,'Slice')
+        Slice{2}=XmlData_1.Slice;
     end
     nbinput=2;
 end
@@ -217,7 +226,7 @@ for ifield=1:nbinput %1 or 2 input fields
                     VName=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_y};
                     if ~isempty(Calib{ifield})
                         [X,Y,Z,DataCell{ifield}.(UName),DataCell{ifield}.(VName)]=...
-                            phys_XYUV(DataCell{ifield},Calib{ifield},ZIndex);
+                            phys_XYUV(DataCell{ifield},Calib{ifield},Slice{ifield},ZIndex);
                     end
                 end
                 [Theta,Radius] = cart2pol(X-origin_xy(1),Y-origin_xy(2));
@@ -303,6 +312,7 @@ for ifield=1:nbinput %1 or 2 input fields
                     coord_y{nbgrid}=DataCell{ifield}.(DataCell{ifield}.ListVarName{CellInfo{icell}.YIndex});
                     ZInd(nbgrid)=ZIndex;
                     Calib_new{nbgrid}=Calib{ifield};
+                    Slice_new{nbgrid}=Slice{ifield};
                 end
                 if isfield(CellInfo{icell},'VarIndex_vector_x')&& isfield(CellInfo{icell},'VarIndex_vector_y')
                     FieldName{nbgrid+1}=DataCell{ifield}.ListVarName{CellInfo{icell}.VarIndex_vector_x};
@@ -324,6 +334,8 @@ for ifield=1:nbinput %1 or 2 input fields
                     ZInd(nbgrid+2)=ZIndex;
                     Calib_new{nbgrid+1}=Calib{ifield};
                     Calib_new{nbgrid+2}=Calib{ifield};
+                    Slice_new{nbgrid+1}=Calib{ifield};
+                    Slice_new{nbgrid+2}=Calib{ifield};
                     nbgrid=nbgrid+2;
                     nbvar=nbvar+2;
                 end
@@ -334,7 +346,7 @@ end
 
 %% tranform cartesian to polar coordinates for gridded data
 if nbgrid~=0
-    [A,Data.radius,Data.theta]=phys_Ima_polar(A,coord_x,coord_y,Calib_new,ZInd,origin_xy,radius_offset,angle_offset,angle_scale);
+    [A,Data.radius,Data.theta]=phys_Ima_polar(A,coord_x,coord_y,Calib_new,Slice_new,ZInd,origin_xy,radius_offset,angle_offset,angle_scale);
     for icell=1:numel(A)
         if icell<=numel(A)-1 && check_vector(icell)==1 && check_vector(icell+1)==1   %transform u,v into polar coordinates
             theta=Data.theta/angle_scale-angle_offset;
@@ -372,7 +384,7 @@ end
 
 %------------------------------------------------
 %--- transform a single field into phys coordiantes
-function [X,Y,Z,U,V]=phys_XYUV(Data,Calib,ZIndex)
+function [X,Y,Z,U,V]=phys_XYUV(Data,Calib,Slice,ZIndex)
 %------------------------------------------------
 %% set default output
 %DataOut=Data;%default
@@ -384,7 +396,7 @@ U=[];
 V=[];
 %% transform  X,Y coordinates for velocity fields (transform of an image or scalar done in phys_ima)
 if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
-    [X,Y,Z]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+    [X,Y,Z]=phys_XYZ(Calib,Slice,Data.X,Data.Y,ZIndex);
     Dt=1; %default
     if isfield(Data,'dt')&&~isempty(Data.dt)
         Dt=Data.dt;
@@ -393,8 +405,8 @@ if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
         Dt=Data.Dt;
     end
     if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)
-        [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
-        [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
+        [XOut_1,YOut_1]=phys_XYZ(Calib,Slice,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
+        [XOut_2,YOut_2]=phys_XYZ(Calib,Slice,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
         U=(XOut_2-XOut_1)/Dt;
         V=(YOut_2-YOut_1)/Dt;
     end
@@ -403,7 +415,7 @@ end
 %%%%%%%%%%%%%%%%%%%%
 % tranform gridded field into polar coordiantes on a regular polar grid,
 % transform to phys coordiantes if requested by calibration input
-function [A_out,radius,theta]=phys_Ima_polar(A,coord_x,coord_y,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
+function [A_out,radius,theta]=phys_Ima_polar(A,coord_x,coord_y,CalibIn,SliceIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
 rcorner=[];
 thetacorner=[];
 npx=[];
@@ -419,7 +431,7 @@ for icell=1:length(A)
     
     % transform edges into phys coordinates if requested
     if ~isempty(CalibIn{icell})
-        [x_edge,y_edge]=phys_XYZ(CalibIn{icell},x_edge,y_edge,ZIndex(icell));% physical coordinates of the image edge
+        [x_edge,y_edge]=phys_XYZ(CalibIn{icell},SliceIn{icell},x_edge,y_edge,ZIndex(icell));% physical coordinates of the image edge
     end
     
     %transform the corner coordinates into polar ones

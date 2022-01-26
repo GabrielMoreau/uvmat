@@ -362,12 +362,14 @@ if test_ruler && ~isempty(xy)
     xy=get(hcurrentaxes,'CurrentPoint');% get the current mouse coordinates
     RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)];% append the recorded ruler origin to the current mouse coordinates
     RulerCoord=diff(RulerCoord,1);% coordiante difference between segment end and beginning
-    RulerCoord=RulerCoord(1)+i*RulerCoord(2);
+    RulerCoord=RulerCoord(1)+1i*RulerCoord(2);
     distance=abs(RulerCoord);
     azimuth=(180/pi)*angle(RulerCoord);
     msgbox_uvmat('RULER','',['length: ' num2str(distance,3) ',  angle(degrees): ' num2str(azimuth,3)])
+    if isfield(AxeData,'RulerHanle')&&~isempty(findobj(AxeData.RulerHandle))
     delete(AxeData.RulerHandle)%delete the ruler graphic object
     AxeData=rmfield(AxeData,'RulerHandle');%remove the ruler handle in AxeData
+    end
     AxeData.Drawing='off';%exit the ruler drawing mode
 end
 

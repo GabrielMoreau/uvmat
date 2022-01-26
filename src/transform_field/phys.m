@@ -54,26 +54,33 @@ end
 %% analyse input and set default output
 DataOut=DataIn;%default first output field
 if nargin>=2 % nargin =nbre of input variables
+     Calib{1}=[];
     if isfield(XmlData,'GeometryCalib')
         Calib{1}=XmlData.GeometryCalib;
-    else
-        Calib{1}=[];
+    end
+    Slice{1}=Calib{1};
+    if isfield(XmlData,'Slice')
+        Slice{1}=XmlData.Slice;
     end
     if nargin>=3  %two input fields
         DataOut_1=DataIn_1;%default second output field
-        if nargin>=4 && isfield(XmlData_1,'GeometryCalib')
-            Calib{2}=XmlData_1.GeometryCalib;
-        else
-            Calib{2}=Calib{1}; 
+        Calib{2}=Calib{1};
+        if nargin>=4 
+            if isfield(XmlData_1,'GeometryCalib')
+                Calib{2}=XmlData_1.GeometryCalib;
+            end
+            Slice{2}=Calib{2};
+            if isfield(XmlData_1,'Slice')
+                Slice{2}=XmlData_1.Slice;
+            end
         end
     end
 end
 
 %% get the z index defining the section plane
+ZIndex=1;
 if isfield(DataIn,'ZIndex')&&~isempty(DataIn.ZIndex)&&~isnan(DataIn.ZIndex)
     ZIndex=DataIn.ZIndex;
-else
-    ZIndex=1;
 end
 
 %% transform first field
@@ -81,7 +88,7 @@ iscalar=0;% counter of scalar fields
 checktransform=0;
 if  ~isempty(Calib{1})
     if isfield(Calib{1},'CalibrationType')&& isfield(Calib{1},'CoordUnit') && isfield(DataIn,'CoordUnit')&& strcmp(DataIn.CoordUnit,'pixel')   
-        DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordinates and velocity components
+        DataOut=phys_1(DataIn,Calib{1},Slice{1},ZIndex);% transform coordinates and velocity components
         %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
         if isfield(DataIn,'A') && isfield(DataIn,'Coord_x') && ~isempty(DataIn.Coord_x) && isfield(DataIn,'Coord_y')&&...
                 ~isempty(DataIn.Coord_y) && length(DataIn.A)>1
@@ -93,13 +100,13 @@ if  ~isempty(Calib{1})
 end
 
 %% document the selected  plane position and angle if relevant
-if  checktransform && isfield(Calib{1},'SliceCoord')&&size(Calib{1}.SliceCoord,1)>=ZIndex
-    DataOut.PlaneCoord=Calib{1}.SliceCoord(ZIndex,:);% transfer the slice position corresponding to index ZIndex
-    if isfield(Calib{1},'SliceAngle') % transfer the slice rotation angles
-        if isequal(size(Calib{1}.SliceAngle,1),1)% case of a unique angle
-            DataOut.PlaneAngle=Calib{1}.SliceAngle;
+if  checktransform && isfield(Slice{1},'SliceCoord')&&size(Slice{1}.SliceCoord,1)>=ZIndex
+    DataOut.PlaneCoord=Slice{1}.SliceCoord(ZIndex,:);% transfer the slice position corresponding to index ZIndex
+    if isfield(Slice{1},'SliceAngle') % transfer the slice rotation angles
+        if isequal(size(Slice{1}.SliceAngle,1),1)% case of a unique angle
+            DataOut.PlaneAngle=Slice{1}.SliceAngle;
         else  % case of multiple planes with different angles: select the plane with index ZIndex
-            DataOut.PlaneAngle=Calib{1}.SliceAngle(ZIndex,:);
+            DataOut.PlaneAngle=Slice{1}.SliceAngle(ZIndex,:);
         end
     end
 end
@@ -112,15 +119,15 @@ if ~isempty(DataOut_1)
         return
     end
     if isfield(Calib{2},'CalibrationType')&&isfield(Calib{2},'CoordUnit') && isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel')
-        DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
-        if isfield(Calib{1},'SliceCoord')
-            if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
+        DataOut_1=phys_1(DataOut_1,Calib{2},Slice{2},ZIndex);
+        if isfield(Slice{2},'SliceCoord')
+            if ~(isfield(Slice{2},'SliceCoord') && isequal(Slice{2}.SliceCoord,Slice{1}.SliceCoord))
                 DataOut_1.Txt='different plane positions for the two input fields';
                 return
             end
             DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
-            if isfield(Calib{1},'SliceAngle')
-                if ~(isfield(Calib{2},'SliceAngle') && isequal(Calib{2}.SliceAngle,Calib{1}.SliceAngle))
+            if isfield(Slice{1},'SliceAngle')
+                if ~(isfield(Slice{2},'SliceAngle') && isequal(Slice{2}.SliceAngle,Slice{1}.SliceAngle))
                     DataOut_1.Txt='different plane angles for the two input fields';
                     return
                 end
@@ -130,7 +137,7 @@ if ~isempty(DataOut_1)
         if isfield(DataIn_1,'A')&&isfield(DataIn_1,'Coord_x')&&~isempty(DataIn_1.Coord_x) && isfield(DataIn_1,'Coord_y')&&...
                 ~isempty(DataIn_1.Coord_y)&&length(DataIn_1.A)>1
             iscalar=iscalar+1;
-            Calib{iscalar}=Calib{2};
+%             Calib{iscalar}=Calib{2};
             A{iscalar}=DataIn_1.A;
         end
         checktransform_1=1;
@@ -162,7 +169,7 @@ if ~isempty(DataOut_1)
 end
 %------------------------------------------------
 %--- transform a single field
-function DataOut=phys_1(Data,Calib,ZIndex)
+function DataOut=phys_1(Data,Calib,Slice,ZIndex)
 %------------------------------------------------
 %% set default output
 DataOut=Data;%default
@@ -170,7 +177,7 @@ DataOut.CoordUnit=Calib.CoordUnit;% the output coord unit is set by the calibrat
 
 %% transform  X,Y coordinates for velocity fields (transform of an image or scalar done in phys_ima)
 if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
-  [DataOut.X,DataOut.Y]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+  [DataOut.X,DataOut.Y]=phys_XYZ(Calib,Slice,Data.X,Data.Y,ZIndex);
     Dt=1; %default
     if isfield(Data,'dt')&&~isempty(Data.dt)
         Dt=Data.dt;
@@ -179,8 +186,8 @@ if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
         Dt=Data.Dt;
     end
     if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)
-        [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
-        [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
+        [XOut_1,YOut_1]=phys_XYZ(Calib,Slice,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
+        [XOut_2,YOut_2]=phys_XYZ(Calib,Slice,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
         DataOut.U=(XOut_2-XOut_1)/Dt;
         DataOut.V=(YOut_2-YOut_1)/Dt;
     end
@@ -212,10 +219,10 @@ end
 if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)
     % estimate the Jacobian matrix DXpx/DXphys
     for ip=1:length(Data.X)
-        [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),ZIndex);
-        [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),ZIndex);
-        [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,ZIndex);
-        [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,ZIndex);
+        [Xp1,Yp1]=phys_XYZ(Calib,Slice,Data.X(ip)+0.5,Data.Y(ip),ZIndex);
+        [Xm1,Ym1]=phys_XYZ(Calib,Slice,Data.X(ip)-0.5,Data.Y(ip),ZIndex);
+        [Xp2,Yp2]=phys_XYZ(Calib,Slice,Data.X(ip),Data.Y(ip)+0.5,ZIndex);
+        [Xm2,Ym2]=phys_XYZ(Calib,Slice,Data.X(ip),Data.Y(ip)-0.5,ZIndex);
         %Jacobian matrix DXpphys/DXpx
         DjXi(1,1)=(Xp1-Xm1);
         DjXi(2,1)=(Yp1-Ym1);

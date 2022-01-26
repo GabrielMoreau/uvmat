@@ -255,14 +255,16 @@ answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];
     [num2str(numel(ind_removed)) ' points removed']});
 % SliceCoord_ref=[0 0 0]; %default reference plane
+checkslice=0;
 if strcmp(answer,'Yes') %store the calibration data
     Z=Coord(:,3);
     if strcmp(calib_cell{val}(1:2),'3D') && isequal(max(Z),min(Z))%set the plane position for 3D (projection) calibration
         %set the Z position of the reference plane used for calibration
-        answer=msgbox_uvmat('INPUT_Y-N',{['Assume that the illuminated plane is at z=' num2str(Z(1)) ] ; 'can be later modified by MenuSetSlice in the upper bar menu of uvmat'});
+        answer=msgbox_uvmat('INPUT_Y-N',{['Do you assume that the illuminated plane is at z=' num2str(Z(1)) '?' ] ; 'can be later modified by MenuSetSlice in the upper bar menu of uvmat'});
         if strcmp(answer,'Yes')
-            GeometryCalib.NbSlice=1;
-            GeometryCalib.SliceCoord=[0 0 Z(1)];
+            Slice.NbSlice=1;
+            Slice.SliceCoord=[0 0 Z(1)];
+            checkslice=1;% will document the item <Slice> in ImaDoc
         end
     end
 else
@@ -318,33 +320,40 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     check_update=0;
                 end
                 errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+                dispmessage='';
+                if checkslice
+                    errormsg=update_imadoc(Slice,XmlName,'Slice');% introduce the slice position in the xml file
+                    dispmessage=' and slice position';
+                end
                 if ~strcmp(errormsg,'')
                     msgbox_uvmat('ERROR',errormsg);
                 else
                     if check_update
-                        display([XmlName ' updated with calibration parameters'])
+                        display([XmlName ' updated with calibration parameters' dispmessage])
                     else
-                        display([XmlName ' created with calibration parameters'])
+                        display([XmlName ' created with calibration parameters' dispmessage])
                     end
-                    %nbcalib=nbcalib+1;
                 end
             end
         end
         msgbox_uvmat('CONFIMATION',['calibration replicated for ' num2str(NbExp) ' experiments']);
     else
-        %% copy the xml file from the old location if appropriate, then update with the calibration parameters
-        if ~exist(outputfile,'file') && ~isempty(SubDirBase)
+        %% update the calibration parameters in the currently opened uvmat GUI
+        if ~exist(outputfile,'file') && ~isempty(SubDirBase) %copy the xml file from the old location if appropriate
             oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
             if exist(oldxml,'file')
                 [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
             end
         end
         errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
+        if checkslice
+                    errormsg=update_imadoc(Slice,outputfile,'Slice');% introduce the slice position in the xml file
+        end
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
         end
         
-        %% display image with new calibration in the currently opened uvmat interface
+        %% display image with new calibration in the currently opened uvmat GUI
         FieldList=get(hhuvmat.FieldName,'String');
         val=get(hhuvmat.FieldName,'Value');
         if strcmp(FieldList{val},'image')
@@ -412,7 +421,7 @@ Z_plane=[];
 Z=Coord(:,3);
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(GeometryCalib,Coord(:,1),Coord(:,2),Coord(:,3));% convention of downward z coordinate (facing the camera)
+[Xpoints,Ypoints]=px_XYZ(GeometryCalib,[],Coord(:,1),Coord(:,2),Coord(:,3));% convention of downward z coordinate (facing the camera)
 GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
 GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 [ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
@@ -435,7 +444,7 @@ if ~isempty(ind_removed)
     Z=Coord(:,3);
     x_ima=Coord(:,4);
     y_ima=Coord(:,5);
-    [Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
+    [Xpoints,Ypoints]=px_XYZ(GeometryCalib,[],X,Y,Z);
     GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 end
@@ -804,7 +813,7 @@ Y=Coord(:,2);
 Z=Coord(:,3);
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+[Xpoints,Ypoints]=px_XYZ(Calib,[],X,Y,Z);
 ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
 ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 ErrorRms=mean(ErrorRms);

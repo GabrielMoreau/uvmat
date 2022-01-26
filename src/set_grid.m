@@ -257,6 +257,7 @@ if strcmp(GUI.CoordType,'phys')
         fileAxml=[fullfile(RootPath,RootFile) '.xml'];% old convention for xml name
     end
     tsaiA=[];%default
+    SliceA=[];
     if exist(fileAxml,'file')
         [XmlDataA,errormsg]=imadoc2struct(fileAxml);
         if ~isempty(errormsg)
@@ -265,12 +266,16 @@ if strcmp(GUI.CoordType,'phys')
         end
         if isfield(XmlDataA,'GeometryCalib')
             tsaiA=XmlDataA.GeometryCalib;
+            SliceA=tsaiA;%default
+        end
+        if isfield(XmlDataA,'Slice')
+            SliceA=XmlDataA.Slice;
         end
     end
     if isempty(tsaiA)
         msgbox_uvmat('WARNING','no geometric calibration available for image A, phys =pixel')
     else
-        [grid_x_imaA,grid_y_imaA]=px_XYZ(tsaiA,grid_x,grid_y,GUI.Z);
+        [grid_x_imaA,grid_y_imaA]=px_XYZ(tsaiA,SliceA,grid_x,grid_y,GUI.Z);
     end
 end
 
@@ -292,6 +297,7 @@ if isfield(GUI,'ImageB')
         fileBxml=[fullfile(RootPathB,RootFileB) '.xml'];% old convention for xml name
     end
     tsaiB=[];%default
+    SliceB=[];
     if exist(fileBxml,'file')
         [XmlDataB,errormsg]=imadoc2struct(fileBxml);
         if ~isempty(errormsg)
@@ -300,6 +306,10 @@ if isfield(GUI,'ImageB')
         end
         if isfield(XmlDataB,'GeometryCalib')
             tsaiB=XmlDataB.GeometryCalib;
+            SliceB=tsaiB;%default
+        end
+        if isfield(XmlDataB,'Slice')
+            SliceB=XmlDataB.Slice;
         end
     end
     if isempty(tsaiB)
@@ -307,7 +317,7 @@ if isfield(GUI,'ImageB')
         grid_x_imaB=grid_x;
         grid_y_imaB=grid_y;
     else
-        [grid_x_imaB,grid_y_imaB]=px_XYZ(tsaiB,grid_x,grid_y,GUI.Z);
+        [grid_x_imaB,grid_y_imaB]=px_XYZ(tsaiB,SliceB,grid_x,grid_y,GUI.Z);
     end
     B=imread(GUI.ImageB);
     npxB=size(B,2);

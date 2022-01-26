@@ -27,7 +27,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)
+function [X,Y]=px_XYZ(Calib,Slice,Xphys,Yphys,Zphys)
 if ~exist('Zphys','var')
     Zphys=0;
 end
@@ -39,14 +39,17 @@ if ~isfield(Calib,'Tx_Ty_Tz')
 end
 
 %%%%%%%%%%%%%
+if isempty(Slice)
+    Slice=Calib;
+end
 % general case
 if isfield(Calib,'R')
     R=(Calib.R)';
     %correct z for refraction if needed
-    if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
-        H=Calib.InterfaceCoord(3);
+    if isfield(Slice,'InterfaceCoord') && isfield(Slice,'RefractionIndex')
+        H=Slice.InterfaceCoord(3);
         if H>Zphys
-            Zphys=H-(H-Zphys)/Calib.RefractionIndex; %corrected z (virtual object)Calib
+            Zphys=H-(H-Zphys)/Slice.RefractionIndex; %corrected z (virtual object)Calib
             
           %  test_refraction=1;
         end

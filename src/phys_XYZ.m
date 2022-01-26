@@ -32,22 +32,25 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
+function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,Slice,X,Y,Zindex)
 %------------------------------------------------------------------------
 testangle=0;% =1 if the illumination plane is tilted with respect to the horizontal plane Xphys Yphys
 test_refraction=0;% =1 if the considered points are viewed through an horizontal interface (located at z=Calib.InterfaceCoord(3)') 
 Zphys=0; %default output
-if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&size(Calib.SliceCoord,1)>=Zindex
-    if isfield(Calib, 'SliceAngle') && size(Calib.SliceAngle,1)>=Zindex && ~isequal(Calib.SliceAngle(Zindex,:),[0 0 0])
+if isempty(Slice)
+    Slice=Calib;%old convention < 2022
+end
+if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Slice,'SliceCoord')&&size(Slice.SliceCoord,1)>=Zindex
+    if isfield(Slice, 'SliceAngle') && size(Slice.SliceAngle,1)>=Zindex && ~isequal(Slice.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
-        norm_plane=angle2normal(Calib.SliceAngle(Zindex,:));% coordinates UVMAT-httpsof the unit vector normal to the current illumination plane
+        norm_plane=angle2normal(Slice.SliceAngle(Zindex,:));% coordinates UVMAT-httpsof the unit vector normal to the current illumination plane
     end
-    Z0=Calib.SliceCoord(Zindex,3);%horizontal plane z=cte
+    Z0=Slice.SliceCoord(Zindex,3);%horizontal plane z=cte
     Z0virt=Z0;
-    if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex')
-        H=Calib.InterfaceCoord(3);% z position of the water surface
+    if isfield(Slice,'InterfaceCoord') && isfield(Slice,'RefractionIndex')
+        H=Slice.InterfaceCoord(3);% z position of the water surface
         if H>Z0
-            Z0virt=H-(H-Z0)/Calib.RefractionIndex; %corrected z (virtual object)
+            Z0virt=H-(H-Z0)/Slice.RefractionIndex; %corrected z (virtual object)
             test_refraction=1;
         end
     end
@@ -85,15 +88,15 @@ if isfield(Calib,'R')
         a=-norm_plane(1)/norm_plane(3);
         b=-norm_plane(2)/norm_plane(3);
         if test_refraction
-            avirt=a/Calib.RefractionIndex;
-            bvirt=b/Calib.RefractionIndex;
+            avirt=a/Slice.RefractionIndex;
+            bvirt=b/Slice.RefractionIndex;
         else
             avirt=a;
             bvirt=b;
         end
-        cvirt=Z0virt-avirt*Calib.SliceCoord(Zindex,1)-bvirt*Calib.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
+        cvirt=Z0virt-avirt*Slice.SliceCoord(Zindex,1)-bvirt*Slice.SliceCoord(Zindex,2);% Z0 = (virtual) z coordinate on the rotation axis (assumed horizontal)
                                % c=z coordinate at (x,y)=(0,0)
-        c=Z0-a*Calib.SliceCoord(Zindex,1)-b*Calib.SliceCoord(Zindex,2);
+        c=Z0-a*Slice.SliceCoord(Zindex,1)-b*Slice.SliceCoord(Zindex,2);
         R(1)=R(1)+avirt*R(3);
         R(2)=R(2)+bvirt*R(3);
         R(4)=R(4)+avirt*R(6);

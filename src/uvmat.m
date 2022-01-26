@@ -1207,32 +1207,36 @@ if get(handles.SubField,'Value')
 end
 
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-% check=0;
-if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
-    GeometryCalib=UvData.XmlData{1}.GeometryCalib;
-else
-    msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
-    return
+Slice=[];
+if isfield(UvData,'XmlData')
+    if isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
+        Slice=UvData.XmlData{1}.GeometryCalib;%old convention < 2022
+    elseif isfield(UvData.XmlData{1},'Slice')
+        Slice=UvData.XmlData{1}.Slice;% new convention ( 2022)
+    end
 end
-SliceCoord=GeometryCalib.SliceCoord;
-InterfaceCoord=min(SliceCoord(:,3));
-if isfield(GeometryCalib,'InterfaceCoord')
-    InterfaceCoord=GeometryCalib.InterfaceCoord(1,3);
+% default input
+if ~(isfield(Slice,'SliceCoord') && size(Slice.SliceCoord,2)==3)
+    Slice.SliceCoord=[0 0 0];
 end
-NbSlice=size(SliceCoord,1);
+InterfaceCoord=min(Slice.SliceCoord(:,3));
+if isfield(Slice,'InterfaceCoord')
+    InterfaceCoord=Slice.InterfaceCoord(1,3);
+end
+NbSlice=size(Slice.SliceCoord,1);
 CheckVolumeScan=0;
-if isfield(GeometryCalib,'CheckVolumeScan')
-    CheckVolumeScan=GeometryCalib.CheckVolumeScan;
+if isfield(Slice,'CheckVolumeScan')
+    CheckVolumeScan=Slice.CheckVolumeScan;
 end
 RefractionIndex=1.33;
 CheckRefraction=0;% default value of the check box refraction
-if isfield(GeometryCalib,'RefractionIndex')
-    RefractionIndex=GeometryCalib.RefractionIndex;
+if isfield(Slice,'RefractionIndex')
+    RefractionIndex=Slice.RefractionIndex;
     CheckRefraction=1;
 end
 SliceAngle=[0 0 0];
-if isfield(GeometryCalib,'SliceAngle')
-    SliceAngle=GeometryCalib.SliceAngle;
+if isfield(Slice,'SliceAngle')
+    SliceAngle=Slice.SliceAngle;
 end
 
 %% create the GUI set_slice
@@ -1243,8 +1247,8 @@ Height=min(0.8*ScreenSize(4),300);
 Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
 hfig=findobj(allchild(0),'Tag','set_slice');
-if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI
-hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
+if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
+hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
 BackgroundColor=get(hfig,'Color');
 hh=0.14; % box height (relative)
 ii=0.01; % gap between uicontrols
@@ -1261,9 +1265,9 @@ uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
     'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
 uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
+    'String',num2str(Slice.SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
+    'String',num2str(Slice.SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
     'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
 %  raw 3 of the GUI
@@ -1290,9 +1294,9 @@ uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-
     'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
+    'String',num2str(Slice.SliceCoord(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceCoord(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
+    'String',num2str(Slice.SliceCoord(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
 
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
     'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
@@ -1348,40 +1352,40 @@ hhuvmat=guidata(huvmat);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
 XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);%find name of the relevant xml file
-[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');%read the xml file
-if~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-    return
-end
-GeometryCalib=s.GeometryCalib;% get thegeometric calibration data
+% [s,errormsg]=imadoc2struct(XmlFile,'Slice');%read the xml file
+% if~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg)
+%     return
+% end
+% Slice=s.Slice;% get thegeometric calibration data
 
 %% read the content of the GUI set_slice
 hset_slice=get(hObject, 'parent');
 hZ=findobj(hset_slice,'Tag','num_Z_1');
 Z_plane=str2num(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
 SliceData=read_GUI(hset_slice);
-GeometryCalib.NbSlice=SliceData.NbSlice;
-GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
+Slice.NbSlice=SliceData.NbSlice;
+Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
 if numel(Z_plane)<=2
     Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
 else
     set(hZ,'String',num2str(Z_plane))% restitute the display qfter reqding by read_GUI
 end
-GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-GeometryCalib.SliceCoord(:,1)=SliceData.SliceCoord(1);
-GeometryCalib.SliceCoord(:,2)=SliceData.SliceCoord(2);
-GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+Slice.SliceCoord=Z_plane'*[0 0 1];
+Slice.SliceCoord(:,1)=SliceData.SliceCoord(1);
+Slice.SliceCoord(:,2)=SliceData.SliceCoord(2);
+Slice.SliceAngle=zeros(Slice.NbSlice,3);
 Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
 Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-GeometryCalib.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
-GeometryCalib.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
-GeometryCalib.SliceAngle(:,3)=0;
+Slice.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
+Slice.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
+Slice.SliceAngle(:,3)=0;
 if SliceData.CheckRefraction
-    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
-    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
-elseif isfield(GeometryCalib,'RefractionIndex')
-    GeometryCalib=rmfield(GeometryCalib,'RefractionIndex');
-    GeometryCalib=rmfield(GeometryCalib,'InterfaceCoord');
+    Slice.InterfaceCoord=[0 0 SliceData.H];
+    Slice.RefractionIndex=SliceData.RefractionIndex;
+elseif isfield(Slice,'RefractionIndex')
+    Slice=rmfield(Slice,'RefractionIndex');
+    Slice=rmfield(Slice,'InterfaceCoord');
 end
 
 hreplicate=findobj(hset_slice,'Tag','CheckReplicate');
@@ -1429,7 +1433,7 @@ if get(hreplicate,'Value')
             else
                 check_update=0;
             end
-            errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+            errormsg=update_imadoc(Slice,XmlName,'Slice');% introduce the calibration data in the xml file
             if ~strcmp(errormsg,'')
                 msgbox_uvmat('ERROR',errormsg);
             else
@@ -1445,7 +1449,7 @@ if get(hreplicate,'Value')
 else
     
     %% store the result in the xml file used for calibration
-    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+    errormsg=update_imadoc(Slice,XmlFile,'Slice');% introduce the calibration data in the xml file
     if strcmp(errormsg,'')
         msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
     else
@@ -1924,7 +1928,7 @@ else
                             pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
                             pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
                         end
-                        [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
+                        [X,Y]=px_XYZ(Calib,Slice,pos(:,1),pos(:,2),pos(:,3));
                     end
                     flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
                 elseif isequal(ObjectData.Type,'ellipse')
@@ -2478,22 +2482,26 @@ if ~isempty(XmlFileName)
         set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
         if isfield(XmlDataRead, 'GeometryCalib') && ~isempty(XmlDataRead.GeometryCalib)
-            XmlData.GeometryCalib=XmlDataRead.GeometryCalib;
-            if isfield(XmlData.GeometryCalib,'CheckVolumeScan') && isequal(XmlData.GeometryCalib.CheckVolumeScan,1)
+            XmlData.GeometryCalib=XmlDataRead.GeometryCalib;      
+        end
+        XmlData.Slice=XmlData.GeometryCalib;%default
+        if isfield(XmlDataRead, 'Slice') && ~isempty(XmlDataRead.Slice)
+            XmlData.Slice=XmlDataRead.Slice;
+            % check whether the GUI geometry_calib is opened
+%             hgeometry_calib=findobj('tag','geometry_calib');
+%             if ~isempty(hgeometry_calib) % check whether the display of the GUI geometry_calib is consistent with the current calib param
+%                 GUserData=get(hgeometry_calib,'UserData');
+%                 if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,XmlFileName))
+%                     answer=msgbox_uvmat('INPUT_Y-N','refresh the display of the GUI geometry_calib with the new input data?');
+%                     if strcmp(answer,'Yes')
+%                         geometry_calib(XmlFileName);%diplay the new calibration points and parameters in geometry_calib
+%                     end
+%                 end
+%             end
+        end
+        if isfield(XmlData.Slice,'CheckVolumeScan') && isequal(XmlData.Slice.CheckVolumeScan,1)
                 set (handles.slices,'String','volume')
             end
-            % check whether the GUI geometry_calib is opened
-            hgeometry_calib=findobj('tag','geometry_calib');
-            if ~isempty(hgeometry_calib) % check whether the display of the GUI geometry_calib is consistent with the current calib param
-                GUserData=get(hgeometry_calib,'UserData');
-                if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,XmlFileName))
-                    answer=msgbox_uvmat('INPUT_Y-N','refresh the display of the GUI geometry_calib with the new input data?');
-                    if strcmp(answer,'Yes')
-                        geometry_calib(XmlFileName);%diplay the new calibration points and parameters in geometry_calib
-                    end
-                end
-            end
-        end
         if isfield(XmlDataRead, 'LIFCalib')
             XmlData.LIFCalib=XmlDataRead.LIFCalib;
         end
@@ -2570,14 +2578,14 @@ if isfield(XmlData,'GeometryCalib')
         if ~get(handles.CheckFixLimits,'Value')&& index==1
             set(handles.TransformName,'Value',3); % phys transform by default if fixedLimits is off
         end
-        if isfield(GeometryCalib,'SliceCoord')
-           siz=size(GeometryCalib.SliceCoord);
+        if isfield(XmlData.Slice,'SliceCoord')
+           siz=size(XmlData.Slice.SliceCoord);
            if siz(1)>1
                NbSlice=siz(1);
                set(handles.slices,'Visible','on')
                set(handles.slices,'Value',1)
            end
-           if isfield(GeometryCalib,'CheckVolumeScan') && isequal(GeometryCalib.CheckVolumeScan,1)
+           if isfield(XmlData.Slice,'CheckVolumeScan') && isequal(XmlData.Slice.CheckVolumeScan,1)
                set(handles.num_NbSlice,'Visible','off')
            else
                set(handles.num_NbSlice,'Visible','on')
@@ -5182,7 +5190,7 @@ if isfield(UvData,'ProjObject')
                     X=ObjectData.Coord(:,1);
                     Y=ObjectData.Coord(:,2);
                     if testphys
-                        [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
+                        [X,Y]=px_XYZ(Calib,[],X,Y,0);% to generalise with 3D cases
                     end
                     flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
                 elseif isequal(ObjectData.Type,'ellipse')
