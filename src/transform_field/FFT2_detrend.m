@@ -84,6 +84,9 @@ for ilist=1:numel(CellInfo)
         
         DataOut.ListVarName=[CoordName {VarName}];%list of variables
         DataOut.VarDimName=[CoordName {CoordName}];%list of dimensions for variables
+        DataOut.VarAttribute{1}.Role='coord_y';
+        DataOut.VarAttribute{2}.Role='coord_x';
+        DataOut.VarAttribute{3}.Role='scalar';
         break
     end
 end

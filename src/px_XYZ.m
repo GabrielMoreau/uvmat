@@ -56,7 +56,7 @@ if isfield(Calib,'R')
     end
     
     %camera coordinates
-    Zphys=-Zphys;%flip z coordinates
+    Zphys=Zphys;%flip z coordinates
     xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
     yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
     zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);

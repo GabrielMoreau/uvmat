@@ -51,7 +51,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 20-Sep-2018 19:04:30
+% Last Modified by GUIDE v2.5 05-Feb-2022 22:24:55
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -231,7 +231,7 @@ if get(handles.Replicate,'Value')
 end
 
 %% Apply calibration
-[GeometryCalib,index,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+[GeometryCalib,index,ind_removed]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
 if isempty(GeometryCalib)
     return
 end
@@ -244,19 +244,15 @@ GeometryCalib.CoordUnit=unit;
 %% record the coordinates of the calibration points
 GeometryCalib.SourceCalib.PointCoord=Coord;
 
-%% display calibration results on the GUI geometry_calib
-display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
-display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameters
-%     (rotation and translation of camera with  respect to the phys coordinates)
-
 %% set the default plane and display the calibration data errors for validation
 answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels'];
-    [num2str(numel(ind_removed)) ' points removed']});
-% SliceCoord_ref=[0 0 0]; %default reference plane
+    [num2str(numel(ind_removed)) ' points removed with ErrorMax > 3 rms']});
 checkslice=0;
 if strcmp(answer,'Yes') %store the calibration data
+    display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters on the GUI geometry_calib
+    display_extrinsic(GeometryCalib,handles)%display calibration extrinsic parameters on the GUI geometry_calib
     Z=Coord(:,3);
     if strcmp(calib_cell{val}(1:2),'3D') && isequal(max(Z),min(Z))%set the plane position for 3D (projection) calibration
         %set the Z position of the reference plane used for calibration
@@ -347,12 +343,12 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
         end
         errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
         if checkslice
-                    errormsg=update_imadoc(Slice,outputfile,'Slice');% introduce the slice position in the xml file
+            errormsg=update_imadoc(Slice,outputfile,'Slice');% introduce the slice position in the xml file
         end
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
         end
-        
+
         %% display image with new calibration in the currently opened uvmat GUI
         FieldList=get(hhuvmat.FieldName,'String');
         val=get(hhuvmat.FieldName,'Value');
@@ -396,15 +392,15 @@ set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color
         end
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
-function [GeometryCalib,ind_max,ind_removed,Z_plane]=calibrate(Coord,CalibFcn,Intrinsic)
+function [GeometryCalib,ind_max,ind_removed]=calibrate(Coord,CalibFcn,Intrinsic)
 %------------------------------------------------------------------------
 
 index=[];
 GeometryCalib=[];
-ind_max=[];ind_removed=[];Z_plane=[];
+ind_max=[];ind_removed=[];
 % apply the calibration, whose type is selected in  handles.calib_type
 CoordFlip=Coord;
-CoordFlip(:,3)=-Coord(:,3);
+CoordFlip(:,3)=Coord(:,3);% the calibration function assume a z ccordinate along the camera view, opposite to ours
 if ~isempty(Coord)
     GeometryCalib=feval(CalibFcn,CoordFlip,Intrinsic);
 else
@@ -413,15 +409,11 @@ end
 if isempty(GeometryCalib)
     return
 end
-Z_plane=[];
 
 % estimate calibration error rms and max
-% X=Coord(:,1);
-% Y=Coord(:,2);
-Z=Coord(:,3);
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(GeometryCalib,[],Coord(:,1),Coord(:,2),Coord(:,3));% convention of downward z coordinate (facing the camera)
+[Xpoints,Ypoints]=px_XYZ(GeometryCalib,[],Coord(:,1),Coord(:,2),Coord(:,3));
 GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
 GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 [ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
@@ -429,16 +421,18 @@ GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 [tild,ind_dim]=max(ErrorMax);
 ind_max=index(ind_dim); % mark the index with maximum deviation
 
-% detect bad calibration points, marked by indices ind_bad, if the
+% detect bad calibration points, marked by indices ind_removed, if the
 % difference of actual image coordinates and those given by calibration is
-% greater than 2 pixels and greater than 4 rms.
+% greater than 2 pixels and greater than 3 rms.
 check_x=abs(Xpoints-x_ima)>max(2,3*GeometryCalib.ErrorRms(1));
 check_y=abs(Ypoints-y_ima)>max(2,3*GeometryCalib.ErrorRms(2));
-ind_removed=find(check_x | check_y)
+ind_removed=find(check_x | check_y);
 % repeat calibration without the excluded points:
 if ~isempty(ind_removed)
     Coord(ind_removed,:)=[];
-    GeometryCalib=feval(CalibFcn,Coord,Intrinsic);
+    CoordFlip=Coord;
+    CoordFlip(:,3)=Coord(:,3);% the calibration function assume a z ccordinate along the camera view, opposite to ours
+    GeometryCalib=feval(CalibFcn,CoordFlip,Intrinsic);
     X=Coord(:,1);
     Y=Coord(:,2);
     Z=Coord(:,3);
@@ -449,12 +443,6 @@ if ~isempty(ind_removed)
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 end
 GeometryCalib.ErrorMax=ErrorMax;
-% %set the Z position of the reference plane used for calibration
-% if isequal(max(Z),min(Z))%Z constant
-%     Z_plane=Z(1);
-%     GeometryCalib.NbSlice=1;
-%     GeometryCalib.SliceCoord=[0 0 Z_plane];
-% end
 
 
 %------------------------------------------------------------------------
@@ -467,8 +455,6 @@ x_ima=Coord(:,4);
 y_ima=Coord(:,5);
 [px]=polyfit(X,x_ima,1);
 [py]=polyfit(Y,y_ima,1);
-% T_x=px(2);
-% T_y=py(2);
 GeometryCalib.CalibrationType='rescale';
 GeometryCalib.fx_fy=[px(1) py(1)];%.fx_fy corresponds to pxcm along x and y
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
@@ -619,7 +605,7 @@ path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 if exist('Rc_1','var')
-    GeometryCalib.CalibrationType='3D_linear';
+    GeometryCalib.CalibrationType='3D_extrinsic';
     GeometryCalib.fx_fy=fc';
     GeometryCalib.Cx_Cy=cc';
     GeometryCalib.kc=kc(1);
@@ -697,7 +683,7 @@ center_optim=0;
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 
 if exist('Rc_1','var')
-    GeometryCalib.CalibrationType='3D_quadr';
+    GeometryCalib.CalibrationType='3D_extrinsic';
     GeometryCalib.fx_fy=fc';
     GeometryCalib.Cx_Cy=cc';
     GeometryCalib.kc=kc(1);
@@ -1162,15 +1148,17 @@ set(handles.ListCoord,'Data',Coord)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % --------------------------------------------------------------------
-function MenuFlip_x_Callback(hObject, eventdata, handles)
+function MenuFlip_xy_Callback(hObject, eventdata, handles)
 Coord=get(handles.ListCoord,'Data');
 Coord(:,1)=-Coord(:,1);
+Coord(:,2)=-Coord(:,2);
 set(handles.ListCoord,'Data',Coord)
 
 % --------------------------------------------------------------------
-function MenuFlip_y_Callback(hObject, eventdata, handles)
+function MenuFlip_xz_Callback(hObject, eventdata, handles)
 Coord=get(handles.ListCoord,'Data');
-Coord(:,2)=-Coord(:,2);
+Coord(:,1)=-Coord(:,1);
+Coord(:,3)=-Coord(:,3);
 set(handles.ListCoord,'Data',Coord)
 
 % --------------------------------------------------------------------

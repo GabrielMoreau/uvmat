@@ -205,11 +205,20 @@ for iview=1:size(Param.InputTable,1)
                 
                 logdir=[Param.OutputSubDir Param.OutputDirExt];
                 [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
+                if ~success
+                    disp(errormsg)
+                end
                 [success,errormsg] = copyfile(filename_sqb,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.sqb']); %copy the sqb file in the upper folder
+                if ~success
+                    disp(errormsg)
+                end
                 if check_xml
                     [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
+                if ~success
+                    disp(errormsg)
+                end
                 else
-                    errormsg=[filexml ' missing'];
+                    disp(['error:' filexml ' missing']);
                     return
                 end
             end

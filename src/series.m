@@ -3142,11 +3142,11 @@ function CheckObject_Callback(hObject, eventdata, handles)
 hset_object=findobj(allchild(0),'tag','set_object'); % find the set_object interface handle
 if get(handles.CheckObject,'Value')
     SeriesData=get(handles.series,'UserData');
-    if isfield(SeriesData,'ProjObject') && ~isempty(SeriesData.ProjObject)
+    if isfield(SeriesData,'ProjObject') && ~isempty(SeriesData.ProjObject)% a projection object is already loaded in the GUI series
         set(handles.ViewObject,'Value',1)
         ViewObject_Callback(hObject, eventdata, handles)
     else
-        if ishandle(hset_object)
+        if ishandle(hset_object)% a projection object is already displayed in a GUI set_object
             uistack(hset_object,'top')% show the GUI set_object if opened
         else
             %get the object file
@@ -3214,9 +3214,13 @@ function EditObject_Callback(hObject, eventdata, handles)
 if get(handles.EditObject,'Value')
     set(handles.ViewObject,'Value',0)
     UserData=get(handles.series,'UserData');
+    if isfield(UserData,'ProjObject')
     hset_object=set_object(UserData.ProjObject);
     set(hset_object,'Name','edit_object_series')
     set(get(hset_object,'Children'),'Enable','on')
+    else
+        msgbox_uvmat('ERROR','no projection object available');
+    end
 else
     hset_object=findobj(allchild(0),'Tag','set_object'); 
     if ~isempty(hset_object)

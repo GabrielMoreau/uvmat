@@ -83,9 +83,9 @@ switch info.class
         end
     case 'char' 
         % try to convert to number if the char does not correspond to a function (otherwise str2num calls this function as it uses 'eval')
-        if exist(ss,'builtin')||exist(ss,'file')% ss corresponds to the name of a builtin Matlab function or a file
-            out=ss; %reproduce the input string
-        else
+%         if exist(ss,'builtin')||exist(ss,'file')% ss corresponds to the name of a builtin Matlab function or a file
+%             out=ss; %reproduce the input string
+%         else
             out=str2num(ss);% convert to number or vector (str2num applied to a fct name executes this fct by 'eval', thus this possibility had to be ruled out above
             if isempty(out)
                 sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
@@ -99,7 +99,7 @@ switch info.class
                     out=ss; %reproduce the input string
                 end
             end
-        end
+%         end
     case 'cell'
         out={};%default
         check_numeric=zeros(size(ss));

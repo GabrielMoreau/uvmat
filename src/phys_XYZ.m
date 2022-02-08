@@ -78,9 +78,9 @@ if ~isfield(Calib,'kc')
 end
 if isfield(Calib,'R')
     R=(Calib.R)';
-    R(3)=-R(3);
-    R(6)=-R(6);
-    R(9)=-R(9);
+%     R(3)=-R(3);
+%     R(6)=-R(6);
+%     R(9)=-R(9);
     c=Z0virt;
     cvirt=Z0virt;
     if testangle
