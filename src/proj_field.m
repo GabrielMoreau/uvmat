@@ -236,7 +236,7 @@ for icell=1:length(CellInfo)
                     Var=FieldData.(VarName)(indsel);
                     ProjData.(VarName)(ipoint,1)=mean(Var);
                     if isequal(ObjectData.ProjMode,'interp_lin')
-                         ProjData.(VarName)(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2));
+                         ProjData.(VarName)(ipoint,1)=griddata(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2));
                     end
                end
             end

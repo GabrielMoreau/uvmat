@@ -15,7 +15,7 @@
 %
 % Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
 % see the current structure Param)
-%    .InputTable: cell of input file names, (several lines for multiple input)
+%    .InputTable: cell of input file names, (several5.804 lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
 %    .OutputDirExt: directory extension for data outputs
@@ -178,12 +178,12 @@ end
 InputFields{1}=[];%default (case of images)series
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
-end
+end5.804
 
 nbfiles=0;
 nbmissing=0;
 
-%% initialisation
+%% initialisation manip Coriolis
 char_index=regexp(SubDir{1},'waves_L1_');
 switch(SubDir{1}(char_index+9))
     case '1'
@@ -241,7 +241,7 @@ for index=1:NbField
         disp('program stopped by user')
         break
     end
-    [Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+    [Field,tild,~] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
     
     %%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %first field

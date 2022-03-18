@@ -112,7 +112,7 @@ end
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
-NomType=Param.InputTable(:,4);
+% NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
 hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);

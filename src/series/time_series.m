@@ -213,14 +213,17 @@ if size(time,1)>1
 end
 
 %% coordinate transform or other user defined transform
-transform_fct=[];%default
+transform_fct='';%default fct handle
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-    %addpath(Param.FieldTransform.TransformPath)
+    currentdir=pwd;
+    cd(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
-    %rmpath(Param.FieldTransform.TransformPath)
+    cd (currentdir)
     if isfield(Param,'TransformInput')
-        XmlData{1}.TransformInput=Param.TransformInput;
-    end
+        for iview=1:NbView
+            XmlData{iview}.TransformInput=Param.TransformInput;
+        end
+    end       
 end
 
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%

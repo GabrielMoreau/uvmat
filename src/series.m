@@ -1582,32 +1582,32 @@ end
 %% set nbre of cluster cores and processes: 
 % NbCore is the number of computer processors used 
 % NbProcess is the number of independent processes in which the required calculation is split. 
-switch RunMode
-    case {'local','background'}
-        NbCore=1; % no need to split the calculation
-    case 'cluster'
-        %proposed number of cores to reserve in the cluster
-        NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
-        NbCoreMax=SeriesData.SeriesParam.ClusterParam.NbCoreMax;
-        if NbCoreMax~=1
-            if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-                warning_string=', preferably use .sh option to save Matlab licences';
-            else
-                warning_string=')';
-            end
-            answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
-            if isempty(answer)
-                errormsg='Action launch interrupted by user';
-                return
-            end
-            NbCore=str2double(answer);
-            if NbCore > NbCoreMax
-                NbCore=NbCoreMax;
-            end
-        else
-            NbCore=1;
-        end
-end
+% switch RunMode
+%     case {'local','background'}
+%         NbCore=1; % no need to split the calculation
+%     case 'cluster'
+%         %proposed number of cores to reserve in the cluster
+%         NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
+%         NbCoreMax=min(NbProcess,SeriesData.SeriesParam.ClusterParam.NbCoreMax);
+%         if NbCoreMax~=1
+%             if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+%                 warning_string=', preferably use .sh option to save Matlab licences';
+%             else
+%                 warning_string=')';
+%             end
+%             answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
+%             if isempty(answer)
+%                 errormsg='Action launch interrupted by user';
+%                 return
+%             end
+%             NbCore=str2double(answer);
+%             if NbCore > NbCoreMax
+%                 NbCore=NbCoreMax;
+%             end
+%         else
+%             NbCore=1;
+%         end
+% end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
@@ -1865,11 +1865,12 @@ for iexp=1:NbExp
         end
     end
     nbfield_j=numel(ref_j); % number of j indices
-    BlockLength=numel(ref_i); % by default, job involves the full set of i field indices
+    BlockLength=numel(ref_i); % by default, job involves the full set of i field indicesNbProcess
     NbProcess=1;
+    NbCore=1;
     switch RunMode
         case 'cluster'
-            if (isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime))
+            if (isfield(Param.Action, 'CPUTime') && ~isempty(Param.Action.CPUTime) && isnumeric(Param.Action.CPUTime))
                 CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
             else
                 answer=msgbox_uvmat('INPUT_TXT','estimate the CPU time(in minutes) for each value of index i:' ,'');
@@ -1886,13 +1887,32 @@ for iexp=1:NbExp
             else
                 NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
             end
-            NbCore=min(NbCore,NbProcess); % reduces the number of cores if it exceeds the number of processes
+
+            %         %proposed number of cores to reserve in the cluster
+            NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
+            NbCoreMax=min(NbProcess,SeriesData.SeriesParam.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
+            if NbCoreMax~=1
+                if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
+                    warning_string=', preferably use .sh option to save Matlab licences';
+                else
+                    warning_string=')';
+                end
+                answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
+                if isempty(answer)
+                    errormsg='Action launch interrupted by user';
+                    return
+                end
+                NbCore=str2double(answer);
+                if NbCore > NbCoreMax
+                    NbCore=NbCoreMax;
+                end
+            end
         otherwise
             if ~isempty(Param.IndexRange.NbSlice)
                 NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
             end
     end
-    
+
     %% record nbre of output files and starting time for computation for status
     StatusData=get(handles.status,'UserData');
     if isfield(StatusData,'OutputFileMode')
@@ -1907,7 +1927,7 @@ for iexp=1:NbExp
     end
     StatusData.TimeStart=now;
     set(handles.status,'UserData',StatusData)
-    
+
     %% case of a function in Python
     if strcmp(ActionExt, '.py (in dev.)')
         fprintf([
@@ -2467,7 +2487,7 @@ if ~exist(ActionPath,'dir')
 end
 current_dir=pwd; % current working dir
 cd(ActionPath)
-h_fun=str2func(ActionName);
+h_fun=str2func(ActionName);% create the function handle for the function ActionName
 cd(current_dir)
 
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
@@ -3357,7 +3377,9 @@ TransformIndex=get(handles.TransformName,'Value');
 TransformName=TransformList{TransformIndex};
 TransformPathList=get(handles.TransformName,'UserData');
 nb_builtin_transform=4;
-if isequal(TransformName,'more...');     
+
+%% browse transform functions with the input menu option more...
+if isequal(TransformName,'more...')% browse transform functions     
     FileName=uigetfile_uvmat('Pick a transform function',get(handles.TransformPath,'String'),'.m');
     if isempty(FileName)
         return     %browser closed without choice
@@ -3392,7 +3414,7 @@ if isequal(TransformName,'more...');
    end 
 end
 
-%display the current function path
+%% display the current function path
 set(handles.TransformPath,'String',TransformPathList{TransformIndex}); % show the path to the senlected function
 set(handles.TransformName,'UserData',TransformPathList);
 
@@ -3412,9 +3434,7 @@ if ~isempty(TransformName)
     if isfield(SeriesData,'TransformInput')
         ParamIn.TransformInput=SeriesData.TransformInput;
     end
-    DataOut=feval(transform_handle,Field,ParamIn);% execute the transform fct to get the required conditions
-    Field.Action.RUN=0; % indicate that the transform fct is called only to get input param
-    %DataOut=feval(transform_handle,Field,[]); % execute the transform fct to get the required conditions
+    DataOut=feval(transform_handle,Field,ParamIn);% execute the transform fct to get its input parameters
     if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
         SeriesData.TransformInput=DataOut.TransformInput;
         set(handles.series,'UserData',SeriesData)
