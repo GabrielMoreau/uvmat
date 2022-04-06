@@ -73,14 +73,15 @@ end
 if ~isfield(Calib,'Cx_Cy')
     Calib.Cx_Cy=[0 0];
 end
-if ~isfield(Calib,'kc')
-    Calib.kc=0;
+kc=[0 0];
+if isfield(Calib,'kc')
+    kc(1:numel(Calib.kc))=Calib.kc;
 end
+% if ~isfield(Calib,'kc2')
+%     Calib.kc2=0;
+% end
 if isfield(Calib,'R')
     R=(Calib.R)';
-%     R(3)=-R(3);
-%     R(6)=-R(6);
-%     R(9)=-R(9);
     c=Z0virt;
     cvirt=Z0virt;
     if testangle
@@ -125,14 +126,15 @@ if isfield(Calib,'R')
     %px to camera:
     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
-    dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd);% distortion factor, first approximation Xu,Yu=Xd,Yd
+    dist_fact=1+kc(1)*(Xd.*Xd+Yd.*Yd);% distortion factor, first approximation Xu,Yu=Xd,Yd
     test=0;
     niter=0;
     while test==0 && niter<10
         dist_fact_old=dist_fact;     
         Xu=Xd./dist_fact;%undistorted sensor coordinates, second iteration
         Yu=Yd./dist_fact;
-        dist_fact=1+Calib.kc*(Xu.*Xu+Yu.*Yu);% distortion factor,next approximation
+        R2=Xu.*Xu+Yu.*Yu;
+        dist_fact=1+kc(1)*R2+kc(2)*R2.*R2;% distortion factor,next approximation
         test=max(max(abs(dist_fact-dist_fact_old)))<0.00001; % reducing the relative error to 10^-5 forthe inversion of the quadraticcorrection
         niter=niter+1;
     end

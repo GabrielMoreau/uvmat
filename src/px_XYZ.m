@@ -68,8 +68,11 @@ if isfield(Calib,'R')
     %radial quadratic correction factor
     if ~isfield(Calib,'kc')
         r2=1; %no quadratic distortion
-    else
+    elseif numel(Calib.kc)==1
         r2=1+Calib.kc*(Xu.*Xu+Yu.*Yu);
+    else
+        R2=Xu.*Xu+Yu.*Yu;
+        r2=1+Calib.kc(1)*R2+Calib.kc(2)*R2.*R2;
     end
     
     %pixel coordinates

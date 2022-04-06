@@ -85,7 +85,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
     return
 end
-
+if 0==1
+    phys; % used to include phys when compiling is done
+end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 ParamOut=[]; %default output
 RUNHandle=[];

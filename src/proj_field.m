@@ -1094,7 +1094,7 @@ if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(Pr
                 return
             end
         else
-            ProjData.ProjObjectAngle=FieldData.PlaneAngle;
+            ProjData.ProjObjectAngle=FieldData.PlaneAngle;ProjMode
         end
     end
 end
@@ -1124,12 +1124,12 @@ ProjMode=num2cell(blanks(numel(CellInfo)));
 ProjMode=regexprep(ProjMode,' ',ObjectData.ProjMode);
 icell_grid=[];% field cell index which defines the grid
 icell_scattered=[];% field cell index which defines fields with scattered coordinates
-for icell=1:numel(CellInfo)
-    if strcmp(ObjectData.ProjMode,'interp_lin')&& ~strcmp(ProjMode{icell},'interp_tps')
-        errormsg='ProjMode interp_tps needed ';
-        return
-    end
-end
+% for icell=1:numel(CellInfo)
+%     if strcmp(ObjectData.ProjMode,'interp_lin')&& ~strcmp(ProjMode{icell},'interp_tps')
+%         errormsg='ProjMode interp_tps needed ';
+%         return
+%     end
+% end
 if strcmp(ObjectData.ProjMode,'projection')
     %% case of a grid requested by the input field
     for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates

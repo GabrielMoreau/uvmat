@@ -121,7 +121,7 @@ set(handles.ListCoord,'Position',[1 20 418 Height-446])% rank 8
 set(handles.geometry_calib,'Position',[Left Bottom 420 Height])
 
 %% set menu of calibration options
-set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
+set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_order4';'3D_extrinsic'})
 if exist('inputfile','var')&& ~isempty(inputfile)
     [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(inputfile);
     struct.XmlInputFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
@@ -231,7 +231,19 @@ if get(handles.Replicate,'Value')
 end
 
 %% Apply calibration
-[GeometryCalib,index,ind_removed]=calibrate(Coord,CalibFcn,Intrinsic);% apply calibration
+est_dist=[0;0;0;0;0]; %default
+switch CalibFcn
+    case 'calib_3D_linear'
+        CalibFcn='calib_3D';
+    case 'calib_3D_quadr'
+        est_dist=[1;0;0;0;0];
+        CalibFcn='calib_3D'
+    case 'calib_3D_order4'
+        est_dist=[1;1;0;0;0];
+        CalibFcn='calib_3D'
+end
+
+[GeometryCalib,index,ind_removed]=calibrate(Coord,CalibFcn,est_dist,Intrinsic);% apply calibration
 if isempty(GeometryCalib)
     return
 end
@@ -392,7 +404,7 @@ set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color
         end
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
-function [GeometryCalib,ind_max,ind_removed]=calibrate(Coord,CalibFcn,Intrinsic)
+function [GeometryCalib,ind_max,ind_removed]=calibrate(Coord,CalibFcn,est_dist,Intrinsic)
 %------------------------------------------------------------------------
 
 index=[];
@@ -402,7 +414,7 @@ ind_max=[];ind_removed=[];
 CoordFlip=Coord;
 CoordFlip(:,3)=Coord(:,3);% the calibration function assume a z ccordinate along the camera view, opposite to ours
 if ~isempty(Coord)
-    GeometryCalib=feval(CalibFcn,CoordFlip,Intrinsic);
+    GeometryCalib=feval(CalibFcn,CoordFlip,est_dist,Intrinsic);
 else
     msgbox_uvmat('ERROR','No calibration points, abort')
 end
@@ -432,7 +444,7 @@ if ~isempty(ind_removed)
     Coord(ind_removed,:)=[];
     CoordFlip=Coord;
     CoordFlip(:,3)=Coord(:,3);% the calibration function assume a z ccordinate along the camera view, opposite to ours
-    GeometryCalib=feval(CalibFcn,CoordFlip,Intrinsic);
+    GeometryCalib=feval(CalibFcn,CoordFlip,est_dist,Intrinsic);
     X=Coord(:,1);
     Y=Coord(:,2);
     Z=Coord(:,3);
@@ -447,7 +459,7 @@ GeometryCalib.ErrorMax=ErrorMax;
 
 %------------------------------------------------------------------------
 % --- determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
-function GeometryCalib=calib_rescale(Coord,Intrinsic)
+function GeometryCalib=calib_rescale(Coord,est_dist,Intrinsic)
 %------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);% Z not used
@@ -463,7 +475,7 @@ GeometryCalib.omc=[0 0 0];
 
 %------------------------------------------------------------------------
 % --- determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
-function GeometryCalib=calib_linear(Coord,Intrinsic)
+function GeometryCalib=calib_linear(Coord,est_dist,Intrinsic)
 %------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);% Z not used
@@ -493,7 +505,7 @@ GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
 %------------------------------------------------------------------------
 % --- determine the tsai parameters for a view normal to the grid plane
 % NOT USED
-function GeometryCalib=calib_normal(Coord,Intrinsic)
+function GeometryCalib=calib_normal(Coord,est_dist,Intrinsic)
 %------------------------------------------------------------------------
 Calib.fx=str2num(get(handles.fx,'String'));
 Calib.fy=str2num(get(handles.fy,'String'));
@@ -554,77 +566,77 @@ GeometryCalib.CoordUnit=[];% default value, to be updated by the calling functio
 GeometryCalib.Tx_Ty_Tz=[calib_param(2) calib_param(3) calib_param(4)];
 alpha=calib_param(5);
 GeometryCalib.R=[cos(alpha) sin(alpha) 0;-sin(alpha) cos(alpha) 0;0 0 -1];
+% 
+% %------------------------------------------------------------------------
+% function GeometryCalib=calib_3D_linear(Coord,Intrinsic)
+% %------------------------------------------------------------------------
+% coord_files=Intrinsic.coord_files;
+% if ischar(Intrinsic.coord_files)
+%     coord_files={coord_files};
+% end
+% if isempty(coord_files{1}) || isequal(coord_files,{''})
+%     coord_files={};
+% end
+% %retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
+% x_1=Coord(:,4:5)';%px coordinates of the ref points
+% 
+% nx=Intrinsic.Npx;
+% ny=Intrinsic.Npy;
+% x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
+% X_1=Coord(:,1:3)';%phys coordinates of the ref points
+% n_ima=numel(coord_files)+1;
+% if ~isempty(coord_files)
+%     msgbox_uvmat('CONFIRMATION',['The xy coordinates of the calibration points in ' num2str(n_ima) ' planes will be used'])
+%     for ifile=1:numel(coord_files)
+%         t=xmltree(coord_files{ifile});
+%         s=convert(t);%convert to matlab structure
+%         if isfield(s,'GeometryCalib')
+%             if isfield(s.GeometryCalib,'SourceCalib')
+%                 if isfield(s.GeometryCalib.SourceCalib,'PointCoord')
+%                     PointCoord=s.GeometryCalib.SourceCalib.PointCoord;
+%                     Coord_file=zeros(length(PointCoord),5);%default
+%                     for i=1:length(PointCoord)
+%                         line=str2num(PointCoord{i});
+%                         Coord_file(i,4:5)=line(4:5);%px x
+%                         Coord_file(i,1:3)=line(1:3);%phys x
+%                     end
+%                     eval(['x_' num2str(ifile+1) '=Coord_file(:,4:5)'';']);
+%                     eval(['x_' num2str(ifile+1) '(2,:)=ny-x_' num2str(ifile+1) '(2,:);' ]);
+%                     eval(['X_' num2str(ifile+1) '=Coord_file(:,1:3)'';']);
+%                 end
+%             end
+%         end
+%     end
+% end
+% n_ima=numel(coord_files)+1;
+% est_dist=[0;0;0;0;0];
+% est_aspect_ratio=0;
+% est_fc=[1;1];
+% center_optim=0;
+% path_uvmat=which('uvmat');% check the path detected for source file uvmat
+% path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+% run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
+% if exist('Rc_1','var')
+%     GeometryCalib.CalibrationType='3D_extrinsic';
+%     GeometryCalib.fx_fy=fc';
+%     GeometryCalib.Cx_Cy=cc';
+%     GeometryCalib.kc=kc(1);
+%     GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+%     GeometryCalib.Tx_Ty_Tz=Tc_1';
+%     GeometryCalib.R=Rc_1;
+%     GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
+%     GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
+%     GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
+%     GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
+%     GeometryCalib.ErrorRMS=[];
+%     GeometryCalib.ErrorMax=[];
+% else
+%     msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic'])
+%     GeometryCalib=[];
+% end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_linear(Coord,Intrinsic)
-%------------------------------------------------------------------------
-coord_files=Intrinsic.coord_files;
-if ischar(Intrinsic.coord_files)
-    coord_files={coord_files};
-end
-if isempty(coord_files{1}) || isequal(coord_files,{''})
-    coord_files={};
-end
-%retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
-x_1=Coord(:,4:5)';%px coordinates of the ref points
-
-nx=Intrinsic.Npx;
-ny=Intrinsic.Npy;
-x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
-X_1=Coord(:,1:3)';%phys coordinates of the ref points
-n_ima=numel(coord_files)+1;
-if ~isempty(coord_files)
-    msgbox_uvmat('CONFIRMATION',['The xy coordinates of the calibration points in ' num2str(n_ima) ' planes will be used'])
-    for ifile=1:numel(coord_files)
-        t=xmltree(coord_files{ifile});
-        s=convert(t);%convert to matlab structure
-        if isfield(s,'GeometryCalib')
-            if isfield(s.GeometryCalib,'SourceCalib')
-                if isfield(s.GeometryCalib.SourceCalib,'PointCoord')
-                    PointCoord=s.GeometryCalib.SourceCalib.PointCoord;
-                    Coord_file=zeros(length(PointCoord),5);%default
-                    for i=1:length(PointCoord)
-                        line=str2num(PointCoord{i});
-                        Coord_file(i,4:5)=line(4:5);%px x
-                        Coord_file(i,1:3)=line(1:3);%phys x
-                    end
-                    eval(['x_' num2str(ifile+1) '=Coord_file(:,4:5)'';']);
-                    eval(['x_' num2str(ifile+1) '(2,:)=ny-x_' num2str(ifile+1) '(2,:);' ]);
-                    eval(['X_' num2str(ifile+1) '=Coord_file(:,1:3)'';']);
-                end
-            end
-        end
-    end
-end
-n_ima=numel(coord_files)+1;
-est_dist=[0;0;0;0;0];
-est_aspect_ratio=0;
-est_fc=[1;1];
-center_optim=0;
-path_uvmat=which('uvmat');% check the path detected for source file uvmat
-path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
-if exist('Rc_1','var')
-    GeometryCalib.CalibrationType='3D_extrinsic';
-    GeometryCalib.fx_fy=fc';
-    GeometryCalib.Cx_Cy=cc';
-    GeometryCalib.kc=kc(1);
-    GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-    GeometryCalib.Tx_Ty_Tz=Tc_1';
-    GeometryCalib.R=Rc_1;
-    GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
-    GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
-    GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
-    GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
-    GeometryCalib.ErrorRMS=[];
-    GeometryCalib.ErrorMax=[];
-else
-    msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic'])
-    GeometryCalib=[];
-end
-
-%------------------------------------------------------------------------
-function GeometryCalib=calib_3D_quadr(Coord,Intrinsic)
+function GeometryCalib=calib_3D(Coord,est_dist,Intrinsic)
 %------------------------------------------------------------------
 
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
@@ -677,7 +689,7 @@ if ~isempty(coord_files)
     end
 end
 n_ima=numel(coord_files)+1;
-est_dist=[1;0;0;0;0];
+%est_dist=[1;0;0;0;0];
 est_aspect_ratio=1;
 center_optim=0;
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
@@ -686,7 +698,10 @@ if exist('Rc_1','var')
     GeometryCalib.CalibrationType='3D_extrinsic';
     GeometryCalib.fx_fy=fc';
     GeometryCalib.Cx_Cy=cc';
-    GeometryCalib.kc=kc(1);
+    ind_kc=find(kc);
+    if ~isempty(ind_kc)
+    GeometryCalib.kc=(kc(ind_kc))';%include cases quadr (one value kc(1)) and order_4 (2 values for kc)
+    end
     GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
     GeometryCalib.Tx_Ty_Tz=Tc_1';
     GeometryCalib.R=Rc_1;
@@ -702,7 +717,7 @@ else
 end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_extrinsic(Coord, Intrinsic)
+function GeometryCalib=calib_3D_extrinsic(Coord,est_dist, Intrinsic)
 %------------------------------------------------------------------
 path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
@@ -746,10 +761,12 @@ GeometryCalib.kc=kc;
 fct_path=fullfile(path_UVMAT,'toolbox_calib');
 addpath(fct_path)
 GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%reverse Cx_Cy(2) for calibration (inversion of px ordinate)
+kc=zeros(1,5);
+kc(1:numel(GeometryCalib.kc))=GeometryCalib.kc;
 [omc,Tc1,Rc1,H,x,ex,JJ] = compute_extrinsic(x_1,X_1,...
-    (GeometryCalib.fx_fy)',GeometryCalib.Cx_Cy',[GeometryCalib.kc 0 0 0 0]);
+    (GeometryCalib.fx_fy)',GeometryCalib.Cx_Cy',kc);
 rmpath(fct_path);
-GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.CoordUnit='';% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc1';
 %inversion of z axis
 GeometryCalib.R=Rc1;
@@ -1085,7 +1102,7 @@ end
 Tmod(:,1)=(TIndex(:,1)-1)*Dx+Rangx(1);
 Tmod(:,2)=(TIndex(:,2)-1)*Dy+Rangy(1);
 %Tmod=T(:,(1:2))+Delta;% 'phys' coordinates of the detected points
-[Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));% image coordinates of the detected points
+[Xpx,Ypx]=px_XYZ(GeometryCalib,[],Tmod(:,1),Tmod(:,2));% image coordinates of the detected points
 Coord=[T Xpx Ypx zeros(size(T,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
@@ -1325,7 +1342,8 @@ set(handles.fx,'String',num2str(fx,5))
 set(handles.fy,'String',num2str(fy,5))
 set(handles.Cx,'String',num2str(Cx_Cy(1),'%1.1f'))
 set(handles.Cy,'String',num2str(Cx_Cy(2),'%1.1f'))
-set(handles.kc,'String',num2str(kc,'%1.4f'))
+%set(handles.kc,'String',num2str(kc,'%1.4f'))
+set(handles.kc,'String',num2str(kc,4))
 
 %------------------------------------------------------------------------
 % ---display calibration extrinsic parameters

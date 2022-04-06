@@ -161,6 +161,7 @@ for iscalar=1:numel(ind_scalar)
     if isempty(icell)
         cell_counter=cell_counter+1;
         icell=cell_counter;
+        CellInfo{icell}.FieldName=Data.ListVarName{ind_scalar(iscalar)};
         CellInfo{icell}.VarType='scalar';
         DimCell{icell}=Data.VarDimName{ind_scalar(iscalar)};
         DimCell_var=Data.VarDimName{ind_scalar(iscalar)};% cell of dimension names for ivar_coord_x(icell)

@@ -203,20 +203,20 @@ Counter_1=0;
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 % for i_slice=1:Param.IndexRange.NbSlice
 %     i_slice
-    ind_first=Param.IndexRange.first_i
+    ind_first=Param.IndexRange.first_i;
     for index_i=ind_first:Param.IndexRange.NbSlice:Param.IndexRange.last_i
         if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break
         end
-        for index_j=Param.IndexRange.first_j:Param.IndexRange.last_j
+        for index_j=first_j:last_j
             InputFile=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},index_i,index_i,index_j,index_j);
             [Field,tild,errormsg] = read_field(InputFile,FileType{iview},InputFields{iview});
             
             %[Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             
             %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-            if index_i==ind_first && index_j==Param.IndexRange.first_j %initiate the output data structure in the first field
+            if index_i==ind_first && index_j==first_j %initiate the output data structure in the first field
                 [CellInfo,NbDim,errormsg]=find_field_cells(Field);
                 YName='coord_y';%default
                 XName='coord_x';%default

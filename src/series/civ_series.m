@@ -627,7 +627,11 @@ for ifield=1:NbField
         else
             ind_good=1:numel(Data.Civ1_X);
         end
-        
+        if isempty(ind_good)
+                        disp_uvmat('ERROR','all vectors of civ1 are bad, check input parameters' ,checkrun)
+                        return
+        end
+
         % perform Patch calculation using the UVMAT fct 'filter_tps'
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
@@ -918,6 +922,10 @@ for ifield=1:NbField
             ind_good=find(Data.Civ2_FF==0);
         else
             ind_good=1:numel(Data.Civ2_X);
+        end
+                if isempty(ind_good)
+                        disp_uvmat('ERROR','all vectors of civ2 are bad, check input parameters' ,checkrun)
+                        return
         end
         [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures,Vres,tild,FFres]=...
             filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
