@@ -1094,7 +1094,7 @@ if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(Pr
                 return
             end
         else
-            ProjData.ProjObjectAngle=FieldData.PlaneAngle;ProjMode
+            ProjData.ProjObjectAngle=FieldData.PlaneAngle;
         end
     end
 end
