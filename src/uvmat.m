@@ -4701,6 +4701,8 @@ switch field
                 set(handles.Coord_y,'Max',2)
                 %set(huvmat,
             case 'civdata...'%reinitiate input, return to automatic civ data readingget_field
+                UvData.FileInfo{1}.FieldType='netcdf';
+            set(handles.uvmat,'UserData',UvData)
                 display_file_name(handles,FileName,1)
         end
         % get time as file index, attribute, variable or matrix index
@@ -4723,7 +4725,7 @@ switch field
                     MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
                     set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
                     UvData.TimeUnit=GetFieldData.Time.TimeUnit;
-                    set(handles.uvmat,'UserData',UvData);
+% %                     set(handles.uvmat,'UserData',UvData);
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix index'
@@ -4735,7 +4737,7 @@ switch field
                     MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
                     set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
                     UvData.TimeUnit=GetFieldData.Time.TimeUnit;
-                    set(handles.uvmat,'UserData',UvData);
+%                     set(handles.uvmat,'UserData',UvData);
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
@@ -4746,7 +4748,7 @@ switch field
             set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
             set(handles.ColorScalar,'Value',1)
             set(handles.ColorScalar,'String',VecColorList);
-           % UvData.FileInfo{1}.FileType='netcdf';
+            UvData.FileInfo{1}.FieldType='netcdf';
             set(handles.uvmat,'UserData',UvData)
             REFRESH_Callback(hObject, eventdata, handles)
         end

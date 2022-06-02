@@ -148,15 +148,6 @@ end
 j1_series_Civ2=j1_series_Civ1;
 j2_series_Civ2=j2_series_Civ1;
 
-% if isempty(j1_series_Civ1)
-%     FrameIndex_A_Civ1=i1_series_Civ1;
-%     FrameIndex_B_Civ1=i2_series_Civ1;
-%     j1_series_Civ1=ones(size(i1_series_Civ1));
-%     j2_series_Civ1=ones(size(i1_series_Civ1));
-% else
-%     FrameIndex_A_Civ1=j1_series_Civ1;
-%     FrameIndex_B_Civ1=j2_series_Civ1;
-% end
 if isempty(PairCiv2)
     FrameIndex_A_Civ2=FrameIndex_A_Civ1;
     FrameIndex_B_Civ2=FrameIndex_B_Civ1;
@@ -288,10 +279,6 @@ for ifield=1:NbField
        LSM=Param.ActionInput.CheckLSM;
        
     Civ1Dir=OutputDir;
-
-%         ncfile=fullfile_uvmat(RootPath_A,Civ1Dir,[RootFile_A,'_All'],'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
-%             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-        
         
         ncfile2=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
@@ -526,8 +513,6 @@ for ifield=1:NbField
         if par_civ2.CheckMask&&~isempty(par_civ2.Mask)&& ~strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
             mask=imread(par_civ2.Mask);
         end
-%         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
-%         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
         par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[par_civ2.Grid(nbval>=1,1)-par_civ2.SearchBoxShift(:,1)/2 par_civ2.Grid(nbval>=1,2)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
@@ -684,8 +669,6 @@ for ifield=1:NbField
         if par_civ3.CheckMask&&~isempty(par_civ3.Mask)&& ~strcmp(maskname,par_civ3.Mask)% mask exist, not already read in Civ2
             mask=imread(par_civ3.Mask);
         end
-%         ibx2=ceil(par_civ3.CorrBoxSize(1)/2);
-%         iby2=ceil(par_civ3.CorrBoxSize(2)/2);
         par_civ3.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ3.Grid=[par_civ3.Grid(nbval>=1,1)-par_civ3.SearchBoxShift(:,1)/2 par_civ3.Grid(nbval>=1,2)-par_civ3.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ3.CheckDeformation
@@ -754,7 +737,6 @@ end
         
     end
 
-    
      %% Patch3
     if isfield (Param.ActionInput,'Patch3')
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch3_Rho','Patch3_Threshold','Patch3_SubDomain'}];
@@ -784,10 +766,8 @@ end
         Data.Civ3_V_smooth(ind_good)=Vres;
         Data.Civ3_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
-        
-            
-         % get z from u and v (displacements)
-       
+           
+         % get z from u and v (displacements)     
         Data.Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ3_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
         Data.Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data.Civ3_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
         Data.Uphys=Data.Civ3_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
@@ -802,19 +782,17 @@ end
       
     
     %% write result in a netcdf file if requested
-%     if LSM ~= 1 % store all data
-%         if exist('ncfile','var')
-%             errormsg=struct2nc(ncfile,Data);
-%             if isempty(errormsg)
-%                 disp([ncfile ' written'])
-%             else
-%                 disp(errormsg)
-%             end
-%         end
-%     else
+    if LSM ~= 1 % store all data
+        if exist('ncfile','var')
+            errormsg=struct2nc(ncfile,Data);
+            if isempty(errormsg)
+                disp([ncfile ' written'])
+            else
+                disp(errormsg)
+            end
+        end
+    else
        % store only phys data
-       % Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','Xmid','Ymid','Uphys','Vphys','Error'};
-       % Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
         Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','DX','DY','Error'};
         Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
         Data_light.VarAttribute{1}.Role='coord_x';
@@ -827,8 +805,6 @@ end
         Data_light.Yphys=Data.Yphys(ind_good);
         Data_light.Xphys=Data.Xphys(ind_good);
         Data_light.Civ3_C=Data.Civ3_C(ind_good);
-%         Data_light.Xmid=Data.Xmid(ind_good);
-%         Data_light.Ymid=Data.Ymid(ind_good);
         Data_light.DX=Data.Uphys(ind_good);
         Data_light.DY=Data.Vphys(ind_good);
         Data_light.Error=Data.Error(ind_good);
@@ -841,7 +817,7 @@ end
             end
        end
        
-%     end
+    end
 end
 disp(['ellapsed time for the loop ' num2str(toc) ' s'])
 tic
