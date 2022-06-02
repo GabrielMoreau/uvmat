@@ -4988,20 +4988,22 @@ switch FileType
             imax=6;
         end
     case {'civdata','pivdata_fluidimage'}
-        menu={'civ1';'filter1';'civ2';'filter2'};
-        if isequal(Civ,0)
-            imax=0;
-        elseif isequal(Civ,1) || isequal(Civ,2)
-            imax=1;
-        elseif isequal(Civ,3)
-            imax=2;
-        elseif isequal(Civ,4) || isequal(Civ,5)
-            imax=3;
-        elseif Civ==6 %patch2
-            imax=4;
-        else
-            imax=4;imin=3;
-        end
+        menu={'civ1';'filter1';'civ2';'filter2';'civ3';'filter3'};
+        imax=[0 1 1 2 3 3 4 5 5 6];
+        imax=imax(Civ+1);
+%         if isequal(Civ,0)
+%             imax=0;
+%         elseif isequal(Civ,1) || isequal(Civ,2)
+%             imax=1;
+%         elseif isequal(Civ,3)
+%             imax=2;
+%         elseif isequal(Civ,4) || isequal(Civ,5)
+%             imax=3;
+%         elseif Civ==6 %patch2
+%             imax=4;
+%         else
+%             imax=4;imin=3;
+%         end
 end
 menu=menu(imin:imax);
 

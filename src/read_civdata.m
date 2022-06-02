@@ -221,29 +221,25 @@ end
 
 var={};
 switch vel_type
-    case 'civ1'
-        var={'X','Y','Z','U','V','W','C','F','FF';...
-            'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
-    %    units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
-    case 'filter1'
-        var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbCentre','NbCentre','NbCentre';...
-            'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_F','Civ1_FF',...
+    case{'civ1','civ2','civ3'}
+        varout={'X','Y','Z','U','V','W','C','F','FF'};
+        varin= {'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};  
+    case{'filter1','filter2','filter3'}  
+        varout={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbCentre','NbCentre','NbCentre'};
+        varin={'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_F','Civ1_FF',...
             'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbCentre','Civ1_NbCentres','Civ1_NbSites'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
             'vector_y_tps','vector_z_tps','ancillary','ancillary','ancillary','ancillary'};
-     %  rmq: NbCentres and NbSites obsolete replaced by NbCentre, kept for consistency with previous data
-    case 'civ2'
-        var={'X','Y','Z','U','V','W','C','F','FF';...
-            'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
-    case 'filter2'
-        var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbCentre','NbCentre','NbCentre';...
-            'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U_smooth','Civ2_V_smooth','Civ2_W','Civ2_C','Civ2_F','Civ2_FF',...
-            'Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps','','Civ2_SubRange','Civ2_NbCentre','Civ2_NbCentres','Civ2_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary','ancillary','ancillary'};
+          %  rmq: NbCentres and NbSites obsolete replaced by NbCentre, kept for consistency with previous data
 end
+switch vel_type
+    case {'civ2','filter2'}
+        varin=regexprep(varin,'1','2');
+    case {'civ3','filter3'} 
+        varin=regexprep(varin,'1','3');
+end
+var=[varout;varin];
 if ~strcmp(ProjModeRequest,'interp_tps')
     var=var(:,1:9);%suppress tps if not needed
 end
