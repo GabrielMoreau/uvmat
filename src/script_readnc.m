@@ -1,5 +1,5 @@
-DataFolder=''; %TODO: put the actual path to start browser
-DataFolder='C:\Users\sommeria\Documents\MATLAB_WORK\UVMAT_DEMO_SOURCES\UVMAT_DEMO03_PIVchallenge_2005C';
+DataFolder='.fsnet/project/meige/2019/19TORE';
+fileinput={'Tore_a8b40_T22s_N047_A1cm.png.civ.mproj.tfilter_1'}
 fileinput=uigetfile_uvmat('pick an input file',DataFolder);
 Data=nc2struct(fileinput);
 figure

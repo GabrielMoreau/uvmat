@@ -96,16 +96,16 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     if size(Param.InputTable,1)>2
         msgbox_uvmat('WARNING','''time_series'' uses only one or two input lines (two for substraction). To concatene fields first use ''merge_proj''');
     end
-    if size(Param.InputTable,1)>=2
-        answer=msgbox_uvmat('INPUT_Y-N','substract the two input file series?');
-        if strcmp(answer,'Yes')
-            if isempty(Param.FieldTransform.TransformName)
-                set(hhseries.TransformName,'value',2) %select sub_field
-            end
-        else
-            set(hhseries.InputTable,'Data',Param.InputTable(1,:))
-        end
-    end
+%     if size(Param.InputTable,1)>=2
+%         answer=msgbox_uvmat('INPUT_Y-N','substract the two input file series with sub_field.m?');
+%         if strcmp(answer,'Yes')
+%             if isempty(Param.FieldTransform.TransformName)
+%                 set(hhseries.TransformName,'value',2) %select sub_field
+%             end
+%         else
+%             set(hhseries.InputTable,'Data',Param.InputTable(1,:))
+%         end
+%     end
     
     % check the existence of the first and last file in the series
     first_j=[];

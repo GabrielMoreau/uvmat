@@ -178,7 +178,7 @@ end
 InputFields{1}=[];%default (case of images)series
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
-end5.804
+end
 
 nbfiles=0;
 nbmissing=0;

@@ -28,7 +28,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=ima_filter(DataIn,Param)
+function DataOut=ima_filter(DataIn,Param,DataIn_1)
 
 %% request input parameters
 if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
@@ -75,4 +75,23 @@ for icell=1:numel(CellInfo)
         end
     end
 end
+if exist('DataIn_1','var')
+    [CellInfo,NbDim,errormsg]=find_field_cells(DataIn_1);
+for icell=1:numel(CellInfo)
+    if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
+        for ivar=1:numel(CellInfo{icell}.VarIndex)
+            VarName=DataIn_1.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+            Atype=class(DataIn_1.(VarName));% detect integer 8 or 16 bits
+            if numel(size(DataIn_1.(VarName)))==3
+                DataOut.(VarName)=filter2(Mfiltre,sum(DataIn_1.(VarName),3));%filter the input image, after summation on the color component (for color images)
+                DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+            else
+                DataOut.(VarName)=filter2(Mfiltre,DataIn_1.(VarName));
+                DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+            end
+        end
+    end
+end
+end
+
  

@@ -2521,7 +2521,7 @@ FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
 if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
-CheckList_1=1; % indicate whether FieldName_1 has been updated
+CheckPivData_1=0; % indicate whether FieldName_1 has been updated with civ data, 0 by default
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
@@ -2540,7 +2540,7 @@ if VelTypeRequest && numel(iview_civ)>=1
         set(handles.VelType_1,'Visible','on')
         set(handles.VelType_title_1,'Visible','on')
         FieldList_1=[set_field_list('U','V');{'C'};{'add_field...'}]; % standard menu for civx data
-        CheckList_1=1;
+        CheckPivData_1=1;
         set(handles.FieldName_1,'Value',1); % velocity vector choice by default
     else
         set(handles.VelType_1,'Visible','off')
@@ -2566,7 +2566,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 break
             end
         end
-        if ~isempty(FieldList)
+        if ~isempty(FieldList)iview_netcdf
             if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
                     isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
                 FieldList={};
@@ -2583,19 +2583,20 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         set(handles.FieldName,'Visible','off')
         set(handles.Field_text,'Visible','off')
     end
-    
     set(handles_coord,'Visible','on')
     if isempty(find(strcmp('add_field...',FieldList)))
         FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
     end
     if FieldNameRequest_1 && numel(iview_netcdf)>=2
         set(handles.FieldName_1,'Visible','on')
-        if CheckList_1==0        % not civ input made
+        set(handles.Field_text_1,'Visible','on')
+        if CheckPivData_1==0        % not civ input made
+            FieldList_1={'add_field...'}
             ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
             ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
             for ilist=1:numel(ind_var)
                 if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
-                    FieldList_1={}; % previous choice not consistent with new input field
+                    %FieldList_1={}; % previous choice not consistent with new input field
                     set(handles.FieldName_1,'Value',1)
                     break
                 end
@@ -2606,7 +2607,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
                 warn_coord=1;
             end
             if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
-                FieldList_1={};
+                FieldList_1={'add_field...'};
                 warn_coord=1;
             end
             if warn_coord
@@ -3026,13 +3027,14 @@ function FieldName_1_Callback(hObject, eventdata, handles)
 field_str=get(handles.FieldName_1,'String');
 field_index=get(handles.FieldName_1,'Value');
 field=field_str{field_index(1)};
-if isequal(field,'add_field...')
+if strcmp(field,'add_field...')
+    %iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
     end
     Param=read_GUI(handles.series);
-    Param.InputTable=Param.InputTable(1,:);
+    InputTable=Param.InputTable(2,:);
     % check the existence of the first file in the series
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
@@ -3040,8 +3042,8 @@ if isequal(field,'add_field...')
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    FirstFileName=fullfile_uvmat(Param.InputTable{2,1},Param.InputTable{2,2},Param.InputTable{2,3},...
+        Param.InputTable{2,5},Param.InputTable{2,4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
         ParamIn.SeriesInput=1;
         GetFieldData=get_field(FirstFileName,ParamIn);
@@ -3064,27 +3066,27 @@ if isequal(field,'add_field...')
                 FieldList=set_field_list('U','V','C');
                 set(handles.FieldName,'Value',2) % set menu to 'velocity
         end
-        if ~strcmp(GetFieldData.FieldOption,'civdata...')
-            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-            switch TimeNameStr
-                case 'file index'
-                    set(handles.TimeName,'String','');
-                case 'attribute'
-                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
-                case 'variable'
-                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-                    set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
-                    set(handles.FileIndex,'String','')
-                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
-                case 'matrix_index'
-                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
-                    set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
-                    set(handles.FileIndex,'String','')
-                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
-            end
-        end
+%         if ~strcmp(GetFieldData.FieldOption,'civdata...')
+%             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+%             switch TimeNameStr
+%                 case 'file index'
+%                     set(handles.TimeName,'String','');
+%                 case 'attribute'
+%                     set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+%                 case 'variable'
+%                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+%                     set(handles.NomType,'String','*')
+%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
+%                     set(handles.FileIndex,'String','')
+%                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+%                 case 'matrix_index'
+%                     set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+%                     set(handles.NomType,'String','*')
+%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+%                     set(handles.FileIndex,'String','')
+%                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+%             end
+%         end
         set(handles.FieldName_1,'Value',1)
         set(handles.FieldName_1,'String',[FieldList; {'add_field...'}]);
     end
