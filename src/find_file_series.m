@@ -48,7 +48,7 @@ function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTy
 %------------------------------------------------------------------------
 
 %% get input root name and info on the input file
-if isempty(regexp(FilePath,'^http://'))
+if isempty(regexp(FilePath,'^http://','once'))
 fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 else
   fullfileinput=[FilePath '/' fileinput];

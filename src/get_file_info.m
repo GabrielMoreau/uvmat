@@ -61,8 +61,8 @@ FileInfo.FieldType=''; %default output
 if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
-else
-    return %input file does not exist.
+% else
+%     return %input file does not exist.
 end
 [tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
@@ -116,6 +116,7 @@ switch FileExt
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
             if ~isempty(FileExt)
                 if ~isempty(imformats(FileExt))%case of images
+                    FileInfo.FileType='image';
                     try
                         imainfo=imfinfo(fileinput);
                         if length(imainfo) >1 %case of image with multiple frames   

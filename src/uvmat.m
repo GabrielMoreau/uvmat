@@ -1208,12 +1208,20 @@ end
 
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
 Slice=[];
+Check_slice=0;
 if isfield(UvData,'XmlData')
+    if isfield(UvData.XmlData{1},'GeometryCalib') && strcmp(UvData.XmlData{1}.GeometryCalib.CalibrationType(1:3),'3D_')
+        Check_slice=1;
+    end
     if isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
         Slice=UvData.XmlData{1}.GeometryCalib;%old convention < 2022
     elseif isfield(UvData.XmlData{1},'Slice')
         Slice=UvData.XmlData{1}.Slice;% new convention ( 2022)
     end
+end
+if ~Check_slice
+    msgbox_uvmat('ERROR','3D calibration not available, use Tools/geometric calibration with 3D option');
+    return
 end
 % default input
 if ~(isfield(Slice,'SliceCoord') && size(Slice.SliceCoord,2)==3)
@@ -1294,9 +1302,9 @@ uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-
     'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
+    'String',num2str(Slice.SliceCoord(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
+    'String',num2str(Slice.SliceCoord(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
 
 uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
     'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
@@ -1352,12 +1360,11 @@ hhuvmat=guidata(huvmat);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
 XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);%find name of the relevant xml file
-% [s,errormsg]=imadoc2struct(XmlFile,'Slice');%read the xml file
-% if~isempty(errormsg)
-%     msgbox_uvmat('ERROR',errormsg)
-%     return
-% end
-% Slice=s.Slice;% get thegeometric calibration data
+if isempty(XmlFile)
+    msgbox_uvmat('ERROR','an xml file with calibration parameters must be first created, use Tools/geometric calibration');
+    return
+end
+[s,RootTag,errormsg]=xml2struct(XmlFile);
 
 %% read the content of the GUI set_slice
 hset_slice=get(hObject, 'parent');
@@ -1369,7 +1376,7 @@ Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
 if numel(Z_plane)<=2
     Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
 else
-    set(hZ,'String',num2str(Z_plane))% restitute the display qfter reqding by read_GUI
+    set(hZ,'String',num2str(Z_plane))% restitute the display after reading by read_GUI
 end
 Slice.SliceCoord=Z_plane'*[0 0 1];
 Slice.SliceCoord(:,1)=SliceData.SliceCoord(1);
@@ -3314,8 +3321,8 @@ else
             errormsg='minimum j index reached';
         elseif ref_i_1+1>size(UvData.i1_series{2},3)&&~isempty(InputFile.NomType_1)
             errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
-        elseif ref_j_1+1>size(UvData.i1_series{2},2)&&~isempty(InputFile.NomType_1)
-            errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
+        %elseif ref_j_1+1>size(UvData.i1_series{2},2)&&~isempty(InputFile.NomType_1)
+         %   errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
         end
         if ~isempty(errormsg),return,end
         siz=size(UvData.i1_series{2});

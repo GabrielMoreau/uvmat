@@ -620,15 +620,17 @@ check_input_file_series(handles)
 %% enable field and veltype menus, in accordance with the current action
 ActionInput_Callback([],[], handles)
 
-
+%------------------------------------------------------------------------
+% --- check the input file series.
 function check_input_file_series(handles)
+%------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
-    empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));
+    empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));%check the empty lines in the input table
 end
 if ~isempty(find(empty_line,1))
     InputTable(empty_line,:)=[]; % remove empty lines
@@ -648,9 +650,12 @@ for iview=1:nbview
         i1_series=[];
         RootFile='';
     else %scan the input folder
-        InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');
+        InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
+        i1=str2num(get(handles.num_first_i,'String'));
+        j1=str2num(get(handles.num_first_j,'String'));
+        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,[])
             [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
-                find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
+                find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
     % if no file is found, open a browser
     if isempty(RootFile)&& isempty(i1_series)

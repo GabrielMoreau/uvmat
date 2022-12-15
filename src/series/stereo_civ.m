@@ -1,4 +1,4 @@
-%'civ_series': PIV function activated by the general GUI series
+%'stereo_series': PIV function activated by the general GUI series
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria
@@ -40,6 +40,7 @@
 function [Data,errormsg,result_conv]= stereo_civ(Param)
 Data=[];
 errormsg='';
+
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN 
     if size(Param.InputTable,1)<2
@@ -48,7 +49,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    Data=stereo_input(Param);% introduce the civ parameters using the GUI civ_input
+    Data=stereo_input(Param);% introduce the civ parameters using the GUI stereo_input
     if isempty(Data)
         Data=Param;% if  civ_input has been cancelled, keep previous parameters
     end
@@ -1308,8 +1309,8 @@ mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
 mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
 mtz=(XmlData{1}.GeometryCalib.Tx_Ty_Tz(1,3)+XmlData{2}.GeometryCalib.Tx_Ty_Tz(1,3))/2;
 
-Error=(sqrt(mfx^2+mfy^2)/(2*sqrt(2)*mtz)).*(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den);
-
+%Error=(sqrt(mfx^2+mfy^2)/(2*sqrt(2)*mtz)).*(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./sqrt(Den));
+Error=(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./sqrt(Den));
 z=((Dxb-Dxa).*(-u)+(Dyb-Dya).*(-v))./Den;
 
 xnew(1,:)=Dxa.*z+x_a;

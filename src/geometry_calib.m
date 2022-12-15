@@ -189,8 +189,12 @@ else
     outputfile=answer{1};
 end
 
-%% read coordinates of the calibration poinnts: Coord(:,1-3) in phys, Coord(:,4-5) image
+%% read coordinates of the calibration points: Coord(:,1-3) in phys, Coord(:,4-5) image
 Coord=get(handles.ListCoord,'Data');
+if isempty(Coord)
+    msgbox_uvmat('ERROR','introduce calibration points in the table Coord, or use the Tools Set scale')
+    return
+end
 
 
 %% read the type of calibration
