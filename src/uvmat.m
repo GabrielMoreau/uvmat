@@ -1312,13 +1312,13 @@ uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 1.
     'String','tild y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
 %  raw 6 of the GUI
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination around the x axis');%edit box
+    'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination (in degrees) around the x axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(end,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination around the x axis');%edit box
+    'String',num2str(SliceAngle(end,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination (in degrees) around the x axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination around the y axis');%edit box
+    'String',num2str(SliceAngle(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination (in degrees) around the y axis');%edit box
 uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(end,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination around the y axis');%edit box
+    'String',num2str(SliceAngle(end,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination (in degrees) around the y axis');%edit box
 
 %  raw 7 of the GUI: pushbuttons
 wwp=(1-4*ii)/3; %width of the push buttons

@@ -1071,7 +1071,7 @@ if isfield(ObjectData,'RangeInterp')
     thresh2=ObjectData.RangeInterp*ObjectData.RangeInterp;%square of interpolation range (do not interpolate beyond this range)
 end
 
-%% initiate Matlab  structure for physical fieldopen
+%% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 if ~isempty(errormsg)
     return
@@ -1344,7 +1344,7 @@ for icell=1:length(CellInfo)
             
             % two cases of projection for scattered coordinates
             switch ProjMode{icell}
-                case 'projection'
+                case 'projection'% ptoject scattered data without interpolation
                     nbvar=0;
                     %nbvar=numel(ProjData.ListVarName);
                     for ivar=[CellInfo{icell}.CoordIndex CellInfo{icell}.VarIndex] %transfer variables to the projection plane
@@ -1365,7 +1365,7 @@ for icell=1:length(CellInfo)
                             end
                         end
                     end
-                case 'interp_lin'%interpolate data on a regular grid
+                case 'interp_lin'%interpolate scattered data on a regular grid
                     if isfield(CellInfo{icell},'VarIndex_errorflag')
                         VarName_FF=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
                         indsel=find(FieldData.(VarName_FF)==0);
@@ -1381,7 +1381,7 @@ for icell=1:length(CellInfo)
                         end
                     end
                     % interpolate and calculate field on the grid
-                    
+           
                     [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                     
                     % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
@@ -1499,7 +1499,7 @@ for icell=1:length(CellInfo)
                 ProjMode{icell}='interp_lin'; %request linear interpolation for projection on a tilted plane
             end
             
-            if strcmp(ProjMode{icell},'projection')% && (~testangle || test90y || test90x)
+            if strcmp(ProjMode{icell},'projection')% project gridded data without interpolation
                 if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax% no range restriction
                     ListVarName=[ListVarName FieldData.ListVarName(VarIndex)];
                     VarDimName=[VarDimName FieldData.VarDimName(VarIndex)];
@@ -1605,7 +1605,7 @@ for icell=1:length(CellInfo)
                         end
                     end
                 end
-            else       % case with interpolation on a grid
+            else       % project gridded data with interpolation on a grid
                 if NbDim==2 %2D case
                     if isequal(ProjMode{icell},'interp_tps')
                         npx_interp_tps=ceil(abs(DX/DAX));
@@ -1777,7 +1777,7 @@ end
 function  [ProjData,errormsg] = proj_volume(FieldData, ObjectData)
 
 %-----------------------------------------------------------------
-ProjData=FieldData;%default output
+ProjData=[];%default output
 
 %% axis origin
 if isempty(ObjectData.Coord)
@@ -1808,13 +1808,14 @@ testangle=~isequal(VolumeAngle,[0 0 0]);
 DX=0;
 DY=0; %default 
 DZ=0;
-if isfield(ObjectData,'DX')&~isempty(ObjectData.DX)
+ProjMode=ObjectData.ProjMode;
+if isfield(ObjectData,'DX')&&~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
 end
-if isfield(ObjectData,'DY')&~isempty(ObjectData.DY)
+if isfield(ObjectData,'DY')&&~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
 end
-if isfield(ObjectData,'DZ')&~isempty(ObjectData.DZ)
+if isfield(ObjectData,'DZ')&&~isempty(ObjectData.DZ)
      DZ=abs(ObjectData.DZ);%mesh of interpolation points 
 end
 if  ~strcmp(ProjMode,'projection') && (DX==0||DY==0||DZ==0)
@@ -1871,21 +1872,23 @@ ListIndex={};
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 %-----------------------------------------------------------------
 idimvar=0;
+
+[CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
 % LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
 ivar_new=0; % index of the current variable in the projected field
 icoord=0;
 nbcoord=0;%number of added coordinate variables brought by projection
 nbvar=0;
-for icell=1:length(CellVarIndex)
-    NbDim=NbDimVec(icell);
+for icell=1:length(CellInfo)
+    NbDim=NbDimArray(icell);
     if NbDim<3
         continue
     end
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-    VarType=VarTypeCell{icell};
+    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
+    VarType=CellInfo{icell}.VarType;
     ivar_X=VarType.coord_x;
-    ivar_Y=VarType.coord_y;
+    ivar_Y=VarType.coorCeld_y;
     ivar_Z=VarType.coord_z;
     ivar_U=VarType.vector_x;
     ivar_V=VarType.vector_y;
@@ -1896,23 +1899,22 @@ for icell=1:length(CellVarIndex)
     test_anc(ivar_Anc)=ones(size(ivar_Anc));
     ivar_F=VarType.warnflag;
     ivar_FF=VarType.errorflag;
-    check_unstructured_coord=~isempty(ivar_X) && ~isempty(ivar_Y);
+    %check_unstructured_coord=~isempty(ivar_X) && ~isempty(ivar_Y);
     DimCell=FieldData.VarDimName{VarIndex(1)};
     if ischar(DimCell)
         DimCell={DimCell};%name of dimensions
     end
 
 %% case of input fields with unstructured coordinates
-    if check_unstructured_coord
+    if strcmp(CellInfo{icell}.CoordType,'scattered')
         XName=FieldData.ListVarName{ivar_X};
         YName=FieldData.ListVarName{ivar_Y};
-        eval(['coord_x=FieldData.' XName ';'])
-        eval(['coord_y=FieldData.' YName ';'])
+        coord_x=FieldData.(XName);
+        coord_y=FieldData.(YName);
         if length(ivar_Z)==1
             ZName=FieldData.ListVarName{ivar_Z};
-            eval(['coord_z=FieldData.' ZName ';'])
+            coord_z=FieldData.(ZName);
         end
-
         % translate  initial coordinates
         coord_x=coord_x-ObjectData.Coord(1,1);
         coord_y=coord_y-ObjectData.Coord(1,2);
@@ -1987,11 +1989,11 @@ for icell=1:length(CellVarIndex)
             for ivar=VarIndex %transfer variables to the projection plane
                 VarName=FieldData.ListVarName{ivar};
                 if ivar==ivar_X %x coordinate
-                    eval(['ProjData.' VarName '=coord_X;'])
+                    ProjData.(VarName)=coord_X;
                 elseif ivar==ivar_Y % y coordinate
-                    eval(['ProjData.' VarName '=coord_Y;'])
+                    ProjData.(VarName)=coord_Y;
                 elseif isempty(ivar_Z) || ivar~=ivar_Z % other variables (except Z coordinate wyhich is not reproduced)
-                    eval(['ProjData.' VarName '=FieldData.' VarName ';'])
+                    ProjData.(VarName)=FieldData.(VarName);
                 end
                 if isempty(ivar_Z) || ivar~=ivar_Z 
                     ProjData.ListVarName=[ProjData.ListVarName VarName];
@@ -2284,8 +2286,8 @@ for icell=1:length(CellVarIndex)
                 else
                     test_interp_tps=0;
                 end
-                eval(['ProjData.' AYName '=[coord_y_proj(1) coord_y_proj(end)];']) %record the new (projected ) y coordinates
-                eval(['ProjData.' AXName '=[coord_x_proj(1) coord_x_proj(end)];']) %record the new (projected ) x coordinates
+                ProjData.(AYName)=[coord_y_proj(1) coord_y_proj(end)]; %record the new (projected ) y coordinates
+                ProjData.(AXName)=[coord_x_proj(1) coord_x_proj(end)]; %record the new (projected ) x coordinates
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
                     if test_interp(1) || test_interp(2)%interpolate on a regular grid        
@@ -2353,7 +2355,7 @@ for icell=1:length(CellVarIndex)
     %% projection of  velocity components in the rotated coordinates
     if testangle
         if isempty(ivar_V)
-            msgbox_uvmat('ERROR','v velocity component missing in proj_field.m')
+            errormsg='v velocity component missing in proj_field.m';
             return
         end
         UName=FieldData.ListVarName{ivar_U};
@@ -2370,6 +2372,10 @@ for icell=1:length(CellVarIndex)
             eval(['ProjData.' VName '=sin(Psi)* ProjData.' UName '+ cos(Psi)*ProjData.' VName ';']);
         end
     end
+end
+if isempty(ProjData.ListVarName)
+    errormsg='input field is not 3D, no volume projection';
+    ProjData=[];
 end
 
 %------------------------------------------------------------------------
