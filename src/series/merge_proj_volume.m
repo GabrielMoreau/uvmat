@@ -199,7 +199,7 @@ DataVol.Conventions='uvmat';
 DataVol.CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
 DataVol.Time=0; %TO UPDATE
 DataVol.ListVarName={'coord_x','coord_y','coord_z','A'};
-DataVol.VarDimName={'coord_x','coord_y','coord_z',{'coord_z','coord_y','coord_x'}};
+DataVol.VarDimName={'coord_x','coord_y','coord_z',{'coord_y','coord_x','coord_z'}};
 DataVol.VarAttribute{1}.Role='coord_x';
 DataVol.VarAttribute{2}.Role='coord_y';
 DataVol.VarAttribute{3}.Role='coord_z';
@@ -256,7 +256,7 @@ end
 
 
 for index_i=1:NbField_i
-    AMerge=zeros(NbField_j,numel(DataVol.coord_y),numel(DataVol.coord_x));
+    
     for index_j=1:NbField_j
         index_j
         %% generating the name of the merged field
@@ -267,81 +267,49 @@ for index_i=1:NbField_i
         end
 
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-        Data=cell(1,NbView);%initiate the set Data
+       
         timeread=zeros(1,NbView);
-        for iview=1:NbView
+%         for iview=1:NbView
             %% reading input file(s)
-            [Data{iview},tild,errormsg] = read_field(filecell{iview,index_j},FileType{iview},ParamIn{iview},frame_index{iview}(index_j));
+            [Data,tild,errormsg] = read_field(filecell{1,index_j},FileType{1},ParamIn{1},frame_index{1}(index_j));
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
                 return
             end
-            ListVar=Data{iview}.ListVarName;
+            Data.A=Data.A(1:4:end,1:4:end);% reduce the mage size
+            ListVar=Data.ListVarName;
+            %reduce the image size
             for ilist=1:numel(ListVar)
-                Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
+                Data.(ListVar{ilist})=double(Data.(ListVar{ilist}));% transform all fields in double before all operations
             end
             % get the time defined in the current file if not already defined from the xml file
-            if ~isempty(time) && isfield(Data{iview},'Time')
-                timeread(iview)=Data{iview}.Time;
+            if ~isempty(time) && isfield(Data,'Time')
+                timeread(iview)=Data.Time;
             end
-            Data{iview}.ZIndex=index_j;
-            [X,Y]=meshgrid(DataVol.coord_x,DataVol.coord_y);%grid in physical coordinates
-            Data{iview}=proj_plane(Data{iview},XmlData{iview},X,Y); %project on the common x,y plane
-        end
-        % merge the NbView fields only to merge views from several cameras)
+            Data.ZIndex=index_j;
+            [X,Y,Z]=meshgrid(DataVol.coord_x,DataVol.coord_y,DataVol.coord_z);%grid in physical coordinates
+            %Data{iview}=proj_plane(Data{iview},XmlData{iview},X,Y); %project on the common x,y plane
 
-        %     [MergeData,errormsg]=merge_field(ProjData);
-        %     if ~isempty(errormsg)
-        %         disp_uvmat('ERROR',errormsg,checkrun);
-        %         return
-        %     end
-        AMerge(index_j,:,:)=Data{iview}.A;
+        if index_j==1
+            AMerge=zeros(size(Data.A,1),size(Data.A,2),NbField_j);
+        end
+        AMerge(:,:,index_j)=Data.A;
 
         %%%%%%%%%%%%%%%% END LOOP FOR VOLUME SCAN %%%%%%%%%%%%%%%%
     end
     %interpolate on the vertical grid
-    Z=zeros(1,NbField_j);
-    for j_index=1:numel(DataVol.coord_y)
-        for i_index=1:numel(DataVol.coord_x)
-            for ZIndex=1:NbField_j
-            Z(ZIndex)=Zpos(XmlData{iview},ZIndex,X(j_index,i_index),Y(j_index,i_index));
-            end
-            DataVol.A(:,j_index,i_index) = interp1(Z,AMerge(:,j_index,i_index),DataVol.coord_z);
-        end
-    end
+    DataVol.A=proj_volume(AMerge,XmlData{1},X,Y,Z);
+%     Z=zeros(1,NbField_j);
+%     for j_index=1:numel(DataVol.coord_y)
+%         for i_index=1:numel(DataVol.coord_x)
+%             for ZIndex=1:NbField_j
+%             Z(ZIndex)=Zpos(XmlData{iview},ZIndex,X(j_index,i_index),Y(j_index,i_index));
+%             end
+%             DataVol.A(:,j_index,i_index) = interp1(Z,AMerge(:,j_index,i_index),DataVol.coord_z);
+%         end
+%     end
     error=struct2nc(OutputFile,DataVol)%save result file
 
-
-    %     if index==1
-    %         TimeData.ListGlobalAttribute={'Conventions','Project','CoordUnit','TimeUnit','ZPos','Time'};
-    %         TimeData.Conventions='uvmat';
-    %         TimeData.Project='2016_Circumpolar';
-    %         TimeData.CoordUnit='cm';
-    %         TimeData.TimeUnit='s';
-    % %         TimeData.ZPos=ZPos;
-    %         TimeData.ListVarName={'radius','azimuth','U','V','curl','div'};
-    %         TimeData.VarDimName={'radius','azimuth',{'radius','azimuth'},{'radius','azimuth'}...
-    %             {'radius','azimuth'},{'radius','azimuth'}};
-    %         TimeData.VarAttribute{1}.Role='';
-    %         TimeData.VarAttribute{2}.Role='';
-    %         TimeData.VarAttribute{3}.Role='vector_x';
-    %         TimeData.VarAttribute{4}.Role='vector_y';
-    %         TimeData.VarAttribute{5}.Role='scalar';
-    %         TimeData.VarAttribute{6}.Role='scalar';
-    %
-    %     end
-    %
-    %         %% append data to the netcdf file for next iterations
-    %
-    %
-    %             error=struct2nc(OutputFile,TimeData);%save result file
-    %         if isempty(error)
-    %             disp(['output file ' OutputFile ' written'])
-    %         else
-    %             disp(error)
-    %         end
-    %             ellapsed_time=toc(tstart);
-    %     disp(['ellapsed time since start ' num2str(ellapsed_time/60,2) ' minutes'])
 end
 
 % disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])
@@ -424,6 +392,48 @@ if isfield(XmlData.Slice,'SliceAngle')&&~isequal(XmlData.Slice.SliceAngle,[0 0 0
     [norm_plane(1), norm_plane(2), norm_plane(3)] =rotate_vector(XmlData.SliceAngle(ZIndex,:)*pi/180,0,0,1);
     Z=Z-(norm_plane(1)*(X-XmlData.Slice.SliceCoord(ZIndex,1))+norm_plane(2)*(Y-XmlData.Slice.SliceCoord(ZIndex,2)))/norm_plane(3);
 end
+
+
+function ZIndex=XYZtoIndex(XmlData,X,Y,Z)% Z positions corresponding to X,Y positions
+Zp=Z-XmlData.Slice.SliceCoord(1,3);
+DZ=XmlData.Slice.SliceCoord(end,3)-XmlData.Slice.SliceCoord(1,3)/(size(XmlData.Slice.SliceCoord,1)-1);
+if DZ~=0
+ZIndex=(Z-XmlData.Slice.SliceCoord(1,3))/DZ+1;% Z=XmlData.SliceCoord(1,3)+(ZIndex-1)*DZ
+end
+% effect of angular deviation
+SliceAngleMax=XmlData.Slice.SliceAngle(end,:)-XmlData.Slice.SliceAngle(1,:);
+normAxe=norm(SliceAngleMax);
+if normAxe>0 % case of angle scan
+a=-SliceAngleMax(2)/normAxe;
+b=-SliceAngleMax(1)/normAxe;
+c=-a*XmlData.Slice.SliceCoord(1,1)+b*XmlData.Slice.SliceCoord(1,2);%equation of the axis ax+by+c=0
+DNormal=norm(a*X+b*Y+c);
+Ang=atand(Zp./DNormal);
+ZIndex=ZIndex+Ang-norm(XmlData.Slice.SliceAngle(1,:))+1;
+end
+
+%------------------------------------------------------------
+% proj_volume: poject each image on a common grid given by coord_x and coord_y 
+function A=proj_volume(AMerge,XmlData,X,Y,Z)
+
+A=[]; %default output
+
+%% initial image coordinates
+[npy,npx,npz]=size(AMerge);
+xima=0.5:npx-0.5;%image coordinates of corners
+%yima=npy-0.5:-1:0.5;
+yima=0.5:npy-0.5;
+zima=0.5:npz-0.5;
+[XIMA_init,YIMA_init,ZIMA_init]=meshgrid(xima,yima,zima);%grid of initial image in px coordinates
+
+%% projected coordinates
+ZIndex=XYZtoIndex(XmlData,X,Y,Z);% Z positions correspoonding to X,Y positions
+
+%% interpolation on the new grid
+[XIMA,YIMA]=px_XYZ(XmlData.GeometryCalib,XmlData.Slice,X,Y,Z);% image coordinates for each point in the real
+A=interp3(XIMA_init,YIMA_init,ZIMA_init,AMerge,XIMA,YIMA,ZIndex);
+
+
 
 % proj_plane: poject each image on a common grid given by coord_x and coord_y 
 function DataOut=proj_plane(DataIn,XmlData,X,Y)

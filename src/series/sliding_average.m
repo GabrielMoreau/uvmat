@@ -1,6 +1,6 @@
-%'turb_correlation_time': calculate the time correlation function at each point
+%'sliding_average_natalya'
 %------------------------------------------------------------------------
-% function ParamOut=turb_correlation_time(Param)
+% function ParamOut=sliding_average(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

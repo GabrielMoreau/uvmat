@@ -376,6 +376,8 @@ for ifield=1:NbField
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
     end
+    ImageName_A='';ImageName_B='';%default
+    VideoObject_A=[];VideoObject_B=[];
     %% Civ1
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
@@ -649,9 +651,9 @@ for ifield=1:NbField
             par_civ2.ImageA=[];
             par_civ2.ImageB=[];
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                    ImageName_A_Civ2=Param.ActionInput.RefFile;
-                else
-            ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
+                ImageName_A_Civ2=Param.ActionInput.RefFile;
+            else
+                ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
             end
             if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
                 par_civ2.ImageA=par_civ1.ImageA;
@@ -664,6 +666,7 @@ for ifield=1:NbField
             else
                 [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
             end
+            [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A_Civ2);
             par_civ2.ImageWidth=FileInfo_A.Width;
             par_civ2.ImageHeight=FileInfo_A.Height;
             if isfield(par_civ2,'Grid')% grid points set as input file

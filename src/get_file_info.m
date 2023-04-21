@@ -57,6 +57,9 @@ function [FileInfo,VideoObject]=get_file_info(fileinput)
 VideoObject=[];
 FileInfo.FileType='';% input file does not exist
 FileInfo.FieldType=''; %default output
+if ~ischar(fileinput)
+    return
+end
 % check the existence (not possible for OpenDAP data)
 if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;

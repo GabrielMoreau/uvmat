@@ -1,6 +1,6 @@
 %'tps_coeff_field': calculate the thin plate spline (tps) coefficients within subdomains for a field structure
 %---------------------------------------------------------------------
-% DataOut=tps_coeff_field(DataIn,checkall) 
+% DataOut=tps_coeff_field(DataIn,checkall,Smoothing) 
 %
 % OUTPUT:
 % DataOut: output field structure, reproducing the input field structure DataIn and adding the fields:
@@ -12,7 +12,8 @@
 % DataIn: intput field structure
 % checkall:=1 if tps is needed for all fields (a projection mode interp_tps has been chosen),
 %          =0 otherwise (tps only needed to get spatial derivatives of scattered data)
-%
+% Smoothing parameter: =0 (no smoothing) by default
+
 % called functions:
 % 'find_field_cells': analyse the input field structure, grouping the variables  into 'fields' with common coordinates
 % 'set_subdomains': sort a set of points defined by scattered coordinates in subdomains, as needed for tps interpolation
@@ -36,8 +37,11 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [DataOut,errormsg]=tps_coeff_field(DataIn,checkall)     
+function [DataOut,errormsg]=tps_coeff_field(DataIn,checkall,Smoothing)     
 DataOut=DataIn;%default
+if ~exist('Smoothing','var')
+Smoothing=0;
+end
 SubDomainNbPoint=1000; %default, estimated nbre of data source points in a subdomain used for tps
 if isfield(DataIn,'SubDomain')
     SubDomainNbPoint=DataIn.SubDomain;%old convention
@@ -52,7 +56,7 @@ if ~isempty(errormsg)
 end
 nbtps=0;% indicate the number of tps coordinate sets in the field structure (in general =1)
 
-for icell=1:numel(CellInfo);
+for icell=1:numel(CellInfo)
     if NbDimArray(icell)>=2 && strcmp(CellInfo{icell}.CoordType,'scattered') %if the coordinates are scattered
         NbCoord=NbDimArray(icell);% dimension of space
         nbtps=nbtps+1;% indicate the number of tps coordinate sets in the field structure (in general =1)
@@ -128,7 +132,7 @@ for icell=1:numel(CellInfo);
             for ilist=1:numel(VarIndexInterp)
                 for isub=1:size(SubRange,3)
                     ind_sel=IndSelSubDomain(1:NbCentre(isub),isub);% array indices selected for the subdomain
-                    [tild,Var_tps(1:NbCentre(isub)+NbCoord+1,isub)]=tps_coeff([X(ind_sel) Y(ind_sel)],DataIn.(ListVarInterp{ilist})(ind_sel),0);%calculate the tps coeff in the subdomain
+                    [tild,Var_tps(1:NbCentre(isub)+NbCoord+1,isub)]=tps_coeff([X(ind_sel) Y(ind_sel)],DataIn.(ListVarInterp{ilist})(ind_sel),Smoothing);%calculate the tps coeff in the subdomain
                 end
                 DataOut.(ListNewVar{ilist+3})=Var_tps;
             end

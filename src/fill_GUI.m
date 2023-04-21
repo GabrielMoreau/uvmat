@@ -102,7 +102,7 @@ for ifield=1:numel(fields)
                                 if numel(input_data)>0
                                     input_string=num2str(input_data(ibox),4);
                                 end
-                            else
+                            elseif ischar(input_data)
                                 input_string=input_data;
                             end
                             set(hh(ibox),'String',input_string)

@@ -113,13 +113,13 @@ switch FileType
             return
         end
         NomTypeNc=NomTypeInput;
-        ind_opening=FileInfo.CivStage;
+        ind_opening=SeriesData.FileInfo{1}.CivStage;
         if isempty(regexp(NomTypeInput,'[ab|AB|-]', 'once'))
             set(handles.ListCompareMode,'Value',2) %mode displacement advised if the nomencalture does not involve index pairs
         else
             set(handles.ListCompareMode,'Value',1)
         end
-        [Data,tild,tild,errormsg]=nc2struct(FileInfo.FileName,[]);
+        [Data,tild,tild,errormsg]=nc2struct(SeriesData.FileInfo{1}.FileName,[]);
         if ~isempty(errormsg)
             msgbox_uvmat('ERROR',['error in netcdf input file: ' errormsg])
             return

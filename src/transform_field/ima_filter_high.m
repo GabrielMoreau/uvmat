@@ -1,14 +1,13 @@
-% 'ima_filter': low-pass filter of an image or other 2D fields defined on a regular grid
-% the size of the filtering window in x and y is interactivement defined
+% 'ima_filter_high': high-pass filter of an image or other 2D fields defined on a regular grid
+% the size of the filtering window in x and y is interactivement defined 
 
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields with a single input and parameters %%%%
-% OUTPUT:
-% DataOut:   output field structure
+% OUTPUT: 
+% DataOut:   output field structure 
 %
 %INPUT:
 % DataIn:  input field structure
-%
 % Param: matlab structure whose field Param.TransformInput contains the filter parameters
 % DataIn_1: variables possibly introduced as a second input field
 %-----------------------------------
@@ -31,7 +30,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function DataOut=ima_filter(DataIn,Param,DataIn_1)
+function DataOut=ima_filter_high(DataIn,Param,DataIn_1)
 
 %% request input parameters
 if isfield(DataIn,'Action') && isfield(DataIn.Action,'RUN') && isequal(DataIn.Action.RUN,0)
@@ -72,7 +71,7 @@ for icell=1:numel(CellInfo)
                 DataOut.(VarName)=filter2(Mfiltre,sum(DataIn.(VarName),3));%filter the input image, after summation on the color component (for color images)
                 DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
             else
-                DataOut.(VarName)=filter2(Mfiltre,DataIn.(VarName));
+                DataOut.(VarName)=DataIn.(VarName)-filter2(Mfiltre,DataIn.(VarName));
                 DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
             end
         end
@@ -80,21 +79,21 @@ for icell=1:numel(CellInfo)
 end
 if exist('DataIn_1','var')
     [CellInfo,NbDim,errormsg]=find_field_cells(DataIn_1);
-    for icell=1:numel(CellInfo)
-        if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
-            for ivar=1:numel(CellInfo{icell}.VarIndex)
-                VarName=DataIn_1.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                Atype=class(DataIn_1.(VarName));% detect integer 8 or 16 bits
-                if numel(size(DataIn_1.(VarName)))==3
-                    DataOut.(VarName)=filter2(Mfiltre,sum(DataIn_1.(VarName),3));%filter the input image, after summation on the color component (for color images)
-                    DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
-                else
-                    DataOut.(VarName)=filter2(Mfiltre,DataIn_1.(VarName));
-                    DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
-                end
+for icell=1:numel(CellInfo)
+    if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
+        for ivar=1:numel(CellInfo{icell}.VarIndex)
+            VarName=DataIn_1.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+            Atype=class(DataIn_1.(VarName));% detect integer 8 or 16 bits
+            if numel(size(DataIn_1.(VarName)))==3
+                DataOut.(VarName)=filter2(Mfiltre,sum(DataIn_1.(VarName),3));%filter the input image, after summation on the color component (for color images)
+                DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+            else
+                DataOut.(VarName)=filter2(Mfiltre,DataIn_1.(VarName));
+                DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
             end
         end
     end
+end
 end
 
  

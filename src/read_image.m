@@ -36,6 +36,9 @@ function [A,ObjectOut]=read_image(FileName,FileType,VideoObject,num)
 if ~exist('FileType','var')
     FileType='image';
 end
+if isempty(FileType)
+    FileType='image';
+end
 if ~exist('VideoObject','var')
     VideoObject=[];
 end
