@@ -2719,6 +2719,9 @@ else
 end
 
 %% NbSlice visibility
+if isfield(ParamOut,'OutputFileMode')&& strcmp(ParamOut.OutputFileMode,'NbSlice')
+    ParamOut.NbSlice='on';
+end
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')

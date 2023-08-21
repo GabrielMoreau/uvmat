@@ -60,7 +60,7 @@ if isfield(ProbeDoc,'T5')&& ~isempty(ProbeDoc.T5)  % if temperature calibration 
 end
 
 %% check camera signal
-ind_start=find(Data.Trig_Cam>3.5,1,'first')
+ind_start=find(Data.Trig_cam>3.5,1,'first')
 disp(['camera starts at time ' num2str(Data.Time(ind_start))])
 %% transform and filter conductivity probe signals into [temperature-corrected] density
 ylabelstring='conductivity signal (volts)'; clist=0;% counter of conductivity probes

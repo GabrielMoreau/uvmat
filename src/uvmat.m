@@ -4999,7 +4999,7 @@ switch FileType
     case {'civdata','pivdata_fluidimage'}
         menu={'civ1';'filter1';'civ2';'filter2';'civ3';'filter3'};
         imax=[0 1 1 2 3 3 4 5 5 6];
-        imax=imax(Civ+1);
+        imax=imax(min(Civ+1,10));
 %         if isequal(Civ,0)
 %             imax=0;
 %         elseif isequal(Civ,1) || isequal(Civ,2)

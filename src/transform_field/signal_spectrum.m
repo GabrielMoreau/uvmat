@@ -169,7 +169,7 @@ for pos=1:size(Var,2)
     ind_good=find(~isnan(sample));
     if numel(ind_good)>WindowLength
         NbPos=NbPos+1;
-        if ~isempty(ind_bad)
+        if ~isempty(ind_bad)WindowLength
             sample=sample(ind_good); % keep only  non NaN data
             NbNan=NbNan+numel(ind_bad);
         end

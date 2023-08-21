@@ -59,6 +59,9 @@ for ifield=1:numel(fields)
     %% case of an element
         hh=[];
         input_data=Param.(fields{ifield});
+        if isfield(Param,'Type') && isa(Param.Type,'matlab.graphics.primitive.Rectangle')
+            input_data='rectangle';
+        end
         check_done=0;
         if isfield(handles,fields{ifield})
         % a GUI element has a tag name equal to the key name in the element of Param
