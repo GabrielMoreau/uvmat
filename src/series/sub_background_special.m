@@ -105,7 +105,7 @@ MinIndex=BottomIndex-100;
 maskindex=[665 1080];% range of x index perturbed by shadows 
 Bfilter=ones(1,20)/20;
 %% root input file names and nomenclature type (cell arrays with one element)
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];4
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 nbj=numel(Param.IndexRange.first_i:Param.IndexRange.last_i);
 for i_ind=Param.IndexRange.first_i:Param.IndexRange.last_i
     ZIndex=mod(i_ind-1,NbSlice)+1; 

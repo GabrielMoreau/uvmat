@@ -141,7 +141,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %% setting of  parameters specific to sub_background
     CheckVolume='No';
     nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts 
-     if nbfield_i~=1
+    SaturationValue=0;
+     if nbfield_i~=1 && nbfield_j<=nbaver_init
         nbaver=floor(nbaver_init/nbfield_j); % number of bursts used for the sliding background,
         if isequal(mod(nbaver,2),0)% if nbaver is even
             nbaver=nbaver+1;%put the number of burst to an odd number (so the middle burst is defined)
@@ -149,8 +150,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
     end
     BrightnessRankThreshold=0.1;
-    CheckSubmedian='No';
-    SaturationCoeff=0;
+   % CheckSubmedian='No';
+%     SaturationCoeff=0;
     if isfield(Param,'ActionInput')
         if isfield(Param.ActionInput,'CheckVolume') && Param.ActionInput.CheckVolume
             CheckVolume='Yes';
@@ -161,21 +162,20 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         if isfield(Param.ActionInput,'BrightnessRankThreshold')
           BrightnessRankThreshold=Param.ActionInput.BrightnessRankThreshold;
         end
-        if isfield(Param.ActionInput,'CheckSubmedian') && Param.ActionInput.CheckSubmedian
-        CheckSubmedian='Yes';
-        end
-        if isfield(Param.ActionInput,'SaturationCoeff') 
-            SaturationCoeff=Param.ActionInput.SaturationCoeff;
+%         if isfield(Param.ActionInput,'CheckSubmedian') && Param.ActionInput.CheckSubmedian
+%         CheckSubmedian='Yes';
+%         end
+        if isfield(Param.ActionInput,'SaturationValue') 
+            SaturationValue=Param.ActionInput.SaturationValue;
         end
     end   
     prompt = {'volume scan mode (Yes/No)';...
         'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles';...
-        'set to 0 image levels below median(Yes/No)';...
-        'image rescaling coefficient(=2 to reduce the influence of bright particles), =0 for no rescaling' };
+        'image saturation level for rescaling( reduce the influence of particles brighter than this value), =0 for no rescaling' };
     dlg_title = 'get (slice by slice) a sliding background and substract to each image';
-    num_lines= 5;
-    def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold);CheckSubmedian;num2str(SaturationCoeff)};
+    num_lines= 4;
+    def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold);num2str(SaturationValue)};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
     if isempty(answer)
         return
@@ -188,22 +188,16 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         end
     end
     if strcmp(answer{1},'Yes')
-        step=2;%the sliding background is shifted by the length of one burst, assumed =2 for volume ;ode
+        step=2;%the sliding background is shifted by the length of one burst, assumed =2 for volume 
         ParamOut.NbSlice=1; %nbre of slices displayed 
     else
         step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
-    nbaver_ima=str2double(answer{2});%number of images for the sliding background
-    nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
-    if isequal(mod(nbaver,2),0)% if nbaver is even
-        nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
-    end
-    nbaver_ima=nbaver*step;% correct the nbre of images corresponding to nbaver
+    ParamOut.ActionInput.SlidingSequenceLength=adjust_slidinglength(str2num(answer{2}),step);
     ParamOut.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
-    ParamOut.ActionInput.SlidingSequenceLength=nbaver_ima;
     ParamOut.ActionInput.BrightnessRankThreshold=str2double(answer{3});
-    ParamOut.ActionInput.CheckSubmedian=strcmp(answer{4},'Yes');
-    ParamOut.ActionInput.SaturationCoeff=str2double(answer{5});
+%     ParamOut.ActionInput.CheckSubmedian=strcmp(answer{4},'Yes');
+    ParamOut.ActionInput.SaturationValue=str2double(answer{4});
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
 %     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
 %     ParamOut.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
@@ -258,17 +252,16 @@ FileType{1}=FileInfo{1}.FileType;
 FileExtOut='.png'; % write result as .png images for image inputsFileInfo.FileType='image'
 if strcmp(FileInfo{1}.FileType,'image')
     NomTypeOut=NomType{1};
-% if strcmp(lower(NomType{1}(end)),'a')
-%     NomTypeOut=NomType{1};%case of letter appendix
 elseif isempty(j1_series{1})
     NomTypeOut='_1';
 else
     NomTypeOut='_1_1';% caseof purely numerical indexing
 end
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
 
 %% file index parameters
-% NbSlice_i: nbre of slices for i index: different of of 1 for multi-level,
+% NbSlice_i: nbre of slices for i index in multi-level mode: equal to 1 for a single level
 % the function sub_background is then relaunched by the GUI series for each
 %      slice, incrementing the first index i by 1
 % NbSlice_j: nbre of slices in volume mode
@@ -279,26 +272,19 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 
-if Param.ActionInput.CheckVolume
+if Param.ActionInput.CheckVolume% case of volume scan: the background images must be determined for each index j
     step=2;% we assume the burst contains only one image pair
     NbSlice_j=nbfield_j;
-    NbSlice=nbfield_j;
     nbfield_series=nbfield_i;
 else 
     step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
-        NbSlice_j=1;
-        NbSlice=NbSlice_i;
+    NbSlice_j=1;
     %nbfield_i=floor(nbfield_i/NbSlice_i);%total number of  indexes in a slice (adjusted to an integer number of slices)
     %nbfield=nbfield_i*NbSlice_i; %total number of fields after adjustement
     nbfield_series=nbfield_i*nbfield_j;
 end
 nbfield=nbfield_j*nbfield_i; %total number of fields
-nbaver_ima=Param.ActionInput.SlidingSequenceLength;%number of images for the sliding background
-nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
-if isequal(mod(nbaver,2),0)
-    nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
-end
-nbaver_ima=nbaver*step;
+[nbaver_ima,nbaver,step]=adjust_slidinglength(Param.ActionInput.SlidingSequenceLength,step);
 if nbaver_ima > nbfield
     display('number of images in a slice smaller than the proposed number of images for the sliding average')
     return
@@ -341,7 +327,7 @@ for j_slice=1:NbSlice_j
         ifile=indselect(ifield);
         filename=filecell{1,ifile};
         Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
-        if ndims(Aread)==3;%color images
+        if ndims(Aread)==3%color images
             Aread=sum(double(Aread),3);% take the sum of color components
         end
         Ak(:,:,ifield)=Aread;
@@ -351,7 +337,7 @@ for j_slice=1:NbSlice_j
     
     %% substract the first background image to the first images
     display( 'first background image will be substracted')
-    for ifield=1:step*(halfnbaver+1);% nbre of images treated by the first background image
+    for ifield=1:step*(halfnbaver+1)% nbre of images treated by the first background image
         Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
         Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
         ifile=indselect(ifield);
@@ -359,11 +345,11 @@ for j_slice=1:NbSlice_j
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        newname=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if ~isequal(Param.ActionInput.SaturationCoeff,0)
-            C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
+        if ~isequal(Param.ActionInput.SaturationValue,0)
+            C=levels(Acor,Param.ActionInput.SaturationValue);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if ~isfield(FileInfo{1},'BitDepth')
@@ -399,9 +385,10 @@ for j_slice=1:NbSlice_j
                 if ~isempty(j1_series{1})
                     j1=j1_series{1}(ifile);
                 end
+                
                 filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1);
                 Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
-                if ndims(Aread)==3;%color images
+                if ndims(Aread)==3%case of color images
                     Aread=sum(double(Aread),3);% take the sum of color components
                 end
                 Ak(:,:,nbaver_ima-step+iburst)=Aread;% fill the last burst of the current image series by the new image
@@ -416,10 +403,10 @@ for j_slice=1:NbSlice_j
                 if ~isempty(j1_series{1})
                     j1=j1_series{1}(ifile);
                 end
-                newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+                newname=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
                 %write result file
-                if ~isequal(Param.ActionInput.SaturationCoeff,0)
-                    C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
+                if ~isequal(Param.ActionInput.SaturationValue,0)
+                    C=levels(Acor,Param.ActionInput.SaturationValue);
                     imwrite(C,newname,'BitDepth',16); % save the new image
                 else
                     if isequal(FileInfo{1}.BitDepth,16)
@@ -444,10 +431,10 @@ for j_slice=1:NbSlice_j
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        newname=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         %write result file
-        if ~isequal(Param.ActionInput.SaturationCoeff,0)
-            C=levels(Acor,Param.ActionInput.CheckSubmedian,Param.ActionInput.SaturationCoeff);
+        if ~isequal(Param.ActionInput.SaturationValue,0)
+            C=levels(Acor,Param.ActionInput.SaturationValue);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo{1}.BitDepth,16)
@@ -462,27 +449,46 @@ for j_slice=1:NbSlice_j
     end
 end
 
-function C=levels(A,CheckSubmedian,Coeff)
+function C=levels(A,Coeff)
 
-nblock_y=100;%2*Param.TransformInput.BlockSize;
-nblock_x=100;%2*Param.TransformInput.BlockSize;
-[npy,npx]=size(A);
-[X,Y]=meshgrid(1:npx,1:npy);
-
-%Backg=zeros(size(A));
-%Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
-%Amin=A.*Aflagmin;%values of A at local minima
-% local background: find all the local minima in image subblocks
-if CheckSubmedian
-    fctblock= inline('median(x(:))');
-    Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
-    %B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
-    A=A-imresize(Backg,size(A),'bilinear');% substract background interpolated to the initial size image
+% nblock_y=100;%2*Param.TransformInput.BlockSize;
+% nblock_x=100;%2*Param.TransformInput.BlockSize;
+% [npy,npx]=size(A);
+% [X,Y]=meshgrid(1:npx,1:npy);
+% 
+% %Backg=zeros(size(A));
+% %Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
+% %Amin=A.*Aflagmin;%values of A at local minima
+% % local background: find all the local minima in image subblocks
+% if CheckSubmedian
+%     fctblock= inline('median(x(:))');
+%     Backg=blkproc(A,[nblock_y nblock_x],fctblock);% take the median in  blocks
+%     %B=imresize(Backg,size(A),'bilinear');% interpolate to the initial size image
+%     A=A-imresize(Backg,size(A),'bilinear');% substract background interpolated to the initial size image
+% end
+% fctblock= inline('mean(x(:))');
+% AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+% fctblock= inline('var(x(:))');
+% AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
+% Avalue=AVar./AMean;% typical value of particle luminosity
+% Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
+%C=uint16(1000*tanh(A./(Coeff*Avalue)));
+C=uint16(Coeff*tanh(A./Coeff));
+%------------------------------------------
+% adjust the number of images used for the sliding average
+function [nbaver_ima,nbaver,step_out]=adjust_slidinglength(nb_aver_in,step)
+%nbaver_ima=str2double(nb_aver_in);%number of images for the sliding background
+nbaver=ceil(nb_aver_in/step);%number of bursts for the sliding background
+if isequal(mod(nbaver,2),0)% if nbaver is even
+    nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
 end
-fctblock= inline('mean(x(:))');
-AMean=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
-fctblock= inline('var(x(:))');
-AVar=blkproc(A,[nblock_y nblock_x],fctblock);% take the mean in  blocks
-Avalue=AVar./AMean;% typical value of particle luminosity
-Avalue=imresize(Avalue,size(A),'bilinear');% interpolate to the initial size image
-C=uint16(1000*tanh(A./(Coeff*Avalue)));
+step_out=step;
+if nbaver>1
+    nbaver_ima=nbaver*step;% correct the nbre of images corresponding to nbaver
+else
+    nbaver_ima=nb_aver_in;
+    if isequal(mod(nbaver_ima,2),0)% if nbaver_ima is even
+        nbaver_ima=nbaver_ima+1;%set the number of bursts to an odd number (so the middle burst is defined)
+    end
+    step_out=1;
+end
