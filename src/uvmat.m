@@ -1210,7 +1210,7 @@ UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat
 Slice=[];
 Check_slice=0;
 if isfield(UvData,'XmlData')
-    if isfield(UvData.XmlData{1},'GeometryCalib') && strcmp(UvData.XmlData{1}.GeometryCalib.CalibrationType(1:3),'3D_')
+    if isfield(UvData.XmlData{1},'GeometryCalib') && isfield(UvData.XmlData{1}.GeometryCalib,'CalibrationType')&& strcmp(UvData.XmlData{1}.GeometryCalib.CalibrationType(1:3),'3D_')
         Check_slice=1;
     end
     if isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
@@ -1224,30 +1224,66 @@ if ~Check_slice
     return
 end
 % default input
-if ~(isfield(Slice,'SliceCoord') && size(Slice.SliceCoord,2)==3)
-    Slice.SliceCoord=[0 0 0];
+app=set_slices;
+app.UIFigure.Name='set_slices';
+app.unequalintervalsCheckBox.Value=0;%default
+if (isfield(Slice,'SliceCoord') && size(Slice.SliceCoord,2)==3)
+    app.NbSliceEditField.Value=size(Slice.SliceCoord,1);
+    app.firstZEditField.Value=Slice.SliceCoord(1,3);
+    app.lastZEditField.Value=Slice.SliceCoord(end,3);
+    app.axispositionxEditField.Value=Slice.SliceCoord(1,1);
+    app.yEditField.Value=Slice.SliceCoord(1,2);
+    app.UITable.Data=zeros(size(Slice.SliceCoord,1),3);
+    app.UITable.Data(:,1)=Slice.SliceCoord(:,3);
+    shifts=diff(Slice.SliceCoord(:,3));
+    if min(shifts)<max(shifts)
+        app.unequalintervalsCheckBox.Value=1;
+    end
+    if isfield(Slice,'CheckVolumeScan')
+        app.volumescanCheckBox.Value=Slice.CheckVolumeScan;
+    end
+    app.indexEditField.Value=1.33;
+    app.refractionCheckBox.Value=0;% default value of the check box refraction
+    if isfield(Slice,'RefractionIndex')
+        app.refractionCheckBox.Value=1;
+        app.indexEditField.Value=Slice.RefractionIndex;
+        app.indexEditField.Visible='on';
+        app.indexEditFieldLabel.Visible='on';
+        app.surfaceEditField.Value=min(Slice.SliceCoord(:,3));%default free surface position
+        app.surfaceEditField.Visible='on';
+        app.surfaceEditFieldLabel.Visible='on';
+        if isfield(Slice,'InterfaceCoord')
+            app.surfaceEditField.Value=Slice.InterfaceCoord(1,3);
+        end
+    end
+    app.firstangleEditField.Value=0;
+    app.firstangleEditField_2.Value=0;
+    app.lastangleEditField.Value=0;
+    app.lastangleEditField_2.Value=0;
+    if isfield(Slice,'SliceAngle')
+        app.firstangleEditField.Value=Slice.SliceAngle(1,1);
+        app.firstangleEditField_2.Value=Slice.SliceAngle(1,2);
+        app.lastangleEditField.Value=Slice.SliceAngle(end,1);
+        app.lastangleEditField_2.Value=Slice.SliceAngle(end,2);
+        app.UITable.Data(:,2)=Slice.SliceAngle(:,1);
+        app.UITable.Data(:,3)=Slice.SliceAngle(:,2);
+        shift_x=diff(Slice.SliceAngle(:,1));
+        shift_y=diff(Slice.SliceAngle(:,2));
+        if min(shift_x)<max(shift_x)||min(shift_y)<max(shift_y)
+            app.unequalintervalsCheckBox.Value=1;
+        end
+    end
 end
-InterfaceCoord=min(Slice.SliceCoord(:,3));
-if isfield(Slice,'InterfaceCoord')
-    InterfaceCoord=Slice.InterfaceCoord(1,3);
-end
-NbSlice=size(Slice.SliceCoord,1);
-CheckVolumeScan=0;
-if isfield(Slice,'CheckVolumeScan')
-    CheckVolumeScan=Slice.CheckVolumeScan;
-end
-RefractionIndex=1.33;
-CheckRefraction=0;% default value of the check box refraction
-if isfield(Slice,'RefractionIndex')
-    RefractionIndex=Slice.RefractionIndex;
-    CheckRefraction=1;
-end
-SliceAngle=[0 0 0];
-if isfield(Slice,'SliceAngle')
-    SliceAngle=Slice.SliceAngle;
+if app.unequalintervalsCheckBox.Value
+    app.UITable.Visible='on';
+else
+    app.UITable.Visible='off';
 end
 
 %% create the GUI set_slice
+return
+'TEST'
+%%old version
 set(0,'Units','points')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
 Width=350;% fig width in points (1/72 inch)
@@ -1255,7 +1291,10 @@ Height=min(0.8*ScreenSize(4),300);
 Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
 hfig=findobj(allchild(0),'Tag','set_slice');
-if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
+% if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
+% hfig=uifigure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
+% 
+%return
 hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
 BackgroundColor=get(hfig,'Color');
 hh=0.14; % box height (relative)
@@ -4558,7 +4597,7 @@ end
 set(handles.uvmat,'UserData',UvData);
 
 %------------------------------------------------------------------------
-% --- read the data displayed for the input rootfile windows (new): TODO use read_GUI
+% --- read the data displayed for the input rootfile windows 
 %------------------------------------------------------------------------
 function [RootPath,SubDir,RootFile,FileIndices,FileExt,NomType]=read_file_boxes(handles)
 
@@ -4578,7 +4617,7 @@ function [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1,NomType_1]=read_f
 RootPath_1=get(handles.RootPath_1,'String'); % read the data from the file1_input window
 if isequal(get(handles.RootPath_1,'Visible'),'off') || isequal(RootPath_1,'"')
     RootPath_1=get(handles.RootPath,'String');
-end;
+end
 SubDir_1=get(handles.SubDir_1,'String');
 if isequal(get(handles.SubDir_1,'Visible'),'off')|| isequal(SubDir_1,'"')
     SubDir_1=get(handles.SubDir,'String');
