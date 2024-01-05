@@ -6,7 +6,7 @@
 %FctName: name of the Matlab fct to compile (without .m extension)
 
 %=======================================================================
-% Copyright 2008-2022, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) legi.cnrs.fr
 %
