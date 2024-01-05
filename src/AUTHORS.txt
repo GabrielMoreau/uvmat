@@ -1,7 +1,7 @@
 MAIN AUTHOR
 
  * Joel Sommeria (LEGI UMR 5519 - Grenoble - France)
-   Joel.Sommeria (A) legi.cnrs.fr
+   Joel.Sommeria (A) univ-grenoble-alpes.fr
 
 CONTRIBUTORS
 
