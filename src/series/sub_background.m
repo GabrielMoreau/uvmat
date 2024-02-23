@@ -78,8 +78,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
-    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.ProjObject='off';%cannot use projection object(option 'off'/'on',
+    ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.sback';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     

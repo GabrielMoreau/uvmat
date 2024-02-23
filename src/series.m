@@ -117,7 +117,7 @@ set(handles.PairString,'ColumnFormat',{'char'})
 set(handles.PairString,'Data',{''})
 
 % settings of table MaskTable
-set(handles.MaskTable,'ColumnName',{'mask name'})
+%set(handles.MaskTable,'ColumnName',{'mask name'})
 set(handles.PairString,'ColumnEditable',false)
 set(handles.PairString,'ColumnFormat',{'char'})
 set(handles.PairString,'Data',{''})
@@ -3579,10 +3579,10 @@ set(handles.PairString,'Unit','normalized')
 set(handles.PairString,'ColumnWidth',{Pos(3)-5})
 
 %% MaskTable
-set(handles.MaskTable,'Unit','pixel')
-Pos=get(handles.MaskTable,'Position');
-set(handles.MaskTable,'Unit','normalized')
-set(handles.MaskTable,'ColumnWidth',{Pos(3)-5})
+% % set(handles.MaskTable,'Unit','pixel')
+% % Pos=get(handles.MaskTable,'Position');
+% % set(handles.MaskTable,'Unit','normalized')
+% % set(handles.MaskTable,'ColumnWidth',{Pos(3)-5})
 
 %------------------------------------------------------------------------
 % --- Executes on button press in status.
@@ -4033,3 +4033,13 @@ else
     InputTable=get(handles.InputTable,'Data');
     set(handles.OutputPath,'String',InputTable{1,1})
 end
+
+
+
+function Mask_Callback(hObject, eventdata, handles)
+% hObject    handle to Mask (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Mask as text
+%        str2double(get(hObject,'String')) returns contents of Mask as a double
