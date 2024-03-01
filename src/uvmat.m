@@ -1656,10 +1656,10 @@ end
 XmlData.LIFCalib.RefLineCoord=LineData{3}.Coord;
 
 %% rescale the image
-[nby,nbx]=size(UvData.Field.A);
-x=linspace(UvData.Field.Coord_x(1),UvData.Field.Coord_x(2),nbx)-nbx/2;
-y=linspace(UvData.Field.Coord_y(1),UvData.Field.Coord_y(2),nby)-nby/2;
-[X,Y]=meshgrid(x,y);
+% [nby,nbx]=size(UvData.Field.A);
+% x=linspace(UvData.Field.Coord_x(1),UvData.Field.Coord_x(2),nbx)-nbx/2;
+% y=linspace(UvData.Field.Coord_y(1),UvData.Field.Coord_y(2),nby)-nby/2;
+% [X,Y]=meshgrid(x,y);
 %coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
 %UvData.Field.A=double(UvData.Field.A).*(1+coeff_quad*(X.*X+Y.*Y));
 
@@ -1685,9 +1685,10 @@ if numel(find(select_line))==3
     xlabel('azimuth(degrees)')
     ylabel('radius from light source')
     title('ref line in polar coordinates')
-    azimuth_ima=linspace(DataPol.Coord_y(1),DataPol.Coord_y(2),size(DataPol.A,1))-360;%array of angular indices on the transformed image
-    dist_source = interp1(theta_ref,r_ref,azimuth_ima);% get the polar position of the reference line
-    dist_source_pixel=round(size(DataPol.A,2)*(dist_source-DataPol.Coord_x(1))/(DataPol.Coord_x(2)-DataPol.Coord_x(1)));
+    %azimuth_ima=linspace(DataPol.Coord_y(1),DataPol.Coord_y(2),size(DataPol.A,1));%array of angular indices on the transformed image
+   % dist_source = interp1(theta_ref,r_ref,azimuth_ima);% get the polar position of the reference line
+    dist_source = interp1(theta_ref,r_ref,DataPol.theta);% get the polar position of the reference line
+    dist_source_pixel=floor(size(DataPol.A,2)*(dist_source-DataPol.radius(1))/(DataPol.radius(end)-DataPol.radius(1)))+1;
     line_nan= isnan(dist_source);
     dist_source_pixel(line_nan)=1;
     DataPol.A=double(DataPol.A)-XmlData.LIFCalib.BlackOffset;% black background substracted
@@ -1709,11 +1710,11 @@ end
 
 %% get the image A*r
 [npy,npx]=size(Anorm);
-AX=DataPol.Coord_x;
-AY=DataPol.Coord_y;
-dX=(AX(2)-AX(1))/(npx-1);
-dY=(AY(1)-AY(2))/(npy-1);%mesh of new pixels
-[R,Theta]=meshgrid(linspace(AX(1),AX(2),npx),linspace(AY(1),AY(2),npy));
+AX=DataPol.radius;
+AY=DataPol.theta;
+% dX=(AX(2)-AX(1))/(npx-1);
+% dY=(AY(1)-AY(2))/(npy-1);%mesh of new pixels
+[R,Theta]=meshgrid(linspace(AX(1),AX(end),npx),linspace(AY(1),AY(end),npy));%matrix of radius and angles with the same size as DataPol
 A=R.*Anorm;
 A=(A<=0).*ones(npy,npx)+(A>0).*A; %replaces zeros by ones
 A=log(A); % rA(r) should have a slope -gamma in x (radius from laser source)
@@ -1733,6 +1734,8 @@ end
 %% loop on lines iY (angle in polar coordiantes)
 gamma_coeff=NaN(1,npy);
 fitlength=NaN(1,npy);
+%[ThetaMask,RMask] = cart2pol(MaskData.Coord(:,1)-x0,MaskData.Coord(:,2)-y0);
+%ThetaMask=ThetaMask*180/pi
 for iY=1:npy% loop on the y index of the image in polar coordinate
     ALine=A(iY,:);%profile of image luminosity log (vs radial index)
     RLine=R(iY,:);%radius of the reference line (vs radial index)
@@ -1751,18 +1754,22 @@ for iY=1:npy% loop on the y index of the image in polar coordinate
     end
     p = polyfit(RLine,ALine,1);
     gamma_coeff(iY)=-p(1);
-    fitlength(iY)=numel(find(check_good));
+   fitlength(iY)=numel(find(check_good));
 end
+
+%% plot the decay coef versus theta
+figure(13)
+plot(Theta(:,1),100*gamma_coeff)
+xlabel('angle(degree)')
+ylabel('decay coeff(m-1)')
+
 
 %% show and store the rescaled image
 NewImageName=fullfile(get(handles.RootPath,'String'),'LIF_ref_rescaled.png');
 DataPol.A=uint16(1000*A);
 view_field(DataPol);
 imwrite(DataPol.A,NewImageName,'BitDepth',16)
-figure(13)
-plot(Theta(:,1),100*gamma_coeff)
-xlabel('angle(degree)')
-ylabel('decay coeff(m-1)')
+
 
 %% keep the average of gamma_coeff
 XmlData.LIFCalib.DecayRate=mean(gamma_coeff(gamma_coeff>0));

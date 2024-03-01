@@ -10,8 +10,8 @@
 % A: cell array of input images
 % XmlData: cell array of structures defining the calibration parameters for each image
 % ZIndex: index of the reference plane used to define the phys position in 3D
-
-function [A_out,Rangx,Rangy]=phys_ima(A,XmlData,ZIndex)
+% resolution_factor: factor to control the number of pixels of the new image, default value =1 : same nbre of pixels as the original
+function [A_out,Rangx,Rangy]=phys_ima(A,XmlData,ZIndex,resolution_factor)
 xcorner=[];
 ycorner=[];
 npx=[];
@@ -20,6 +20,9 @@ dx=ones(1,numel(A));
 dy=ones(1,numel(A));
 if isstruct(XmlData)
     XmlData={XmlData};
+end
+if ~exist('resolution_factor','var')
+resolution_factor=1;
 end
 
 for icell=1:numel(A)
@@ -49,8 +52,8 @@ Rangy(2)=min(ycorner);
 Rangy(1)=max(ycorner);
 test_multi=(max(npx)~=min(npx)) || (max(npy)~=min(npy)); %different image lengths
 
-npX=1+round((Rangx(2)-Rangx(1))/max(dx));% nbre of pixels in the new image (use the largest resolution max(dx) in the set of images)
-npY=1+round((Rangy(1)-Rangy(2))/max(dy));
+npX=1+round(resolution_factor*(Rangx(2)-Rangx(1))/max(dx));% nbre of pixels in the new image (use the largest resolution max(dx) in the set of images)
+npY=1+round(resolution_factor*(Rangy(1)-Rangy(2))/max(dy));
 
 x=linspace(Rangx(1),Rangx(2),npX);
 y=linspace(Rangy(1),Rangy(2),npY);

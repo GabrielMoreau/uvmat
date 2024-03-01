@@ -297,6 +297,7 @@ for islice=index_j
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         for iview=1:NbView
             % reading input file(s)
+            filecell{iview,index}
             [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['error of input reading: ' errormsg];
@@ -468,7 +469,9 @@ for islice=index_j
     end
     
     %% writing the result file
-    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
+    RootPathOut=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
+    OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+    OutputFile=fullfile_uvmat(RootPathOut,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
     if strcmp(FileExtOut,'.png') %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);

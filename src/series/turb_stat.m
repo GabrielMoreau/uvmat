@@ -1,4 +1,4 @@
-%'aver_stat': calculate Reynolds steress components over time series
+%'aver_stat': calculate Reynolds stress components over time series
 %------------------------------------------------------------------------
 % function ParamOut=turb_stat(Param)
 %
@@ -88,9 +88,6 @@ end
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
-
-%% define the directory for result file (with path=RootPath{1})
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
     
 %% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
@@ -200,20 +197,24 @@ U2Mean_1=0;
 V2Mean_1=0;
 Counter_1=0;
 
+if Param.IndexRange.NbSlice==1
+    interval=Param.IndexRange.incr_i% statistics is done taking into account the input index increment
+else
+    interval=Param.IndexRange.NbSlice;% statistics is done slice by slice without taking into account the input index increment
+end
+
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-% for i_slice=1:Param.IndexRange.NbSlice
-%     i_slice
+for i_slice=1:Param.IndexRange.NbSlice
+    i_slice
     ind_first=Param.IndexRange.first_i;
-    for index_i=ind_first:Param.IndexRange.NbSlice:Param.IndexRange.last_i
+    for index_i=ind_first:interval:Param.IndexRange.last_i
         if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break
         end
         for index_j=first_j:last_j
-            InputFile=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},index_i,index_i,index_j,index_j);
-            [Field,tild,errormsg] = read_field(InputFile,FileType{iview},InputFields{iview});
-            
-            %[Field,tild,errormsg] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+            InputFile=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},index_i,index_i,index_j,index_j)
+            [Field,tild,errormsg] = read_field(InputFile,FileType{iview},InputFields{iview});       
             
             %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
             if index_i==ind_first && index_j==first_j %initiate the output data structure in the first field
@@ -288,16 +289,18 @@ Counter_1=0;
     DataOut.Div2Mean=DataOut.Div2Mean./DataOut.Counter-DataOut.DivMean.*DataOut.DivMean;    
     
     %% writing the result file as netcdf file
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,ind_first,ind_first,first_j,last_j);
+    RootPathOut=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
+    OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+    OutputFile=fullfile_uvmat(RootPathOut,OutputDir,RootFile{1},FileExtOut,NomTypeOut,ind_first,ind_first,first_j,last_j);
     %case of netcdf input file , determine global attributes
     errormsg=struct2nc(OutputFile,DataOut); %save result file
     if isempty(errormsg)
         disp([OutputFile ' written']);
     else
         disp(['error in writting result file: ' errormsg])
-    end
-    
-% end
+    end    
+end
+
 %% open the result file with uvmat (in RUN mode)
 if checkrun && isequal(Param.IndexRange.NbSlice,1)
     uvmat(OutputFile)% open the last result file with uvmat

@@ -242,7 +242,7 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
-    if size(time,1)<MaxIndex_i;
+    if size(time,1)<MaxIndex_i
         msgbox_uvmat('WARNING','maximum i index restricted by the timing of the xml file');
     elseif size(time,2)<MaxIndex_j
         msgbox_uvmat('WARNING','maximum j index restricted by the timing of the xml file');
@@ -2973,3 +2973,26 @@ function CheckLSM_Callback(hObject, eventdata, handles)
 %      set(handles.Patch3,'Visible','off')
 
 % Hint: get(hObject,'Value') returns toggle state of CheckLSM
+
+
+
+function num_resolution_Callback(hObject, eventdata, handles)
+% hObject    handle to num_resolution (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_resolution as text
+%        str2double(get(hObject,'String')) returns contents of num_resolution as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function num_resolution_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to num_resolution (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

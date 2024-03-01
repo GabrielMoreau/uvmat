@@ -1,20 +1,23 @@
-%'extract_multitif': read image series from PCO cameras (tiff image series) and write .png images
-% use a single geometric calibration, with information on the slice positions in case of 3D scanning
+%'extract_multitif_multiplane': read image series from PCO cameras (tiff image series) and write .png images
+% case of multislice views with a distinct geometric calibration for each slice
 %------------------------------------------------------
 % the output file indexing is based on the xml file requested by the
 % function when it is selected (or possibly inserted in this function in the section TEST)
 %  This xml file must contain the following information:
-%   NbDti: the number of 'bursts' -1
-%   NbDtj: number of frames in each burst-1, or number of repetition of a burst sequence defined by Dtj
-%   NbDtk: number of repetitions of a slice scanning process -1 (ignored by default)
+%   NbDti: the number of slices -1
+%   NbDtj: number of frames in each slice -1
+%   NbDtk: number of repetitions of the slice scanning process -1
 % Therefore the total number of frames is  (NbDti+1)*(NbDtj+1)*(NbDtk+1)
-% The frame series is stored in a single folder with two indices i:(NbDti+1)*(NbDtk+1) 
+% The frame series in each slice is stored in a separate folder labeled by_i, i=1:NbDti+1, 
+% an xml file with the same name must be created with the appropiate geometric calibration and  time interval Dti between
+% successive image names in each folder are labeled as _1k_1,_1k_2...._2k_1,_2k_2,...
 %
 % To run the function in the cluster in parallel for each multitif file, indicate nb-slice_i equal to the
 % number input multitif files
 
-
-% function ParamOut=extract_multitif(Param)
+%------------------------------------------------------------------------
+    
+% function ParamOut=extract_multitif_multiplane(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -76,7 +79,7 @@ function ParamOut=extract_multitif(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; % impose calculation in a single process (no parallel processing to avoid 'holes'))
+    ParamOut.NbSlice='on'; % impose calculation in a single process (no parallel processing to avoid 'holes'))
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -125,9 +128,6 @@ else
     WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
 
-%% output directory
-OutputDir=fullfile(Param.InputTable{1,1},[Param.OutputSubDir Param.OutputDirExt]);
-
 %% Timing
 XmlInputFile=Param.ActionInput.XmlFile;
 [XmlInput,errormsg]=imadoc2struct(XmlInputFile,'Camera');
@@ -136,6 +136,15 @@ if ~isempty(errormsg)
     return
 end
 ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
+
+%% output directory
+Nbre_level=XmlInput.Camera.BurstTiming.NbDti+1;
+for idir=1:Nbre_level
+OutputDir{idir}=fullfile(Param.InputTable{1,1},[Param.OutputSubDir '_' num2str(idir) Param.OutputDirExt]);
+if ~exist(OutputDir{idir},'dir')
+    mkdir(OutputDir{idir})
+end
+end
 
 %% create the xml file for timing if it does not exist : example to adapt
 TEST=0;
@@ -172,12 +181,12 @@ end
 %% loop on the files
 % include the first tiff file with no index in the first iteration
 if Param.IndexRange.first_i==1% first slice of processing
-    firstindex=0;
+    firstindex=0;% to read the first multitif with no number
    count=0;
 else
     firstindex=Param.IndexRange.first_i;
     ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
-    NbFrames=numel(imfinfo(ImageName));
+    NbFrames=numel(imfinfo(ImageName));%nbre of frames in each multitif image
    count=Param.IndexRange.first_i*NbFrames;
 end
 for ifile=firstindex:Param.IndexRange.last_i
@@ -187,18 +196,20 @@ for ifile=firstindex:Param.IndexRange.last_i
     else
         ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},['im@' num2str(ifile,'%04d') '.tif'])
     end
-    NbFrames=numel(imfinfo(ImageName));
+    NbFrames=numel(imfinfo(ImageName));% nbre of frames in each multitif file
     for iframe=1:NbFrames
         if isequal(ImagesPerLevel,1)% mode series
             OutputFile=fullfile(OutputDir,['img_' num2str(count+1) '.png']);
         else % indices i and j
             i_index=fix(count/ImagesPerLevel)+1;
+            dir_index=mod(i_index-1,XmlInput.Camera.BurstTiming.NbDti+1)+1;
+            inew=floor((i_index-1)/(XmlInput.Camera.BurstTiming.NbDti+1))+1;
             j_index=mod(count,ImagesPerLevel)+1;
-            OutputFile=fullfile(OutputDir,['img_' num2str(i_index) '_' num2str(j_index) '.png']);
+            OutputFile=fullfile(OutputDir{dir_index},['img_' num2str(inew) 'k_' num2str(j_index) '.png']);
         end
         if Param.CheckOverwrite ||~exist(OutputFile,'file')
-            A=imread(ImageName,iframe);
-            imwrite(A,OutputFile,'BitDepth',16);
+           A=imread(ImageName,iframe);
+           imwrite(A,OutputFile,'BitDepth',16);
             disp([OutputFile ' written'])
         else
             disp([OutputFile ' already exists'])
