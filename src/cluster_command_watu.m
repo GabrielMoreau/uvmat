@@ -18,7 +18,7 @@ function cmd=cluster_command(ListProcessFile,ActionFullName,DirLog,NbProcess, Nb
 
 filename_log=fullfile(DirLog,'job_list.stdout'); % file for output messages of the master oar process
 filename_errors=fullfile(DirLog,'job_list.stderr'); % file for error messages of the master oar process
-        if NbProcess>=8
+        if NbProcess>=6
             bigiojob_string=['+{type = ' char(39) 'bigiojob' char(39) '}/licence=1'];% char(39) is quote - bigiojob limit UVmat parallel launch on cluster to avoid saturation of disk access to data
         else
             bigiojob_string='';
