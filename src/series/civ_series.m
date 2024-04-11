@@ -20,7 +20,7 @@
 %     Param.OutputSubDir: sets the folder name of output file(s,
 %           if absent no file is produced, result in the output structure Data (test mode)
 %     Param.ActionInput: substructure with the parameters provided by the GUI civ_input
-%                      .Civ1: parameters for civ1
+%                      .Civ1: parameters for civ1cc
 %                      .Fix1: parameters for fix1
 %                      .Patch1:
 %                      .Civ2: for civ2
@@ -285,7 +285,11 @@ if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
 for ifield=1:NbField
-    tic
+    tstart=tic;
+    time_civ1=0;
+  time_patch1=0;
+  time_civ2=0;
+  time_patch2=0;
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
         if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -381,7 +385,9 @@ for ifield=1:NbField
                         disp([ImageName_A ' missing'])
                         continue
                     end
+                    tsart_input=tic;
                     [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
+                    time_input=toc(tsart_input);
                 end
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
                 if strcmp(FileExt_B,'.nc') % case of input images in format netcdf
@@ -500,6 +506,7 @@ for ifield=1:NbField
             end
         else %usual PIV
             % caluclate velocity data (y and v in indices, reverse to y component)
+            tstart_civ1=tic;
             [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
@@ -511,6 +518,7 @@ for ifield=1:NbField
             Data.Civ1_V=reshape(-vtable,[],1);
             Data.Civ1_C=reshape(ctable,[],1);
             Data.Civ1_F=reshape(F,[],1);
+            time_civ1=toc(tstart_civ1);
         end
     else% we use existing Civ1 data
         if exist('ncfile','var')
@@ -560,6 +568,7 @@ for ifield=1:NbField
     %% Patch1
     if isfield (Param.ActionInput,'Patch1')
         disp('patch1 started')
+         tstart_patch1=tic;
         if check_civx
             errormsg='Civ Matlab input needed for patch';
             disp_uvmat('ERROR',errormsg,checkrun)
@@ -599,17 +608,20 @@ for ifield=1:NbField
         end
 
         % perform Patch calculation using the UVMAT fct 'filter_tps'
+       
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
         Data.Civ1_FF(ind_good)=int8(FFres);
+        time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
     end
     
     %% Civ2
     if isfield (Param.ActionInput,'Civ2')
         disp('civ2 started')
+        tstart_civ2=tic;
         par_civ2=Param.ActionInput.Civ2;
         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
             par_civ2.ImageA=[];
@@ -764,6 +776,7 @@ for ifield=1:NbField
         end
         
         % calculate velocity data (y and v in image indices, reverse to y component)
+        
         [xtable, ytable, utable, vtable, ctable, F,result_conv,errormsg] = civ (par_civ2);
         
         list_param=(fieldnames(Param.ActionInput.Civ2))';
@@ -805,6 +818,7 @@ for ifield=1:NbField
         Data.Civ2_C=reshape(ctable,[],1);
         Data.Civ2_F=reshape(F,[],1);
         disp('civ2 performed')
+        time_civ2=toc(tstart_civ2);
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
         if exist('ncfile','var')
             CivFile=ncfile;
@@ -835,14 +849,6 @@ for ifield=1:NbField
             Data.(Fix2_param{ilist})=Param.ActionInput.Fix2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix2_param];
-        %
-        %         ListFixParam=fieldnames(Param.ActionInput.Fix2);
-        %         for ilist=1:length(ListFixParam)
-        %             ParamName=ListFixParam{ilist};
-        %             ListName=['Fix2_' ParamName];
-        %             eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
-        %             eval(['Data.' ListName '=Param.ActionInput.Fix2.' ParamName ';'])
-        %         end
         if check_civx
             if ~isfield(Data,'fix2')
                 Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix2'];
@@ -864,6 +870,7 @@ for ifield=1:NbField
     %% Patch2
     if isfield (Param.ActionInput,'Patch2')
         disp('patch2 started')
+        tstart_patch2=tic;
         list_param=fieldnames(Param.ActionInput.Patch2)';
         list_param(strcmp('TestPatch2',list_param))=[];% remove the parameter TestCiv1 from the list
         Patch2_param=regexprep(list_param,'^.+','Patch2_$0');% insert 'Fix1_' before  each string in ListFixParam
@@ -893,13 +900,15 @@ for ifield=1:NbField
                 if isempty(ind_good)
                         disp_uvmat('ERROR','all vectors of civ2 are bad, check input parameters' ,checkrun)
                         return
-        end
+                end
+              
         [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures,Vres,tild,FFres]=...
             filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
         Data.Civ2_U_smooth(ind_good)=Ures;
         Data.Civ2_V_smooth(ind_good)=Vres;
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
+        time_patch2=toc(tstart_patch2);
         disp('patch2 performed')
     end
     
@@ -912,7 +921,14 @@ for ifield=1:NbField
         else
             disp(errormsg)
         end
-        disp(['ellapsed time ' num2str(toc/60,2) ' minutes'])
+        time_total=toc(tstart);
+        disp(['ellapsed time ' num2str(time_total/60,2) ' minutes'])
+        disp(['time image reading ' num2str(time_input/60,2) ' minutes'])
+        disp(['time civ1 ' num2str(time_civ1/60,2) ' minutes'])
+        disp(['time patch1 ' num2str(time_patch1/60,2) ' minutes'])
+        disp(['time civ2 ' num2str(time_civ2/60,2) ' minutes'])
+        disp(['time patch2 ' num2str(time_patch2/60,2) ' minutes'])
+        disp(['time other ' num2str((time_total-time_input-time_civ1-time_patch1-time_civ2-time_patch2)/60,2) ' minutes'])
     end
 end
 

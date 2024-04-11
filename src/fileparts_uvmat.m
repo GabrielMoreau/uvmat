@@ -93,6 +93,8 @@ if ~isempty(r)% FileName end matches num1
         if ~isempty(r) % FileName end matches num3 delim2 num2 delim1 num1
             delim2=r.delim2;
             num3=r.num3;
+            ipair=1;
+            jpair=1;
             switch delim1
                 case '_'
                     j1=str2double(num1);
@@ -100,18 +102,40 @@ if ~isempty(r)% FileName end matches num1
                         case '-'
                             i1=str2double(num3);
                             i2=str2double(num2);
+                            if i2<=i1
+                                ipair=0;
+                            end
                     end
                 case '-'
                     j1=str2double(num2);
                     j2=str2double(num1);
+                    if j2<=j1
+                                jpair=0;
+                    end
                     switch delim2
                         case '_'
                             i1=str2double(num3);
                     end
             end
+            if ipair && jpair
             NomType=[get_type(num3) delim2 get_type(num2) delim1 get_type(num1)];
             RootFile=regexprep(FileName,[num3 delim2 num2 delim1 num1 '$'],'');
+            else
+                if ipair==0
+                    i1=i2;
+                    i2=[];
+                    NomType=[get_type(num2) delim1 get_type(num1)];
+                    RootFile=regexprep(FileName,[ num2 delim1 num1 '$'],'');
+                elseif jpair==0
+                    j1=j2;
+                    j2=[];
+                    NomType=get_type(num1);
+                    RootFile=regexprep(FileName,[num1 '$'],'');
+                end
+            end
+        
         else
+            ipair=1;
             switch delim1
                 case '_'
                     i1=str2double(num2);
@@ -119,9 +143,19 @@ if ~isempty(r)% FileName end matches num1
                 case '-'
                     i1=str2double(num2);
                     i2=str2double(num1);
+                    if i2<=i1
+                        ipair=0;
+                    end
             end
+            if ipair
             NomType=[get_type(num2) delim1 get_type(num1)];
             RootFile=regexprep(FileName,[num2 delim1 num1 '$'],'');
+            else
+                i1=i2;
+                i2=[];% no pair detected if i2<=i1
+                NomType= get_type(num1);
+            RootFile=regexprep(FileName,[ num1 '$'],'');
+            end
         end
         NomType=regexprep(NomType,'-1','-2'); %set 1-2 instead of 1-1
     else% only one number at the end
@@ -151,22 +185,18 @@ else% FileName ends with a letter
 end
 
 %% suppress '_' at the end of RootFile, put it on NomType
-% if strcmp(RootFile(end),'_')
-%     RootFile(end)=[];
-detect=regexp(RootFile,'_$'); %detect '_' at the end of RootFILE
+detect=regexp(RootFile,'_$','once'); %detect '_' at the end of RootFILE
 if ~isempty(detect)
     RootFile=regexprep(RootFile,'_$','');
     NomType=['_' NomType];
 end
 
 %% extract subdirectory for pairs i1-i2 or j1-j2 (or ab, AB)
-% if ~isempty(i2) || ~isempty(j2)
     r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
     if ~isempty(r)
         SubDir=r.subdir;
         RootPath=r.newrootpath;
     end
-% end
 
 
 

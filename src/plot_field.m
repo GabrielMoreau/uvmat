@@ -980,22 +980,23 @@ if test_ima
         end
     else %usual images (no contour)
         % set  colormap for  image display
-        if strcmp(ColorMap,'grayscale')
-            vec=linspace(0,1,255);%define a linear greyscale colormap
-            map=[vec' vec' vec'];
-            colormap(map);  %grey scale color map
-            if siz==3% true color images visualized in BW
-                A=uint16(sum(A,3));%sum the three color components for color images displayed with BW option
-            end
-        elseif strcmp(ColorMap,'BuYlRd')
-            hh=load('BuYlRd.mat');
-            colormap(hh.BuYlRd);
-        else
-            if siz==3 && CheckFixScalar % true color images rescaled by MaxA
-                  A=uint8(255*double(A)/double(MaxA));
-            end
-            colormap(ColorMap); % standard false colors for div, vort , scalar fields
+        switch ColorMap
+            case 'grayscale'
+                vec=linspace(0,1,255);%define a linear greyscale colormap
+                map=[vec' vec' vec'];
+                colormap(map);  %grey scale color map
+                if siz==3% true color images visualized in BW
+                    A=uint16(sum(A,3));%sum the three color components for color images displayed with BW option
+                end
+            case 'BuYlRd'
+                hh=load('BuYlRd.mat');
+                colormap(hh.BuYlRd);
+            case 'truecolor'
+                if siz==3 && CheckFixScalar % true color images rescaled by MaxA
+                    A=uint8(255*double(A)/double(MaxA));
+                end
         end
+  
         
         % interpolate field to increase resolution of image display
         test_interp=0;

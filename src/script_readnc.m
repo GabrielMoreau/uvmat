@@ -1,4 +1,4 @@
-DataFolder='.fsnet/project/meige/2019/19TORE';
+DataFolder='.fsnet/project/coriolis/2024/24PLUME/VectorsEyemotion';
 fileinput={'Tore_a8b40_T22s_N047_A1cm.png.civ.mproj.tfilter_1'}
 fileinput=uigetfile_uvmat('pick an input file',DataFolder);
 Data=nc2struct(fileinput);

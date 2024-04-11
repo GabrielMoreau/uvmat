@@ -98,25 +98,11 @@ for ilist=1:length(FieldNames)
     end
 end
 
-%% reading data
+%% read the hdf file
+Datasets=hdf5load(FileName);%read the hdf file
 
-
-% Data=nc2struct(FileName,'ListGlobalAttribute','CivStage');
-% if isfield(Data,'Txt')
-%      erromsg=['error in read_civdata: ' Data.Txt];
-%     return
-% end
-% % set the list of variables to read and their role
-%[varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Datasets.CivStage);
-% if isempty(varlist)
-%     erromsg=['error in read_civdata: unknow velocity type ' VelType];
-%     return
-% else
-Datasets=hdf5load(FileName);%read the variables in the netcdf file
-%[varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Datasets.CivStage);
-role={'coord_x','coord_y','vector_x','vector_y','ancillary','warnflag','errorflag'};
-vardetect=ones(size(role));
-Field.ListGlobalAttribute= {'Dt','Time','CivStage'};
+%% Global attributes
+Field.ListGlobalAttribute={'Dt','Time','CivStage','NbCoord','NbDim','TimeUnit','CoordUnit'};
 Field.Dt=1;
 Field.Time=0;
 if isfield(Datasets, 'piv1')
@@ -124,15 +110,23 @@ if isfield(Datasets, 'piv1')
 else
     Field.CivStage=3;
 end
+Field.NbCoord=2;
+Field.NbDim=2;
+Field.TimeUnit='s';
+Field.CoordUnit='pixel';
+
+%% reading data
+Field.ListVarName={'X'  'Y'  'U'  'V'  'C'  'F'  'FF'};
+Field.VarDimName={'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec'};
 VelTypeOut=VelType;
 switch VelType
     case {'civ1','filter1'}
         Data=Datasets.piv0;
-        VelTypeOut='filter1';
+        %VelTypeOut='filter1';
     case {'civ2','filter2'}
         Data=Datasets.piv1;
-        VelTypeOut='filter2';
-    case ''
+        %VelTypeOut='filter2';
+    case ''% no field specified as input, choose the most appropriate
         if isfield(Datasets, 'piv1')
             Data=Datasets.piv1;
             VelTypeOut='filter2';
@@ -141,62 +135,47 @@ switch VelType
             VelTypeOut='filter1';
         end 
 end
+npy=double(Datasets.couple.shape_images(1)); %number of pixels along y for the image sources 
 switch VelType
     case {'civ1','civ2'}
         Field.X= double(Data.xs);
-        Field.Y= double(Data.ys);
+        Field.Y= npy-double(Data.ys);
         Field.U= double(Data.deltaxs);
-        Field.U(isnan(Field.U)) = 0;
-        Field.V= double(Data.deltays);
-        Field.V(isnan(Field.V)) = 0;
-    case {'filter1','filter2',''}
+        Field.V= -double(Data.deltays);
+        checkcolor=1;%color representation of the correlation and errors
+    case 'filter1'
+        Field.X= double(Data.ixvecs_approx);
+        Field.Y= npy-double(Data.iyvecs_approx);
+        Field.U= double(Data.deltaxs_approx);
+        Field.V= -double(Data.deltays_approx);
+        checkcolor=0;%no color representation of the correlation and errors
+    case {'filter2',''}
         Field.X= double(Data.ixvecs_final);
-        Field.Y= double(Data.iyvecs_final);
+        Field.Y= npy-double(Data.iyvecs_final);
         Field.U= double(Data.deltaxs_final);
-        Field.U(isnan(Field.U)) = 0;
-        Field.V= double(Data.deltays_final);
-        Field.V(isnan(Field.V)) = 0;
+        Field.V= -double(Data.deltays_final);
+        checkcolor=1;%color representation of the correlation and errors
 end
-Field.ListVarName={'X'  'Y'  'U'  'V'  'C'  'F'  'FF'};
-Field.VarDimName={'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec'};
-Field.C = double(Data.correls_max);
-Field.F=zeros(size(Field.U)); Field.F(Data.errors.keys + 1)=1; % !!! convention matlab vs python
-Field.FF=zeros(size(Field.U)); Field.FF(Data.errors.keys + 1)=1;
-% if vardetect(1)==0
-%      errormsg=[ 'requested field not available in ' FileName '/' VelType ': need to run patch'];
-%      return
-% end
-switch VelTypeOut
-    case {'civ1','filter1'}
-        if isfield(Field,'Patch1_SubDomain')
-            Field.SubDomain=Field.Patch1_SubDomain;
-            Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
-        end
-        if isfield(Field,'Civ1_Dt')
-            Field.Dt=Field.Civ1_Dt;
-        end
-        if isfield(Field,'Civ1_Time')
-            Field.Time=Field.Civ1_Time;
-        end
-    case {'civ2','filter2'}
-        if isfield(Field,'Patch2_SubDomain')
-            Field.SubDomain=Field.Patch2_SubDomain;
-            Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
-        end
-        if isfield(Field,'Civ2_Dt')
-        Field.Dt=Field.Civ2_Dt;
-        end
-        if isfield(Field,'Civ2_Time')
-        Field.Time=Field.Civ2_Time;
-        end
+Field.U(isnan(Field.U)) = 0;
+Field.V(isnan(Field.V)) = 0;
+Field.C=ones(size(Field.U));%default
+Field.F=zeros(size(Field.U));
+Field.FF=zeros(size(Field.U));
+if checkcolor
+    Field.C = double(Data.correls_max);
+    Field.F(Data.errors.keys + 1)=1; % !!! convention matlab vs python
+    Field.FF(Data.errors.keys + 1)=1;
 end
-%Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
+
+%% set variable attributes
 ivar_U_tps=[];
 ivar_V_tps=[];
+role={'coord_x','coord_y','vector_x','vector_y','ancillary','warnflag','errorflag'};
+vardetect=ones(size(role));
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
-    %Field.VarAttribute{ivar}.Mesh=0.025;%typical mesh for histograms O.025 pixel (used in series)
+    Field.VarAttribute{ivar}.Mesh=0.025;%typical mesh for histograms O.025 pixel (used in series)
     Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
@@ -222,9 +201,4 @@ if ~isempty(ivar_V_tps)
     Field.VarAttribute{ivar_V}.VarIndex_tps=ivar_V_tps;
 end
 
-%% update list of global attributes
-Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];
-Field.NbCoord=2;
-Field.NbDim=2;
-Field.TimeUnit='s';
-Field.CoordUnit='pixel';
+
