@@ -854,7 +854,7 @@ if test_ima
     end
     if siz==3
         if np(3)==1
-            siz=2;%B W image
+            siz=2;%grey scale image
         elseif np(3)==3
             siz=3;%color image
         else
@@ -864,7 +864,7 @@ if test_ima
     end
     
     %set for grey scale setting
-    ColorMap='default';
+    ColorMap='default';%default colormap
     if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
         ColorMap=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
     elseif ((siz==2) && (isa(A,'uint8')|| isa(A,'uint16')))% non color images represented in gray scale by default
@@ -995,6 +995,8 @@ if test_ima
                 if siz==3 && CheckFixScalar % true color images rescaled by MaxA
                     A=uint8(255*double(A)/double(MaxA));
                 end
+            otherwise
+                colormap(ColorMap);
         end
   
         
