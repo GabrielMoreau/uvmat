@@ -61,11 +61,11 @@ if ~ischar(fileinput)
     return
 end
 % check the existence (not possible for OpenDAP data)
-if ~isempty(regexp(fileinput,'^http://'))|| exist(fileinput,'file')
+if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
-% else
-%     return %input file does not exist.
+ else
+     return %input file does not exist.
 end
 [tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
@@ -100,10 +100,21 @@ switch FileExt
             return
         end
     case '.h5'
-        hinfo=hdf5info(fileinput);
-        if strcmp(hinfo.GroupHierarchy.Attributes(1).Value.Data,'MultipassPIVResults')
+        hinfo=h5info(fileinput);
+        FileInfo.CivStage=0;
+        for igroup=1:numel(hinfo.Groups)
+            if strcmp(hinfo.Groups(igroup).Name,'/piv0')
+                FileInfo.CivStage=3;
+            end
+            if strcmp(hinfo.Groups(igroup).Name,'/piv1')
+                FileInfo.CivStage=6;
+                break
+            end
+        end
+        if FileInfo.CivStage~=0
             FileInfo.FileType='pivdata_fluidimage';
-            FileInfo.CivStage=6; % A MODIFIER
+        else
+            FileInfo.FileType='h5';
         end
     case '.cine'
         [FileInfo,BitmapInfoHeader, CameraSetup]=readCineHeader(fileinput);

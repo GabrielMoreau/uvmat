@@ -47,12 +47,13 @@ if isfield(Param.IndexRange,'incr_j')
 end
 
 %% determine the list of input file names
-% nbmissing=0;
 NbView=size(InputTable,1);
 i1_series=cell(NbView,1);% initiate index series with empty cells
 i2_series=cell(NbView,1);
 j1_series=cell(NbView,1);
 j2_series=cell(NbView,1);
+
+%LOOP ON INPUT FILE SERIES
 for iview=1:NbView
     r.mode='';
     if isfield (Param.IndexRange,'PairString')
@@ -78,7 +79,7 @@ for iview=1:NbView
             r(1).mode='';
         end
     end
-    
+    % case of free pairs or increment
     if isempty(incr_i) || isempty(incr_j) || isequal(r(1).mode,'*-*')|| isequal(r(1).mode,'*|*')% free pairs or increment
         FilePath=fullfile(InputTable{iview,1},InputTable{iview,2});
         fileinput=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
@@ -129,6 +130,7 @@ for iview=1:NbView
                 j2_series{iview}=j2_series{iview}(ref_j+1,ref_i+1);
             end
         end
+    % case of imposed file index increment
     else
         ref_i=first_i:incr_i:last_i;%default
         ref_j=first_j:incr_j:last_j;%default

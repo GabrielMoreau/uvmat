@@ -66,7 +66,15 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
-    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
+    %%%%% list of possible transform functions (needed only for compilation)
+        ListTransform={'phys','phys_polar','sub_field'};%list of possible transform functions (needed only for compilation)
+        if 0==1 %never satisfied but trigger compilation with the appropriate transform functions
+            for ilist=1:numel(ListTransform)
+                eval(ListTransform)
+            end
+        end
+    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions 
+    %%%%%%%%
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.mproj';%set the output dir extension
@@ -85,9 +93,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
     return
 end
-if 0==1
-    phys; % used to include phys when compiling is done
-end
+
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 ParamOut=[]; %default output
 RUNHandle=[];
@@ -114,7 +120,6 @@ end
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
-% NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
 hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
@@ -125,7 +130,7 @@ hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
 %        fileindex: file index with i and j reshaped as a 1D array
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-if ~isempty(hdisp),delete(hdisp),end;%end the waiting display
+if ~isempty(hdisp),delete(hdisp),end %end the waiting display
 
 NbView=numel(i1_series);%number of input file series (lines in InputTable)
 NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
@@ -133,7 +138,7 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
-NcTypeOptions={'netcdf','civx','civdata'};
+NcTypeOptions={'netcdf','civx','civdata','pivdata_fluidimage'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
@@ -177,6 +182,7 @@ time=mean(time,1); %averaged time taken for the merged field
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default fct handle
+ checksub=0;
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     currentdir=pwd;
     cd(Param.FieldTransform.TransformPath)
@@ -186,7 +192,11 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
         for iview=1:NbView
             XmlData{iview}.TransformInput=Param.TransformInput;
         end
-    end       
+    end 
+    checksub=nargin(transform_fct);% number of input arguments for the selected transform fct
+    if checksub>2 && NbView>2
+        disp_uvmat('WARNING',['only the two first input file series will be combined by ' Param.FieldTransform.TransformName],checkrun)
+    end
 end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
@@ -304,11 +314,13 @@ for index=1:NbField
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
         
-        %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
+        %% transform the input field iview (e.g; phys) if requested (no transform involving two input fields at this stage)
+        checksub=0;
         if ~isempty(transform_fct)
-            if nargin(transform_fct)>=2
+            checksub=nargin(transform_fct);
+            if checksub==2
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});
-            else
+            elseif checksub==1
                 Data{iview}=transform_fct(Data{iview});
             end
         end
@@ -337,8 +349,14 @@ for index=1:NbField
     end
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
 
-    %% merge the NbView fields
-    [MergeData,errormsg]=merge_field(Data);
+    %% merge the NbView fields 
+    if checksub<=2
+        [MergeData,errormsg]=merge_field(Data);%concatene all the input field series by fct merge_data
+    elseif checksub==3
+        MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
+    else
+        MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
+    end
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun);
         return

@@ -85,6 +85,9 @@ switch FileType
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
     case 'pivdata_fluidimage'
+        if ~isfield(ParamIn,'VelType')
+            ParamIn.VelType='';
+        end
         [Field,ParamOut.VelType,errormsg]=read_pivdata_fluidimage(FileName,InputField,ParamIn.VelType);
         ParamOut.CivStage=Field.CivStage;
     case 'civx'% old (obsolete) format for civ results

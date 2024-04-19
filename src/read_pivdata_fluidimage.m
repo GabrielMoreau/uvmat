@@ -76,6 +76,9 @@ end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
+if isempty(FieldNames)||isempty(FieldNames{1})
+    FieldNames={'vec(U,V)'};
+end
 Field=[];
 VelTypeOut=VelType;
 errormsg='';
@@ -83,7 +86,7 @@ if ~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
 end
-if ischar(FieldNames), FieldNames={FieldNames}; end;
+if ischar(FieldNames), FieldNames={FieldNames}; end
 ProjModeRequest='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
@@ -118,6 +121,11 @@ Field.CoordUnit='pixel';
 %% reading data
 Field.ListVarName={'X'  'Y'  'U'  'V'  'C'  'F'  'FF'};
 Field.VarDimName={'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec' 'nb_vec'};
+% Field.VarAttribute{1}.Role='coord_x';
+% Field.VarAttribute{2}.Role='coord_y';
+% Field.VarAttribute{3}.Role='vector_x';
+% Field.VarAttribute{3}.FieldName={'vec(U,V)'};
+
 VelTypeOut=VelType;
 switch VelType
     case {'civ1','filter1'}

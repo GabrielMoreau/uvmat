@@ -65,13 +65,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
         ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         ParamOut.NbSlice='off';%1; ...%nbre of slices, 1 prevents splitting in several processes, ('off' by default)
-        ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
         ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
         ParamOut.FieldTransform = 'off';...%can use a transform function
         ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
         ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
         ParamOut.CPUTime=0.1;% expected time for writting one image ( in minute)
-        ParamOut.OutputDirExt='.extract';%set the output dir extensionextract_rdvision.m
+    ParamOut.OutputDirExt='.extract';%set the output dir extension
     ParamOut.OutputSubDirMode='one'; %output folder given by the folder name of the first input line
     % detect the set of image folder
     RootPath=Param.InputTable{1,1};
@@ -101,11 +101,69 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     hhseries=guidata(hseries); %handles of the elements in 'series'
     set(hhseries.InputTable,'Data',InputTable)
     ParamOut.ActionInput.LogPath=RootPath;% indicate the path for the output info: 0_LOG ....
+
+    % check the names of .seq and .sqb files
+    iview=1;
+    switch Param.InputTable{iview,5}
+        case {'.seq','.sqb'}
+            filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
+            filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
+            if ~exist(filename_seq,'file')
+                msgbox_uvmat('ERROR',[filename_seq ' missing']);
+            end
+            if ~exist(filename_sqb,'file')
+                msgbox_uvmat('ERROR',[filename_sqb ' missing']);
+            end
+            filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%xml at the level of the image folder
+            if ~exist(filexml,'file')
+                msgbox_uvmat('ERROR',[filexml ' missing: needed to get the image organisation and timing ']);
+                return
+            end
+            [XmlData,errormsg]=imadoc2struct(filexml);
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',errormsg);
+                return
+            end
+            timexml=reshape(XmlData.Time(2:end,2:end)',1,[]);
+        otherwise
+            msgbox_uvmat('ERROR','bad input file : select .seq or .sqb for image extraction');
+            return
+    end
+    % get data from .seq file
+    s=ini2struct(filename_seq);
+    SeqData=s.sequenceSettings;
+    SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
+% reading the .sqb file
+    m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
+        'uint32' [1 1] 'garbage1';...
+        'double' [1 1] 'timestamp';...
+        'uint32' [1 1] 'file_idx';...
+        'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
+    
+        timestamp=zeros(1,numel(m.Data));
+        for ii=1: numel(m.Data)
+            timestamp(ii)=m.Data(ii).timestamp;
+        end
+        if numel(timestamp)<= numel(timexml)
+            timexml=timexml(1:numel(timestamp));
+        else
+            msgbox_uvmat('ERROR','time sequence defined by the xml file too small')
+            return
+        end
+        difftime=timestamp-timexml;
+        if max(difftime)>0.01
+        figure
+        plot(timestamp,difftime)
+        xlabel('timestamps(s)')
+        ylabel('time difference(s)')
+        title('discrepency timestamps-timexml') 
+        end
     return
 end
 
-ParamOut=[];
+
 %%%%%%%%%%%% STANDARD PART  %%%%%%%%%%%%
+ParamOut=[];
 %% read input parameters from an xml file if input is a file name (batch mode)
 
 if ischar(Param)
@@ -127,8 +185,6 @@ end
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-
-%OutputDir=[Param.OutputSubDir Param.OutputDirExt];
  
 % numbers of slices and file indices
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
@@ -136,14 +192,9 @@ nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
 
 %determine the file type on each line from the first input file 
-
 FileInfo=get_file_info(filecell{1,1});
 if strcmp(FileInfo.FileType,'rdvision')
-%     if ~isequal(FileInfo.NumberOfFrames,nbfield)
-%         disp_uvmat('WARNING',['the whole series of ' num2str(FileInfo.NumberOfextract_rdvision.mFrames) ' images must be extracted at once'],checkrun)
-%         %rmfield(OutputDir)
-% %         return
-%     end
+
     %% interactive input of specific parameters (for RDvision system)
     display('converting images from RDvision system...')
 else
@@ -165,22 +216,6 @@ NbSlice_calib={};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  loop on the cameras ( #iview)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RootPath=Param.InputTable(:,1);
-% RootFile=Param.InputTable(:,3);
-% SubDir=Param.InputTable(:,2);
-% NomType=Param.InputTable(:,4);
-% FileExt=Param.InputTable(:,5);
-
-% [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
-% if size(time,1)>1
-%     diff_time=max(max(diff(time)));
-%     if diff_time>0
-%         disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
-%     end
-% end
-%
-%      nbfield2=size(time,1);
-checkpreserve=0;% if =1, will npreserve the original images, else it erases them at the end
 
 for iview=1:size(Param.InputTable,1)
     check_xml=0;
@@ -195,14 +230,14 @@ for iview=1:size(Param.InputTable,1)
     newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'extract_rdvision.m
     newxml=[newxml '.xml'];
     
-    %% get the names of .seq and .sqb files
+    %% get the names of .seq and .sqb files and save them to the log output folder .extract
     switch Param.InputTable{iview,5}
         case {'.seq','.sqb'}
             filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
             filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
             errormsg='';
-            if isequal(Param.IndexRange.first_i,1)
-                
+            % backup of the seq, sqb and xml files for the first frame index
+            if isequal(Param.IndexRange.first_i,1)% backup of the seq, sqb and xml files for the first frame index
                 logdir=[Param.OutputSubDir Param.OutputDirExt];
                 [success,errormsg] = copyfile(filename_seq,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.seq']); %copy the seq file in the upper folder
                 if ~success
@@ -214,9 +249,9 @@ for iview=1:size(Param.InputTable,1)
                 end
                 if check_xml
                     [success,errormsg] = copyfile(filexml,[fullfile(RootPath,logdir,Param.InputTable{iview,3}) '.xml']); %copy the original xml file in the upper folder
-                if ~success
-                    disp(errormsg)
-                end
+                    if ~success
+                        disp(errormsg)
+                    end
                 else
                     disp(['error:' filexml ' missing']);
                     return
@@ -309,22 +344,7 @@ for iview=1:size(Param.InputTable,1)
         disp_uvmat('ERROR',errormsg,checkrun)
         return
     end
-    
-    % check the existence of the expected output image files (from the xml)
-    
-    FileDir=SeqData.sequencename;
-     FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
-%     for i1=1:numel(timestamp)/nbfield2
-%         for j1=1:nbfield2
-%             OutputFile=fullfile_uvmat(RootPath,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
-%             try 
-%             A=imread(OutputFile);% check image reading (stop if error)
-%             catch ME
-%                 disp(['checking ' OutputFile])
-%                 disp(ME.message)
-%             end
-%         end
-%     end
+
 end
 
 %% remove binary files if transfer OK

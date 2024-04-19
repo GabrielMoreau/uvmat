@@ -653,7 +653,7 @@ for iview=1:nbview
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
         i1=str2num(get(handles.num_first_i,'String'));
         j1=str2num(get(handles.num_first_j,'String'));
-        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,[])
+        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,[]);
             [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
                 find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
@@ -724,7 +724,7 @@ end
 %% detect root name, nomenclature and indices in the input file name:
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 %%%%%%%%%%%%%%%%%%
-%TODO: case of input by uvmat: do not check agai the input seies %%%%%%%
+%TODO: case of input by uvmat: do not check agai the input series %%%%%%%
 %%%%%%%%%%%%%%%%%%%
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
@@ -2045,7 +2045,7 @@ for iexp=1:NbExp
             end
         end
         
-        %create the executable file
+        %create the executable and log file names
         file_exe_global=fullfile_uvmat('','',Param.InputTable{1,3},ExeExt,OutputNomType,...
             first_i,last_i,first_j,last_j);
         file_exe_global=fullfile(OutputDir,'0_EXE',file_exe_global);
@@ -2054,11 +2054,8 @@ for iexp=1:NbExp
         filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
         
         for iprocess=1:NbProcess
-            %create the executable file
-            batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt));
-            
-            % set the log file name
-            filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));
+            batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt)); % executable file names
+            filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));% corresponding log file names
         end
     end
     
@@ -2076,23 +2073,7 @@ for iexp=1:NbExp
                 case '.m'% Matlab function
                     switch computer
                         case {'GLNX86','GLNXA64','MACI64'}
-                            matlab_ver = ver('MATLAB');
-                            matlab_version = matlab_ver.Version;
-                            cmd=[...
-                                '#!/bin/bash\n'...
-                                'source /etc/profile\n'...
-                                'module purge\n'...
-                                'module load matlab/' matlab_version '\n'...% CHOICE OF MATLAB VERSION
-                                'time_start=$(date +%%s)\n'...
-                                'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog_global ''' <<END_MATLAB\n'...
-                                'addpath(''' path_series ''');\n'...
-                                'addpath(''' Param.Action.ActionPath ''');\n'];
-                            for iprocess=1:NbProcess
-                                cmd=[cmd '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'];
-                            end
-                            cmd=[cmd  'exit\n' 'END_MATLAB\n'...
-                                'time_end=$(date +%%s)\n'...
-                                'echo "global time = " $(($time_end - $time_start)) >> ''' filelog_global '''\n'];
+                            cmd=command_launch_matlab(filelog_global,path_series,Param.Action.ActionPath,Param.Action.ActionName,filexml,'background');
                             fprintf(fid,cmd); % fill the executable file with the  char string cmd
                             fclose(fid); % close the executable filefilelog_global
                             system(['chmod +x ' file_exe_global]); % set the file to executable
@@ -2149,19 +2130,20 @@ for iexp=1:NbExp
                         'umask 002 \n'...
                         ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
                 else
-                    matlab_ver = ver('MATLAB');
-                    matlab_version = matlab_ver.Version;
-                    cmd=[...
-                        '#!/bin/bash\n'...
-                        'source /etc/profile\n'...
-                        'module purge\n'...
-                        'module load matlab/' matlab_version '\n'...% CHOICE OF CURRENT MATLAB VERSION
-                        'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...% open a new Matlab session without display
-                        'addpath(''' path_series ''');\n'...
-                        'addpath(''' Param.Action.ActionPath ''');\n'...
-                        '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'...% launch the Matlab function selected by the GUI 'series'
-                        'exit\n'...
-                        'END_MATLAB\n'];
+                    cmd=command_launch_matlab(filelog_global,path_series,Param.Action.ActionPath,Param.Action.ActionName,filexml{iprocess},'cluster');
+                    % matlab_ver = ver('MATLAB');
+                    % matlab_version = matlab_ver.Version;
+                    % cmd=[...
+                    %     '#!/bin/bash\n'...
+                    %     'source /etc/profile\n'...
+                    %     'module purge\n'...
+                    %     'module load matlab/' matlab_version '\n'...% CHOICE OF CURRENT MATLAB VERSION
+                    %     'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...% open a new Matlab session without display
+                    %     'addpath(''' path_series ''');\n'...
+                    %     'addpath(''' Param.Action.ActionPath ''');\n'...
+                    %     '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'...% launch the Matlab function selected by the GUI 'series'
+                    %     'exit\n'...
+                    %     'END_MATLAB\n'];
                 end
                 fprintf(fid,cmd); % fill the executable file with the  char string cmd
                 fclose(fid); % close the executable file
@@ -3005,10 +2987,12 @@ end
 function [TimeValue,DtValue]=get_time(ref_i,ref_j,PairString,InputTable,FileInfo,TimeName,DtName)
 [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
 FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
-Data=nc2struct(FileName,[]);
+%Data=nc2struct(FileName,[]);
 TimeValue=[];
 DtValue=[];
-if isequal(FileInfo.FileType,'civdata')
+switch FileInfo.FileType
+    case 'civdata'
+    Data=nc2struct(FileName,[]);
     if ismember(TimeName,{'civ1','filter1'})
         if isfield(Data,'Civ1_Time')
         TimeValue=Data.Civ1_Time;
@@ -3024,7 +3008,11 @@ if isequal(FileInfo.FileType,'civdata')
         DtValue=Data.Civ2_Dt;
         end
     end
-else
+    case 'pivdata_fluidimage'
+      TimeValue=ref_i;%default
+      DtValue=1;%default
+    case 'netcdf'
+        Data=nc2struct(FileName,[]);
     if ~isempty(TimeName)&& isfield(Data,TimeName)
         TimeValue=Data.(TimeName);
     end
