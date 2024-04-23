@@ -155,14 +155,14 @@ set(handles.Action,'UserData',NbBuiltinAction)
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [path_series,name,ext]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
-command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
-            'python -c "import fluidimage"'];
-[code, ~] = system(command); 
-if code==0
+% % command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
+% %             'python -c "import fluidimage"'];
+% % [code, ~] = system(command); 
+% % if code==0
     ActionExtList={'.m';'.sh';'.py (in dev.)'}; % default choice of extensions (Matlab fct .m or compiled version .sh
-else
-    ActionExtList={'.m';'.sh'};  % python options not installed
-end
+% % else
+% %     ActionExtList={'.m';'.sh'};  % python options not installed
+% % end
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
@@ -2293,10 +2293,12 @@ for iexp=1:NbExp
             end
             msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
         case 'python'
-            command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
-                'python -m fluidimage.run_from_xml ' filexml{iprocess}];
+            ActionName='fluidimage.run_from_xml';% name of the function to launch
+             command = command_launch_python('','',ActionName,filexml{iprocess});
+            % ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
+            %     'python -m fluidimage.run_from_xml ' filexml{iprocess}];
             fprintf(['command:\n' command '\n\n'])
-            system(command, '-echo');
+            errorcheck=system(command, '-echo')
     end
     if exist(OutputDir,'dir')
         [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);

@@ -31,10 +31,7 @@
 % INPUT:
 % FileName: file name (string).
 % FieldNames =cell of field names to get, which can contain the strings:
-%             'ima_cor': image correlation, vec_c or vec2_C
-%             'vort','div','strain': requires velocity derivatives DUDX...
-%             'error': error estimate (vec_E or vec2_E)
-%             
+% 'U','V','norm(U,V)','curl(U,V)','div(U,V)','strain(U,V)'
 % VelType : character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice, given by vel_type_out{1,2}, is done depending 
 %            if vel_type='filter'; a structured field is sought (filter2 in priority, then filter1)
@@ -67,14 +64,11 @@ function [Field,VelTypeOut,errormsg]=read_civdata(FileName,FieldNames,VelType)
 if ~exist('VelType','var')
     VelType='';
 end
-if isequal(VelType,'*')
-    VelType='';
-end
-if isempty(VelType)
+if isempty(VelType)||strcmp(VelType,'*')
     VelType='';
 end
 if ~exist('FieldNames','var') 
-    FieldNames=[]; %default
+    FieldNames={}; %default
 end
 Field=[];
 VelTypeOut=VelType;
@@ -193,8 +187,8 @@ Field.CoordUnit='pixel';
 function [var,role,vel_type_out,errormsg]=varcivx_generator(ProjModeRequest,vel_type,CivStage) 
 
 %% default input values
-if ~exist('vel_type','var'),vel_type='';end;
-if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
+if ~exist('vel_type','var'),vel_type='';end
+if iscell(vel_type),vel_type=vel_type{1}; end%transform cell to string if needed
 errormsg='';
 
 %% select the priority order for automatic vel_type selection

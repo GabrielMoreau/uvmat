@@ -937,7 +937,8 @@ for icell=1:length(CellInfo)
                         vec_B(ind_in)=vec_A(ICOMB);
                         vec_B(ind_out)=zeros(size(ind_out));
                         A_out=reshape(vec_B,npY,npX);
-                        ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
+                      %  ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
+                      ProjData.(FieldData.ListVarName{ivar}) =mean(A_out,1,'omitnan');
                     elseif nbcolor==3
                         vec_B(ind_in,1:3)=vec_A(ICOMB,:);
                         vec_B(ind_out,1)=zeros(size(ind_out));

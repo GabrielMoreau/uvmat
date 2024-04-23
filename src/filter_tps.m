@@ -3,7 +3,7 @@
 % [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,Rho,Threshold)
 %
 % OUTPUT:
-% SubRange(NbCoord,NbSubdomain,2): range (min, max) of the coordiantes x and y respectively, for each subdomain
+% SubRange(NbCoord,2,NbSubdomain): range (min, max) of the coordinates x and y respectively, for each subdomain
 % NbCentre(NbSubdomain): number of source points for each subdomain
 % FF: false flags
 % U_smooth, V_smooth: filtered velocity components at the positions of the initial data
@@ -13,10 +13,11 @@
 %
 % INPUT:
 % coord=[X Y]: matrix whose first column is the x coordinates of the initial data, the second column the y coordiantes
-% U,V: set of velocity components of the initial data
+% U,V, possibly W: set of velocity components of the initial data
+% SubdomainSize: estimated number of data points in each subdomain
 % Rho: smoothing parameter
 % Threshold: max diff accepted between smoothed and initial data 
-% Subdomain: estimated number of data points in each subdomain
+
 
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France

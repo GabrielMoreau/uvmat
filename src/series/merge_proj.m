@@ -67,12 +67,17 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
     %%%%% list of possible transform functions (needed only for compilation)
-        ListTransform={'phys','phys_polar','sub_field'};%list of possible transform functions (needed only for compilation)
-        if 0==1 %never satisfied but trigger compilation with the appropriate transform functions
+%         ListTransform={'phys','phys_polar','sub_field'};%list of possible transform functions (needed only for compilation)
+        % if 0==1 %never satisfied but trigger compilation with the appropriate transform functions
+        %     phys
+        %     phys_polar
+        %     sub_field
+        try
             for ilist=1:numel(ListTransform)
-                eval(ListTransform)
+                eval(ListTransform{ilist})
             end
         end
+
     ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions 
     %%%%%%%%
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
@@ -318,7 +323,7 @@ for index=1:NbField
         checksub=0;
         if ~isempty(transform_fct)
             checksub=nargin(transform_fct);
-            if checksub==2
+            if checksub>=2
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});
             elseif checksub==1
                 Data{iview}=transform_fct(Data{iview});
@@ -350,13 +355,13 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
 
     %% merge the NbView fields 
-    if checksub<=2
+%     if checksub<=2
         [MergeData,errormsg]=merge_field(Data);%concatene all the input field series by fct merge_data
-    elseif checksub==3
-        MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
-    else
-        MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
-    end
+%     elseif checksub==3
+%         MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
+%     else
+%         MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
+%     end
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun);
         return
