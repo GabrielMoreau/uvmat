@@ -94,7 +94,7 @@ for isub=1:NbSubDomain
             check_empty(isub)=1;
             break %  go to next subdomain
         % if too few selected vectors, increase the subrange for next iteration
-        elseif numel(ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous);
+        elseif numel(ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous)
             SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
             SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
         % subdomain includes enough vectors, perform tps interpolation
@@ -111,30 +111,40 @@ for isub=1:NbSubDomain
             end
             % if no value exceeds threshold, the result is recorded
             if isequal(numel(ind_ind_sel),numel(ind_sel))
-                U_smooth(ind_sel)=U_smooth(ind_sel)+U_smooth_sub;
-                V_smooth(ind_sel)=V_smooth(ind_sel)+V_smooth_sub;
+                x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;
+                y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;
+                x_dist=(Coord(ind_sel,1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
+                y_dist=(Coord(ind_sel,2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
+                weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+                U_smooth(ind_sel)=U_smooth(ind_sel)+weight.*U_smooth_sub;
+                V_smooth(ind_sel)=V_smooth(ind_sel)+weight.*V_smooth_sub;
                 NbCentre(isub)=numel(ind_sel);
                 Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel,:);
                 U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
-                nb_select(ind_sel)=nb_select(ind_sel)+1;
+                nb_select(ind_sel)=nb_select(ind_sel)+weight;
                 display(['tps done in subdomain # ' num2str(isub)  ' among ' num2str(NbSubDomain)])
                 break
             % if too few selected vectors, increase the subrange for next iteration
-            elseif numel(ind_ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous);
+            elseif numel(ind_ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous)
                 SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
                 SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
             % else interpolation-smoothing is done again with the selected vectors
             else
                 [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),rho);
                 [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),rho);
-                U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
-                V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
+                x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;
+                y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;
+                x_dist=(Coord(ind_sel(ind_ind_sel),1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
+                y_dist=(Coord(ind_sel(ind_ind_sel),2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
+                weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+                U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+weight.*U_smooth_sub;
+                V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+weight.*V_smooth_sub;
                 NbCentre(isub)=numel(ind_ind_sel);
                 Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel(ind_ind_sel),:);
                 U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
-                nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+1;
+                nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+weight;
                 display(['tps redone after elimination of erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
                 break
             end

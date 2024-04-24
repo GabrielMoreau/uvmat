@@ -42,7 +42,7 @@ DataOut=DataIn;%default
 if ~exist('Smoothing','var')
 Smoothing=0;
 end
-SubDomainNbPoint=1000; %default, estimated nbre of data source points in a subdomain used for tps
+SubDomainNbPoint=300; %default, estimated nbre of data source points in a subdomain used for tps
 if isfield(DataIn,'SubDomain')
     SubDomainNbPoint=DataIn.SubDomain;%old convention
 end

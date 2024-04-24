@@ -67,16 +67,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
     %%%%% list of possible transform functions (needed only for compilation)
-%         ListTransform={'phys','phys_polar','sub_field'};%list of possible transform functions (needed only for compilation)
-        % if 0==1 %never satisfied but trigger compilation with the appropriate transform functions
-        %     phys
-        %     phys_polar
-        %     sub_field
-        try
-            for ilist=1:numel(ListTransform)
-                eval(ListTransform{ilist})
-            end
-        end
+    if 0==1 %never satisfied but trigger compilation with the appropriate transform functions ('eval' inactive for compilation)
+        phys
+        phys_polar
+        sub_field
+    end
 
     ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions 
     %%%%%%%%
@@ -191,6 +186,9 @@ transform_fct='';%default fct handle
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     currentdir=pwd;
     cd(Param.FieldTransform.TransformPath)
+    if strcmp(Param.FieldTransform.TransformName,'sub_field')
+        checksub=2;% the two into field series will be subtracted
+    end
     transform_fct=str2func(Param.FieldTransform.TransformName);
     cd (currentdir)
     if isfield(Param,'TransformInput')
@@ -198,7 +196,6 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
             XmlData{iview}.TransformInput=Param.TransformInput;
         end
     end 
-    checksub=nargin(transform_fct);% number of input arguments for the selected transform fct
     if checksub>2 && NbView>2
         disp_uvmat('WARNING',['only the two first input file series will be combined by ' Param.FieldTransform.TransformName],checkrun)
     end
@@ -320,12 +317,11 @@ for index=1:NbField
         end
         
         %% transform the input field iview (e.g; phys) if requested (no transform involving two input fields at this stage)
-        checksub=0;
-        if ~isempty(transform_fct)
+        if ~isempty(transform_fct)&& checksub==0
             checksub=nargin(transform_fct);
-            if checksub>=2
+            if nargin(transform_fct)>=2
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});
-            elseif checksub==1
+            else
                 Data{iview}=transform_fct(Data{iview});
             end
         end
@@ -355,13 +351,13 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
 
     %% merge the NbView fields 
-%     if checksub<=2
+    if checksub==0
         [MergeData,errormsg]=merge_field(Data);%concatene all the input field series by fct merge_data
-%     elseif checksub==3
-%         MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
-%     else
-%         MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
-%     end
+    else
+        MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
+    % else
+    %     MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
+    end
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun);
         return

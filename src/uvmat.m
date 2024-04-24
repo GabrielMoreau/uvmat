@@ -3639,7 +3639,7 @@ switch UvData.FileInfo{1}.FieldType
             end
         end
         % case of input vector field, get the scalar used for vector color
-        if ~isempty(regexp(FieldName,'^vec('))
+        if ~isempty(regexp(FieldName,'^vec(','once'))
             list_code=get(handles.ColorCode,'String');% list menu fields
             index_code=get(handles.ColorCode,'Value');% selected string index
             if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')

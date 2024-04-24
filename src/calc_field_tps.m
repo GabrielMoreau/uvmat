@@ -107,11 +107,19 @@ end
 FieldName(check_remove)=[];
 
 %% loop on subdomains
+NbSubDomain
 for isub=1:NbSubDomain
     nbvec_sub=NbCentre(isub);
     check_range=(Coord_interp >=ones(nb_sites,1)*SubRange(:,1,isub)' & Coord_interp<=ones(nb_sites,1)*SubRange(:,2,isub)');
-    ind_sel=find(sum(check_range,2)==nb_coord);% select points whose all coordinates are in the prescribed range
-    nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
+    ind_sel=find(sum(check_range,2)==nb_coord);% select points whose all coordinates are in the prescribed range    
+    x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;%width of the subdomain/pi
+    y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;%width of the subdomain/pi
+    CentreX=(SubRange(1,2,isub)+SubRange(1,1,isub))/2;%centre of the subdomain
+    CentreY=(SubRange(2,2,isub)+SubRange(2,1,isub))/2;
+    x_dist=(Coord_interp(ind_sel,1)-CentreX)/x_width;% relative x distance to the retangle centre*pi/2
+    y_dist=(Coord_interp(ind_sel,2)-CentreY)/y_width;% relative ydistance to the retangle centre
+    weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+    nbval(ind_sel)=nbval(ind_sel)+weight;% records the number of values for eacn interpolation point (in case of subdomain overlap)
     if check_grid
         EM = tps_eval(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the velocity from tps 'sources'
     end
@@ -121,30 +129,30 @@ for isub=1:NbSubDomain
     for ilist=1:length(FieldName)
         switch FieldName{ilist}
             case 'vec(U,V)'
-                DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
-                DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.U(ind_sel)=DataOut.U(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,1);
+                DataOut.V(ind_sel)=DataOut.V(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'U'
-                DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
+                DataOut.U(ind_sel)=DataOut.U(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,1);
             case 'V'
-                DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.V(ind_sel)=DataOut.V(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'norm(U,V)'
-                U=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
-                V=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
+                U=DataOut.U(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,1);
+                V=DataOut.V(ind_sel)+weight.*EM *FieldVar(1:nbvec_sub+3,isub,2);
                 DataOut.norm(ind_sel)=sqrt(U.*U+V.*V);
             case 'curl(U,V)'
-                DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-weight.*EMDY *FieldVar(1:nbvec_sub+3,isub,1)+weight.*EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'div(U,V)'
-                DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.div(ind_sel)=DataOut.div(ind_sel)+weight.*EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
             case 'strain(U,V)'
-                DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+weight.*EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'DUDX(U,V)'
-                DataOut.DUDX(ind_sel)=DataOut.DUDX(ind_sel)+EMDX *FieldVar(1:nbvec_sub+3,isub,1);
+                DataOut.DUDX(ind_sel)=DataOut.DUDX(ind_sel)+weight.*EMDX *FieldVar(1:nbvec_sub+3,isub,1);
             case 'DUDY(U,V)'
-                DataOut.DUDY(ind_sel)=DataOut.DUDY(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1);
+                DataOut.DUDY(ind_sel)=DataOut.DUDY(ind_sel)+weight.*EMDY*FieldVar(1:nbvec_sub+3,isub,1);
             case 'DVDX(U,V)'
-                DataOut.DVDX(ind_sel)=DataOut.DVDX(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.DVDX(ind_sel)=DataOut.DVDX(ind_sel)+weight.*EMDX*FieldVar(1:nbvec_sub+3,isub,2);
             case 'DVDY(U,V)'
-                DataOut.DVDY(ind_sel)=DataOut.DVDY(ind_sel)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.DVDY(ind_sel)=DataOut.DVDY(ind_sel)+weight.*EMDY *FieldVar(1:nbvec_sub+3,isub,2);
         end
     end
 end

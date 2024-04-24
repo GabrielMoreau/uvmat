@@ -202,7 +202,7 @@ switch FileType
                         find(strcmp(ParamIn.Coord_y,VarDimName{ilist}))...
                         find(strcmp(ParamIn.Coord_x,VarDimName{ilist}))];
                 end
-                if ~isempty(DimOrder)
+                if numel(DimOrder)>=ndims(Field.(ListVarName{ilist}))
                     Field.(ListVarName{ilist})=permute(Field.(ListVarName{ilist}),DimOrder);
                     VarDimName{ilist}=VarDimName{ilist}(DimOrder);
                 end
