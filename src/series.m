@@ -1,4 +1,4 @@
-%'series': master function associated to the GUI series.m for analysis field series  
+%'series': master function associated to the GUI series.m for analysis field series
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
 % associated with the GUI series.fig
@@ -34,7 +34,7 @@
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-%  I - MAIN FUNCTION series 
+%  I - MAIN FUNCTION series
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function varargout = series(varargin)
@@ -129,7 +129,7 @@ set(hObject,'DeleteFcn',{@closefcn})%
 % check default input data
 if ~exist('Param','var')
     Param=[]; % default
-end 
+end
 
 %% Read the parameter file series.xml, or created from series.xml.default if it does not exist
 SeriesData=[];
@@ -144,7 +144,7 @@ if exist(xmlfile,'file')
         [success,message]=copyfile(xmlfile,fullfile(path_series,'series_old.xml'));% update the file series.xml inot correctly documented
         delete(xmlfile);
         [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
-    end  
+    end
     SeriesData.SeriesParam=xml2struct(xmlfile);
 end
 
@@ -157,7 +157,7 @@ path_series_fct=fullfile(path_series,'series');%path of the functions in subdire
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
 % % command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
 % %             'python -c "import fluidimage"'];
-% % [code, ~] = system(command); 
+% % [code, ~] = system(command);
 % % if code==0
     ActionExtList={'.m';'.sh';'.py (in dev.)'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 % % else
@@ -184,7 +184,7 @@ TransformPathList=cell(NbBuiltinTransform,1); % initiate the cell matrix of Acti
 TransformPathList(:)={path_transform_fct}; % set the default path to series fcts to all list members
 SeriesData.TransformPath=path_transform_fct;% store the standard path for trqnsform functions (needed for compilation)
 
-%% get the user defined functions stored in the personal file uvmat_perso.mat 
+%% get the user defined functions stored in the personal file uvmat_perso.mat
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
@@ -247,7 +247,7 @@ if isempty(TransformIndex)
 end
 set(handles.TransformName,'Value',TransformIndex)
 set(handles.TransformPath,'String',TransformPathList{TransformIndex})
-   
+
 %% fields input initialisation
 if isfield(Param,'list_fields')&& isfield(Param,'index_fields') &&~isempty(Param.list_fields) &&~isempty(Param.index_fields)
     set(handles.FieldName,'String',Param.list_fields); % list menu fields
@@ -268,7 +268,7 @@ end
 %% introduce the input file name(s) if defined from input Param,
 set(handles.series,'UserData',SeriesData)% initiate Userdata
 if isfield(Param,'InputFile')
-    
+
     %% fill the list of input file series
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
     if isempty(find(cellfun('isempty',InputTable)==0)) % if there is no input file, do not introduce input info
@@ -281,8 +281,8 @@ if isfield(Param,'InputFile')
         TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
-    
-    %% define the default path for the output files 
+
+    %% define the default path for the output files
     [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
     [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
     set(handles.Device,'String',[Device DeviceExt])
@@ -301,9 +301,9 @@ if isfield(Param,'InputFile')
         set(handles.OutputPath,'String',InputPath)
     end
     end
-    
+
     %% determine the selected reference field indices for pair display
-    
+
     [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
     if isempty(i1)
         i1=1;
@@ -332,10 +332,10 @@ if isfield(Param,'InputFile')
     end
     %% enable field and veltype menus, in accordance with the current action
     ActionName_Callback([],[], handles)
-    
+
     %% set length of waitbar
     displ_time(handles)
-    
+
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 end
@@ -383,12 +383,12 @@ end
 %  II - FUNCTIONS FOR INTRODUCING THE INPUT FILES
 % automatically sets the global properties when the rootfile name is introduced
 % then activate the view-field actionname if selected
-% it is activated either by clicking on the RootPath window or by the 
-% browser 
+% it is activated either by clicking on the RootPath window or by the
+% browser
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 % --- fct activated by the browser under 'Open'
-%------------------------------------------------------------------------  
+%------------------------------------------------------------------------
 function MenuBrowse_Callback(hObject, eventdata, handles)
 %% look for the previously opened file 'oldfile'
 InputTable=get(handles.InputTable,'Data');
@@ -480,7 +480,7 @@ end
 
 %------------------------------------------------------------------------
 % --- fct activated by the browser under 'Open campaign/Browse...'
-%------------------------------------------------------------------------ 
+%------------------------------------------------------------------------
 function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 
 %% look for the previously opened file 'oldfile'
@@ -538,8 +538,8 @@ browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campa
 
 % --------------------------------------------------------------------
 % function MenuCampaign_Callback(hObject, eventdata, handles)
-% % -------------------------------------------------------------------- 
-% 
+% % --------------------------------------------------------------------
+%
 % OutPut=browse_data(get(hObject,'Label'),'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
 % if ~isfield(OutPut,'Campaign')
 %     return
@@ -703,16 +703,16 @@ set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 %       or 'one': refresh the list
 %         'append': add a new line to the input table
 function errormsg=display_file_name(handles,Param,iview)
-  
+
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 errormsg=''; % default
 if ischar(Param)
-    fileinput=Param; 
+    fileinput=Param;
 else% input set when series is opened (called by the GUI uvmat)
     fileinput=Param.FileName;
 end
-    
+
 %% get the input root name, indices, file extension and nomenclature NomType
 if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
@@ -752,7 +752,7 @@ end
 
 %% enable other menus and uicontrols
 set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
+set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red
 set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
 drawnow
 
@@ -862,7 +862,7 @@ SeriesData.Ref_i2=i2;
 SeriesData.Ref_j1=j1;
 SeriesData.Ref_j2=j2;
 
-%% define the path for the output files 
+%% define the path for the output files
 [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
 [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
 set(handles.Device,'String',[Device DeviceExt])
@@ -887,7 +887,7 @@ set(handles.series,'UserData',SeriesData)
 
 set(handles.InputTable,'BackgroundColor',[1 1 1])
 
-%% initiate input file series and refresh the current field view:     
+%% initiate input file series and refresh the current field view:
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview);
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
@@ -908,8 +908,8 @@ InputTable=get(handles.InputTable,'Data');
 if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
     MinIndex_j=1; % index j set to 1 by default
     MaxIndex_j=1;
-    MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
-    MaxIndex_i=find(i1_series(1,2,:),1,'last' )-1; % max ref index i detected in the series (corresponding to the last non-zero value of i1_series) 
+    MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
+    MaxIndex_i=find(i1_series(1,2,:),1,'last' )-1; % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
 else
     ref_i=squeeze(max(i1_series(1,:,:),[],2)); % select ref_j index for each ref_i
     ref_j=squeeze(max(j1_series(1,:,:),[],3)); % select ref_i index for each ref_j
@@ -1071,7 +1071,7 @@ if ~isempty(VideoObject)% case of movies
         Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
     end
     TimeName='video';
-end 
+end
 
 
 %% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
@@ -1182,7 +1182,7 @@ set(handles.FileStatus,'CData',CData);
 % ---- determine the menu to put in mode and advice a default choice
 %------------------------------------------------------------------------
 function [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series)
-%------------------------------------------------------------------------    
+%------------------------------------------------------------------------
 ModeMenu={''};
 if isempty(j2_series)% no j pair
     ModeValue=1;
@@ -1388,7 +1388,7 @@ update_waitbar(handles.Waitbar,0)
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in PairString.
 function PairString_CellSelectionCallback(hObject, eventdata, handles)
-%------------------------------------------------------------------------    
+%------------------------------------------------------------------------
 if numel(eventdata.Indices)>=1
     PairString=get(hObject,'Data');
     if ~isempty(PairString{eventdata.Indices(1)})
@@ -1453,13 +1453,13 @@ set(handles.RUN, 'Value',0)
 % RunMode='background': calculation on the local computer, but in a new Matlab session (with no graphic output).
 % RunMode='cluster': calculations dispatched in a cluster, using a managing system, 'oar, 'sge, or 'sgb'.
 % In the latter case, the calculation is split in 'packets' of i index (all j indices are contained in a single packet).
-% This splitting is possible only if the different calculations in the series are independent. Otherwise the action 
+% This splitting is possible only if the different calculations in the series are independent. Otherwise the action
 % function imposes a number of processes NbSlice in input, for instance NbSlice=1 for a time series.
 % If NbSlice is not imposed, the splitting in packets (jobs) is determined
 % so that a job is optimum length AdvisedJobCPUTime), and the total job number in any case smaller
 % than MaxJobNumber (these parameters are defined in the file series.xml in
 % accordance with the management strategy for the cluster). The jobs are
-% dispatched in parallel into NbCore processors by the cluster managing system. 
+% dispatched in parallel into NbCore processors by the cluster managing system.
 
 function errormsg=launch_action(handles)
 errormsg=''; % default
@@ -1516,7 +1516,7 @@ if strcmp(RunMode,'local')
     end
 end
 
-%% Get  parameters from series.xml 
+%% Get  parameters from series.xml
 errormsg=''; % default error message
 ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 
@@ -1541,7 +1541,7 @@ if strcmp(ActionExt,'.sh')
     end
     set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
-    [mcrmajor, mcrminor] = mcrversion;   
+    [mcrmajor, mcrminor] = mcrversion;
     MCRROOT = ['MCRROOT',int2str(mcrmajor),int2str(mcrminor)];
     RunTime = getenv('MCRROOT'); % Just variable MCRROOT with no version in it's name
     if strcmp(RunTime,'')
@@ -1563,7 +1563,7 @@ if strcmp(ActionExt,'.sh')
         else
             errormsg='Action launch interrupted';
             return
-        end       
+        end
     else
         sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionNameVersion '.sh']));
         m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
@@ -1587,9 +1587,9 @@ if strcmp(ActionExt,'.sh')
      set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
 
-%% set nbre of cluster cores and processes: 
-% NbCore is the number of computer processors used 
-% NbProcess is the number of independent processes in which the required calculation is split. 
+%% set nbre of cluster cores and processes:
+% NbCore is the number of computer processors used
+% NbProcess is the number of independent processes in which the required calculation is split.
 % switch RunMode
 %     case {'local','background'}
 %         NbCore=1; % no need to split the calculation
@@ -1704,16 +1704,16 @@ for iexp=1:NbExp
         Param.InputTable(:,2)=ListSubdir(:,iexp);
         OutputSubDir=unique(ListSubdir(:,iexp));
         Param.OutputSubDir=OutputSubDir{1};
-        if numel(OutputSubDir)>1% case 
+        if numel(OutputSubDir)>1% case
             for iout=2:numel(OutputSubDir)
                 Param.OutputSubDir=[Param.OutputSubDir '-' OutputSubDir{iout}];
-            end               
-        end       
+            end
+        end
     end
     [xx,ExpName]=fileparts(Param.InputTable{1,1});
     Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
     Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
-    
+
     %% create the output data directory if needed, after checking its existence
     OutputDir='';
     answer='';
@@ -1789,7 +1789,7 @@ for iexp=1:NbExp
                 return
             end
         end
-        
+
     elseif isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'LogPath')% custom definition of the output dir
         OutputDir=Param.ActionInput.LogPath;
     end
@@ -1805,7 +1805,7 @@ for iexp=1:NbExp
         set(handles.Device,'String',ListDeviceOut{iexp})
         Param.Experiment=ListExpOut{iexp};
         Param.Device=ListDeviceOut{iexp};
-        check_input_file_series(handles)      
+        check_input_file_series(handles)
     end
     DirXml=fullfile(OutputDir,'0_XML');
     if ~exist(DirXml,'dir')
@@ -1820,7 +1820,7 @@ for iexp=1:NbExp
         end
     end
     OutputNomType=nomtype2pair(Param.InputTable{1,4}); % nomenclature for output files
-    
+
     %% get the set of reference input field indices
     first_i=1; % first i index to process
     last_i=1; % last i index to process
@@ -1948,8 +1948,8 @@ for iexp=1:NbExp
             '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
         RunMode = 'python';
     end
-    
-    
+
+
     %% direct processing on the current Matlab session or creation of command files
     filexml=cell(1,NbProcess); % initialisation of the names of the files containing the processing parameters
     extxml=cell(1,NbProcess); % initialisation of the set of labels used for the files documenting each process
@@ -1976,7 +1976,7 @@ for iexp=1:NbExp
         for ilist=1:size(Param.InputTable,1)
             Param.InputTable{ilist,1}=regexprep(Param.InputTable{ilist,1},'\','/'); % correct path name for PCWIN system
         end
-        
+
         if isfield(Param,'OutputSubDir')
             t=struct2xml(Param);
             t=set(t,1,'name','Series');
@@ -1996,7 +1996,7 @@ for iexp=1:NbExp
             switch ActionExt
                 case '.m'
                     h_fun(Param); % direct launching
-                    
+
                 case '.sh'
                     switch computer
                         case {'PCWIN','PCWIN64'} %Windows system
@@ -2008,7 +2008,7 @@ for iexp=1:NbExp
             end
         end
     end
-    
+
     if ~strcmp (RunMode,'local') && ~strcmp(RunMode,'python')
         %% processing on a different session of the same computer (background) or cluster, create executable files
         batch_file_list=cell(NbProcess,1); % initiate the list of executable files
@@ -2044,7 +2044,7 @@ for iexp=1:NbExp
                 msgbox_uvmat('WARNING',{['unable to set group write access to ' DirLog ':']; msg}); % error message for directory creation
             end
         end
-        
+
         %create the executable and log file names
         file_exe_global=fullfile_uvmat('','',Param.InputTable{1,3},ExeExt,OutputNomType,...
             first_i,last_i,first_j,last_j);
@@ -2052,17 +2052,17 @@ for iexp=1:NbExp
         filelog_global=fullfile_uvmat('','',Param.InputTable{1,3},'.log',OutputNomType,...
             first_i,last_i,first_j,last_j);
         filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
-        
+
         for iprocess=1:NbProcess
             batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt)); % executable file names
             filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));% corresponding log file names
         end
     end
-    
+
     %% launch the executable files for background or cluster processing
-    
+
     switch RunMode
-        
+
         case 'background'
             [fid,message]=fopen(file_exe_global,'w');
             if isequal(fid,-1)
@@ -2114,7 +2114,7 @@ for iexp=1:NbExp
                     end
                     msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background for ' ExpName ': press STATUS to see results'])
             end
-            
+
         case 'cluster' % option 'oar-parexec' used
             %create subdirectory for oar commands
             for iprocess=1:NbProcess
@@ -2173,7 +2173,7 @@ for iexp=1:NbExp
             system(['chmod +x ' ListProcess]); % set the file to executable
             else
                 errormsg=['error for writting the executable file:' errormsg];
-            end       
+            end
             CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
             LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
@@ -2193,7 +2193,7 @@ for iexp=1:NbExp
                 msgbox_uvmat('ERROR',result)
             end
             %     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct
-            
+
             %         %create subdirectory for pbs command and log files
             %         DirPBS=fullfile(OutputDir,'0_PBS'); % todo : common name OAR/PBS
             %         if exist(DirPBS,'dir')% delete the content of the dir 0_LOG to allow new input
@@ -2233,12 +2233,12 @@ for iexp=1:NbExp
             %         fprintf(pbs_command); % display in command line
             %         %system(pbs_command);
             %         msgbox_uvmat('CONFIRMATION',[ActionFullName ' command ready to be launched in cluster'])
-            
+
         case 'cluster_sge' % for PSMN % TODO: use the standard 'cluster' config with an external fct
             % Au PSMN, on ne cr??e pas 1 job avec plusieurs c??urs, mais N jobs de 1 c??urs
             % o?? N < 1000.
             %create subdirectory for pbs command and log files
-            
+
             DirSGE=fullfile(OutputDir,'0_SGE');
             if exist(DirSGE,'dir')% delete the content of the dir 0_LOG to allow new input
                 curdir=pwd;
@@ -2255,7 +2255,7 @@ for iexp=1:NbExp
             maxImgsPerJob = ceil(length(batch_file_list)/NbCore);
             disp(['Max number of jobs: ' num2str(NbCore)])
             disp(['Images per job: ' num2str(maxImgsPerJob)])
-            
+
             iprocess = 1;
             imgsInJob = [];
             currJobIndex = 1;
@@ -2293,12 +2293,9 @@ for iexp=1:NbExp
             end
             msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
         case 'python'
-            ActionName='fluidimage.run_from_xml';% name of the function to launch
-             command = command_launch_python('','',ActionName,filexml{iprocess});
-            % ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
-            %     'python -m fluidimage.run_from_xml ' filexml{iprocess}];
+            command = command_launch_python(filexml{iprocess});
             fprintf(['command:\n' command '\n\n'])
-            errorcheck=system(command, '-echo')
+            [status, result] = call_command_clean(command);
     end
     if exist(OutputDir,'dir')
         [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);
@@ -2395,7 +2392,7 @@ if isequal(ActionName,'more...')
         return
     end
     [tild,ActionName,ActionExt]=fileparts(FileName);
-    
+
     % insert the choice in the menu ActionName
     ActionIndex=find(strcmp(ActionName,ActionList),1); % look for the selected function in the menu Action
     PathName=regexprep(PathName,'/$','');
@@ -2407,7 +2404,7 @@ if isequal(ActionName,'more...')
         ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)]; % the selected function is appended in the menu, before the last item 'more...'
          ActionPathList=[ActionPathList; PathName];
     end
-    
+
     % record the file extension and extend the path list if it is a new extension
     ActionExtList=get(handles.ActionExt,'String');
     ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
@@ -2422,13 +2419,13 @@ if isequal(ActionName,'more...')
         ActionPathList(NbBuiltinAction+1:end-4,:)=[];
         ActionIndex=ActionIndex-nbremove;
     end
-    
+
     % record action menu, choice and path
     set(handles.ActionName,'Value',ActionIndex)
     set(handles.ActionName,'String',ActionList)
        set(handles.ActionName,'UserData',ActionPathList);
     set(handles.ActionExt,'Value',ActionExtIndex)
-        
+
     %record the user defined menu additions in personal file profil_perso
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -2607,7 +2604,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
             if warn_coord
                 msgbox_uvmat('WARNING','coordinate names do not exist in the second netcdf input file')
             end
-            
+
             set(handles.FieldName_1,'Visible','on')
             set(handles.FieldName_1,'Value',1)
             set(handles.FieldName_1,'String',FieldList_1)
@@ -2729,7 +2726,7 @@ end
 FieldTransformVisible='off';  %hidden by default
 if isfield(ParamOut,'FieldTransform')
     if ~strcmp(ParamOut.FieldTransform,'off')
-    FieldTransformVisible='on';  
+    FieldTransformVisible='on';
     end
     if iscell(ParamOut.FieldTransform)
         SeriesData.TransformList=ParamOut.FieldTransform;
@@ -2768,7 +2765,7 @@ if isfield(ParamOut,'CPUTime')
     set(handles.num_CPUTime,'String',num2str(ParamOut.CPUTime));
 end
 
-%% definition of the path for the output files 
+%% definition of the path for the output files
 InputTable=get(handles.InputTable,'Data');
 [OutputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
 [OutputPath,Experiment,ExperimentExt]=fileparts(OutputPath);
@@ -2781,8 +2778,8 @@ set(handles.Experiment_title,'Visible','on')
 set(handles.Experiment_title,'Visible','on')
 set(handles.OutputPath,'Visible','on')
 set(handles.OutputPathBrowse,'Visible','on')
-    
-%% definition of the subdirectory containing the output files 
+
+%% definition of the subdirectory containing the output files
 
 if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))
     OutputDirExt='.series'; % default
@@ -2811,7 +2808,7 @@ switch OutputSubDirMode
         OutputDirVisible='on';
         SubDirOut=InputTable{1,2}; % use the first subdir name (+OutputDirExt) as output  subdirectory
     case 'two'
-        OutputDirVisible='on';   
+        OutputDirVisible='on';
         SubDir=InputTable(1:2,2); % set of subdirectories
         SubDirOut=SubDir{1};
         if numel(SubDir)>1
@@ -2891,7 +2888,7 @@ if isequal(field,'add_field...')
     InputTable=Param.InputTable(iview,:);
     % check the existence of the first file in the series
     first_j=[];last_j=[];MinIndex_j=1;MaxIndex_j=1; % default setting for index j
-    if isfield(Param.IndexRange,'first_j') % if index j is used     
+    if isfield(Param.IndexRange,'first_j') % if index j is used
         first_j=Param.IndexRange.first_j;
         last_j=Param.IndexRange.last_j;
         MinIndex_j=Param.IndexRange.MinIndex_j(iview);
@@ -2901,7 +2898,7 @@ if isequal(field,'add_field...')
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString{iview}; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     LineIndex=iview(1);
-    if numel(iview)>1      
+    if numel(iview)>1
         answer=msgbox_uvmat('INPUT_TXT',['select the line of the input table:' num2str(iview)] ,num2str(iview(1)));
         LineIndex=str2num(answer);
     end
@@ -2947,7 +2944,7 @@ if isequal(field,'add_field...')
             XName=GetFieldData.Coordinates.Coord_x;
             YName=GetFieldData.Coordinates.Coord_y;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-            % get the time info                     
+            % get the time info
             TimeTable=get(handles.TimeTable,'Data');
             switch TimeNameStr
                 case 'file index'
@@ -2955,9 +2952,9 @@ if isequal(field,'add_field...')
                 case 'attribute'
                     TimeName=['att:' GetFieldData.Time.TimeName];
                     % update the time table
-                    TimeTable{LineIndex,2}=get_time(Param.IndexRange.MinIndex_i(LineIndex),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Min time     
-                    TimeTable{LineIndex,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % first time              
-                    TimeTable{LineIndex,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % last time                     
+                    TimeTable{LineIndex,2}=get_time(Param.IndexRange.MinIndex_i(LineIndex),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Min time
+                    TimeTable{LineIndex,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % first time
+                    TimeTable{LineIndex,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % last time
                     TimeTable{LineIndex,5}=get_time(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Max time
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
@@ -3093,7 +3090,7 @@ if strcmp(field,'add_field...')
         set(handles.FieldName_1,'Value',1)
         set(handles.FieldName_1,'String',[FieldList; {'add_field...'}]);
     end
-end   
+end
 
 
 %%%%%%%%%%%%%
@@ -3121,7 +3118,7 @@ if ~isempty(indiff)
 end
 
 %------------------------------------------------------------------------
-% --- determine the list of index pairstring of processing file 
+% --- determine the list of index pairstring of processing file
 function [num_i1,num_i2,num_j1,num_j2,num_i_out,num_j_out]=find_file_indices(num_i,num_j,ind_shift,NomType,mode)
 %------------------------------------------------------------------------
 num_i1=num_i; % set of first image numbers by default
@@ -3151,13 +3148,13 @@ elseif isequal (mode,'series(Dj)')||isequal (mode,'bursts')
         num_j1_col=num_j+ind_shift(1); % set of first image numbers
         num_j2_col=num_j+ind_shift(2);
         % adjust the first field number
-        indsel=find((num_j1_col >= 1));   
+        indsel=find((num_j1_col >= 1));
         num_j_out=num_j(indsel);
         num_j1_col=num_j1_col(indsel);
         num_j2_col=num_j2_col(indsel);
         [num_i1,num_j1]=meshgrid(num_i,num_j1_col);
         [num_i2,num_j2]=meshgrid(num_i,num_j2_col);
-    end    
+    end
 end
 
 %------------------------------------------------------------------------
@@ -3247,10 +3244,10 @@ if get(handles.EditObject,'Value')
         msgbox_uvmat('ERROR','no projection object available');
     end
 else
-    hset_object=findobj(allchild(0),'Tag','set_object'); 
+    hset_object=findobj(allchild(0),'Tag','set_object');
     if ~isempty(hset_object)
         set(get(hset_object,'Children'),'Enable','off')
-    end 
+    end
 end
 
 %------------------------------------------------------------------------
@@ -3384,7 +3381,7 @@ TransformPathList=get(handles.TransformName,'UserData');
 nb_builtin_transform=4;
 
 %% browse transform functions with the input menu option more...
-if isequal(TransformName,'more...')% browse transform functions     
+if isequal(TransformName,'more...')% browse transform functions
     FileName=uigetfile_uvmat('Pick a transform function',get(handles.TransformPath,'String'),'.m');
     if isempty(FileName)
         return     %browser closed without choice
@@ -3402,21 +3399,21 @@ if isequal(TransformName,'more...')% browse transform functions
         set(handles.TransformName,'String',TransformList)
         TransformPathList=[TransformPathList;{TransformPath}];
     else% the input function already exist, we update its path (possibly new)
-        TransformPathList{TransformIndex}=TransformPath; % 
+        TransformPathList{TransformIndex}=TransformPath; %
         set(handles.TransformName,'Value',TransformIndex)
     end
-   % save the new menu in the personal file 'uvmat_perso.mat' 
+   % save the new menu in the personal file 'uvmat_perso.mat'
    dir_perso=prefdir; % personal Matalb directory
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
    if exist(profil_perso,'file')
        for ilist=nb_builtin_transform+1:numel(TransformPathList)
            TransformListUser{ilist-nb_builtin_transform}=TransformList{ilist};
            TransformPathListUser{ilist-nb_builtin_transform}=TransformPathList{ilist};
-       end 
+       end
        TransformPathListUser=TransformPathListUser';
        TransformListUser=TransformListUser';
        save (profil_perso,'TransformPathListUser','TransformListUser','-append'); % store the root name for future opening of uvmat
-   end 
+   end
 end
 
 %% display the current function path
@@ -3506,7 +3503,7 @@ if isfield(Param,'InputFields')
     set(handles.FieldName,'String',[ListField;{'add_field...'}])
      set(handles.FieldName,'Value',1:numel(ListField))
      set(handles.FieldName,'Visible','on')
-end       
+end
 if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
 %     set(handles.ActionInput,'Visible','on')
 %     set(handles.ActionInput,'Value',0)
@@ -3525,13 +3522,13 @@ if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
     set(handles.ViewObject,'Visible','on')
     set(handles.EditObject,'Visible','on')
     set(handles.DeleteObject,'Visible','on')
-else     
+else
     set(handles.ProjObjectName,'String','')
     set(handles.ProjObjectName,'Visible','off')
     set(handles.ViewObject,'Visible','off')
     set(handles.EditObject,'Visible','off')
-    set(handles.DeleteObject,'Visible','off')     
-end     
+    set(handles.DeleteObject,'Visible','off')
+end
 set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magenta to indicate that it should be activated
 
 
@@ -3589,7 +3586,7 @@ if get(handles.status,'Value')
     drawnow
     Param=read_GUI(handles.series);
     RootPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
-    if ~isfield(Param,'OutputSubDir')   
+    if ~isfield(Param,'OutputSubDir')
         msgbox_uvmat('ERROR','no standard sub-directory definition for output files, use a browser to check the output')
         set(handles.status,'BackgroundColor',[0 1 0])
         return
@@ -3613,7 +3610,7 @@ else
 end
 
 
-%------------------------------------------------------------------------   
+%------------------------------------------------------------------------
 % launched by selecting a file on the list
 %------------------------------------------------------------------------
 function view_file(hObject, eventdata)
@@ -3640,10 +3637,10 @@ if exist(FullSelectName,'dir')% a directory has been selected
     end
     set(hObject,'UserData',FullSelectName)
     hfig=get(hObject,'parent');
-    htitlebox=findobj(hfig,'tag','titlebox');    
+    htitlebox=findobj(hfig,'tag','titlebox');
     set(htitlebox,'String',FullSelectName)
 elseif exist(FullSelectName,'file')%visualise the vel field if it exists
-    FileInfo=get_file_info(FullSelectName);    
+    FileInfo=get_file_info(FullSelectName);
     if strcmp(FileInfo.FileType,'txt')
         edit(FullSelectName)
     elseif strcmp(FileInfo.FileType,'xml')
@@ -3655,7 +3652,7 @@ elseif exist(FullSelectName,'file')%visualise the vel field if it exists
 end
 
 
-%------------------------------------------------------------------------   
+%------------------------------------------------------------------------
 % launched by refreshing the status figure
 %------------------------------------------------------------------------
 function refresh_GUI(hfig)
@@ -3710,15 +3707,15 @@ set(htitlebox,'String', [OutputDir{1};message])
 
 %% update the waitbar
 hwaitbar=findobj(hfig,'tag','waitbar');
-if ~isempty(NbOutputFile) 
+if ~isempty(NbOutputFile)
     BarPosition=get(hwaitbar,'Position');
     BarPosition(3)=0.9*numel(datnum)/NbOutputFile;
     set(hwaitbar,'Position',BarPosition)
 end
 
-%------------------------------------------------------------------------ 
+%------------------------------------------------------------------------
 % --- Executes on selection change in ActionExt.
-%------------------------------------------------------------------------ 
+%------------------------------------------------------------------------
 function ActionExt_Callback(hObject, eventdata, handles)
 
 ActionExtList=get(handles.ActionExt,'String');
@@ -3732,7 +3729,7 @@ function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
 
 %------------------------------------------------------------------------
-% --- set the visibility of relevant velocity type menus: 
+% --- set the visibility of relevant velocity type menus:
 function menu=set_veltype_display(Civ,FileType)
 %------------------------------------------------------------------------
 if ~exist('FileType','var')
@@ -3791,7 +3788,7 @@ Height=min(0.8*ScreenSize(4),300);
 Left=ScreenSize(3)- Width-40; % right edge close to the right, with margin=40
 Bottom=ScreenSize(4)-Height-40; % put fig at top right
 hfig=findobj(allchild(0),'Tag','set_slice');
-if ~isempty(hfig),delete(hfig), end; % delete existing version of the GUI 
+if ~isempty(hfig),delete(hfig), end; % delete existing version of the GUI
 hfig=figure('name','set_pairs','tag','set_pairs','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
 BackgroundColor=get(hfig,'Color');
 SeriesData=get(handles.series,'UserData');
@@ -3824,8 +3821,8 @@ for iline=1:size(InputTable,1)
 end
 viewcell=viewcell';
 ModeMenu={'bursts';'series(Dj)'};
-ModeValue=1;                                               
-                   %i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo                              
+ModeValue=1;
+                   %i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right'); % title
@@ -3864,7 +3861,7 @@ drawnow
 function ListView_Callback(hObject,eventdata)
 Mode_Callback(hObject,eventdata)
 
-%------------------------------------------------------------------------    
+%------------------------------------------------------------------------
 function Mode_Callback(hObject,eventdata)
 %% get input info
 hseries=findobj(allchild(0),'tag','series'); % handles of the GUI series
