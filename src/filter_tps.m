@@ -1,6 +1,6 @@
 %'filter_tps': find the thin plate spline coefficients for interpolation-smoothing
 %------------------------------------------------------------------------
-% [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,Rho,Threshold)
+% [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,FieldSmooth,Threshold)
 %
 % OUTPUT:
 % SubRange(NbCoord,2,NbSubdomain): range (min, max) of the coordinates x and y respectively, for each subdomain
@@ -15,7 +15,7 @@
 % coord=[X Y]: matrix whose first column is the x coordinates of the initial data, the second column the y coordiantes
 % U,V, possibly W: set of velocity components of the initial data
 % SubdomainSize: estimated number of data points in each subdomain
-% Rho: smoothing parameter
+% FieldSmooth: smoothing parameter
 % Threshold: max diff accepted between smoothed and initial data 
 
 
@@ -37,7 +37,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,Rho,Threshold)
+function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,FieldSmooth,Threshold)
 
 %% adjust subdomain decomposition
 warning off
@@ -60,7 +60,7 @@ CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 
 %% smoothing parameter
-rho=Siz(1)*Siz(2)*Rho/1000;%optimum rho increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
+smoothing=Siz(1)*Siz(2)*FieldSmooth/1000;%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
 
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
@@ -99,8 +99,8 @@ for isub=1:NbSubDomain
             SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
         % subdomain includes enough vectors, perform tps interpolation
         else
-            [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel,:),U(ind_sel),rho);
-            [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel,:),V(ind_sel),rho);
+            [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel,:),U(ind_sel),smoothing);
+            [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel,:),V(ind_sel),smoothing);
             UDiff=U_smooth_sub-U(ind_sel);% difference between interpolated U component and initial value
             VDiff=V_smooth_sub-V(ind_sel);% difference between interpolated V component and initial value
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
@@ -131,8 +131,8 @@ for isub=1:NbSubDomain
                 SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
             % else interpolation-smoothing is done again with the selected vectors
             else
-                [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),rho);
-                [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),rho);
+                [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),smoothing);
+                [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),smoothing);
                 x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;
                 y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;
                 x_dist=(Coord(ind_sel(ind_ind_sel),1)-CentreX(isub))/x_width;% relative x distance to the retangle centre

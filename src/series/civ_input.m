@@ -423,7 +423,7 @@ Param.Fix1.MinCorr=0.2000;
 %Param.CheckPatch1=1;
 Param.Patch1.FieldSmooth=10;
 Param.Patch1.MaxDiff=1.5000;
-Param.Patch1.SubDomainSize=1000;
+Param.Patch1.SubDomainSize=250;
 Param.Patch1.TestPatch1=0;
 
 %% Civ2 parameters
@@ -450,7 +450,7 @@ Param.Fix2.MinCorr=0.2000;
 %Param.CheckPatch2=1;
 Param.Patch2.FieldSmooth=2;
 Param.Patch2.MaxDiff=1.5000;
-Param.Patch2.SubDomainSize=1000;
+Param.Patch2.SubDomainSize=500;
 Param.Patch2.TestPatch2=0;
 
 fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters

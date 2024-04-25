@@ -11,7 +11,7 @@
 % set_subdomains and tps_coeff_field.
 %
 %------------------------------------------------------------------------
-% [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
+% [U_smooth,U_tps]=tps_coeff(ctrs,U,smoothing)
 %------------------------------------------------------------------------
 % OUTPUT:
 %  U_smooth: values of the quantity U at the N centres after smoothing
@@ -20,7 +20,7 @@
 % INPUT:
 %  ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension)
 %  U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
-%  Smoothing: smoothing parameter: the result is smoother for larger Smoothing.
+%  smoothing: smoothing parameter: the result is smoother for larger smoothing.
 %
 % RELATED FUNCTIONS:
 %  tps_eval, tps_eval_dxy
@@ -44,14 +44,14 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
+function [U_smooth,U_tps]=tps_coeff(ctrs,U,smoothing)
 %------------------------------------------------------------------------
 warning off
 N=size(ctrs,1);% nbre of source centres
 NbDim=size(ctrs,2);% space dimension (2 or 3)
 U = [U; zeros(NbDim+1,1)];
 EM = tps_eval(ctrs,ctrs);
-SmoothingMat=Smoothing*eye(N,N);%  Smoothing=1/(2*omega) , omega given by fasshauer;
+SmoothingMat=smoothing*eye(N,N);%  smoothing=1/(2*omega) , omega given by fasshauer;
 SmoothingMat=[SmoothingMat zeros(N,NbDim+1)];
 PM=[ones(N,1) ctrs];
 IM=[EM+SmoothingMat; [PM' zeros(NbDim+1,NbDim+1)]];

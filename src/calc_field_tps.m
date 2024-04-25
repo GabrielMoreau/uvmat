@@ -142,9 +142,9 @@ for isub=1:NbSubDomain
             case 'curl(U,V)'
                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-weight.*EMDY *FieldVar(1:nbvec_sub+3,isub,1)+weight.*EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'div(U,V)'
-                DataOut.div(ind_sel)=DataOut.div(ind_sel)+weight.*EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.div(ind_sel)=DataOut.div(ind_sel)+weight.*EMDX*FieldVar(1:nbvec_sub+3,isub,1)+weight.*EMDY*FieldVar(1:nbvec_sub+3,isub,2);
             case 'strain(U,V)'
-                DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+weight.*EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
+                DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+weight.*EMDY*FieldVar(1:nbvec_sub+3,isub,1)+weight.*EMDX*FieldVar(1:nbvec_sub+3,isub,2);
             case 'DUDX(U,V)'
                 DataOut.DUDX(ind_sel)=DataOut.DUDX(ind_sel)+weight.*EMDX *FieldVar(1:nbvec_sub+3,isub,1);
             case 'DUDY(U,V)'
