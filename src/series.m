@@ -159,7 +159,7 @@ path_series_fct=fullfile(path_series,'series'); % path of the functions in subdi
 % %             'python -c "import fluidimage"'];
 % % [code, ~] = system(command);
 % % if code==0
-    ActionExtList={'.m';'.sh';'.py (in dev.)'}; % default choice of extensions (Matlab fct .m or compiled version .sh
+    ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 % % else
 % %     ActionExtList={'.m';'.sh'};  % python options not installed
 % % end
@@ -1491,7 +1491,7 @@ if isfield(Param.Action,'RunMode')
 end
 ActionExt='.m'; % default
 if isfield(Param.Action,'ActionExt')
-    ActionExt=Param.Action.ActionExt; % '.m', '.sh' (compiled)  or '.py' (Python)
+    ActionExt=Param.Action.ActionExt; % '.m', '.sh' (compiled)  or 'fluidimage' (Python)
     Param.Action=rmfield(Param.Action,'ActionExt'); % remove from the recorded xml file to avoid interference during ImportConfig
 end
 ActionName=Param.Action.ActionName;
@@ -1937,14 +1937,14 @@ for iexp=1:NbExp
     set(handles.status,'UserData',StatusData)
 
     %% case of a function in Python
-    if strcmp(ActionExt, '.py (in dev.)')
+    if strcmp(ActionExt, 'fluidimage')
         fprintf([
             '\n' ...
             '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n' ...
-            'The option .py is used. It is still in development.\n' ...
-            'To try it, first install pyper and the most recent version of fluidimage\n' ...
-            '(see https://bitbucket.org/fluiddyn/fluidimage).\n' ...
-            'Warning: there is no direct correspondance between UVMAT and fluidimage parameters\n' ...
+            'The computation should be done by fluidimage (https://fluidimage.readthedocs.io).\n' ...
+            'Warning: Fluidimage parameters will be guessed from UVmat parameters but \n' ...
+            'there is no direct correspondance between UVMAT and fluidimage parameters.\n' ...
+            'Please report issues here https://foss.heptapod.net/fluiddyn/fluidimage/-/issues\n' ...
             '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'])
         RunMode = 'python';
     end
@@ -3720,7 +3720,7 @@ function ActionExt_Callback(hObject, eventdata, handles)
 
 ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
-if strcmp(ActionExt,'.py (in dev.)')
+if strcmp(ActionExt,'fluidimage')
     set(handles.RunMode,'Value',2)
 end
 
