@@ -201,19 +201,20 @@ NbSmooth=numel(FieldSmooth);
 for irho=1:NbSmooth
     str=num2str(FieldSmooth(irho));
     str=regexprep(str,'\.','p');
-    Ustr{irho}=['U_diff_' str];
-    Vstr{irho}=['V_diff_' str];
+    Ustr{irho}=['U_' str];
+    Vstr{irho}=['V_' str];
     Xstr{irho}=['X_' str];
     Ystr{irho}=['Y_' str];
-    Dimstr{irho}=['NbVec_' str];
+    Dimstr{irho}='NbVec';
     str_i{irho}=str;
 end
 
 %% Prepare the structure of output netcdf file
 DataOut.ListGlobalAttribute={'CivStage'};
 DataOut.CivStage=Param.InputFields.VelType;
-DataOut.ListVarName=[{'FieldSmooth','Diff_rms','NbExclude'} Xstr Ystr Ustr Vstr] ;
-DataOut.VarDimName=[{'FieldSmooth','FieldSmooth','FieldSmooth'} Dimstr Dimstr Dimstr Dimstr]; 
+DataOut.ListVarName=[{'FieldSmooth','Diff_rms','NbExclude','FF','X','Y'} Ustr Vstr] ;
+DataOut.VarDimName=[{'FieldSmooth','FieldSmooth','FieldSmooth','NbVec','NbVec','NbVec'} Dimstr Dimstr]; 
+DataOut.VarAttribute{4}.Role='falseflag';
 DataOut.FieldSmooth=FieldSmooth;
 
 %% MAIN LOOP
@@ -225,36 +226,45 @@ for index=1:1%numel(filecell)
         Yin=Data.Y(ind_good);
         Uin=Data.U(ind_good);
         Vin=Data.V(ind_good);
+        tic
     for irho=1:NbSmooth
         [SubRange,NbCentres,Coord_tps,U_tps,V_tps,~,U_smooth, V_smooth,~,FFres]=...
             filter_tps([Xin Yin],Uin,Vin,[],SubDomainSize,FieldSmooth(irho),MaxDiff);
         if irho==1
-        figure(irho)
+            DataOut.FF=zeros(size(Xin));
+            DataOut.X=Xin;
+            DataOut.Y=Yin;
+        figure(1)
+            cla
+            scatter(Xin,Yin,1)
             for irec=1:size(SubRange,3)
                 rectangle('Position',[SubRange(:,1,irec)' SubRange(:,2,irec)'-SubRange(:,1,irec)'])
-            end
+            end       
             title('subdomains for thin shell splines (tps)')
         end
         ind_good=find(FFres==0);
+        ind_false=find(FFres~=0);
         U_Diff=Uin(ind_good)-U_smooth(ind_good);
         V_Diff=Vin(ind_good)-V_smooth(ind_good);
         DataOut.Diff_rms(irho)=sqrt(mean(U_Diff.*U_Diff+V_Diff.*V_Diff)/2);
         DataOut.NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
-        DataOut.(['X_' str_i{irho}])=Xin(ind_good);
-        DataOut.(['Y_' str_i{irho}])=Yin(ind_good);
-        DataOut.(['U_diff_' str_i{irho}])=U_soomth(ind_good);
-        DataOut.(['V_diff_' str_i{irho}])=V_Diff;
+        DataOut.(['U_' str_i{irho}])=U_smooth;
+        DataOut.(['V_' str_i{irho}])=V_smooth;
+        DataOut.FF(ind_false)=FieldSmooth(irho);
     end
+    time=toc
     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1_series{1}(index),[],j1_series{1}(index),j2_series{1}(index))
     errormsg=struct2nc(OutputFile,DataOut)
 end
-figure(1)
+figure
     semilogx(FieldSmooth,DataOut.Diff_rms,'b',FieldSmooth,DataOut.NbExclude,'r',FieldSmooth,0.1*ones(size(FieldSmooth)),'m')
     grid on
     title( [filecell{1,1} ':' Param.InputFields.VelType])
-    legend({'rms vel. diff. ' ;' ratio excluded vectors';'recommended diff'})
+    legend({'rms vel. diff. ' ;' ratio excluded vectors';'recommended diff'},'Location','northwest')
     xlabel('smoothing parameter')
     ylabel('rms (pixels) and exclusion ratio')
+    OutputFig=fullfile(OutputPath,OutputDir,'plot_rms_diff.png')
+    saveas(2,OutputFig)
 
 
 

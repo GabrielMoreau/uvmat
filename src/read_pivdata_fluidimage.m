@@ -158,10 +158,10 @@ switch VelType
         Field.V= -double(Data.deltays_approx);
         checkcolor=0;%no color representation of the correlation and errors
     case {'filter2',''}
-        Field.X= double(Data.ixvecs_final);
-        Field.Y= npy-double(Data.iyvecs_final);
-        Field.U= double(Data.deltaxs_final);
-        Field.V= -double(Data.deltays_final);
+        Field.X= double(Data.xs_smooth);
+        Field.Y= npy-double(Data.ys_smooth);
+        Field.U= double(Data.deltaxs_smooth);
+        Field.V= -double(Data.deltays_smooth);
         checkcolor=1;%color representation of the correlation and errors
 end
 Field.U(isnan(Field.U)) = 0;

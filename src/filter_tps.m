@@ -59,9 +59,9 @@ CentreY=linspace(MinCoord(2)+Siz(2)/2,MaxCoord(2)-Siz(2)/2,NbSubDomainY);% Y pos
 CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 
-%% smoothing parameter
-smoothing=Siz(1)*Siz(2)*FieldSmooth/1000;%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
-
+%% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
+%smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
+smoothing=sqrt(Siz(1)*Siz(2)/SubDomainSize)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/SubDomainSize)^1/2
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
 Coord_tps=zeros(1,NbCoord,NbSubDomain);% initialize coordinates of interpolated data

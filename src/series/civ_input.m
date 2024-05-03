@@ -318,9 +318,11 @@ else
 end
 
 %% set the menu and default choice of civ pairs
-if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
+if isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
     PairMenu={'series(Di)'};
-elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
+elseif MaxIndex_j-MinIndex_j==1
+    PairMenu={'pair j1-j2'};
+elseif  MaxIndex_i==MinIndex_i && MaxIndex_j-MinIndex_j>2% simple series in j
     PairMenu={'pair j1-j2';'series(Dj)'};
 else
     PairMenu={'pair j1-j2';'series(Dj)';'series(Di)'};%multiple choice
@@ -1794,113 +1796,114 @@ end
 % --- Executes on button press in TestPatch1.
 % --------------------------------------------------------------------
 function TestPatch1_Callback(hObject, eventdata, handles)
+msgbox_uvmat('WARNING','open the civ file and run "series/test_patch_tps" ')
 
-if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
-    hseries=findobj(allchild(0),'Tag','series');
-    Param=read_GUI(hseries);
-    CivDir=fullfile(Param.OutputPath,Param.Experiment,Param.Device,[Param.OutputSubDir Param.OutputDirExt]);
-    % ListXml=dir(CivXmlDir);
-    if exist(CivDir,'dir')
-        CivFile=uigetfile_uvmat('pick .nc file with civ1-fix1 data',CivDir,'.nc');
-        [Field,VelTypeOut,errormsg]=read_civdata(CivFile)
-        for ilist=1:numel(Field.ListGlobalAttribute)
-            r=regexp(Field.ListGlobalAttribute{ilist},'Civ1_(?<field>.+)','names');% \D = not a digit, \d =digi
-            if ~isempty(r)
-                ParamTest.Civ1.(r.field)=(Field.(['Civ1_' r.field]));
-            end
-            r=regexp(Field.ListGlobalAttribute{ilist},'Fix1_(?<field>.+)','names');% \D = not a digit, \d =digi
-            if ~isempty(r)
-                ParamTest.Fix1.(r.field)=(Field.(['Fix1_' r.field]));
-            end
-        end
-        fill_GUI(ParamTest,handles.civ_input)% fill the elements of the GUI series with the input parameters
-        drawnow
-        update_CivOptions(handles,0)
-        
-        set(handles.TestPatch1,'BackgroundColor',[1 1 0])%paint TestPatch1 button in yellow to indicate activation
-%         set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is performed
-        Param.Action.RUN=1;
-         Param.ActionInput=read_GUI(handles.civ_input);
-         Param.ActionInput.CheckCiv1=0;% do not repeat Civ1 computation        
-        if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
-            Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
-        end
-        if isfield(Param.ActionInput,'Fix2')
-            Param.ActionInput=rmfield(Param.ActionInput,'Fix2');
-        end
-        if isfield(Param.ActionInput,'Patch2')
-            Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
-        end
-        if isfield(Param,'OutputSubDir')
-            Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
-        end
-        ParamPatch1=Param.ActionInput.Patch1; %store the patch1 parameters
-        Param.ActionInput=rmfield(Param.ActionInput,'Patch1');% does not execute Patch
-        Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
-        Param.IndexRange.last_i=Param.IndexRange.first_i;
-        if strcmp(get(handles.ref_j,'Visible'),'on')
-            Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
-            Param.IndexRange.last_j=Param.IndexRange.first_j;
-        else
-            Param.IndexRange.first_j=1;
-            Param.IndexRange.last_j=1;
-        end
-        [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
-        bckcolor=get(handles.civ_input,'Color');
-        set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
-        
-        %% prepare Param for iterative Patch processing without input file reading
-        Param.Civ1_X=Data.Civ1_X;
-        Param.Civ1_Y=Data.Civ1_Y;
-        Param.Civ1_U=Data.Civ1_U;
-        Param.Civ1_V=Data.Civ1_V;
-        Param.Civ1_FF=Data.Civ1_FF;
-        Param=rmfield(Param,'InputTable');%desactivate input file reading
-        if isfield(Param.ActionInput,'Civ1')
-            Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
-        end
-        if isfield(Param.ActionInput,'Fix1')
-            Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
-        end
-        SmoothingParam=(ParamPatch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
-        NbGood=numel(find(Data.Civ1_FF==0));
-        NbExclude=zeros(1,7);% initialize the set of smoothing parameters
-        DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
-        Param.ActionInput.Patch1=ParamPatch1;% retrieve Patch1 parameters
-        for irho=1:7
-            Param.ActionInput.Patch1.FieldSmooth=SmoothingParam(irho);
-            [Data,errormsg]= civ_series(Param);%apply the processing fct
-            if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',errormsg)
-                return
-            end
-            ind_good=find(Data.Civ1_FF==0);
-            Civ1_U_Diff=Data.Civ1_U(ind_good)-Data.Civ1_U_smooth(ind_good);
-            Civ1_V_Diff=Data.Civ1_V(ind_good)-Data.Civ1_V_smooth(ind_good);
-            DiffVel(irho)=sqrt(mean(Civ1_U_Diff.*Civ1_U_Diff+Civ1_V_Diff.*Civ1_V_Diff));
-            NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
-        end
-        figure(1)
-        semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.2*ones(size(SmoothingParam)),'m')
-        grid on
-        legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended diff Patch1-Civ1')
-        xlabel('smoothing parameter')
-        ylabel('smoothing effect')
-        set(handles.TestPatch1,'BackgroundColor',[0 1 0])
-    else
-        corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
-        if ~isempty(corrfig)
-            delete(corrfig)
-        end
-        hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
-        if ~isempty(hview_field)
-            delete(hview_field)
-        end
-    end
-else
-    msgbox_uvmat('ERROR','no output file: first perform a civ1-fix1 computation')
-    return
-end
+% if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
+%     hseries=findobj(allchild(0),'Tag','series');
+%     Param=read_GUI(hseries);
+%     CivDir=fullfile(Param.OutputPath,Param.Experiment,Param.Device,[Param.OutputSubDir Param.OutputDirExt]);
+%     % ListXml=dir(CivXmlDir);
+%     if exist(CivDir,'dir')
+%         CivFile=uigetfile_uvmat('pick .nc file with civ1-fix1 data',CivDir,'.nc');
+%         [Field,VelTypeOut,errormsg]=read_civdata(CivFile)
+%         for ilist=1:numel(Field.ListGlobalAttribute)
+%             r=regexp(Field.ListGlobalAttribute{ilist},'Civ1_(?<field>.+)','names');% \D = not a digit, \d =digi
+%             if ~isempty(r)
+%                 ParamTest.Civ1.(r.field)=(Field.(['Civ1_' r.field]));
+%             end
+%             r=regexp(Field.ListGlobalAttribute{ilist},'Fix1_(?<field>.+)','names');% \D = not a digit, \d =digi
+%             if ~isempty(r)
+%                 ParamTest.Fix1.(r.field)=(Field.(['Fix1_' r.field]));
+%             end
+%         end
+%         fill_GUI(ParamTest,handles.civ_input)% fill the elements of the GUI series with the input parameters
+%         drawnow
+%         update_CivOptions(handles,0)
+% 
+%         set(handles.TestPatch1,'BackgroundColor',[1 1 0])%paint TestPatch1 button in yellow to indicate activation
+% %         set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is performed
+%         Param.Action.RUN=1;
+%          Param.ActionInput=read_GUI(handles.civ_input);
+%          Param.ActionInput.CheckCiv1=0;% do not repeat Civ1 computation        
+%         if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
+%             Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
+%         end
+%         if isfield(Param.ActionInput,'Fix2')
+%             Param.ActionInput=rmfield(Param.ActionInput,'Fix2');
+%         end
+%         if isfield(Param.ActionInput,'Patch2')
+%             Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
+%         end
+%         if isfield(Param,'OutputSubDir')
+%             Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+%         end
+%         ParamPatch1=Param.ActionInput.Patch1; %store the patch1 parameters
+%         Param.ActionInput=rmfield(Param.ActionInput,'Patch1');% does not execute Patch
+%         Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+%         Param.IndexRange.last_i=Param.IndexRange.first_i;
+%         if strcmp(get(handles.ref_j,'Visible'),'on')
+%             Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+%             Param.IndexRange.last_j=Param.IndexRange.first_j;
+%         else
+%             Param.IndexRange.first_j=1;
+%             Param.IndexRange.last_j=1;
+%         end
+%         [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+%         bckcolor=get(handles.civ_input,'Color');
+%         set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
+% 
+%         %% prepare Param for iterative Patch processing without input file reading
+%         Param.Civ1_X=Data.Civ1_X;
+%         Param.Civ1_Y=Data.Civ1_Y;
+%         Param.Civ1_U=Data.Civ1_U;
+%         Param.Civ1_V=Data.Civ1_V;
+%         Param.Civ1_FF=Data.Civ1_FF;
+%         Param=rmfield(Param,'InputTable');%desactivate input file reading
+%         if isfield(Param.ActionInput,'Civ1')
+%             Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
+%         end
+%         if isfield(Param.ActionInput,'Fix1')
+%             Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
+%         end
+%         SmoothingParam=(ParamPatch1.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
+%         NbGood=numel(find(Data.Civ1_FF==0));
+%         NbExclude=zeros(1,7);% initialize the set of smoothing parameters
+%         DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
+%         Param.ActionInput.Patch1=ParamPatch1;% retrieve Patch1 parameters
+%         for irho=1:7
+%             Param.ActionInput.Patch1.FieldSmooth=SmoothingParam(irho);
+%             [Data,errormsg]= civ_series(Param);%apply the processing fct
+%             if ~isempty(errormsg)
+%                 msgbox_uvmat('ERROR',errormsg)
+%                 return
+%             end
+%             ind_good=find(Data.Civ1_FF==0);
+%             Civ1_U_Diff=Data.Civ1_U(ind_good)-Data.Civ1_U_smooth(ind_good);
+%             Civ1_V_Diff=Data.Civ1_V(ind_good)-Data.Civ1_V_smooth(ind_good);
+%             DiffVel(irho)=sqrt(mean(Civ1_U_Diff.*Civ1_U_Diff+Civ1_V_Diff.*Civ1_V_Diff));
+%             NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
+%         end
+%         figure(1)
+%         semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.2*ones(size(SmoothingParam)),'m')
+%         grid on
+%         legend('rms velocity diff. Patch1-Civ1 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended diff Patch1-Civ1')
+%         xlabel('smoothing parameter')
+%         ylabel('smoothing effect')
+%         set(handles.TestPatch1,'BackgroundColor',[0 1 0])
+%     else
+%         corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+%         if ~isempty(corrfig)
+%             delete(corrfig)
+%         end
+%         hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
+%         if ~isempty(hview_field)
+%             delete(hview_field)
+%         end
+%     end
+% else
+%     msgbox_uvmat('ERROR','no output file: first perform a civ1-fix1 computation')
+%     return
+% end
   
 %------------------------------------------------------------------------
 % --- Executes on button press in TestCiv2.
@@ -2010,98 +2013,100 @@ end
 % --- Executes on button press in TestPatch2.
 function TestPatch2_Callback(hObject, eventdata, handles)
 if get(handles.TestPatch2,'Value')% if TestPatch2 is activated
-     set(handles.TestPatch2,'BackgroundColor',[1 1 0])%paint TestPatch2 button in yellow to indicate activation
-     set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is activated
-     set(handles.Fix1,'BackgroundColor',[1 1 0])% indicate fix1 calculation is activated
-     set(handles.Patch1,'BackgroundColor',[1 1 0])% indicate Patch1 calculation is activated
-     set(handles.Civ2,'BackgroundColor',[1 1 0])% indicate civ2 calculation is activated
-     set(handles.Fix2,'BackgroundColor',[1 1 0])% indicate fix2 calculation is activated
-     hseries=findobj(allchild(0),'Tag','series');
-     Param=read_GUI(hseries);
-     Param.Action.RUN=1;
-     Param.ActionInput=read_GUI(handles.civ_input);
-     if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
-     end
-     ParamPatch2=Param.ActionInput.Patch2; %store the patch1 parameters
-     Param.ActionInput=rmfield(Param.ActionInput,'Patch2');% does not execute Patch
-     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
-     Param.IndexRange.last_i=Param.IndexRange.first_i;
-     if strcmp(get(handles.ref_j,'Visible'),'on')
-         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
-         Param.IndexRange.last_j=Param.IndexRange.first_j;
-     else
-         Param.IndexRange.first_j=1;
-         Param.IndexRange.last_j=1;
-     end
-     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
-     bckcolor=get(handles.civ_input,'Color');
-     set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
-     set(handles.Fix1,'BackgroundColor',bckcolor)% indicate fix1 calculation is finished
-     set(handles.Patch1,'BackgroundColor',bckcolor)% indicate Patch1 calculation is finished
-     set(handles.Civ2,'BackgroundColor',bckcolor)% indicate civ2 calculation is finished
-     set(handles.Fix2,'BackgroundColor',bckcolor)% indicate fix2 calculation is finished
-     
-     %% prepare Param for iterative Patch processing without input file reading
-     Param.Civ2_X=Data.Civ2_X;
-     Param.Civ2_Y=Data.Civ2_Y;
-     Param.Civ2_U=Data.Civ2_U;
-     Param.Civ2_V=Data.Civ2_V;
-     Param.Civ2_FF=Data.Civ2_FF;
-     Param=rmfield(Param,'InputTable');%desactivate input file reading
-    if isfield(Param.ActionInput,'Civ1')
-        Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
-    end
-    if isfield(Param.ActionInput,'Fix1')
-        Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
-    end
-    if isfield(Param.ActionInput,'Patch1')
-        Param.ActionInput=rmfield(Param.ActionInput,'Patch1');%desactivate fix1:remove fix1 input param if relevant
-    end
-    if isfield(Param.ActionInput,'Civ2')
-        Param.ActionInput=rmfield(Param.ActionInput,'Civ2');%desactivate civ2: remove civ2 input param if relevant
-    end
-    if isfield(Param.ActionInput,'Fix2')
-        Param.ActionInput=rmfield(Param.ActionInput,'Fix2');%desactivate fix1:remove fix1 input param if relevant
-    end
-    SmoothingParam=(ParamPatch2.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
-    NbGood=numel(find(Data.Civ2_FF==0));
-    NbExclude=zeros(1,7);% initialize the set of smoothing parameters
-    DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
-    Param.ActionInput.Patch2=ParamPatch2;% retrieve Patch2 parameters
-    for irho=1:7
-        Param.ActionInput.Patch2.FieldSmooth=SmoothingParam(irho);
-        [Data,errormsg]= civ_series(Param);%apply the processing fct
-        if ~isempty(errormsg)
-            msgbox_uvmat('ERROR',errormsg)
-            return
-        end
-        ind_good=find(Data.Civ2_FF==0);
-        Civ2_U_Diff=Data.Civ2_U(ind_good)-Data.Civ2_U_smooth(ind_good);
-        Civ2_V_Diff=Data.Civ2_V(ind_good)-Data.Civ2_V_smooth(ind_good);
-        DiffVel(irho)=sqrt(mean(Civ2_U_Diff.*Civ2_U_Diff+Civ2_V_Diff.*Civ2_V_Diff));
-        NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
-    end
-    figure(1)
-    semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.1*ones(size(SmoothingParam)),'m')
-    grid on
-    legend('rms velocity diff. Patch2-Civ2 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended value diff. Patch2-Civ2')
-    xlabel('smoothing parameter')
-    ylabel('smoothing effect')
-    set(handles.TestPatch2,'BackgroundColor',[0 1 0])
-else
-    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
-    if ~isempty(corrfig)
-        delete(corrfig)
-    end
-    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
+    msgbox_uvmat('WARNING','open the civ file and run "series/test_patch_tps" ')
 end
-    
+%      set(handles.TestPatch2,'BackgroundColor',[1 1 0])%paint TestPatch2 button in yellow to indicate activation
+%      set(handles.Civ1,'BackgroundColor',[1 1 0])% indicate civ1 calculation is activated
+%      set(handles.Fix1,'BackgroundColor',[1 1 0])% indicate fix1 calculation is activated
+%      set(handles.Patch1,'BackgroundColor',[1 1 0])% indicate Patch1 calculation is activated
+%      set(handles.Civ2,'BackgroundColor',[1 1 0])% indicate civ2 calculation is activated
+%      set(handles.Fix2,'BackgroundColor',[1 1 0])% indicate fix2 calculation is activated
+%      hseries=findobj(allchild(0),'Tag','series');
+%      Param=read_GUI(hseries);
+%      Param.Action.RUN=1;
+%      Param.ActionInput=read_GUI(handles.civ_input);
+%      if isfield(Param,'OutputSubDir')
+%      Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+%      end
+%      ParamPatch2=Param.ActionInput.Patch2; %store the patch1 parameters
+%      Param.ActionInput=rmfield(Param.ActionInput,'Patch2');% does not execute Patch
+%      Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
+%      Param.IndexRange.last_i=Param.IndexRange.first_i;
+%      if strcmp(get(handles.ref_j,'Visible'),'on')
+%          Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
+%          Param.IndexRange.last_j=Param.IndexRange.first_j;
+%      else
+%          Param.IndexRange.first_j=1;
+%          Param.IndexRange.last_j=1;
+%      end
+%      [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+%      bckcolor=get(handles.civ_input,'Color');
+%      set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
+%      set(handles.Fix1,'BackgroundColor',bckcolor)% indicate fix1 calculation is finished
+%      set(handles.Patch1,'BackgroundColor',bckcolor)% indicate Patch1 calculation is finished
+%      set(handles.Civ2,'BackgroundColor',bckcolor)% indicate civ2 calculation is finished
+%      set(handles.Fix2,'BackgroundColor',bckcolor)% indicate fix2 calculation is finished
+% 
+%      %% prepare Param for iterative Patch processing without input file reading
+%      Param.Civ2_X=Data.Civ2_X;
+%      Param.Civ2_Y=Data.Civ2_Y;
+%      Param.Civ2_U=Data.Civ2_U;
+%      Param.Civ2_V=Data.Civ2_V;
+%      Param.Civ2_FF=Data.Civ2_FF;
+%      Param=rmfield(Param,'InputTable');%desactivate input file reading
+%     if isfield(Param.ActionInput,'Civ1')
+%         Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
+%     end
+%     if isfield(Param.ActionInput,'Fix1')
+%         Param.ActionInput=rmfield(Param.ActionInput,'Fix1');%desactivate fix1:remove fix1 input param if relevant
+%     end
+%     if isfield(Param.ActionInput,'Patch1')
+%         Param.ActionInput=rmfield(Param.ActionInput,'Patch1');%desactivate fix1:remove fix1 input param if relevant
+%     end
+%     if isfield(Param.ActionInput,'Civ2')
+%         Param.ActionInput=rmfield(Param.ActionInput,'Civ2');%desactivate civ2: remove civ2 input param if relevant
+%     end
+%     if isfield(Param.ActionInput,'Fix2')
+%         Param.ActionInput=rmfield(Param.ActionInput,'Fix2');%desactivate fix1:remove fix1 input param if relevant
+%     end
+%     SmoothingParam=(ParamPatch2.FieldSmooth/10)*2.^(1:7);%scan the smoothing param from 1/10 to 12.8 current value
+%     NbGood=numel(find(Data.Civ2_FF==0));
+%     NbExclude=zeros(1,7);% initialize the set of smoothing parameters
+%     DiffVel=zeros(1,7);% initialize the rms difference between patch and civ
+%     Param.ActionInput.Patch2=ParamPatch2;% retrieve Patch2 parameters
+%     for irho=1:7
+%         Param.ActionInput.Patch2.FieldSmooth=SmoothingParam(irho);
+%         [Data,errormsg]= civ_series(Param);%apply the processing fct
+%         if ~isempty(errormsg)
+%             msgbox_uvmat('ERROR',errormsg)
+%             return
+%         end
+%         ind_good=find(Data.Civ2_FF==0);
+%         Civ2_U_Diff=Data.Civ2_U(ind_good)-Data.Civ2_U_smooth(ind_good);
+%         Civ2_V_Diff=Data.Civ2_V(ind_good)-Data.Civ2_V_smooth(ind_good);
+%         DiffVel(irho)=sqrt(mean(Civ2_U_Diff.*Civ2_U_Diff+Civ2_V_Diff.*Civ2_V_Diff));
+%         NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
+%     end
+%     figure(1)
+%     semilogx(SmoothingParam,DiffVel,'b',SmoothingParam,NbExclude,'r',SmoothingParam,0.1*ones(size(SmoothingParam)),'m')
+%     grid on
+%     legend('rms velocity diff. Patch2-Civ2 (pixels)','proportion of excluded vectors (between 0 to 1)','recommended value diff. Patch2-Civ2')
+%     xlabel('smoothing parameter')
+%     ylabel('smoothing effect')
+%     set(handles.TestPatch2,'BackgroundColor',[0 1 0])
+% else
+%     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+%     if ~isempty(corrfig)
+%         delete(corrfig)
+%     end
+%     hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
+%     if ~isempty(hview_field)
+%         delete(hview_field)
+%     end
+% end
+% 
 
-%'nomtype2pair': creates nomencalture for index pairs knowing the image nomenclature
+%'nomtype2pair': creates nomenclature for index pairs knowing the image nomenclature
 %---------------------------------------------------------------------
 function NomTypeNc=nomtype2pair(NomTypeIma,mode_selected)
 %---------------------------------------------------------------------           

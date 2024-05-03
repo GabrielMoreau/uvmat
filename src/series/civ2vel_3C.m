@@ -176,10 +176,7 @@ if isfield(Param,'CheckOverwrite')
 end
 for index=1:NbField
     
-    update_waitbar(WaitbarHandle,index/NbField)
-    
-    
-    
+
     
       %% generating the name of the merged field
     i1=i1_series{1}(index);
@@ -332,8 +329,8 @@ end
     ZI=mean(ZItemp,3); %mean between two the two time step
     Vtest=ZItemp(:,:,2)-ZItemp(:,:,1);
     
-    [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view a
-    [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,XI,YI,ZI);% set of image coordinates on view b
+    [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view a
+    [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view b
     
    
     for iview=1:2
@@ -376,7 +373,7 @@ end
     [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
     
     %remove wrong vector  
-    if isfield(Data{1},'FF')
+    if isfield(Data{2},'FF')
         temp=find(Data{2}.FF==0);
         X2=Data{2}.X(temp);
         Y2=Data{2}.Y(temp);

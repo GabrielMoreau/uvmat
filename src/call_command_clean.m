@@ -7,5 +7,5 @@ cc = regexp(paths, 'matlab/');
 new_paths = paths(cellfun('isempty', cc));
 clean_ld_lib_path = strjoin(new_paths, ':');
 
-[status, result] = system(['OMP_NUM_THREADS=1 LD_LIBRARY_PATH=' clean_ld_lib_path ' ' command], '-echo');
+[status, result] = system(['OMP_NUM_THREADS=1 LD_LIBRARY_PATH=' clean_ld_lib_path ' ' command ' &'], '-echo');
 end

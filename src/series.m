@@ -155,14 +155,7 @@ set(handles.Action,'UserData',NbBuiltinAction)
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [path_series,name,ext]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
-% % command = ['LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | pyp "l = x.split('':''); l = [s for s in l if ''matlab'' not in s]; print('':''.join(l))") ' ...
-% %             'python -c "import fluidimage"'];
-% % [code, ~] = system(command);
-% % if code==0
-    ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab fct .m or compiled version .sh
-% % else
-% %     ActionExtList={'.m';'.sh'};  % python options not installed
-% % end
+ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
@@ -2131,19 +2124,7 @@ for iexp=1:NbExp
                         ActionFullName ' ' RunTime ' ' filexml{iprocess}]; % allow writting access to created files for user group
                 else
                     cmd=command_launch_matlab(filelog_global,path_series,Param.Action.ActionPath,Param.Action.ActionName,filexml{iprocess},'cluster');
-                    % matlab_ver = ver('MATLAB');
-                    % matlab_version = matlab_ver.Version;
-                    % cmd=[...
-                    %     '#!/bin/bash\n'...
-                    %     'source /etc/profile\n'...
-                    %     'module purge\n'...
-                    %     'module load matlab/' matlab_version '\n'...% CHOICE OF CURRENT MATLAB VERSION
-                    %     'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...% open a new Matlab session without display
-                    %     'addpath(''' path_series ''');\n'...
-                    %     'addpath(''' Param.Action.ActionPath ''');\n'...
-                    %     '' Param.Action.ActionName  '(''' filexml{iprocess} ''');\n'...% launch the Matlab function selected by the GUI 'series'
-                    %     'exit\n'...
-                    %     'END_MATLAB\n'];
+ 
                 end
                 fprintf(fid,cmd); % fill the executable file with the  char string cmd
                 fclose(fid); % close the executable file
@@ -2175,7 +2156,7 @@ for iexp=1:NbExp
                 errormsg=['error for writting the executable file:' errormsg];
             end
             CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
-            LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;
+            LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;% command obtained from the function 
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
             [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
             filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
@@ -2695,12 +2676,14 @@ if isfield(ParamOut,'j_index_1')&& isfield(ParamOut,'j_index_2')%strcmp(ParamOut
     %status_j='off';
     set(handles.num_first_j,'String',num2str(ParamOut.j_index_1))
     set(handles.num_last_j,'String',num2str(ParamOut.j_index_2))
-    set(handles.num_first_j,'enable','off')
-    set(handles.num_last_j,'enable','off')
+    % set(handles.num_first_j,'enable','off')
+    % set(handles.num_last_j,'enable','off')
+    set(handles.num_first_j,'visible','off')
+    set(handles.num_last_j,'visible','off')
     set(handles.num_incr_j,'visible','off')
 else
-    set(handles.num_first_j,'enable','on')
-    set(handles.num_last_j,'enable','on')
+    set(handles.num_first_j,'visible','on')
+    set(handles.num_last_j,'visible','on')
     set(handles.num_incr_j,'visible',status_j)
 end
 
