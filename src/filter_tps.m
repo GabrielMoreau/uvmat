@@ -5,10 +5,10 @@
 % OUTPUT:
 % SubRange(NbCoord,2,NbSubdomain): range (min, max) of the coordinates x and y respectively, for each subdomain
 % NbCentre(NbSubdomain): number of source points for each subdomain
-% FF: false flags
+% FF: false flags preserved from the input, or equal to 20 for vectors excluded by the difference with the smoothed field
 % U_smooth, V_smooth: filtered velocity components at the positions of the initial data
 % Coord_tps(NbCentre,NbCoord,NbSubdomain): positions of the tps centres
-% U_tps,V_tps: weight of the tps for each subdomain
+% U_tps,V_tps: weight of the tps centers for each subdomain
 % to get the interpolated field values, use the function calc_field.m
 %
 % INPUT:
@@ -61,7 +61,8 @@ CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 
 %% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
 %smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
-smoothing=sqrt(Siz(1)*Siz(2)/SubDomainSize)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/SubDomainSize)^1/2
+NbVecSub=NbVec/NbSubDomain;% refined estimation of the nbre of vectors per subdomain
+smoothing=sqrt(Siz(1)*Siz(2)/NbVecSub)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/NbVecSub)^1/2
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
 Coord_tps=zeros(1,NbCoord,NbSubDomain);% initialize coordinates of interpolated data
@@ -79,7 +80,6 @@ check_empty=zeros(1,NbSubDomain);
 
 %% calculate tps coeff in each subdomain
 for isub=1:NbSubDomain
-    isub
     SubRange(1,:,isub)=[CentreX(isub)-0.55*Siz(1) CentreX(isub)+0.55*Siz(1)];%bounds of subdomain #isub in x coordinate
     SubRange(2,:,isub)=[CentreY(isub)-0.55*Siz(2) CentreY(isub)+0.55*Siz(2)];%bounds of subdomain #isub in y coordinate
     ind_sel_previous=[];
@@ -88,7 +88,7 @@ for isub=1:NbSubDomain
     while numel(ind_sel)>numel(ind_sel_previous)
         ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration
         ind_sel=find(Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));
-        numel(ind_sel)
+        %disp([numel(ind_sel) ' vectors in subdomain #' num2str(isub)])
         % if no vector in the subdomain  #isub, skip the subdomain
         if isempty(ind_sel)
             check_empty(isub)=1;
@@ -123,7 +123,7 @@ for isub=1:NbSubDomain
                 U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel)=nb_select(ind_sel)+weight;
-                display(['tps done in subdomain # ' num2str(isub)  ' among ' num2str(NbSubDomain)])
+                display(['tps done with ' num2str(numel(ind_sel)) ' vectors in subdomain # ' num2str(isub)  ' among ' num2str(NbSubDomain)])
                 break
             % if too few selected vectors, increase the subrange for next iteration
             elseif numel(ind_ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous)
@@ -145,7 +145,7 @@ for isub=1:NbSubDomain
                 U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+weight;
-                display(['tps redone after elimination of erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
+                display(['tps redone with ' num2str(numel(ind_sel)) ' vectors after elimination of ' num2str(numel(ind_ind_sel)) ' erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
                 break
             end
         end

@@ -32,10 +32,6 @@
 %    .InputFields: sub structure describing the input fields withfields
 %              .FieldName: name(s) of the field
 %              .VelType: velocity type
-%              .FieldName_1: name of the second field in case of two input series
-%              .VelType_1: velocity type of the second field in case of two input series
-%              .Coord_y: name of y coordinate variable
-%              .Coord_x: name of x coordinate variable
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -109,7 +105,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
                FieldSmooth=Data.Patch1_FieldSmooth;
             case {4,5}
                 CivStage='civ2';
-                MaxDiff=1.5; SubDomainSize=500; FieldSmooth=2; %default
+                MaxDiff=1.5; SubDomainSize=250; FieldSmooth=5; %default
             case 6
                 CivStage='civ2';
                  MaxDiff=Data.Patch2_MaxDiff;
@@ -210,10 +206,13 @@ for irho=1:NbSmooth
 end
 
 %% Prepare the structure of output netcdf file
-DataOut.ListGlobalAttribute={'CivStage'};
+DataOut.ListGlobalAttribute={'CivStage','SubDomainSize','MaxDiff','CoordUnit'};
 DataOut.CivStage=Param.InputFields.VelType;
-DataOut.ListVarName=[{'FieldSmooth','Diff_rms','NbExclude','FF','X','Y'} Ustr Vstr] ;
-DataOut.VarDimName=[{'FieldSmooth','FieldSmooth','FieldSmooth','NbVec','NbVec','NbVec'} Dimstr Dimstr]; 
+DataOut.SubDomainSize=SubDomainSize;
+DataOut.MaxDiff=MaxDiff;
+DataOut.CoordUnit='pixel';
+DataOut.ListVarName=[{'FieldSmooth','Diff_rms','NbExclude','X','Y'} Ustr Vstr] ;
+DataOut.VarDimName=[{'FieldSmooth','FieldSmooth','FieldSmooth','NbVec','NbVec'} Dimstr Dimstr]; 
 DataOut.VarAttribute{4}.Role='falseflag';
 DataOut.FieldSmooth=FieldSmooth;
 
@@ -248,9 +247,11 @@ for index=1:1%numel(filecell)
         V_Diff=Vin(ind_good)-V_smooth(ind_good);
         DataOut.Diff_rms(irho)=sqrt(mean(U_Diff.*U_Diff+V_Diff.*V_Diff)/2);
         DataOut.NbExclude(irho)=(NbGood-numel(ind_good))/NbGood;
+        U_smooth(ind_false)=NaN;
+        V_smooth(ind_false)=NaN;
         DataOut.(['U_' str_i{irho}])=U_smooth;
         DataOut.(['V_' str_i{irho}])=V_smooth;
-        DataOut.FF(ind_false)=FieldSmooth(irho);
+        % DataOut.FF(ind_false)=FieldSmooth(irho);
     end
     time=toc
     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1_series{1}(index),[],j1_series{1}(index),j2_series{1}(index))
