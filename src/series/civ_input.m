@@ -80,8 +80,8 @@ if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,
     set(handles.num_CorrSmooth,'String',{'1';'2'})
     set(handles.CheckThreshold,'Visible','on')
     set(handles.CheckDeformation,'Value',0)% desactivate 
-    set(handles.num_SubDomainSize(1),'String','250')
-    set(handles.num_SubDomainSize(2),'String','500')
+%     set(handles.num_SubDomainSize(1),'String','250')
+%     set(handles.num_SubDomainSize(2),'String','500')
 end
 switch Param.Action.ActionName
     case 'stereo_civ'
@@ -96,7 +96,7 @@ end
 NomTypeInput=Param.InputTable{1,4};
 FileType='image';%fdefault
 FileInfo=[];
-if isfield(SeriesData,'FileInfo')...
+if isfield(SeriesData,'FileInfo')
     FileType=SeriesData.FileInfo{1}.FileType;% info on the first input file series
     FieldType=SeriesData.FileInfo{1}.FieldType;% info on the first input file series
 else

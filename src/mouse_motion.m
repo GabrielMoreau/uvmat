@@ -468,12 +468,14 @@ if strcmp(htype,'axes') && ~CheckZoom && ~isempty(h_geometry_calib)
                 if ~isempty(hh) && ~isempty(get(hh,'UserData')) %&& get(hh_geometry_calib.CheckEnableMouse,'Value')
                     %set(hh,'UserData',index_point)
                     index_point=get(hh,'UserData');
+                    if isnumeric(index_point)
                     XCoord(index_point)=xy(1,1);
                     YCoord(index_point)=xy(1,2);
                     set(hh,'XData',XCoord)
                     set(hh,'YData',YCoord)
+                    end
                 end
-                if ~isempty(index_point)
+                if ~isempty(index_point)&& isnumeric(index_point)
                     set(hh_geometry_calib.CoordLine,'String',num2str(index_point))
                    % Data=get(h_ListCoord,'Data');
 %                     Data(:,6)=zeros(size(Data,1),1);

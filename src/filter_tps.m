@@ -63,6 +63,7 @@ CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 %smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
 NbVecSub=NbVec/NbSubDomain;% refined estimation of the nbre of vectors per subdomain
 smoothing=sqrt(Siz(1)*Siz(2)/NbVecSub)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/NbVecSub)^1/2
+
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
 Coord_tps=zeros(1,NbCoord,NbSubDomain);% initialize coordinates of interpolated data
@@ -77,7 +78,6 @@ FF=zeros(NbVec,1);
 nb_select=zeros(NbVec,1);
 check_empty=zeros(1,NbSubDomain);
 
-
 %% calculate tps coeff in each subdomain
 for isub=1:NbSubDomain
     SubRange(1,:,isub)=[CentreX(isub)-0.55*Siz(1) CentreX(isub)+0.55*Siz(1)];%bounds of subdomain #isub in x coordinate
@@ -86,13 +86,12 @@ for isub=1:NbSubDomain
     ind_sel=0;%initialize set of vector indices in the subdomain
     %increase iteratively the subdomain if it contains less than SubDomainNbVec/4 source vectors
     while numel(ind_sel)>numel(ind_sel_previous)
-        ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration
-        ind_sel=find(Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));
-        %disp([numel(ind_sel) ' vectors in subdomain #' num2str(isub)])
+        ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration 
+        ind_sel= find(FF==0 & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
         % if no vector in the subdomain  #isub, skip the subdomain
         if isempty(ind_sel)
             check_empty(isub)=1;
-            break %  go to next subdomain
+            break 
         % if too few selected vectors, increase the subrange for next iteration
         elseif numel(ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous)
             SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
@@ -106,8 +105,8 @@ for isub=1:NbSubDomain
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
             ind_ind_sel=1:numel(ind_sel);%default
             if exist('Threshold','var')&&~isempty(Threshold)
-                FF(ind_sel)=20*(NormDiff>Threshold);%put FF value to 20 to identify the criterium of elimmination
-                ind_ind_sel=find(FF(ind_sel)==0); % select the indices of ind_sel corresponding to the remaining vectors
+                FF(ind_sel)=2*(NormDiff>Threshold);%put FF value to 2 to identify the criterium of elimmination
+                ind_ind_sel=find(FF(ind_sel)==0); % select the indices of remaining vectors in the subset of ind_sel vectors 
             end
             % if no value exceeds threshold, the result is recorded
             if isequal(numel(ind_ind_sel),numel(ind_sel))
@@ -145,7 +144,7 @@ for isub=1:NbSubDomain
                 U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+weight;
-                display(['tps redone with ' num2str(numel(ind_sel)) ' vectors after elimination of ' num2str(numel(ind_ind_sel)) ' erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
+                display(['tps redone with ' num2str(numel(ind_sel)) ' vectors after elimination of ' num2str(numel(ind_sel)-numel(ind_ind_sel)) ' erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
                 break
             end
         end
@@ -166,8 +165,8 @@ end
 nb_select(nb_select==0)=1;
 U_smooth=U_smooth./nb_select;% take the average at the intersection of several subdomains
 V_smooth=V_smooth./nb_select;
-U_smooth(FF==20)=U(FF==20);% set to the initial values the eliminated vectors (flagged as false)
-V_smooth(FF==20)=V(FF==20);
+U_smooth(FF==2)=U(FF==2);% set to the initial values the eliminated vectors (flagged as false)
+V_smooth(FF==2)=V(FF==2);
 fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
 Coord_tps=cat(1,Coord_tps,fill);
 

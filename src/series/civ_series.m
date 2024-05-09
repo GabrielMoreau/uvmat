@@ -1,7 +1,7 @@
 %'civ_series': PIV function activated by the general GUI series
 % --- call the sub-functions:
 %   civ: PIV function itself
-%   fix: removes false vectors after detection by various criteria
+%   detect_false: put a flag to false vectors after detection by various criteria
 %   filter_tps: make interpolation-smoothing 
 %------------------------------------------------------------------------
 % function [Data,errormsg,result_conv]= civ_series(Param)
@@ -21,7 +21,7 @@
 %           if absent no file is produced, result in the output structure Data (test mode)
 %     Param.ActionInput: substructure with the parameters provided by the GUI civ_input
 %                      .Civ1: parameters for civ1cc
-%                      .Fix1: parameters for fix1
+%                      .Fix1: parameters for detect_false1
 %                      .Patch1:
 %                      .Civ2: for civ2
 %                      .Fix2:
@@ -130,9 +130,6 @@ if CheckInputFile
         elseif Param.ActionInput.CheckCiv2 % civ2 is performed without Civ1, a netcdf file series is needed in the first table line
             iview_A=2;% the second line is used for the input images of Civ2
         end
-%         if strcmp(Param.ActionInput.ListCompareMode,'shift')
-%             iview_B=iview_A+1; % the second image series is on the next line of the input table
-%         end
         if iview_A~=0
             RootPath_A=Param.InputTable{iview_A,1};
             RootFile_A=Param.InputTable{iview_A,3};
@@ -236,7 +233,7 @@ if CheckInputFile
         elseif Param.ActionInput.CheckCiv2 % Civ2 is performed without Civ1
             NbField=numel(i1_series_Civ2);
         else
-            NbField=numel(i1_series_Civ1);% no image used (only fix or patch) TO CHECK
+            NbField=numel(i1_series_Civ1);% no image used (only detect_false or patch) TO CHECK
         end
 
     %% Output directory
@@ -346,6 +343,7 @@ for ifield=1:NbField
     end
     ImageName_A='';ImageName_B='';%default
     VideoObject_A=[];VideoObject_B=[];
+    
     %% Civ1
     % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
@@ -543,7 +541,7 @@ for ifield=1:NbField
     
     %% Fix1
     if isfield (Param.ActionInput,'Fix1')
-        disp('fix1 started')
+        disp('detect_false1 started')
         if ~isfield (Param.ActionInput,'Civ1')% if we use existing Civ1, remove previous data beyond Civ1
             Fix1_attr=find(strcmp('Fix1',Data.ListGlobalAttribute));
             Data.ListGlobalAttribute(Fix1_attr)=[];
@@ -562,7 +560,7 @@ for ifield=1:NbField
         Data.VarDimName=[Data.VarDimName {'nb_vec_1'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';
-        Data.Civ1_FF=int8(fix(Param.ActionInput.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V));
+        Data.Civ1_FF=int8(detect_false(Param.ActionInput.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V));
         Data.CivStage=2;
     end
     %% Patch1
@@ -822,7 +820,7 @@ for ifield=1:NbField
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
         if exist('ncfile','var')
             CivFile=ncfile;
-            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
+            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and detect_false1 data in the existing netcdf file
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
@@ -841,7 +839,7 @@ for ifield=1:NbField
     
     %% Fix2
     if isfield (Param.ActionInput,'Fix2')
-        disp('fix2 started')
+        disp('detect_false2 started')
         list_param=fieldnames(Param.ActionInput.Fix2)';
         Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
         %indicate the values of all the global attributes in the output data
@@ -856,13 +854,13 @@ for ifield=1:NbField
                 Data.ListVarName=[Data.ListVarName {'vec2_FixFlag'}];
                 Data.VarDimName=[Data.VarDimName {'nb_vectors2'}];
             end
-            Data.vec_FixFlag=fix(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V,Data.vec2_X,Data.vec2_Y);
+            Data.vec_FixFlag=detect_false(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V);
         else
             Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
             Data.VarDimName=[Data.VarDimName {'nb_vec_2'}];
             nbvar=length(Data.ListVarName);
             Data.VarAttribute{nbvar}.Role='errorflag';
-            Data.Civ2_FF=double(fix(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V));
+            Data.Civ2_FF=double(detect_false(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V));
             Data.CivStage=Data.CivStage+1;
         end
     end
@@ -1292,52 +1290,51 @@ else
     % hold off
 end
 
-%'RUN_FIX': function for fixing velocity fields:
-%-----------------------------------------------
-% RUN_FIX(filename,field,flagindex,thresh_vecC,thresh_vel,iter,flag_mask,maskname,fileref,fieldref)
-%
-%filename: name of the netcdf file (used as input and output)
-%field: structure specifying the names of the fields to fix (depending on civ1 or civ2)
-%.vel_type='civ1' or 'civ2';
-%.nb=name of the dimension common to the field to fix ('nb_vectors' for civ1);
-%.fixflag=name of fix flag variable ('vec_FixFlag' for civ1)
-%flagindex: flag specifying which values of vec_f are removed:
-% if flagindex(1)=1: vec_f=-2 vectors are removed
-% if flagindex(2)=1: vec_f=3 vectors are removed
-% if flagindex(3)=1: vec_f=2 vectors are removed (if iter=1) or vec_f=4 vectors are removed (if iter=2)
-%iter=1 for civ1 fields and iter=2 for civ2 fields
-%thresh_vecC: threshold in the image correlation vec_C
-%flag_mask: =1 mask used to remove vectors (0 else)
-%maskname: name of the mask image file for fix
-%thresh_vel: threshold on velocity, or on the difference with the reference file fileref if exists
-%inf_sup=1: remove values smaller than threshold thresh_vel, =2, larger than threshold
-%fileref: .nc file name for a reference velocity (='': refrence 0 used)
-%fieldref: 'civ1','filter1'...feld used in fileref
 
-function FF=fix(Param,F,C,U,V,X,Y)
+function FF=detect_false(Param,F,C,U,V)
 FF=zeros(size(F));%default
-
-%criterium on warn flags
-FlagName={'CheckFmin2','CheckF2','CheckF3','CheckF4'};
-FlagVal=[-2 2 3 4];
-for iflag=1:numel(FlagName)
-    if isfield(Param,FlagName{iflag}) && Param.(FlagName{iflag})
-        FF=(FF==1| F==FlagVal(iflag));
-    end
-end
-%criterium on correlation values
+% FF=-2, for correlation max at edge
+% FF=-1, for too small correlation
+% FF=1, for velocity outside bounds
+% FF=2 for exclusion by difference with the smoothed field
+FF(F==-2)=-2;
 if isfield (Param,'MinCorr')
-    FF=FF==1 | C<Param.MinCorr;
+     FF(C<Param.MinCorr)=-1;
 end
 if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
     Umod= U.*U+V.*V;
     if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
-        FF=FF==1 | Umod<(Param.MinVel*Param.MinVel);
+        U2Min=Param.MinVel*Param.MinVel;
+        FF(Umod<U2Min)=1;
     end
     if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
-        FF=FF==1 | Umod>(Param.MaxVel*Param.MaxVel);
+         U2Max=Param.MaxVel*Param.MaxVel;
+        FF(Umod>U2Max)=1;
     end
 end
+
+
+%criterium on warn flags
+% FlagName={'CheckFmin2','CheckF2','CheckF3','CheckF4'};
+% FlagVal=[-2 2 3 4];
+% for iflag=1:numel(FlagName)
+%     if isfield(Param,FlagName{iflag}) && Param.(FlagName{iflag})
+%         FF=(FF==1| F==FlagVal(iflag));
+%     end
+% end
+% %criterium on correlation values
+% if isfield (Param,'MinCorr')
+%     FF=FF==1 | C<Param.MinCorr;
+% end
+% if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
+%     Umod= U.*U+V.*V;
+%     if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
+%         FF=FF==1 | Umod<(Param.MinVel*Param.MinVel);
+%     end
+%     if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
+%         FF=FF==1 | Umod>(Param.MaxVel*Param.MaxVel);
+%     end
+% end
 
 
 %------------------------------------------------------------------------

@@ -307,29 +307,27 @@ for iview=1:size(Param.InputTable,1)
 %             end
 %             m.Data=data;
     %%%%%%%
-        timestamp=zeros(1,numel(m.Data));
-        for ii=1: numel(m.Data)
-            timestamp(ii)=m.Data(ii).timestamp;
-        end
-        if isequal(Param.IndexRange.first_i,1)
+    timestamp=zeros(1,numel(m.Data));
+    for ii=1: numel(m.Data)
+        timestamp(ii)=m.Data(ii).timestamp;
+    end
+    if isequal(Param.IndexRange.first_i,1)
         [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
         [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
         if ~isempty(errormsg)
             disp(errormsg)
             return
         end
-        timestamp=timestamp(1:nbfield1*nbfield2);
-        timestamp=reshape(timestamp,nbfield2,nbfield1);
-        difftime=XmlData.Time(2:end,2:end)'-timestamp;
-        disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
-        if max(abs(difftime))>0.01
-            checkpreserve=1;% will not erase the initial files, possibility of error
-        end      
-        % checking consistency with the xml file
-        %     if ~isequal(SeqData.nb_frames,numel(timestamp))
-        %         disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
-        %         return
-        %     end
+        if numel(timestamp)~=nbfield1*nbfield2
+            disp('WARNING: total image number defined by the xml file differs from  the number of frames ')
+        else
+            timestamp=reshape(timestamp,nbfield2,nbfield1);
+            difftime=XmlData.Time(2:end,2:end)'-timestamp;
+            disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+            if max(abs(difftime))>0.01
+                checkpreserve=1;% will not erase the initial files, possibility of error
+            end
+        end
     else
        [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,''); 
     end

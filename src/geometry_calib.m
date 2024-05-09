@@ -324,6 +324,7 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     end
                 end
             end
+            NbErrors=0;
             for iexp=1:NbExp
                 XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
                 if exist(XmlName,'file')
@@ -339,6 +340,7 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                 end
                 if ~strcmp(errormsg,'')
                     msgbox_uvmat('ERROR',errormsg);
+                    NbErrors=NbErrors+1;
                 else
                     if check_update
                         display([XmlName ' updated with calibration parameters' dispmessage])
@@ -348,7 +350,11 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                 end
             end
         end
-        msgbox_uvmat('CONFIMATION',['calibration replicated for ' num2str(NbExp) ' experiments']);
+        msgout=['calibration replicated for ' num2str(NbExp-NbErrors) ' experiments'];
+        if NbErrors~=0
+            msgout={msgout;['error for ' num2str(NbErrors) ' experiments']};
+        end
+        msgbox_uvmat('CONFIMATION',msgout);
     else
         %% update the calibration parameters in the currently opened uvmat GUI
         if ~exist(outputfile,'file') && ~isempty(SubDirBase) %copy the xml file from the old location if appropriate

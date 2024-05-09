@@ -5568,14 +5568,21 @@ update_plot(handles);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Vector representation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%-------------------------------------------------------------------
-function CheckHideWarning_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-update_plot(handles);
+% % %-------------------------------------------------------------------
+% % function CheckHideWarning_Callback(hObject, eventdata, handles)
+% % %-------------------------------------------------------------------
+% % update_plot(handles);
 
 %-------------------------------------------------------------------
-function CheckHideFalse_Callback(hObject, eventdata, handles)
+function CheckShowFalse_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
+if get(handles.CheckShowFalse,'Value')
+    set(handles.FalseCriteria,'Visible','on')
+    set(handles.FalseCriteria,'Value',1)
+else
+    set(handles.FalseCriteria,'Visible','off')
+end
+
 update_plot(handles);
 
 %-------------------------------------------------------------------
@@ -5610,6 +5617,12 @@ function CheckDecimate16_Callback(hObject, eventdata, handles)
 if isequal(get(handles.CheckDecimate16,'Value'),1)
     set(handles.CheckDecimate4,'Value',0)
 end
+update_plot(handles);
+
+%------------------------------------------------------------------------
+% --- Executes on selection change in FalseCriteria.
+%------------------------------------------------------------------------
+function FalseCriteria_Callback(hObject, eventdata, handles)
 update_plot(handles);
 
 %------------------------------------------------------------------------
@@ -6189,6 +6202,9 @@ if get(handles.CheckTable,'Value')
 else
     set(handles.TableDisplay,'Visible','off')
 end
+
+
+
 
 
 

@@ -729,14 +729,17 @@ for icell=1:numel(CellInfo)
                     test_C=1;
                 end
             end
-            if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
-                vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
-                if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
-                    test_black=1;
-                end
-            end
+            
+%                 if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
+%                     test_black=1;
+%                 end
+        
             if ~isempty(ivar_FF_vec) %&& ~test_false
                 vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
+                if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
+                    vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
+                    vec_FF(find(vec_F==-2))=-2;%set alseFlag to -2 (edge of the search box)
+                end
             end
         end
     elseif ~isempty(ivar_C) %scalar or image
@@ -1194,9 +1197,9 @@ if test_vec
         vec_U=vec_U(ind_sel);
         vec_V=vec_V(ind_sel);
         vec_C=vec_C(ind_sel);
-        if ~isempty(ivar_F)
-           vec_F=vec_F(ind_sel);
-        end
+%         if ~isempty(ivar_F)
+%            vec_F=vec_F(ind_sel);
+%         end
         if ~isempty(ivar_FF_vec)
            vec_FF=vec_FF(ind_sel);
         end
@@ -1207,23 +1210,34 @@ if test_vec
     
     % take flags into account: add flag colors to the list of colors
     nbcolor=size(colorlist,1);
-    if test_black 
-       nbcolor=nbcolor+1;
-       colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
-       if ~isempty(ivar_FF_vec)
-            col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
-       else
-            col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
-       end
-    end
+% % %     if test_black 
+% % %        nbcolor=nbcolor+1;
+% % %        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
+% % %        if ~isempty(ivar_FF_vec)
+% % %             col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
+% % %        else
+% % %             col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
+% % %        end
+% % %     end
     nbcolor=nbcolor+1;
     if ~isempty(ivar_FF_vec)
-        if isfield(PlotParam.Vectors,'CheckHideFalse') && PlotParam.Vectors.CheckHideFalse==1
-            colorlist(nbcolor,:)=[NaN NaN NaN];% no plot of false vectors
+        if isfield(PlotParam.Vectors,'CheckShowFalse') && PlotParam.Vectors.CheckShowFalse==1
+           % colorlist(nbcolor,:)=[1 0 1];% magenta color
+            colorlist(nbcolor,:)=[0 0 0];% blackcolor
+            if strcmp(PlotParam.Vectors.FalseCriteria,'ALL')
+                col_vec(vec_FF~=0)=nbcolor;
+            else
+                ind_dot=regexp(PlotParam.Vectors.FalseCriteria,':');
+                FalseValue=str2num(PlotParam.Vectors.FalseCriteria(1:ind_dot-1));%get the selected flg number
+                col_vec(vec_FF==FalseValue)=nbcolor;
+                nbcolor=nbcolor+1;
+                colorlist(nbcolor,:)=[NaN NaN NaN];% 
+                col_vec(vec_FF~=0 & vec_FF~=FalseValue)=nbcolor;
+            end
         else
-            colorlist(nbcolor,:)=[1 0 1];% magenta color
-        end
-        col_vec(vec_FF~=0)=nbcolor;
+            colorlist(nbcolor,:)=[NaN NaN NaN];% no plot of false vectors
+            col_vec(vec_FF~=0)=nbcolor;
+        end        
     end
     %plot vectors:
     quiresetn(haxes,vec_X,vec_Y,vec_U,vec_V,scale,colorlist,col_vec);   

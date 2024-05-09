@@ -219,7 +219,7 @@ DataOut.FieldSmooth=FieldSmooth;
 %% MAIN LOOP
 for index=1:1%numel(filecell)
     Data=read_field(filecell{1,index},'civdata',Param.InputFields);
-            ind_good=find(Data.FF==0|Data.FF==20);%keep good civ data, and also the ones excluded by the criterium of discrepancy betwween smoothed and raw fields (FF=20)
+            ind_good=find(Data.FF==0|Data.FF==20|Data.FF==2);%keep good civ data, and also the ones excluded by the criterium of discrepancy betwween smoothed and raw fields (FF=2 or 20 (old convention))
         NbGood=numel(ind_good);
         Xin=Data.X(ind_good);
         Yin=Data.Y(ind_good);
@@ -251,7 +251,6 @@ for index=1:1%numel(filecell)
         V_smooth(ind_false)=NaN;
         DataOut.(['U_' str_i{irho}])=U_smooth;
         DataOut.(['V_' str_i{irho}])=V_smooth;
-        % DataOut.FF(ind_false)=FieldSmooth(irho);
     end
     time=toc
     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1_series{1}(index),[],j1_series{1}(index),j2_series{1}(index))
