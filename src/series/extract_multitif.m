@@ -76,7 +76,7 @@ function ParamOut=extract_multitif(Param)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; % impose calculation in a single process (no parallel processing to avoid 'holes'))
+    ParamOut.NbSlice='on'; % 
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
@@ -90,8 +90,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     % check the existence of the first file in the series
         first_j=[];% note that the function will propose to cover the whole range of indices
     if isfield(Param.IndexRange,'MinIndex_j'); first_j=Param.IndexRange.MinIndex_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'MaxIndex_j'); last_j=Param.IndexRange.MaxIndex_j; end
+% %     last_j=[];
+% %     if isfield(Param.IndexRange,'MaxIndex_j'); last_j=Param.IndexRange.MaxIndex_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
@@ -100,11 +100,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     end
-
+    ParamOut.NbSlice=Param.IndexRange.MaxIndex_i;
     %% check the validity of  input file types
     FileInfo=get_file_info(FirstFileName);
     if ~strcmp(FileInfo.FileType,'multimage')
-        msgbox_uvmat('ERROR',['invalid file type input: ' FileInfo.FileType ' not an image'])
+        msgbox_uvmat('ERROR',['invalid file type input: ' FileInfo.FileType ' not a tiff image series'])
         return
     end
     ParamOut.ActionInput.XmlFile=uigetfile_uvmat('pick xml file for timing',fileparts(fileparts(FirstFileName)),'.xml');  

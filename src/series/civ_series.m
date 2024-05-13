@@ -248,7 +248,6 @@ ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 Data.CivStage=0;%default
-check_civx=0;%default
 
 %% get timing from the ImaDoc file or input video
 if iview_A~=0
@@ -331,7 +330,6 @@ for ifield=1:NbField
             end
             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
                 ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
-%                 ncfile_out=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
             else % displacement
                 ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
             end
@@ -447,13 +445,14 @@ for ifield=1:NbField
             i1=Param.ActionInput.PairIndices.ref_i; %case of TESTmode
         end
         % set the list of variables
-        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record
+        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
         Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
         Data.VarAttribute{1}.Role='coord_x';
         Data.VarAttribute{2}.Role='coord_y';
         Data.VarAttribute{3}.Role='vector_x';
         Data.VarAttribute{4}.Role='vector_y';
-        Data.VarAttribute{5}.Role='warnflag';
+        Data.VarAttribute{5}.Role='ancillary';
+        Data.VarAttribute{6}.Role='errorflag';
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             if isfield(par_civ1,'NbSlice')
@@ -486,7 +485,7 @@ for ifield=1:NbField
         if strcmp(Param.ActionInput.ListCompareMode, 'PIV volume')
             Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
             Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
-            Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];Data.Civ1_F=[];
+            Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];
             for ivol=1:NbSlice
                 % caluclate velocity data (y and v in indices, reverse to y component)
                 [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
@@ -500,7 +499,7 @@ for ifield=1:NbField
                 Data.Civ1_U=[Data.Civ1_U reshape(utable,[],1)];
                 Data.Civ1_V=[Data.Civ1_V reshape(-vtable,[],1)];
                 Data.Civ1_C=[Data.Civ1_C reshape(ctable,[],1)];
-                Data.Civ1_F=[Data.Civ1_C reshape(F,[],1)];
+                Data.Civ1_FF=[Data.Civ1_FF reshape(F,[],1)];
             end
         else %usual PIV
             % caluclate velocity data (y and v in indices, reverse to y component)
@@ -515,7 +514,7 @@ for ifield=1:NbField
             Data.Civ1_U=reshape(utable,[],1);
             Data.Civ1_V=reshape(-vtable,[],1);
             Data.Civ1_C=reshape(ctable,[],1);
-            Data.Civ1_F=reshape(F,[],1);
+            Data.Civ1_FF=reshape(F,[],1);
             time_civ1=toc(tstart_civ1);
         end
     else% we use existing Civ1 data
@@ -556,23 +555,14 @@ for ifield=1:NbField
             Data.(Fix1_param{ilist})=Param.ActionInput.Fix1.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix1_param];
-        Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_1'}];
-        nbvar=length(Data.ListVarName);
-        Data.VarAttribute{nbvar}.Role='errorflag';
-        Data.Civ1_FF=int8(detect_false(Param.ActionInput.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V));
+        Data.Civ1_FF=uint8(detect_false(Param.ActionInput.Fix1,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V,Data.Civ1_FF));
         Data.CivStage=2;
     end
     %% Patch1
     if isfield (Param.ActionInput,'Patch1')
         disp('patch1 started')
          tstart_patch1=tic;
-        if check_civx
-            errormsg='Civ Matlab input needed for patch';
-            disp_uvmat('ERROR',errormsg,checkrun)
-            return
-        end
-        
+       
         % record the processing parameters of Patch1 as global attributes in the result nc file
         list_param=fieldnames(Param.ActionInput.Patch1)';
         list_param(strcmp('TestPatch1',list_param))=[];% remove 'TestPatch1' from the list of parameters
@@ -611,7 +601,7 @@ for ifield=1:NbField
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
-        Data.Civ1_FF(ind_good)=int8(FFres);
+        Data.Civ1_FF(ind_good)=uint8(FFres);
         time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
     end
@@ -801,20 +791,21 @@ for ifield=1:NbField
         nbvar=numel(Data.ListVarName);
         % define the Civ2 variable (if Civ2 data are not replaced from previous calculation)
         if isempty(find(strcmp('Civ2_X',Data.ListVarName),1))
-            Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
+            Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_C','Civ2_FF'}];%  cell array containing the names of the fields to record
             Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
             Data.VarAttribute{nbvar+1}.Role='coord_x';
             Data.VarAttribute{nbvar+2}.Role='coord_y';
             Data.VarAttribute{nbvar+3}.Role='vector_x';
             Data.VarAttribute{nbvar+4}.Role='vector_y';
-            Data.VarAttribute{nbvar+5}.Role='warnflag';
+            Data.VarAttribute{nbvar+5}.Role='ancillary';
+            Data.VarAttribute{nbvar+6}.Role='errorflag';
         end
         Data.Civ2_X=reshape(xtable,[],1);
         Data.Civ2_Y=reshape(size(par_civ2.ImageA,1)-ytable+1,[],1);
         Data.Civ2_U=reshape(utable,[],1);
         Data.Civ2_V=reshape(-vtable,[],1);
         Data.Civ2_C=reshape(ctable,[],1);
-        Data.Civ2_F=reshape(F,[],1);
+        Data.Civ2_FF=reshape(F,[],1);
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
@@ -846,23 +837,9 @@ for ifield=1:NbField
         for ilist=1:length(list_param)
             Data.(Fix2_param{ilist})=Param.ActionInput.Fix2.(list_param{ilist});
         end
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix2_param];
-        if check_civx
-            if ~isfield(Data,'fix2')
-                Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix2'];
-                Data.fix2=1;
-                Data.ListVarName=[Data.ListVarName {'vec2_FixFlag'}];
-                Data.VarDimName=[Data.VarDimName {'nb_vectors2'}];
-            end
-            Data.vec_FixFlag=detect_false(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V);
-        else
-            Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
-            Data.VarDimName=[Data.VarDimName {'nb_vec_2'}];
-            nbvar=length(Data.ListVarName);
-            Data.VarAttribute{nbvar}.Role='errorflag';
-            Data.Civ2_FF=double(detect_false(Param.ActionInput.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V));
-            Data.CivStage=Data.CivStage+1;
-        end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix2_param];     
+        Data.Civ2_FF=double(detect_false(Param.ActionInput.Fix2,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V,Data.Civ2_FF));
+        Data.CivStage=Data.CivStage+1;
     end
     
     %% Patch2
@@ -1081,8 +1058,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
             if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
                 F(ivec)=3; %
-                utable(ivec)=0;
-                vtable(ivec)=0;
+                utable(ivec)=NaN;
+                vtable(ivec)=NaN;
             else
                 image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
                 image2_crop=image2_crop.*~mask2_crop;
@@ -1102,8 +1079,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 F(ivec)=3;
             end
             if F(ivec)==3
-                utable(ivec)=0;
-                vtable(ivec)=0;
+                utable(ivec)=NaN;
+                vtable(ivec)=NaN;
             else
                 %mask
                 if checkmask
@@ -1196,7 +1173,7 @@ if y < npy && y > 1
     f2 = log(result_conv(y+1,x));
     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
 else
-    F=-2; % warning flag for vector truncated by the limited search box
+    F=1; % warning flag for vector truncated by the limited search box
 end
 peakx=x;
 if x < npx-1 && x > 1
@@ -1205,7 +1182,7 @@ if x < npx-1 && x > 1
     f2 = log(result_conv(y,x+1));
     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
 else
-    F=-2; % warning flag for vector truncated by the limited search box
+    F=1; % warning flag for vector truncated by the limited search box
 end
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
@@ -1214,7 +1191,7 @@ vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
 % vector=[0 0]; %default
-F=-2;
+F=1;
 peaky=y;
 peakx=x;
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
@@ -1257,7 +1234,7 @@ vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 function [vector,F] = quadr_fit(result_conv,x,y)
 [npy,npx]=size(result_conv);
 if x<4 || y<4 || npx-x<4 ||npy-y <4
-    F=-2;
+    F=1;
     vector=[x y];
 else
     F=0;
@@ -1291,51 +1268,27 @@ else
 end
 
 
-function FF=detect_false(Param,F,C,U,V)
-FF=zeros(size(F));%default
-% FF=-2, for correlation max at edge
-% FF=-1, for too small correlation
-% FF=1, for velocity outside bounds
-% FF=2 for exclusion by difference with the smoothed field
-FF(F==-2)=-2;
+function FF=detect_false(Param,C,U,V,FFIn)
+FF=FFIn;%default, good vectors
+% FF=1, for correlation max at edge, not set in this function
+% FF=2, for too small correlation
+% FF=3, for velocity outside bounds
+% FF=4 for exclusion by difference with the smoothed field, not set in this function
+
 if isfield (Param,'MinCorr')
-     FF(C<Param.MinCorr)=-1;
+     FF(C<Param.MinCorr & FFIn==0)=2;
 end
 if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
     Umod= U.*U+V.*V;
     if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
         U2Min=Param.MinVel*Param.MinVel;
-        FF(Umod<U2Min)=1;
+        FF(Umod<U2Min & FFIn==0)=3;
     end
     if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
          U2Max=Param.MaxVel*Param.MaxVel;
-        FF(Umod>U2Max)=1;
+        FF(Umod>U2Max & FFIn==0)=3;
     end
 end
-
-
-%criterium on warn flags
-% FlagName={'CheckFmin2','CheckF2','CheckF3','CheckF4'};
-% FlagVal=[-2 2 3 4];
-% for iflag=1:numel(FlagName)
-%     if isfield(Param,FlagName{iflag}) && Param.(FlagName{iflag})
-%         FF=(FF==1| F==FlagVal(iflag));
-%     end
-% end
-% %criterium on correlation values
-% if isfield (Param,'MinCorr')
-%     FF=FF==1 | C<Param.MinCorr;
-% end
-% if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
-%     Umod= U.*U+V.*V;
-%     if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
-%         FF=FF==1 | Umod<(Param.MinVel*Param.MinVel);
-%     end
-%     if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
-%         FF=FF==1 | Umod>(Param.MaxVel*Param.MaxVel);
-%     end
-% end
-
 
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file

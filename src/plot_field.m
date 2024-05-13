@@ -729,16 +729,12 @@ for icell=1:numel(CellInfo)
                     test_C=1;
                 end
             end
-            
-%                 if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
-%                     test_black=1;
-%                 end
-        
+
             if ~isempty(ivar_FF_vec) %&& ~test_false
                 vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
                 if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
                     vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
-                    vec_FF(find(vec_F==-2))=-2;%set alseFlag to -2 (edge of the search box)
+                    vec_FF(find(vec_F==-2))=1;%set alseFlag to 1(edge of the search box)
                 end
             end
         end

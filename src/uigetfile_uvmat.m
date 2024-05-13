@@ -334,6 +334,10 @@ set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate act
 function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option,filter_ext)
 %-------------------------------------------------------------------------
 ListStruct=dir_uvmat(DirName);% get structure of the current directory
+if ~isstruct(ListStruct)
+    return
+end
+    
 date_index=find(strcmp('datenum',fieldnames(ListStruct)));% find the index of the date displayin the list of fields
 NumFiles=0; %default
 if numel(ListStruct)<1  % case of empty dir

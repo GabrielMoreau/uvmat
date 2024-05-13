@@ -644,10 +644,19 @@ for iview=1:nbview
         RootFile='';
     else %scan the input folder
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
-        i1=str2num(get(handles.num_first_i,'String'));
-        j1=str2num(get(handles.num_first_j,'String'));
-        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,[]);
-            [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
+        i1=str2double(get(handles.num_first_i,'String'));
+        j1=str2double(get(handles.num_first_j,'String'));
+        j2=[];%default
+        PairString=get(handles.PairString,'Data');
+        if numel(PairString)>=iview
+            checkpair=strfind(PairString{iview},'j=');
+            if checkpair
+                j1=str2double(PairString{iview}(4));
+                j2=str2double(PairString{iview}(6));
+            end
+        end
+        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
+        [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
                 find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
     % if no file is found, open a browser
@@ -1310,11 +1319,6 @@ function num_first_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function num_last_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% first_j=str2num(get(handles.num_first_j,'String'));
-% last_j=str2num(get(handles.num_last_j,'String'));
-% ref_j=ceil((first_j+last_j)/2);
-% set(handles.num_ref_j,'String', num2str(ref_j))
-% num_ref_j_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
@@ -1345,7 +1349,7 @@ TimeTable=get(handles.TimeTable,'Data');
 %%%%%%%
 %Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
-    if size(SeriesData.Time,1)<iview
+    if numel(SeriesData.Time)<iview
         break
     end
     TimeTable{iview,3}=[];
@@ -2688,12 +2692,15 @@ else
 end
 
 %% NbSlice visibility
-if isfield(ParamOut,'OutputFileMode')&& strcmp(ParamOut.OutputFileMode,'NbSlice')
-    ParamOut.NbSlice='on';
-end
+% if isfield(ParamOut,'OutputFileMode')&& strcmp(ParamOut.OutputFileMode,'NbSlice')
+%     ParamOut.NbSlice='on';
+% end
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')
+    if isnumeric(ParamOut.NbSlice)
+        set(handles.num_NbSlice,'String',num2str(ParamOut.NbSlice))
+    end
 else
     set(handles.num_NbSlice,'Visible','off')
     set(handles.NbSlice_title,'Visible','off')
