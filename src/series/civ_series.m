@@ -816,15 +816,15 @@ for ifield=1:NbField
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
             end
-        elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
-            Data.ListGlobalAttribute={};
-            Data.ListVarName={};
-            Data.VarDimName={};
-            Data.Civ2_X=Param.Civ2_X;
-            Data.Civ2_Y=Param.Civ2_Y;
-            Data.Civ2_U=Param.Civ2_U;
-            Data.Civ2_V=Param.Civ2_V;
-            Data.Civ2_FF=Param.Civ2_FF;
+%         elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
+%             Data.ListGlobalAttribute={};
+%             Data.ListVarName={};
+%             Data.VarDimName={};
+%             Data.Civ2_X=Param.Civ2_X;
+%             Data.Civ2_Y=Param.Civ2_Y;
+%             Data.Civ2_U=Param.Civ2_U;
+%             Data.Civ2_V=Param.Civ2_V;
+%             Data.Civ2_FF=Param.Civ2_FF;
         end
     end
     
@@ -1002,7 +1002,7 @@ if ~isequal(size(par_civ.ImageB),[npy_ima npx_ima])
 end
 
 %% Apply mask
-% Convention for mask IDEAS TO IMPLEMENT ?
+% Convention for mask, IDEAS NOT IMPLEMENTED 
 % mask >200 : velocity calculated
 %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
 % 150>=mask >100: velocity not calculated, nor interpolated
@@ -1019,8 +1019,6 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
         return
     end
     check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
-    %     par_civ.ImageA(check_undefined)=0;% put image A to zero (i.e. the min image value) in the undefined  area
-    %     par_civ.ImageB(check_undefined)=0;% put image B to zero (i.e. the min image value) in the undefined  area
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
@@ -1057,7 +1055,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
             sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
             if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
-                F(ivec)=3; %
+                F(ivec)=1; %
                 utable(ivec)=NaN;
                 vtable(ivec)=NaN;
             else
@@ -1071,14 +1069,14 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             image2_mean=mean(mean(image2_crop));
         end
         %threshold on image minimum
-        if F(ivec)~=3
+        if F(ivec)~=1
             if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                F(ivec)=3;
+                F(ivec)=1;
                 %threshold on image maximum
             elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                F(ivec)=3;
+                F(ivec)=1;
             end
-            if F(ivec)==3
+            if F(ivec)==1
                 utable(ivec)=NaN;
                 vtable(ivec)=NaN;
             else
@@ -1133,15 +1131,15 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
                             utable(ivec)=0;
                             vtable(ivec)=0;
-                            F(ivec)=3;
+                            F(ivec)=1;
                         end
                         ctable(ivec)=corrmax/sum_square;% correlation value
                     catch ME
-                        F(ivec)=3;
+                        F(ivec)=1;
                         disp(ME.message)
                     end
                 else
-                    F(ivec)=3;
+                    F(ivec)=1;
                 end
             end
         end
