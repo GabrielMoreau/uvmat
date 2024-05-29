@@ -267,19 +267,22 @@ if ind_opening==0  %case of image opening, start with Civ1
         set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
     end
 else  %case of netcdf file opening, start with the stage read in the file if the input file is being refreshed
-    if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
-            ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource')) 
+%     if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
+%             ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource')) 
             for index = 1:min(ind_opening,5)
                 set(handles.(ListOptions{index}),'value',0)
                 fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
             end
+            if isempty(FileInfo)
+            FileInfo.FileName='';
+end
             set(handles.ConfigSource,'String',FileInfo.FileName);
             set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
             for index = ind_opening+2:6
                 set(handles.(ListOptions{index}),'value',0)
             end
             checkrefresh=1;
-    end
+%     end
     if ind_opening>=3
         set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
     else

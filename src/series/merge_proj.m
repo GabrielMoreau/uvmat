@@ -231,21 +231,6 @@ for iview=2:NbView
     end
 end
 
-%% mask (TODO: case of multilevels)
-MaskData=cell(NbView,1);
-if Param.CheckMask
-    if ischar(Param.MaskTable)% case of a single mask (char chain)
-        Param.MaskTable={Param.MaskTable};
-    end
-    for iview=1:numel(Param.MaskTable)
-        if exist(Param.MaskTable{iview},'file')
-            [MaskData{iview},tild,errormsg] = read_field(Param.MaskTable{iview},'image');
-            if ~isempty(transform_fct) && nargin(transform_fct)>=2
-                MaskData{iview}=transform_fct(MaskData{iview},XmlData{iview});
-            end
-        end
-    end
-end
 
 %% Set field names and velocity types
 %use Param.InputFields for all views
@@ -318,7 +303,6 @@ for index=1:NbField
         
         %% transform the input field iview (e.g; phys) if requested (no transform involving two input fields at this stage)
         if ~isempty(transform_fct)&& checksub==0
-            checksub=nargin(transform_fct);
             if nargin(transform_fct)>=2
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});
             else
@@ -344,8 +328,21 @@ for index=1:NbField
         end
         
         %% mask
-        if Param.CheckMask && ~isempty(MaskData{iview})
-             [Data{iview},errormsg]=mask_proj(Data{iview},MaskData{iview});
+        if Param.CheckMask % introduce multilevel mask like for civ
+            NbSlice=Param.MaskTable{iview,2};
+            [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.MaskTable{iview,1});
+            i1_mask=mod(i1-1,NbSlice)+1;
+            maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+            if ~exist(maskname,'file')
+                maskname=Param.MaskTable{iview,1};
+            end
+            [MaskData,~,errormsg] = read_field(maskname,'image');
+            if ~isempty(transform_fct) && nargin(transform_fct)>=2
+                MaskData=transform_fct(MaskData,XmlData{iview});
+            end
+            if  ~isempty(MaskData)
+                [Data{iview},errormsg]=mask_proj(Data{iview},MaskData);
+            end
         end
     end
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%

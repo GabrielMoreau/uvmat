@@ -52,6 +52,8 @@ errormsg='';
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
+
+
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
     if isempty(Data)

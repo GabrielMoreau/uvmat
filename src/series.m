@@ -494,85 +494,7 @@ end
 InputTable{1,1}='...';
 set(handles.InputTable,'Data',InputTable)
 browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
-% NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
-% icount=0;
-% for iexp=1:numel(OutPut.Experiment)
-%     for idevice=1:numel(OutPut.DataSeries)
-%         icount=icount+1;
-%         InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
-%         InputTable{icount,2}=OutPut.DataSeries{idevice};
-%         if isempty(InputTable{icount,3})
-%             if icount>1
-%             InputTable{icount,3}=InputTable{icount-1,3};
-%             else
-%                 InputTable{icount,3}='';
-%             end
-%         end
-%         if isempty(InputTable{icount,4})
-%             if icount>1
-%             InputTable{icount,4}=InputTable{icount-1,4};
-%             else
-%                 InputTable{icount,4}='';
-%             end
-%         end
-%                 if isempty(InputTable{icount,5})
-%             if icount>1
-%             InputTable{icount,5}=InputTable{icount-1,5};
-%             else
-%                 InputTable{icount,5}='';
-%             end
-%         end
-%     end
-% end
-% if size(InputTable,1)>icount
-%     InputTable(icount+1:size(InputTable,1),:)=[];
-% end
-%REFRESH_Callback(hObject, eventdata, handles)
 
-% --------------------------------------------------------------------
-% function MenuCampaign_Callback(hObject, eventdata, handles)
-% % --------------------------------------------------------------------
-%
-% OutPut=browse_data(get(hObject,'Label'),'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
-% if ~isfield(OutPut,'Campaign')
-%     return
-% end
-% NbLines=numel(OutPut.Experiment)*numel(OutPut.DataSeries);
-% icount=0;
-% InputTable=get(handles.InputTable,'Data');
-% for iexp=1:numel(OutPut.Experiment)
-%     for idevice=1:numel(OutPut.DataSeries)
-%         icount=icount+1;
-%         InputTable{icount,1}=fullfile(OutPut.Campaign,OutPut.Experiment{iexp});
-%         InputTable{icount,2}=OutPut.DataSeries{idevice};
-%         if isempty(InputTable{icount,3})
-%             if icount>1
-%                 InputTable{icount,3}=InputTable{icount-1,3};
-%             else
-%                 InputTable{icount,3}='';
-%             end
-%         end
-%         if isempty(InputTable{icount,4})
-%             if icount>1
-%                 InputTable{icount,4}=InputTable{icount-1,4};
-%             else
-%                 InputTable{icount,4}='';
-%             end
-%         end
-%         if isempty(InputTable{icount,5})
-%             if icount>1
-%                 InputTable{icount,5}=InputTable{icount-1,5};
-%             else
-%                 InputTable{icount,5}='';
-%             end
-%         end
-%     end
-% end
-% if size(InputTable,1)>icount
-%     InputTable(icount+1:size(InputTable,1),:)=[];
-% end
-% set(handles.InputTable,'Data',InputTable)
-% REFRESH_Callback(hObject, eventdata, handles)
 
 
 % --- Executes when selected cell(s) is changed in InputTable.
@@ -3056,27 +2978,6 @@ if strcmp(field,'add_field...')
                 FieldList=set_field_list('U','V','C');
                 set(handles.FieldName,'Value',2) % set menu to 'velocity
         end
-%         if ~strcmp(GetFieldData.FieldOption,'civdata...')
-%             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-%             switch TimeNameStr
-%                 case 'file index'
-%                     set(handles.TimeName,'String','');
-%                 case 'attribute'
-%                     set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
-%                 case 'variable'
-%                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-%                     set(handles.NomType,'String','*')
-%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
-%                     set(handles.FileIndex,'String','')
-%                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
-%                 case 'matrix_index'
-%                     set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
-%                     set(handles.NomType,'String','*')
-%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
-%                     set(handles.FileIndex,'String','')
-%                     ParamIn.TimeDimName=GetFieldData.Time.TimeName;
-%             end
-%         end
         set(handles.FieldName_1,'Value',1)
         set(handles.FieldName_1,'String',[FieldList; {'add_field...'}]);
     end
@@ -3263,79 +3164,112 @@ set(handles.DeleteObject,'Visible','off')
 %------------------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
 
+
 if get(handles.CheckMask,'Value')
-    InputTable=get(handles.InputTable,'Data');
-    nbview=size(InputTable,1);
-    MaskTable=cell(nbview,1); % default
-    ListMask=cell(nbview,1); % default
-    MaskData=get(handles.MaskTable,'Data');
-    MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1); % complement if undefined lines
-    for iview=1:nbview
-        ListMask{iview,1}=num2str(iview);
-        RootPath=InputTable{iview,1};
-        if ~isempty(RootPath)
-            if isempty(MaskData{iview})
-                SubDir=InputTable{iview,2};
-                MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']); % take the root part of SubDir, before the first dot '.'
-                if exist(MaskPath,'dir')
-                    ListStruct=dir(MaskPath); % look for a mask file
-                    ListCells=struct2cell(ListStruct); % transform dir struct to a cell arrray
-                    check_dir=cell2mat(ListCells(4,:)); % =1 for directories, =0 for files
-                    ListFiles=ListCells(1,:); % list of file and dri names
-                    ListFiles=ListFiles(~check_dir); % list of file names (excluding dir)
-                    mdetect=0;
-                    if ~isempty(ListFiles)
-                        for ifile=1:numel(ListFiles)
-                            [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{ifile},0);
-                            if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
-                                mdetect=1;
-                                MaskName=ListFiles{ifile};
-                            end
-                            if ~strcmp(MaskFile{ifile},MaskFile{1})
-                                mdetect=0; % cancel detection test in case of multiple masks, use the brower for selection
-                                break
-                            end
-                        end
-                    end
-                    if mdetect==1
-                        MaskName=fullfile(MaskPath,'mask_1.png');
-                    else
-                        MaskName=uigetfile_uvmat('select a mask file:',MaskPath,'image');
-                    end
-                else
-                    MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
-                end
-                MaskTable{iview,1}=MaskName ;
-                ListMask{iview,1}=num2str(iview);
+    set(handles.DeleteMask,'Visible','on')
+    Param=read_GUI_series(handles); % displayed parameters
+    NbView=size(Param.InputTable,1);
+    MaskTable=cell(NbView,2);
+    
+    RootPath=Param.InputTable{1,1};
+    first_j=[];% note that the function will propose to cover the whole range of indices
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    last_j=[];
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    %checkmask=zeros(NbView,1);
+    for iview=1:NbView
+        checkmask=0;
+        FirstFileName=fullfile_uvmat(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},...
+            Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);
+        Data=nc2struct(FirstFileName);
+        if isfield(Data,'Civ2_Mask')
+            MaskTable{iview,1}=Data.Civ2_Mask;
+            checkmask=1; 
+        end
+        if ~checkmask
+            MaskTable{iview,1}=uigetfile_uvmat('select a mask file:',Param.InputTable{iview,1},'image');
+        end
+    end
+    for iview=1:NbView
+        [Path,Name]=fileparts(MaskTable{iview,1});
+        Name=regexprep(Name,'_\d+','');
+        maskfiles=dir(fullfile(Path,[Name '_*.png']));%look for mask files        
+        if ~isempty(maskfiles)
+            for ilist=1:numel(maskfiles)
+                r=regexp(maskfiles(ilist).name,'_(?<num1>\d+)','names');%look for burst pairs
+                index(ilist)=str2double(r.num1);
             end
+            MaskTable{iview,2}=max(index);
         end
     end
     set(handles.MaskTable,'Data',MaskTable)
-    set(handles.MaskTable,'Visible','on')
-    set(handles.MaskBrowse,'Visible','on')
-    set(handles.ListMask,'Visible','on')
-    set(handles.ListMask,'String',ListMask)
-    set(handles.ListMask,'Value',1)
-else
-    set(handles.MaskTable,'Visible','off')
-    set(handles.MaskBrowse,'Visible','off')
-    set(handles.ListMask,'Visible','off')
+    set(handles.CheckMask,'Value',0)
 end
+%       
+% if ~isempty(NewMask)
+%     if isempty(MaskList)
+%         MaskList={NewMask};
+%     else
+%     MaskList={MaskList;NewMask};
+%     end
+%     set(handles.Mask,'String',MaskList)
+% end
+% end
+% %     MaskTable=cell(nbview,1); % default
+% %     ListMask=cell(nbview,1); % default
+% %     MaskData=get(handles.MaskTable,'Data');
+% %     MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1); % complement if undefined lines
+%     for iview=1:nbview
+%         ListMask{iview,1}=num2str(iview);
+%         RootPath=InputTable{iview,1};
+%         if ~isempty(RootPath)
+%             if isempty(MaskData{iview})
+%                 SubDir=InputTable{iview,2};
+%                 MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']); % take the root part of SubDir, before the first dot '.'
+%                 if exist(MaskPath,'dir')
+%                     ListStruct=dir(MaskPath); % look for a mask file
+%                     ListCells=struct2cell(ListStruct); % transform dir struct to a cell arrray
+%                     check_dir=cell2mat(ListCells(4,:)); % =1 for directories, =0 for files
+%                     ListFiles=ListCells(1,:); % list of file and dri names
+%                     ListFiles=ListFiles(~check_dir); % list of file names (excluding dir)
+%                     mdetect=0;
+%                     if ~isempty(ListFiles)
+%                         for ifile=1:numel(ListFiles)
+%                             [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{ifile},0);
+%                             if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
+%                                 mdetect=1;
+%                                 MaskName=ListFiles{ifile};
+%                             end
+%                             if ~strcmp(MaskFile{ifile},MaskFile{1})
+%                                 mdetect=0; % cancel detection test in case of multiple masks, use the brower for selection
+%                                 break
+%                             end
+%                         end
+%                     end
+%                     if mdetect==1
+%                         MaskName=fullfile(MaskPath,'mask_1.png');
+%                     else
+%                         MaskName=uigetfile_uvmat('select a mask file:',MaskPath,'image');
+%                     end
+%                 else
+%                     MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
+%                 end
+%                 MaskTable{iview,1}=MaskName ;
+%                 ListMask{iview,1}=num2str(iview);
+%             end
+%         end
+%     end
+%     set(handles.MaskTable,'Data',MaskTable)
+%     set(handles.MaskTable,'Visible','on')
+%     set(handles.MaskBrowse,'Visible','on')
+%     set(handles.ListMask,'Visible','on')
+%     set(handles.ListMask,'String',ListMask)
+%     set(handles.ListMask,'Value',1)
 
-%------------------------------------------------------------------------
-% --- Executes on button press in MaskBrowse.
-%------------------------------------------------------------------------
-function MaskBrowse_Callback(hObject, eventdata, handles)
 
-InputTable=get(handles.InputTable,'Data');
-iview=get(handles.ListMask,'Value');
-RootPath=InputTable{iview,1};
-MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
-if ~isempty(MaskName)
-    MaskTable=get(handles.MaskTable,'Data');
-    MaskTable{iview,1}=MaskName ;
-    set(handles.MaskTable,'Data',MaskTable)
-end
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in MaskTable.
@@ -3534,6 +3468,14 @@ set(handles.InputTable,'Unit','normalized')
 ColumnWidth=round([0.5 0.14 0.14 0.14 0.08]*(Pos(3)-52));
 ColumnWidth=num2cell(ColumnWidth);
 set(handles.InputTable,'ColumnWidth',ColumnWidth)
+
+%% MaskTable
+set(handles.MaskTable,'Unit','pixel')
+Pos=get(handles.MaskTable,'Position');
+set(handles.MaskTable,'Unit','normalized')
+ColumnWidth=round([0.9 0.1]*(Pos(3)-52));
+ColumnWidth=num2cell(ColumnWidth);
+set(handles.MaskTable,'ColumnWidth',ColumnWidth)
 
 %% MinIndex_j and MaxIndex_i
 unit=get(handles.MinIndex_i,'Unit');
@@ -4018,10 +3960,6 @@ end
 
 
 
-function Mask_Callback(hObject, eventdata, handles)
-% hObject    handle to Mask (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Mask as text
-%        str2double(get(hObject,'String')) returns contents of Mask as a double
+% --- Executes on button press in DeleteMask.
+function DeleteMask_Callback(hObject, eventdata, handles)
+set(handles.MaskTable,'Data',{})
