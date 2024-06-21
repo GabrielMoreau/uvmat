@@ -66,23 +66,6 @@ hhseries=guidata(hseries); %handles of the elements in 'series'
 SeriesData=get(hseries,'UserData');% info stored in the GUI series 
 
 %% set visibility options depending on the calling function (Param.Action.ActionName): 
-if strcmp(Param.Action.ActionName,'civ_series')||strcmp(Param.Action.ActionName,'stereo_civ')
-     set(handles.num_MaxDiff,'Visible','on')
-    set(handles.num_MaxVel,'Visible','on')
-    set(handles.title_MaxVel,'Visible','on')
-    set(handles.title_MaxDiff,'Visible','on')
-    set(handles.num_Nx,'Visible','off')
-    set(handles.num_Ny,'Visible','off')
-    set(handles.title_Nx,'Visible','off')
-    set(handles.title_Ny,'Visible','off')
-    set(handles.num_CorrSmooth,'Style','popupmenu')
-    set(handles.num_CorrSmooth,'Value',1)
-    set(handles.num_CorrSmooth,'String',{'1';'2'})
-    set(handles.CheckThreshold,'Visible','on')
-    set(handles.CheckDeformation,'Value',0)% desactivate 
-%     set(handles.num_SubDomainSize(1),'String','250')
-%     set(handles.num_SubDomainSize(2),'String','500')
-end
 switch Param.Action.ActionName
     case 'stereo_civ'
         set(handles.ListCompareMode,'Visible','off')
@@ -90,6 +73,15 @@ switch Param.Action.ActionName
     case 'civ_series'
         set(handles.ListCompareMode,'Visible','on')
         set(handles.PairIndices,'Visible','on')
+    case 'civ_3D'
+        set(handles.ListCompareMode,'Visible','on')
+        set(handles.PairIndices,'Visible','on')
+        set(handles.title_z,'Visible','on')
+        set(handles.num_CorrBoxSize_3,'Visible','on')
+        set(handles.num_SearchBoxSize_3,'Visible','on')
+        set(handles.num_SearchBoxShift_3,'Visible','on')
+        set(handles.num_Dz,'Visible','on')
+        set(handles.title_Dz,'Visible','on')
 end
 
 %% input file info
@@ -156,14 +148,6 @@ switch FileType
         return
         end
 end
-
-%% reinitialise menus
-set(handles.ListPairMode,'Value',1)
-set(handles.ListPairMode,'String',{''})
-set(handles.ListPairCiv1,'Value',1)
-set(handles.ListPairCiv1,'String',{''})
-set(handles.ListPairCiv2,'Value',1)
-set(handles.ListPairCiv2,'String',{''}) 
         
 %% prepare the GUI with input parameters 
 % 
@@ -320,8 +304,16 @@ else
     set(handles.CheckRefFile,'Visible','off')
 end
 
+%% reinitialise pair menus
+set(handles.ListPairMode,'Value',1)
+set(handles.ListPairMode,'String',{''})
+set(handles.ListPairCiv1,'Value',1)
+set(handles.ListPairCiv1,'String',{''})
+set(handles.ListPairCiv2,'Value',1)
+set(handles.ListPairCiv2,'String',{''}) 
+
 %% set the menu and default choice of civ pairs
-if isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
+if isequal(MaxIndex_j,MinIndex_j)|| strcmp(Param.Action.ActionName,'civ_3D')% no possibility of j pairs
     PairMenu={'series(Di)'};
 elseif MaxIndex_j-MinIndex_j==1
     PairMenu={'pair j1-j2'};
@@ -337,24 +329,28 @@ PairIndex=[];
 if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'PairIndices')
     PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));%retrieve the previous option
 end
-if isempty(PairIndex)
-    if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
-        PairIndex=1;
-    elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
-        if  MaxIndex_j <= 10
-            PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
-        end
-    else
-        if strcmp(NomTypeNc,'_1-2_1')
-            PairIndex=3;% advise 'series(Di)'
-        elseif  MaxIndex_j <= 10
-            PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+if strcmp(Param.Action.ActionName,'civ_3D')
+    PairIndex=1
+else
+    if isempty(PairIndex)
+        if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
+            PairIndex=1;
+        elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
+            if  MaxIndex_j <= 10
+                PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+            end
         else
-            PairIndex=2;% advice 'Dj' 
+            if strcmp(NomTypeNc,'_1-2_1')
+                PairIndex=3;% advise 'series(Di)'
+            elseif  MaxIndex_j <= 10
+                PairIndex=1;% advice 'pair j1-j2' except in MaxIndex_j is large
+            else
+                PairIndex=2;% advice 'Dj'
+            end
         end
     end
 end
-set(handles.ListPairMode,'Value',PairIndex);  
+set(handles.ListPairMode,'Value',PairIndex);
 
 %% indicate the min and max indices i and j on the GUI
 set(handles.MinIndex_i,'String',num2str(MinIndex_i))
@@ -406,8 +402,8 @@ Param.ConfigSource='\default';
 
 %% Civ1 parameters
 %Param.CheckCiv1=1;
-Param.Civ1.CorrBoxSize=[25 25];
-Param.Civ1.SearchBoxSize=[55 55];
+Param.Civ1.CorrBoxSize=[25 25 1];
+Param.Civ1.SearchBoxSize=[55 55 5];
 Param.Civ1.SearchBoxShift=[0 0];
 Param.Civ1.CorrSmooth=1;
 Param.Civ1.Dx=20;
@@ -419,17 +415,13 @@ Param.Civ1.CheckThreshold=0;
 Param.Civ1.TestCiv1=0;
 
 %% Fix1 parameters
-%Param.CheckFix1=1;
-Param.Fix1.CheckFmin2=1;
-Param.Fix1.CheckF3=1;
 Param.Fix1.MinCorr=0.2000;
 
 %% Patch1 parameters
 %Param.CheckPatch1=1;
-Param.Patch1.FieldSmooth=10;
-Param.Patch1.MaxDiff=1.5000;
-Param.Patch1.SubDomainSize=250;
-Param.Patch1.TestPatch1=0;
+Param.Patch1.FieldSmooth=20;
+Param.Patch1.MaxDiff=2;
+Param.Patch1.SubDomainSize=125;
 
 %% Civ2 parameters
 %Param.CheckCiv2=1;
@@ -442,20 +434,14 @@ Param.Civ2.CheckGrid=0;
 Param.Civ2.CheckMask=0;
 Param.Civ2.Mask='';
 Param.Civ2.CheckThreshold=0;
-Param.Civ2.TestCiv2=0;
 
 %% Fix2 parameters
-%Param.CheckFix2=1;
-Param.Fix2.CheckFmin2=1;
-Param.Fix2.CheckF4=1;
-Param.Fix2.CheckF3=1;
 Param.Fix2.MinCorr=0.2000;
 
 %% Patch2 parameters
-%Param.CheckPatch2=1;
-Param.Patch2.FieldSmooth=2;
+Param.Patch2.FieldSmooth=5;
 Param.Patch2.MaxDiff=1.5000;
-Param.Patch2.SubDomainSize=500;
+Param.Patch2.SubDomainSize=250;
 Param.Patch2.TestPatch2=0;
 
 fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
@@ -610,7 +596,7 @@ ActionInput=read_GUI(handles.civ_input);% read the infos on the GUI civ_input
 if isfield(ActionInput,'Civ1')
     checkeven=(mod(ActionInput.Civ1.CorrBoxSize,2)==0);
     ActionInput.Civ1.CorrBoxSize(checkeven)=ActionInput.Civ1.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ1.SearchBoxSize=max(ActionInput.Civ1.SearchBoxSize,ActionInput.Civ1.CorrBoxSize+8);% insure that the search box size is large enough
+    ActionInput.Civ1.SearchBoxSize(1:2)=max(ActionInput.Civ1.SearchBoxSize(1:2),ActionInput.Civ1.CorrBoxSize(1:2)+8);% insure that the search box size is large enough
     checkeven=(mod(ActionInput.Civ1.SearchBoxSize,2)==0);
     ActionInput.Civ1.SearchBoxSize(checkeven)=ActionInput.Civ1.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
@@ -668,11 +654,11 @@ PairIndices='off';
 switch option
     case 'PIV'
         PairIndices='on';% needs to define index pairs for PIV       
-    case 'PIV volume'
-        PairIndices='on';% needs to define index pairs for PIV
-        set(handles.ListPairMode,'Value',1)
-        set(handles.ListPairMode,'String',{'series(Di)'})
-        ListPairMode_Callback(hObject, eventdata, handles)
+    % case 'PIV volume'
+    %     PairIndices='on';% needs to define index pairs for PIV
+    %     set(handles.ListPairMode,'Value',1)
+    %     set(handles.ListPairMode,'String',{'series(Di)'})
+    %     ListPairMode_Callback(hObject, eventdata, handles)
     case 'displacement'
         OriginIndex='on';%define a frame origin for displacement
 end
@@ -2362,3 +2348,19 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
     set(handles.OK,'BackgroundColor',[1 0 1])%
     drawnow
 end
+
+
+function num_CorrBoxSize_3_Callback(hObject, eventdata, handles)
+
+
+function num_SearchBoxSize_3_Callback(hObject, eventdata, handles)
+
+
+function MinIndex_j_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on selection change in field_ref2.
+function field_ref2_Callback(hObject, eventdata, handles)
+
+
+

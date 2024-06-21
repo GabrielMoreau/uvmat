@@ -55,10 +55,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
 
 
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
+    %App=civ_input_App
     %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
-    if isempty(Data)
-        Data=Param;% if  civ_input has been cancelled, keep previous parameters
-    end
+    % if isempty(App)
+    %     Data=Param;% if  civ_input has been cancelled, keep previous parameters
+    % end
     Data.Program=mfilename;%gives the name of the current function
     Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)

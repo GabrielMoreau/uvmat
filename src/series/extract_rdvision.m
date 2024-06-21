@@ -1,4 +1,4 @@
-%'extunningact_rdvision': relabel an image series with two indices, and correct errors from the RDvision transfer program
+%'extract_rdvision': relabel an image series with two indices, and correct errors from the RDvision transfer program
 %------------------------------------------------------------------------
 % function ParamOut=extract_rdvision(Param)
 %------------------------------------------------------------------------
@@ -151,13 +151,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
             return
         end
         difftime=timestamp-timexml;
-        if max(difftime)>0.01
+        %if max(difftime)>0.01
         figure
         plot(timestamp,difftime)
         xlabel('timestamps(s)')
         ylabel('time difference(s)')
         title('discrepency timestamps-timexml') 
-        end
+        %end
     return
 end
 
@@ -307,17 +307,22 @@ for iview=1:size(Param.InputTable,1)
 %             end
 %             m.Data=data;
     %%%%%%%
+        [XmlData,errormsg]=imadoc2struct(filexml);% check reading of the xml file
+        if ~isempty(errormsg)
+            disp(errormsg)
+            return
+        end
+        [nbfield1,nbfield2]=size(XmlData.Time);
+        nbfield1=nbfield1-1;nbfield2=nbfield2-1;
+
     timestamp=zeros(1,numel(m.Data));
     for ii=1: numel(m.Data)
         timestamp(ii)=m.Data(ii).timestamp;
     end
     if isequal(Param.IndexRange.first_i,1)
-        [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
-        [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
-        if ~isempty(errormsg)
-            disp(errormsg)
-            return
-        end
+        %[nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+        % [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
+
         if numel(timestamp)~=nbfield1*nbfield2
             disp('WARNING: total image number defined by the xml file differs from  the number of frames ')
         else
@@ -328,8 +333,8 @@ for iview=1:size(Param.InputTable,1)
                 checkpreserve=1;% will not erase the initial files, possibility of error
             end
         end
-    else
-       [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,''); 
+    % else
+       % [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,''); 
     end
     if nbfield2>1
         NomTypeNew='_1_1';
@@ -467,11 +472,11 @@ end
 if fid~=0
 fclose(fid)
 end
+disp('END EXTRACT')
 
 
-
-
-function [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml)
+%OBSOLETE
+function [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml)%
 msg='';
 t=xmltree(filexml);
 

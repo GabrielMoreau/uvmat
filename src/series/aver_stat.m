@@ -135,10 +135,12 @@ checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
-end
+    WaitbarHandle=[];
+else
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+end
 
 %% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];

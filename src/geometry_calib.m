@@ -981,22 +981,30 @@ if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
     corners_Y(3)=Y_end;
 end
 
-%% initiate the grid in phys coordinates
-CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
-grid_input=[];%default
-if isfield(CalibData,'grid')
-    grid_input=CalibData.grid;%retrieve the previously used grid
-end
-[T,CalibData.grid,CalibData.grid.CheckWhite,CalibData.grid.FilterWindow]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
-set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
-X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
-Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
+
 
 %% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
 A=UvData.Field.A;%currently displayed image
 npxy=size(A);
+
+%% initiate the grid in phys coordinates
+CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
+grid_input=[];%default
+if isfield(CalibData,'grid')
+    grid_input=CalibData.grid;%retrieve the previously used grid
+else
+   %S=skewness(double(reshape(A,1,[])));
+   A=double(A);
+   A=A-mean(mean(A));
+   S=mean(mean(A.*A.*A))/(mean(mean(A.*A)))^1.5
+   grid_input.CheckWhite=sign(S);%propose white markers if image skewness>0, black markers otherwise
+end
+[T,CalibData.grid,CalibData.grid.CheckWhite,CalibData.grid.FilterWindow]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
+X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
+Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
 
 %% calculate transform matrices for plane projection: rectangle assumed to be viewed in perspective
 % reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
@@ -1033,6 +1041,9 @@ rmpath(fullfile(path_UVMAT,'transform_field'))
 Amod=DataOut.A;% current image expressed in 'phys' coord
 Rangx=DataOut.Coord_x;% x coordinates of first and last pixel centres in phys
 Rangy=DataOut.Coord_y;% y coordinates of first and last pixel centres in phys
+
+
+%% inverse the image in the case of black lines
 if CalibData.grid.CheckWhite
     Amod=double(Amod);%case of white grid markers: will look for image maxima
 else

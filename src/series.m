@@ -2320,7 +2320,7 @@ if isequal(ActionName,'more...')
     end
 
     % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
-    if length(ActionList)>NbBuiltinAction+5; % nb_builtin_ACTION=nbre of functions always remaining in the initial menu
+    if length(ActionList)>NbBuiltinAction+5% nb_builtin_ACTION=nbre of functions always remaining in the initial menu
         nbremove=length(ActionList)-NbBuiltinAction-5;
         ActionList(NbBuiltinAction+1:end-5)=[];
         ActionPathList(NbBuiltinAction+1:end-4,:)=[];
@@ -2353,14 +2353,14 @@ end
 
 %% check the current ActionPath to the selected function
 ActionPath=ActionPathList{ActionIndex}; % current recorded path
-set(handles.ActionPath,'String',ActionPath); % show the path to the senlected function
+set(handles.ActionPath,'String',ActionPath); % show the path to the selected function
 
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
 
 %% Put the first line of the selected Action fct as tooltip help
 try
-    [fid,errormsg] =fopen([ActionName '.m']);
+    [fid,errormsg] =fopen([fullfile(ActionPath,ActionName) '.m']);
     InputText=textscan(fid,'%s',1,'delimiter','\n');
     fclose(fid);
     set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
@@ -2562,23 +2562,34 @@ if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& s
 end
 
 %% Impose the whole input file index range if requested
-if isfield(ParamOut,'WholeIndexRange')&&isequal(ParamOut.WholeIndexRange,'on')
+if ~isfield(ParamOut,'WholeIndexRange')
+    ParamOut.WholeIndexRange='off';
+end
+if ~isfield(ParamOut,'WholeIndexRange_j')
+    ParamOut.WholeIndexRange_j='off';
+end
+
+if strcmp(ParamOut.WholeIndexRange,'on')
     MinIndex_i=get(handles.MinIndex_i,'Data');
-    MinIndex_j=get(handles.MinIndex_j,'Data');
     MaxIndex_i=get(handles.MaxIndex_i,'Data');
-    MaxIndex_j=get(handles.MaxIndex_j,'Data');
     set(handles.num_first_i,'String',num2str(MinIndex_i(1)))% set first as the min index (for the first line)
     set(handles.num_last_i,'String',num2str(MaxIndex_i(1)))% set last as the max index (for the first line)
     set(handles.num_incr_i,'String','1')
-    set(handles.num_first_j,'String',num2str(MinIndex_j(1)))% set first as the min index (for the first line)
-    set(handles.num_last_j,'String',num2str(MaxIndex_j(1)))% set last as the max index (for the first line)
-    set(handles.num_incr_j,'String','1')
-else  % check index ranges
-    first_i=1;last_i=1;first_j=1;last_j=1;
+else
+    first_i=1;last_i=1;
     if isfield(Param.IndexRange,'first_i')
         first_i=Param.IndexRange.first_i;
         last_i=Param.IndexRange.last_i;
     end
+end
+if strcmp(ParamOut.WholeIndexRange,'on')||strcmp(ParamOut.WholeIndexRange_j,'on')
+    MinIndex_j=get(handles.MinIndex_j,'Data');
+    MaxIndex_j=get(handles.MaxIndex_j,'Data');
+    set(handles.num_first_j,'String',num2str(MinIndex_j(1)))% set first as the min index (for the first line)
+    set(handles.num_last_j,'String',num2str(MaxIndex_j(1)))% set last as the max index (for the first line)
+    set(handles.num_incr_j,'String','1')
+else  % check index ranges
+    first_j=1;last_j=1;
     if isfield(Param.IndexRange,'first_j')
         first_j=Param.IndexRange.first_j;
         last_j=Param.IndexRange.last_j;
