@@ -15,7 +15,7 @@
 % when Param.Action.RUN=0 (as activated when the current Action is selected
 % in series), the function ouput paramOut set the activation of the needed GUI elements
 %
-% Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to
 % see the current structure Param)
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
@@ -26,7 +26,7 @@
 %             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
 %             .RUN =0 for GUI input, =1 for function activation
 %             .RunMode='local','background', 'cluster': type of function  extract_rdvision.muse
-%             
+%
 %    .IndexRange: set the file or frame indices on which the action must be performed
 %    .FieldTransform: .TransformName: name of the selected transform function
 %                     .TransformPath:   path  of the selected transform function
@@ -104,32 +104,44 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 
     % check the names of .seq and .sqb files
     iview=1;
-    switch Param.InputTable{iview,5}
-        case {'.seq','.sqb'}
-            filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
-            filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
-            if ~exist(filename_seq,'file')
-                msgbox_uvmat('ERROR',[filename_seq ' missing']);
-            end
-            if ~exist(filename_sqb,'file')
-                msgbox_uvmat('ERROR',[filename_sqb ' missing']);
-            end
-            filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%xml at the level of the image folder
-            if ~exist(filexml,'file')
-                msgbox_uvmat('ERROR',[filexml ' missing: needed to get the image organisation and timing ']);
-                return
-            end
-            [XmlData,errormsg]=imadoc2struct(filexml);
-            if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',errormsg);
-                return
-            end
-            timexml=reshape(XmlData.Time(2:end,2:end)',1,[]);
-        otherwise
-            msgbox_uvmat('ERROR','bad input file : select .seq or .sqb for image extraction');
-            return
+    if ~ismember(Param.InputTable{iview,5},{'.seq','.sqb'})
+        msgbox_uvmat('ERROR','bad input file : select .seq or .sqb for image extraction');
+        return
     end
-    % get data from .seq file
+    filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
+    filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
+    if ~exist(filename_seq,'file')
+        msgbox_uvmat('ERROR',[filename_seq ' missing']);
+        return
+    end
+    if ~exist(filename_sqb,'file')
+        msgbox_uvmat('ERROR',[filename_sqb ' missing']);
+        return
+    end
+    filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%xml at the level of the image folder
+    if exist(filexml,'file')
+        [XmlData,errormsg]=imadoc2struct(filexml);
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',errormsg);
+            return
+        end
+        ParamOut.ActionInput.Createxml=false;
+        %  filexml=uigetfile_uvmat('pick xml file for timing',fullfile(RootPath,Param.InputTable{iview,2}),'.xml');
+        % msgbox_uvmat('ERROR',[filexml ' missing: needed to get the image organisation and timing ']);
+    else
+        if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'BurstLength')
+            BurstLength=num2str(Param.ActionInput.BurstLength);
+        else
+            BurstLength='1';%default for a simple image series
+        end
+         answer=msgbox_uvmat('INPUT_TXT',{['no xml file in ' Param.InputTable{iview,2}];' introduce the nbre of frames in a burst to create xml'},BurstLength);
+        ParamOut.ActionInput.BurstLength=str2double(answer);
+         % filexml=uigetfile_uvmat('pick xml file for timing',fullfile(RootPath,Param.InputTable{iview,2}),'.xml');
+        % [XmlData,errormsg]=imadoc2struct(filexml);
+        ParamOut.ActionInput.Createxml=true;
+    end
+
+% get data from .seq file
     s=ini2struct(filename_seq);
     SeqData=s.sequenceSettings;
     SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
@@ -139,15 +151,22 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         'double' [1 1] 'timestamp';...
         'uint32' [1 1] 'file_idx';...
         'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
-    
+    ParamOut.ActionInput.XmlData.SourceFolder=fileparts(m.Filename);
         timestamp=zeros(1,numel(m.Data));
         for ii=1: numel(m.Data)
             timestamp(ii)=m.Data(ii).timestamp;
         end
+        if ParamOut.ActionInput.Createxml
+            ParamOut.ActionInput.XmlData.Camera.BurstTiming=time2xmlburst(timestamp,ParamOut.ActionInput.BurstLength);
+            Time=xmlburst2time(ParamOut.ActionInput.XmlData.Camera.BurstTiming);
+        else
+           Time=XmlData.Time;
+        end
+        timexml=reshape(Time(2:end,2:end)',1,[]);
         if numel(timestamp)<= numel(timexml)
             timexml=timexml(1:numel(timestamp));
-        else
-            msgbox_uvmat('ERROR','time sequence defined by the xml file too small')
+        else 
+            msgbox_uvmat('ERROR',['time sequence from the xml file = ' num2str(numel(timexml))  ' smaller than timestamp length ' num2str(numel(timestamp))])
             return
         end
         difftime=timestamp-timexml;
@@ -170,7 +189,7 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
 end
 disp(Param)
-checkrun=strcmp(Param.RunMode,'local')
+checkrun=strcmp(Param.RunMode,'local');
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -231,8 +250,7 @@ for iview=1:size(Param.InputTable,1)
     newxml=[newxml '.xml'];
     
     %% get the names of .seq and .sqb files and save them to the log output folder .extract
-    switch Param.InputTable{iview,5}
-        case {'.seq','.sqb'}
+    if ismember( Param.InputTable{iview,5}, {'.seq','.sqb'})
             filename_seq=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.seq']);
             filename_sqb=fullfile(RootPath,Param.InputTable{iview,2},[Param.InputTable{iview,3} '.sqb']);
             errormsg='';
@@ -252,12 +270,9 @@ for iview=1:size(Param.InputTable,1)
                     if ~success
                         disp(errormsg)
                     end
-                else
-                    disp(['error:' filexml ' missing']);
-                    return
                 end
             end
-        otherwise
+    else
             errormsg='input file extension must be .seq or .sqb';
     end
     if ~exist(filename_seq,'file')
@@ -281,8 +296,6 @@ for iview=1:size(Param.InputTable,1)
         SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
         [tild,SeqData.binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
     end
-   
-    
     
     %% reading the .sqb file
     m = memmapfile(filename_sqb,'Format', { 'uint32' [1 1] 'offset'; ...
@@ -306,50 +319,57 @@ for iview=1:size(Param.InputTable,1)
 %                 data(ii).timestamp=0.005*(ii-1);
 %             end
 %             m.Data=data;
-    %%%%%%%
-        [XmlData,errormsg]=imadoc2struct(filexml);% check reading of the xml file
-        if ~isempty(errormsg)
-            disp(errormsg)
-            return
-        end
-        [nbfield1,nbfield2]=size(XmlData.Time);
-        nbfield1=nbfield1-1;nbfield2=nbfield2-1;
-
-    timestamp=zeros(1,numel(m.Data));
-    for ii=1: numel(m.Data)
-        timestamp(ii)=m.Data(ii).timestamp;
-    end
-    if isequal(Param.IndexRange.first_i,1)
-        %[nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
-        % [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
-
-        if numel(timestamp)~=nbfield1*nbfield2
-            disp('WARNING: total image number defined by the xml file differs from  the number of frames ')
-        else
-            timestamp=reshape(timestamp,nbfield2,nbfield1);
-            difftime=XmlData.Time(2:end,2:end)'-timestamp;
-            disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
-            if max(abs(difftime))>0.01
-                checkpreserve=1;% will not erase the initial files, possibility of error
-            end
-        end
-    % else
-       % [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,''); 
-    end
-    if nbfield2>1
-        NomTypeNew='_1_1';
+%%%%%%%
+if Param.ActionInput.Createxml
+    nbfield2=Param.ActionInput.BurstLength;
+else
+    [XmlData,errormsg]=imadoc2struct(filexml);% check reading of the xml file
+    if isempty(errormsg)
+        nbfield2=size(XmlData.Time,2)-1;
     else
-        NomTypeNew='_1';
-    end
-
-    [BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew,Param.IndexRange.first_i,Param.IndexRange.last_i);
-    if ~isempty(errormsg)
-        disp_uvmat('ERROR',errormsg,checkrun)
+        disp(errormsg)
         return
     end
-
 end
 
+
+
+% timestamp=zeros(1,numel(m.Data));
+% for ii=1: numel(m.Data)
+%     timestamp(ii)=m.Data(ii).timestamp;
+% end
+if isequal(Param.IndexRange.first_i,1)
+    if Param.ActionInput.Createxml
+        t=struct2xml(Param.ActionInput.XmlData);
+        t=set(t,1,'name','ImaDoc');
+        save(t,newxml)
+    else
+        [success,errormsg]=copyfile(filexml,newxml);
+    end
+    % [nbfield1,nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+    % if numel(timestamp)~=nbfield1*nbfield2
+    %     disp('WARNING: total image number defined by the xml file differs from  the number of frames ')
+    % else
+    %     timestamp=reshape(timestamp,nbfield2,nbfield1);
+    %     difftime=XmlData.Time(2:end,2:end)'-timestamp;
+    %     disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+    %     if max(abs(difftime))>0.01
+    %         checkpreserve=1;% will not erase the initial files, possibility of error
+    %     end
+    % end
+end
+if nbfield2>1
+    NomTypeNew='_1_1';
+else
+    NomTypeNew='_1';
+end
+
+[BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew,Param.IndexRange.first_i,Param.IndexRange.last_i);
+if ~isempty(errormsg)
+    disp_uvmat('ERROR',errormsg,checkrun)
+    return
+end
+end
 %% remove binary files if transfer OK
 %     if ~checkpreserve
 %         for iview=1:size(Param.InputTable,1)

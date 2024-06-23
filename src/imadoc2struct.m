@@ -36,11 +36,6 @@ function [s,errormsg]=imadoc2struct(ImaDoc,varargin)
 %% default input and output
 errormsg='';%default
 s=[];
-% s.Heading=[];%default
-% s.Time=[]; %default
-% s.TimeUnit=[]; %default
-% s.GeometryCalib=[];
-% tsai=[];%default
 
 %% opening the xml file
 [tild,tild,FileExt]=fileparts(ImaDoc);
@@ -71,10 +66,14 @@ if isfield(s,'Camera')
     if isfield(s.Camera,'TimeUnit')
         s.TimeUnit=s.Camera.TimeUnit;
     end
+    if ~isfield(s.Camera,'FirstFrameIndexI')
+        s.Camera.FirstFrameIndexI=1; %first index assumed equl to 1 by default
+    end
     Timing=s.Camera.BurstTiming;
     if ~iscell(Timing)
         Timing={Timing};
     end
+
     s.Time=[];
     for k=1:length(Timing)
         Frequency=1;
@@ -125,9 +124,7 @@ if isfield(s,'Camera')
             end
         end
     end
-    if ~isfield(s.Camera,'FirstFrameIndexI')
-        s.Camera.FirstFrameIndexI=1; %first index qssumed equl to 1 by default
-    end
+   
     s.Time=[zeros(size(s.Time,1),1) s.Time]; %insert a vertical line of zeros (to deal with zero file indices)
     if s.Camera.FirstFrameIndexI~=0
     s.Time=[zeros(s.Camera.FirstFrameIndexI,size(s.Time,2)); s.Time]; %insert a horizontal line of zeros

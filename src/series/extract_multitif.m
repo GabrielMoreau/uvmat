@@ -90,8 +90,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     % check the existence of the first file in the series
         first_j=[];% note that the function will propose to cover the whole range of indices
     if isfield(Param.IndexRange,'MinIndex_j'); first_j=Param.IndexRange.MinIndex_j; end
-% %     last_j=[];
-% %     if isfield(Param.IndexRange,'MaxIndex_j'); last_j=Param.IndexRange.MaxIndex_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
