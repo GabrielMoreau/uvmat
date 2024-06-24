@@ -69,67 +69,9 @@ if isfield(s,'Camera')
     if ~isfield(s.Camera,'FirstFrameIndexI')
         s.Camera.FirstFrameIndexI=1; %first index assumed equl to 1 by default
     end
-    Timing=s.Camera.BurstTiming;
-    if ~iscell(Timing)
-        Timing={Timing};
-    end
-
-    s.Time=[];
-    for k=1:length(Timing)
-        Frequency=1;
-        if isfield(Timing{k},'FrameFrequency')
-            Frequency=Timing{k}.FrameFrequency;
-        end
-        Dtj=[];
-        if isfield(Timing{k},'Dtj')
-            Dtj=Timing{k}.Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's');
-        end
-        NbDtj=1;
-        if isfield(Timing{k},'NbDtj')&&~isempty(Timing{k}.NbDtj)
-            NbDtj=Timing{k}.NbDtj;
-        end
-        Dti=[];
-        if isfield(Timing{k},'Dti')
-            Dti=Timing{k}.Dti/Frequency;%Dti converted from frame unit to TimeUnit (e.g. 's');
-        end
-        NbDti=1;
-        if isfield(Timing{k},'NbDti')&&~isempty(Timing{k}.NbDti)
-            NbDti=Timing{k}.NbDti;
-        end
-        Time_val=Timing{k}.Time;%time in TimeUnit
-        if ~isempty(Dti)
-            Dti=reshape(Dti'*ones(1,NbDti),NbDti*numel(Dti),1); %concatene Dti vector NbDti times
-            Time_val=[Time_val;Time_val(end)+cumsum(Dti)];%append the times defined by the intervals  Dti
-        end
-        if ~isempty(Dtj)
-            Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
-            Dtj=[0 Dtj];
-            Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
-        end
-        % reading Dtk
-        Dtk=[];%default
-        NbDtk=1;%default
-        if isfield(Timing{k},'Dtk')
-            Dtk=Timing{k}.Dtk;
-        end
-        if isfield(Timing{k},'NbDtk')&&~isempty(Timing{k}.NbDtk)
-            NbDtk=Timing{k}.NbDtk;
-        end
-        if isempty(Dtk)
-            s.Time=[s.Time;Time_val];
-        else
-            for kblock=1:NbDtk+1
-                Time_val_k=Time_val+(kblock-1)*Dtk;
-                s.Time=[s.Time;Time_val_k];
-            end
-        end
-    end
-   
-    s.Time=[zeros(size(s.Time,1),1) s.Time]; %insert a vertical line of zeros (to deal with zero file indices)
-    if s.Camera.FirstFrameIndexI~=0
-    s.Time=[zeros(s.Camera.FirstFrameIndexI,size(s.Time,2)); s.Time]; %insert a horizontal line of zeros
-    end
+    s.Time=xmlburst2time(s.Camera.BurstTiming,s.Camera.FirstFrameIndexI);
 end
+
 
 function [s,errormsg]=read_subtree(subt,Data,NbOccur,NumTest)
 %--------------------------------------------------

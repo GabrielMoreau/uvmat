@@ -345,7 +345,7 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     if check_update
                         display([XmlName ' updated with calibration parameters' dispmessage])
                     else
-                        display([XmlName ' created with calibration parameters' dispmessage])
+                        display([XmlName ' created with calibration parameters: no timing defined' dispmessage])
                     end
                 end
             end
@@ -395,23 +395,23 @@ set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color
 
 %------------------------------------------------------------------------
 % --- Executes on button press in Replicate
-    function Replicate_Callback(hObject, eventdata, handles)
-        % %------------------------------------------------------------------------
-        set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
-        
-        if get(handles.Replicate,'Value') %open the GUI browse_data
-            % look for the GUI uvmat and check for an image as input
-            huvmat=findobj(allchild(0),'Name','uvmat');
-            hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-            RootPath=get(hhuvmat.RootPath,'String');
-            SubDir=get(hhuvmat.SubDir,'String');
-            browse_data(fullfile(RootPath,SubDir))
-        else
-            hbrowse=findobj(allchild(0),'Tag','browse_data');
-            if ~isempty(hbrowse)
-                delete(hbrowse)
-            end
-        end
+function Replicate_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
+
+if get(handles.Replicate,'Value') %open the GUI browse_data
+    % look for the GUI uvmat and check for an image as input
+    huvmat=findobj(allchild(0),'Name','uvmat');
+    hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+    RootPath=get(hhuvmat.RootPath,'String');
+    SubDir=get(hhuvmat.SubDir,'String');
+    browse_data(fullfile(RootPath,SubDir))
+else
+    hbrowse=findobj(allchild(0),'Tag','browse_data');
+    if ~isempty(hbrowse)
+        delete(hbrowse)
+    end
+end
 %------------------------------------------------------------------------
 % --- activate calibration and store parameters in ouputfile .
 function [GeometryCalib,ind_max,ind_removed]=calibrate(Coord,CalibFcn,est_dist,Intrinsic)
@@ -1293,7 +1293,7 @@ end
 if ~isempty(s.Heading)
     Heading=s.Heading;
 end
-
+if isfield (s,'GeometryCalib')
 GeometryCalib=s.GeometryCalib;
 fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
 CoordCell={};
@@ -1340,7 +1340,7 @@ else % does not allow mouse action by default in the presence of input points
     set(handles.CheckEnableMouse,'Value',0)
     set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
 end
-
+end
 %------------------------------------------------------------------------
 %---display calibration intrinsic parameters
 function display_intrinsic(GeometryCalib,handles)

@@ -58,8 +58,10 @@ if nargin>1
             s.(varargin{isub})=[];
         else
         tsub=branch(t,uid_sub);
+        if ~isempty(get(tsub,1,'contents'))
         ss=convert(tsub);
         s.(varargin{isub})=convert_string(ss);
+        end
         end
     end
 else

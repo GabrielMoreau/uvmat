@@ -1419,21 +1419,27 @@ path_series=fileparts(which('series'));
 
 %% create the Action fct handle if RunMode option = 'local'
 if strcmp(RunMode,'local')
-    if ~isequal(ActionPath,path_series)
-        eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
-        if ~exist(ActionPath,'dir')
-            errormsg=['The prescribed function path ' ActionPath ' does not exist'];
-            return
-        end
-        if ~isequal(spath,ActionPath)
-            addpath(ActionPath)% add the prescribed path if not the current one
-        end
-    end
-    eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
-    if ~isequal(ActionPath,path_series)
-        rmpath(ActionPath)% add the prescribed path if not the current one
-    end
-end
+    current_dir=pwd; % current working dir
+cd(ActionPath)
+h_fun=str2func(ActionName);% create the function handle for the function ActionName
+cd(current_dir)
+    % if ~isequal(ActionPath,path_series)
+    % 
+    %     %eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
+    %     if ~exist(ActionPath,'dir')
+    %         errormsg=['The prescribed function path ' ActionPath ' does not exist'];
+    %         return
+    %     end
+    %     spath=fileparts(which(ActionName));
+    %     if ~strcmp(spath,ActionPath)
+    %         addpath(ActionPath)% add the prescribed path if not the current one
+    %     end
+    % end
+    % eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
+    % if ~isequal(ActionPath,path_series)
+    %     rmpath(ActionPath)% add the prescribed path if not the current one
+    % end
+ end
 
 %% Get  parameters from series.xml
 errormsg=''; % default error message

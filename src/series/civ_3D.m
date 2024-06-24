@@ -289,15 +289,15 @@ for ifield=1:NbField_i
         par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);
         par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
 
-        for islice=ceil(par_civ1.Dz/2):par_civ1.Dz:NbSlice
-            if par_civ1.Dz<2*SearchRange_z+1
+        for islice=par_civ1.Dz:NbSlice
+            if par_civ1.Dz<2*SearchRange_z+1 
             par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz);
             par_civ1.ImageB=circshift(par_civ1.ImageA,-par_civ1.Dz);
             end
               for iz=1:par_civ1.Dz
-            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield,islice));
+            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-iz+1,1));
             A= read_image(ImageName_A,FileType_A);
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield,islice));
+            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-iz+1,1));
             B= read_image(ImageName_B,FileType_B);
             par_civ1.ImageA(2*SearchRange_z+2-iz,:,:) = A;
             par_civ1.ImageB(2*SearchRange_z+2-iz,:,:) = B;

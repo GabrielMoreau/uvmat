@@ -425,10 +425,11 @@ for ilist=1:numel(ListDir)
                 ListStruct=dir_uvmat(fullfile(SourceDir,ListDir{ilist},ListSub{isub})); %list files and dirs, extende to OpenDAP case
                 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
                 ListFiles=ListCells(1,:);
-                check_xml=~cellfun('isempty',regexp(ListFiles,'(\.xml|~)$'));% detect non xml files and files not marked by ~
+                check_xml=~cellfun('isempty',regexp(ListFiles,'\.xml$'));% detect  xml files
+                check_tild=~cellfun('isempty',regexp(ListFiles,'~$'));% detect  ~  files
                 index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
                 check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
-                nbfiles=numel(find(~check_xml & ~check_dir));% number of non xml files
+                nbfiles=numel(find(~check_xml & ~check_dir & ~check_tild));% number of non xml files
                 check_dir=check_dir & cellfun('isempty', regexp(ListFiles,'^(-|\.|\+/\.)'));% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
                 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
                 %cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )         
@@ -476,7 +477,7 @@ for iexp=1:numel(ListExperiments)
         ListStruct=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the source experiment directory
         ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
         ListFiles=ListCells(1,:);%list of dir and file  names
-        cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
+        cell_remove=regexp(ListFiles,'^((-|\.|\+/\.))');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
         check_keep=cellfun('isempty', cell_remove);
         index_isdir=find(strcmp('isdir',fieldnames(ListStruct)));
         check_dir=cell2mat(ListCells(index_isdir,:));% =1 for directories, =0 for files
@@ -720,12 +721,12 @@ set(handles.SourceDir,'String',SourceDir)
 % set(handles.ListExperiments,'Value',indices)
 ListDevices=get(handles.ListDevices,'String');
 DeviceIndices=get(handles.ListDevices,'Value');
-set(handles.DataSeries,'String',ListDevices);
+set(handles.DataSeries,'String',ListDevices);%transfer list of devices to DataSeries
 set(handles.DataSeries,'Value',DeviceIndices);
 
 ListExperiments=get(handles.ListExperiments,'String');
 ExpIndices=get(handles.ListExperiments,'Value');
-set(handles.ListDevices,'String',ListExperiments);
+set(handles.ListDevices,'String',ListExperiments);%transfer list of experiments to devices 
 set(handles.ListDevices,'Value',ExpIndices);
 
 set(handles.ListExperiments,'String',{['+/' Exp]})
@@ -739,71 +740,8 @@ set(handles.ListExperiments,'Value',1)
 % ValueDevice=get(handles.DataSeries,'Value');
 % set(handles.ListExperiments,'String',DataSeries)
 % set(handles.ListExperiments,'Value',ValueDevice)
-% ListExperiments_Callback(hObject, [], handles)
-
-
-% % --- Executes on selection change in DataSeries.
-% function DataSeries_Callback(hObject, eventdata, handles)
-% SourceDir=get(handles.SourceDir,'String');
-% ListData=get(handles.DataSeries,'String');
-% Folder=ListData{get(handles.DataSeries,'Value')};
-% if ~isempty(regexp(Folder,'^\+/'))% if a folder is selected
-%     Folder=regexprep(Folder,'\+/','');
-%     ListExperiments=get(handles.ListExperiments,'String');
-%     list_val=get(handles.ListExperiments,'Value');
-%     for iexp=1:numel(list_val)
-%         ExpName=regexprep(ListExperiments{list_val(iexp)},'\+/','');
-%         FullName=fullfile(SourceDir,ExpName,Folder);
-%         dd=dir(FullName);
-%         check_sub=1;
-%         for idir=1:numel(dd)
-%             ListData{ilist}=dd(ilist).name;
-%             if dd(ilist).isdir && ~strcmp(dd(ilist).name,'.')&& ~strcmp(dd(ilist).name,'..')&& isempty(regexp(dd(ilist).name,'^_LOG'))...
-%                     && isempty(regexp(dd(ilist).name,'^_LOG'))&& isempty(regexp(dd(ilist).name,'^_XML'))
-%                check_sub=1;
-%                ListData{ilist}=['+/' dd(ilist).name];
-%             end
-%         end
-%         if check_sub
-%         set(handles.ListDevices,'String',ListData);
-%                 set(handles.ListDevices,'Visible','on');
-%                 set(handles.DataSeries,'String',ListData)
-%                 break
-%         end
-%     end
-% end
-
-% % --- Executes on button press in CheckDevices.
-% function CheckDevices_Callback(hObject, eventdata, handles)
-% if get(handles.CheckDevices,'Value')
-%     set(handles.ListDevices,'Visible','on')
-%     ListDevices=get(handles.DataSeries,'String');
-%     Index=get(handles.DataSeries,'Value');
-%     set(handles.ListDevices,'String',ListDevices)
-%     set(handles.ListDevices,'Value',Index)
-%     set(handles.DataSeries,'Value',1)
-%     if strcmp(get(handles.MirrorDir,'Visible'),'on')
-%     MirrorPath=get(handles.MirrorDir,'String');
-%     else
-%     MirrorPath=get(handles.SourceDir,'String');
-%     end
-%     IndexExperiment=get(handles.ListExperiments,'Value');
-%     ListExperiment=get(handles.ListExperiments,'String');
-%     Experiment=ListExperiment{get(handles.ListExperiments,'Value')};
-%     Experiment=regexprep(Experiment,'^\+/','');% remove the +/ used to mark dir
-%     Experiment=regexprep(Experiment,'^~','');% remove the ~ used to mark symbolic link
-%     Device=regexprep(ListDevices{Index},'^\+/','');% remove the +/ used to mark dir
-%     Device=regexprep(Device,'^~','');% remove the ~ used to mark symbolic link
-%     DataSeries=dir(fullfile(MirrorPath,Experiment,Device));
-%     DataSeriesCell=struct2cell(DataSeries);
-%     set(handles.DataSeries,'String',DataSeriesCell(1,:)')
-% else
-%     ListDevices=get(handles.ListDevices,'String');
-%     Index=get(handles.ListDevices,'Value');
-%     set(handles.ListDevices,'Visible','off')
-%     set(handles.DataSeries,'String',ListDevices)
-%     set(handles.DataSeries,'Value',Index)
-% end
+ListExperiments_Callback(hObject, [], handles)
+SourceDir_Callback(hObject, [], handles)
 
 
 % --- Executes when user attempts to close browse_data.

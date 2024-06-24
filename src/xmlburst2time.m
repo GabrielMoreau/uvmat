@@ -4,13 +4,15 @@ if ~exist('FirstFrameIndexI','var')
 end
 if ~iscell(BurstTiming)
     BurstTiming={BurstTiming};
-    BurstTiming{1}.Time=0;%time origin set to zero by default
 end
 TimeMatrix=[];
 for k=1:length(BurstTiming)
     Frequency=1;
     if isfield(BurstTiming{k},'FrameFrequency')
         Frequency=BurstTiming{k}.FrameFrequency;
+    end
+    if isfield(BurstTiming{k},'Time')
+        BurstTiming{k}.Time=0;%time origin set to zero by default
     end
     Dtj=[];
     if isfield(BurstTiming{k},'Dtj')
@@ -57,6 +59,6 @@ for k=1:length(BurstTiming)
     end
 end
 TimeMatrix=[zeros(size(TimeMatrix,1),1) TimeMatrix]; %insert a vertical line of zeros (to deal with zero file indices)
-    if FirstFrameIndexI~=0
+if FirstFrameIndexI~=0
     TimeMatrix=[zeros(FirstFrameIndexI,size(TimeMatrix,2)); TimeMatrix]; %insert a horizontal line of zeros
-    end
+end
