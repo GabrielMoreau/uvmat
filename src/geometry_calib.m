@@ -179,8 +179,8 @@ end
 RootPath='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     RootPath=get(hhuvmat.RootPath,'String');% path to the currently displayed image
-    SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
-    outputfile=[fullfile(RootPath,SubDirBase) '.xml'];%xml file associated with the currently displayed image
+    %SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
+    outputfile=[fullfile(RootPath,get(hhuvmat.SubDir,'String')) '.xml'];%xml file associated with the currently displayed image
 else
     question={'save the calibration data and point coordinates in'};
     def={fullfile(RootPath,'ObjectCalib.xml')};
@@ -294,14 +294,19 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
             BrowseData=guidata(hbrowse);
             SourceDir=get(BrowseData.SourceDir,'String');
             ListExp=get(BrowseData.ListExperiments,'String');
-            ExpIndices=get(BrowseData.ListExperiments,'Value');
-            ListExp=ListExp(ExpIndices);
+            ListExp=ListExp(get(BrowseData.ListExperiments,'Value'));% list of selected experiments
             ListDevices=get(BrowseData.ListDevices,'String');
-            DeviceIndices=get(BrowseData.ListDevices,'Value');
-            ListDevices=ListDevices(DeviceIndices);
+            ListDevices=ListDevices(get(BrowseData.ListDevices,'Value'));% list of selected devices
             ListDataSeries=get(BrowseData.DataSeries,'String');
-            DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-            ListDataSeries=ListDataSeries(DataSeriesIndices);
+            ListDataSeries=ListDataSeries(get(BrowseData.DataSeries,'Value'));% list of selected data series
+            if find(~cellfun('isempty',strfind(ListDataSeries,'.xml')))
+                msgbox_uvmat('ERROR','select folders in browse_data, not xml files');
+                return
+            end
+            if find(~cellfun('isempty',strfind(ListDataSeries,'.')))
+                msgbox_uvmat('ERROR','select only folders at the root, without dot (.) in the name');
+                return
+            end
             NbExp=0; % counter of the number of experiments set by the GUI browse_data
             for iexp=1:numel(ListExp)
                 if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
@@ -343,9 +348,9 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     NbErrors=NbErrors+1;
                 else
                     if check_update
-                        display([XmlName ' updated with calibration parameters' dispmessage])
+                        disp([XmlName ' updated with calibration parameters' dispmessage]);
                     else
-                        display([XmlName ' created with calibration parameters: no timing defined' dispmessage])
+                        disp([XmlName ' created with calibration parameters: no timing defined' dispmessage]);
                     end
                 end
             end

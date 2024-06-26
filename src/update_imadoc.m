@@ -29,16 +29,14 @@
 function errormsg=update_imadoc(Struct,outputfile,StructName)
 errormsg='';
 testappend=0;
-%% backup the output file if it already exist, and read it
-if exist(outputfile,'file')%=1 if the output file already exists, 0 else
-    testappend=1;
-    backupfile=outputfile;
-    t=xmltree(outputfile); %read the file
-    title=get(t,1,'name');
-    if strcmp(title,'ImaDoc')
-        %         testappend=1;
-        %rename the existing file for backup
-        testexist=2;
+
+%% set the output xml file at the root, hide other existing  xml files
+dotchar=regexp(outputfile,'\.');
+for idot=1:numel(dotchar)
+    outputfile=[outputfile(1:dotchar(end-idot+1)-1) '.xml'];
+    if exist(outputfile,'file')
+         backupfile=outputfile;
+         testexist=2;
         while testexist==2
             backupfile=[backupfile '~'];
             testexist=exist(backupfile,'file');
@@ -48,14 +46,25 @@ if exist(outputfile,'file')%=1 if the output file already exists, 0 else
             errormsg=['errror in xml file backup: ' message];
             return
         end
-        %if the xml file is  ImaDoc
-        uid_calib=find(t,['ImaDoc/' StructName]);
-        if isempty(uid_calib)  %if Struct does not already exists, create it
-            [t,uid_calib]=add(t,1,'element',StructName);
-        else %if Struct already exists, delete its content
-            uid_child=children(t,uid_calib);
-            t=delete(t,uid_child);
-        end
+    end
+end
+
+
+%% backup the output file if it already exist, and read it
+if exist(outputfile,'file')%=1 if the output file already exists, 0 else
+    testappend=1;
+    t=xmltree(outputfile); %read the file
+    title=get(t,1,'name');
+    if ~strcmp(title,'ImaDoc')
+        errormsg=[outputfile ' not appropriate for calibration'];
+        return
+    end
+    uid_calib=find(t,['ImaDoc/' StructName]);
+    if isempty(uid_calib)  %if Struct does not already exists, create it
+        [t,uid_calib]=add(t,1,'element',StructName);
+    else %if Struct already exists, delete its content
+        uid_child=children(t,uid_calib);
+        t=delete(t,uid_child);
     end
 end
 

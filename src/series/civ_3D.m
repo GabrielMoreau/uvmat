@@ -288,19 +288,32 @@ for ifield=1:NbField_i
 
         par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);
         par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
-
-        for islice=par_civ1.Dz:NbSlice
-            if par_civ1.Dz<2*SearchRange_z+1 
-            par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz);
-            par_civ1.ImageB=circshift(par_civ1.ImageA,-par_civ1.Dz);
-            end
-              for iz=1:par_civ1.Dz
-            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-iz+1,1));
+        %first vertical block centered at image index islice=par_civ1.Dz
+        islice=par_civ1.Dz;
+         for iz=1:par_civ1.Dz+SearchRange_z
+              ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j1_series_Civ1(iz,1));%
             A= read_image(ImageName_A,FileType_A);
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-iz+1,1));
+            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j1_series_Civ1(iz,1));
             B= read_image(ImageName_B,FileType_B);
-            par_civ1.ImageA(2*SearchRange_z+2-iz,:,:) = A;
-            par_civ1.ImageB(2*SearchRange_z+2-iz,:,:) = B;
+            par_civ1.ImageA(iz+par_civ1.Dz-1,:,:) = A;
+            par_civ1.ImageB(iz+par_civ1.Dz-1,:,:) = B;
+         end
+         % caluclate velocity data (y and v in indices, reverse to y component)
+            [Data.Civ1_X(islice,:,:),Data.Civ1_Y(islice,:,:), utable, vtable,wtable, ctable, FF, result_conv, errormsg] = civ3D (par_civ1);
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end
+        for islice=2*par_civ1.Dz:NbSlice% loop on slices for the first image in the pair 
+            par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz);%shift the indces in the block upward by par_civ1.Dz
+            par_civ1.ImageB=circshift(par_civ1.ImageA,-par_civ1.Dz);
+              for iz=1:par_civ1.Dz
+            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-par_civ1.Dz+iz,1));%
+            A= read_image(ImageName_A,FileType_A);
+            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j1_series_Civ1(islice+SearchRange_z-par_civ1.Dz+iz,1));
+            B= read_image(ImageName_B,FileType_B);
+            par_civ1.ImageA(2*SearchRange_z+1-par_civ1.Dz+iz,:,:) = A;
+            par_civ1.ImageB(2*SearchRange_z+1-par_civ1.Dz+iz,:,:) = B;
             end
             % caluclate velocity data (y and v in indices, reverse to y component)
             [Data.Civ1_X(islice,:,:),Data.Civ1_Y(islice,:,:), utable, vtable,wtable, ctable, FF, result_conv, errormsg] = civ3D (par_civ1);
