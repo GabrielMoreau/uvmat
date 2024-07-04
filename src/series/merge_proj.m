@@ -337,6 +337,9 @@ for index=1:NbField
                 maskname=Param.MaskTable{iview,1};
             end
             [MaskData,~,errormsg] = read_field(maskname,'image');
+            if ~isempty(NbSlice_calib)
+            MaskData.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
+        end
             if ~isempty(transform_fct) && nargin(transform_fct)>=2
                 MaskData=transform_fct(MaskData,XmlData{iview});
             end

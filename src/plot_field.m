@@ -1218,8 +1218,8 @@ if test_vec
     nbcolor=nbcolor+1;
     if ~isempty(ivar_FF_vec)
         if isfield(PlotParam.Vectors,'CheckShowFalse') && PlotParam.Vectors.CheckShowFalse==1
-           % colorlist(nbcolor,:)=[1 0 1];% magenta color
-            colorlist(nbcolor,:)=[0 0 0];% blackcolor
+            colorlist(nbcolor,:)=[1 0 1];% magenta color
+            %colorlist(nbcolor,:)=[0 0 0];% blackcolor
             if strcmp(PlotParam.Vectors.FalseCriteria,'ALL')
                 col_vec(vec_FF~=0)=nbcolor;
             else

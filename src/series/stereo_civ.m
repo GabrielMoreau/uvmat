@@ -94,7 +94,7 @@ end
 [tild,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 time=[];
 for iview=1:size(Param.InputTable,1)
-    XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},Param.InputTable{iview,5});
+    XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2});
     if isempty(XmlFileName)
         disp_uvmat('ERROR', [XmlFileName ' not found'],checkrun)
         return

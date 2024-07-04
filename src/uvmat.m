@@ -1398,7 +1398,7 @@ hhuvmat=guidata(huvmat);
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
-XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);%find name of the relevant xml file
+XmlFile=find_imadoc(RootPath,SubDir);%find name of the relevant xml file
 if isempty(XmlFile)
     msgbox_uvmat('ERROR','an xml file with calibration parameters must be first created, use Tools/geometric calibration');
     return
@@ -1473,20 +1473,20 @@ if get(hreplicate,'Value')
             end
         end
         for iexp=1:NbExp
-            XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-            if exist(XmlName,'file')
-                check_update=1;
-            else
-                check_update=0;
-            end
-            errormsg=update_imadoc(Slice,XmlName,'Slice');% introduce the calibration data in the xml file
+            % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+            % if exist(XmlName,'file')
+            %     check_update=1;
+            % else
+            %     check_update=0;
+            % end
+            [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice);% introduce the calibration data in the xml file
             if ~strcmp(errormsg,'')
                 msgbox_uvmat('ERROR',errormsg);
             else
                 if check_update
-                    display([XmlName ' updated with slice positions'])
+                    disp([xmlfile ' updated with slice positions'])
                 else
-                    display([XmlName ' created with slice positions'])
+                    disp([xmlfile ' created with slice positions'])
                 end
             end
         end
@@ -1495,9 +1495,9 @@ if get(hreplicate,'Value')
 else
     
     %% store the result in the xml file used for calibration
-    errormsg=update_imadoc(Slice,XmlFile,'Slice');% introduce the calibration data in the xml file
+    [~,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'Slice',Slice);% introduce the calibration data in the xml file
     if strcmp(errormsg,'')
-        msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
+        msgbox_uvmat('CONFIRMATION',['slice positions saved in ' xmlfile]);
     else
         msgbox_uvmat('ERROR',errormsg);
     end
@@ -1778,8 +1778,8 @@ XmlData.LIFCalib.DecayRate=mean(gamma_coeff(gamma_coeff>0));
 hbrowse=browse_data(fullfile(get(handles.RootPath,'String'),get(handles.SubDir,'String')));
 answer = questdlg('Where','record the LIF parameters','Current series', 'Replicate', 'Cancel', 'Cancel');
 if strcmp(answer,'Current series')
-    XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
-    update_imadoc(XmlData.LIFCalib,XmlFileName,'LIFCalib');% introduce the calibration data in the xml file
+    %XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
+    update_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),'LIFCalib',XmlData.LIFCalib);% introduce the calibration data in the xml file
     % display the concentration in uvmat
     InputFileREFRESH_Callback(hObject, eventdata, handles);% refresh the current xml file to apply 'ima2concentration'
     transform_list=get(handles.TransformName,'String');
@@ -1826,102 +1826,25 @@ elseif strcmp(answer,'Replicate')
         end
     end
     for iexp=1:NbExp
-        XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-        if exist(XmlName,'file')
-            check_update=1;
-        else
-            check_update=0;
-        end
-        errormsg=update_imadoc(XmlData.LIFCalib,XmlName,'LIFCalib');% introduce the calibration data in the xml file
+        % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+        % if exist(XmlName,'file')
+        %     check_update=1;
+        % else
+        %     check_update=0;
+        % end
+        [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'LIFCalib',XmlData.LIFCalib);% introduce the calibration data in the xml file
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
         else
             if check_update
-                display([XmlName ' updated with calibration parameters'])
+                display([xmlfile ' updated with calibration parameters'])
             else
-                display([XmlName ' created with calibration parameters'])
+                display([xmlfile ' created with calibration parameters'])
             end
         end
     end
     msgbox_uvmat('CONFIMATION',['LIF calibration replicated for ' num2str(NbExp) ' experiments']);
 end
-
-
-
-%     
-%     
-%     t=xmltree(XmlFileName); %read the file
-%     title_str=get(t,1,'name');
-%     if ~strcmp(title_str,'ImaDoc')
-%         msgbox_uvmat('ERROR','wrong xml file');
-%         return
-%     end
-%     % backup the output file if it already exist, and read it
-%     backupfile=XmlFileName;
-%     testexist=2;
-%     while testexist==2
-%         backupfile=[backupfile '~'];
-%         testexist=exist(backupfile,'file');
-%     end
-%     [success,message]=copyfile(XmlFileName,backupfile);%make backup
-%     if success~=1
-%         errormsg=['errror in xml file backup: ' message];
-%         return
-%     end
-%     uid_illumination=find(t,'ImaDoc/LIFCalib');
-%     if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
-%         [t,uid_illumination]=add(t,1,'element','LIFCalib');
-%     end
-%     uid_origin=find(t,'ImaDoc/LIFCalib/LightOrigin');
-%     if ~isempty(uid_origin)  %if LightOrigin already exists, delete it
-%         t=delete(t,uid_origin);
-%     end
-%     uid_line=find(t,'ImaDoc/LIFCalib/Ray1Coord');
-%     if ~isempty(uid_line)  %if Ray1Coord already exists, delete it
-%         t=delete(t,uid_line);
-%     end
-%     uid_line=find(t,'ImaDoc/LIFCalib/Ray2Coord');
-%     if ~isempty(uid_line)  %if Ray2Coord already exists, delete it
-%         t=delete(t,uid_line);
-%     end
-%     uid_line=find(t,'ImaDoc/LIFCalib/RefLineCoord');
-%     if ~isempty(uid_line)  %if RefLineCoord already exists, delete it
-%         t=delete(t,uid_line);
-%     end
-%     uid_mask=find(t,'ImaDoc/LIFCalib/MaskPolygonCoord');
-%     if ~isempty(uid_mask) %if MaskPolygonCoord already exists, delete it
-%         t=delete(t,uid_mask);
-%     end
-%     uid_BlackOffset=find(t,'ImaDoc/LIFCalib/BlackOffset');
-%     if ~isempty(uid_BlackOffset)  %if BlackOffset already exists, delete it
-%         t=delete(t,uid_BlackOffset);
-%     end
-%     uid_RefLineWidth=find(t,'ImaDoc/LIFCalib/RefLineWidth');
-%     if ~isempty(uid_RefLineWidth)  %if RefLineWidth already exists, delete it
-%         t=delete(t,uid_RefLineWidth);
-%     end
-%     uid_DecayRate=find(t,'ImaDoc/LIFCalib/DecayRate');
-%     if ~isempty(uid_DecayRate)  %if DecayRate already exists, delete it
-%         t=delete(t,uid_DecayRate);
-%     end
-%     uid_RefLineRadius=find(t,'ImaDoc/LIFCalib/RefLineRadius');
-%     if ~isempty(uid_RefLineRadius)  %if RefLineLum already exists, delete it
-%         t=delete(t,uid_RefLineRadius);
-%     end
-%     uid_RefLineLum=find(t,'ImaDoc/LIFCalib/RefLineLum');
-%     if ~isempty(uid_RefLineLum)  %if RefLineLum already exists, delete it
-%         t=delete(t,uid_RefLineLum);
-%     end
-%     uid_RefLineAzimuth=find(t,'ImaDoc/LIFCalib/RefLineAzimuth');
-%     if ~isempty(uid_RefLineAzimuth)  %if RefLineLum already exists, delete it
-%         t=delete(t,uid_RefLineAzimuth);
-%     end
-%     
-%     % save the LIF calibration data
-%     t=struct2xml(XmlData.LIFCalib,t,uid_illumination);
-%     save(t,XmlFileName);
-    
-
 
 
 
@@ -2503,7 +2426,7 @@ if index==1
 else
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
 end
-XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+XmlFileName=find_imadoc(RootPath,SubDir);
 [tild,tild,DocExt]=fileparts(XmlFileName);
 warntext='';%default warning message
 NbSlice=1;%default

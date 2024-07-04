@@ -255,7 +255,7 @@ Data.CivStage=0;%default
 
 %% get timing from the ImaDoc file or input video
 if iview_A~=0
-    XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
+    XmlFileName=find_imadoc(RootPath_A,SubDir_A);
     Time=[];
     if ~isempty(XmlFileName)
         XmlData=imadoc2struct(XmlFileName);
@@ -487,24 +487,24 @@ for ifield=1:NbField
             end
         end
         if strcmp(Param.ActionInput.ListCompareMode, 'PIV volume')
-            Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
-            Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
-            Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];
-            for ivol=1:NbSlice
-                % caluclate velocity data (y and v in indices, reverse to y component)
-                [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
-                if ~isempty(errormsg)
-                    disp_uvmat('ERROR',errormsg,checkrun)
-                    return
-                end
-                Data.Civ1_X=[Data.Civ1_X reshape(xtable,[],1)];
-                Data.Civ1_Y=[Data.Civ1_Y reshape(Param.Civ1.ImageHeight-ytable+1,[],1)];
-                Data.Civ1_Z=[Data.Civ1_Z ivol*ones(numel(xtable),1)];% z=image index in image coordinates
-                Data.Civ1_U=[Data.Civ1_U reshape(utable,[],1)];
-                Data.Civ1_V=[Data.Civ1_V reshape(-vtable,[],1)];
-                Data.Civ1_C=[Data.Civ1_C reshape(ctable,[],1)];
-                Data.Civ1_FF=[Data.Civ1_FF reshape(F,[],1)];
-            end
+            % Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
+            % Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
+            % Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];
+            % for ivol=1:NbSlice
+            %     % caluclate velocity data (y and v in indices, reverse to y component)
+            %     [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
+            %     if ~isempty(errormsg)
+            %         disp_uvmat('ERROR',errormsg,checkrun)
+            %         return
+            %     end
+            %     Data.Civ1_X=[Data.Civ1_X reshape(xtable,[],1)];
+            %     Data.Civ1_Y=[Data.Civ1_Y reshape(Param.Civ1.ImageHeight-ytable+1,[],1)];
+            %     Data.Civ1_Z=[Data.Civ1_Z ivol*ones(numel(xtable),1)];% z=image index in image coordinates
+            %     Data.Civ1_U=[Data.Civ1_U reshape(utable,[],1)];
+            %     Data.Civ1_V=[Data.Civ1_V reshape(-vtable,[],1)];
+            %     Data.Civ1_C=[Data.Civ1_C reshape(ctable,[],1)];
+            %     Data.Civ1_FF=[Data.Civ1_FF reshape(F,[],1)];
+            % end
         else %usual PIV
             % caluclate velocity data (y and v in indices, reverse to y component)
             tstart_civ1=tic;

@@ -105,7 +105,7 @@ for isub=1:NbSubDomain
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
             ind_ind_sel=1:numel(ind_sel);%default
             if exist('Threshold','var')&&~isempty(Threshold)
-                FF(ind_sel)=2*(NormDiff>Threshold);%put FF value to 2 to identify the criterium of elimmination
+                FF(ind_sel)=4*(NormDiff>Threshold);%put FF value to 4 to identify the criterium of elimmination
                 ind_ind_sel=find(FF(ind_sel)==0); % select the indices of remaining vectors in the subset of ind_sel vectors 
             end
             % if no value exceeds threshold, the result is recorded
@@ -165,8 +165,8 @@ end
 nb_select(nb_select==0)=1;
 U_smooth=U_smooth./nb_select;% take the average at the intersection of several subdomains
 V_smooth=V_smooth./nb_select;
-U_smooth(FF==2)=U(FF==2);% set to the initial values the eliminated vectors (flagged as false)
-V_smooth(FF==2)=V(FF==2);
+U_smooth(FF==4)=U(FF==4);% set to the initial values the eliminated vectors (flagged as false)
+V_smooth(FF==4)=V(FF==4);
 fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
 Coord_tps=cat(1,Coord_tps,fill);
 

@@ -124,7 +124,7 @@ set(handles.geometry_calib,'Position',[Left Bottom 420 Height])
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_order4';'3D_extrinsic'})
 if exist('inputfile','var')&& ~isempty(inputfile)
     [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(inputfile);
-    struct.XmlInputFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+    struct.XmlInputFile=find_imadoc(RootPath,SubDir);
     set(handles.ListCoord,'Data',[])
     if exist(struct.XmlInputFile,'file')
         Heading=loadfile(handles,struct.XmlInputFile);% load data from the xml file and fill the GUI
@@ -304,8 +304,7 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                 return
             end
             if find(~cellfun('isempty',strfind(ListDataSeries,'.')))
-                msgbox_uvmat('ERROR','select only folders at the root, without dot (.) in the name');
-                return
+                msgbox_uvmat('WARNING','select folders at the root, without dot (.) in the name');
             end
             NbExp=0; % counter of the number of experiments set by the GUI browse_data
             for iexp=1:numel(ListExp)
@@ -331,16 +330,10 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
             end
             NbErrors=0;
             for iexp=1:NbExp
-                XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-                if exist(XmlName,'file')
-                    check_update=1;
-                else
-                    check_update=0;
-                end
-                errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
+                [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'GeometryCalib',GeometryCalib);% introduce the calibration data in the xml file
                 dispmessage='';
                 if checkslice
-                    errormsg=update_imadoc(Slice,XmlName,'Slice');% introduce the slice position in the xml file
+                   [~,~,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice,0);% introduce the slice position in the xml file
                     dispmessage=' and slice position';
                 end
                 if ~strcmp(errormsg,'')
@@ -348,9 +341,9 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
                     NbErrors=NbErrors+1;
                 else
                     if check_update
-                        disp([XmlName ' updated with calibration parameters' dispmessage]);
+                        disp([xmlfile ' updated with calibration parameters' dispmessage]);
                     else
-                        disp([XmlName ' created with calibration parameters: no timing defined' dispmessage]);
+                        disp([xmlfile ' created with calibration parameters: no timing defined' dispmessage]);
                     end
                 end
             end
@@ -362,15 +355,15 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
         msgbox_uvmat('CONFIMATION',msgout);
     else
         %% update the calibration parameters in the currently opened uvmat GUI
-        if ~exist(outputfile,'file') && ~isempty(SubDirBase) %copy the xml file from the old location if appropriate
-            oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
-            if exist(oldxml,'file')
-                [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
-            end
-        end
-        errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
+        % if ~exist(outputfile,'file') && ~isempty(SubDirBase) %copy the xml file from the old location if appropriate
+        %     oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
+        %     if exist(oldxml,'file')
+        %         [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+        %     end
+        % endSlice,
+        [~,~,errormsg]=update_imadoc(RootPath,get(hhuvmat.SubDir,'String'),'GeometryCalib',GeometryCalib);% introduce the calibration data in the xml file
         if checkslice
-            errormsg=update_imadoc(Slice,outputfile,'Slice');% introduce the slice position in the xml file
+          [~,~,errormsg]=update_imadoc(RootPath,get(hhuvmat.SubDir,'String'),'Slice',Slice,0);% introduce the slice position in the xml file
         end
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
@@ -838,29 +831,26 @@ ErrorRms=mean(ErrorRms);
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in STORE.
+% --- Executes on button press in STORE: store the current points
 function STORE_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 Coord=get(handles.ListCoord,'Data');
-%Object=read_geometry_calib(Coord_cell);
 unitlist=get(handles.CoordUnit,'String');
 unit=unitlist{get(handles.CoordUnit,'value')};
 GeometryCalib.CoordUnit=unit;
 GeometryCalib.SourceCalib.PointCoord=Coord(:,1:5);
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-% RootPath='';
-% RootFile='';
-if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-    %     testhandle=1;
+if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.SubDir)
     RootPath=get(hhuvmat.RootPath,'String');
-    RootFile=get(hhuvmat.RootFile,'String');
-    filebase=[fullfile(RootPath,RootFile) '~'];
+    SubDir=get(hhuvmat.SubDir,'String');
+    filebase=[fullfile(RootPath,SubDir) '~'];
     while exist([filebase '.xml'],'file')
         filebase=[filebase '~'];
     end
     outputfile=[filebase '.xml'];
-    errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');
+    [~,RootFile]=fileparts(filebase);
+    [~,~,errormsg]=update_imadoc(RootPath,SubDir,'GeometryCalib',GeometryCalib,0);
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     end

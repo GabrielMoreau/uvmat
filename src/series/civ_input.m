@@ -2361,6 +2361,3 @@ function MinIndex_j_Callback(hObject, eventdata, handles)
 
 % --- Executes on selection change in field_ref2.
 function field_ref2_Callback(hObject, eventdata, handles)
-
-
-

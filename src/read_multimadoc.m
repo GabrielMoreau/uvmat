@@ -41,7 +41,7 @@ XmlData=cell(1,nbview);%initiate the structures containing the data from the xml
 NbSlice_calib=cell(1,nbview);
 timecell=cell(1,nbview);
 for iview=1:nbview%Loop on views
-    XmlFileName=find_imadoc(RootPath{iview},SubDir{iview},RootFile{iview},FileExt{iview});
+    XmlFileName=find_imadoc(RootPath{iview},SubDir{iview});
     if ~isempty(XmlFileName)
         [XmlData{iview},warnmsg]=imadoc2struct(XmlFileName);% read the ImaDoc xml file
     end

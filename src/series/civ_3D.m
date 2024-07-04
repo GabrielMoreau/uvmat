@@ -188,7 +188,7 @@ Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
 
 %% get timing from the ImaDoc file or input video
 if iview_A~=0
-    XmlFileName=find_imadoc(RootPath_A,SubDir_A,RootFile_A,FileExt_A);
+    XmlFileName=find_imadoc(RootPath_A,SubDir_A);
     Time=[];
     if ~isempty(XmlFileName)
         XmlData=imadoc2struct(XmlFileName);

@@ -948,7 +948,7 @@ TimeMax=[];
 %%  read image documentation file if found
 XmlData=[];
 check_calib=0;
-XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5});
+XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2});
 if ~isempty(XmlFileName)
     [XmlData,errormsg]=imadoc2struct(XmlFileName);
     if ~isempty(errormsg)

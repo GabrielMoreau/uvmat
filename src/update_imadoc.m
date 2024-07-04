@@ -1,11 +1,19 @@
 %'update_imadoc': update an xml file with geometric calibration parameters
 %--------------------------------------------------------------------------
-%  function update_imadoc(Struct,outputfile)
+%  function [checkcreate,xmlfile,errormsg]=update_imadoc(Struct,RootPath,SubDir,StructName)
 %
-%INPUT:
-% Struct: structure containing the calibration parameters
-% outputfile: xml file to modify
+% OUTPUT:
+% checkupdate= 1 if the xml file (containing timing)already exist, =0 when it has to be created
+% xmlfile: name of the xmlfile containing the the calibration data
+% errormsg: error message, ='' if OK
+
+% INPUT:
+
+% RootPath: path to the folder containing the image series to calibrate
+% SubDir: folder contaiting the image series to calibrate
 % StructName : Name of the field in the xml file
+% Struct: Matlab structure containing the calibration parameters
+% checkbackup=1 (default): backup of existing xml file as .xml~, 
 %-------------------------------------------------------------
 
 %=======================================================================
@@ -26,37 +34,40 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function errormsg=update_imadoc(Struct,outputfile,StructName)
+function [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,StructName,Struct,checkbackup)
+
 errormsg='';
-testappend=0;
+if ~exist('checkbackup','var')
+    checkbackup=1;
+end
 
 %% set the output xml file at the root, hide other existing  xml files
-dotchar=regexp(outputfile,'\.');
-for idot=1:numel(dotchar)
-    outputfile=[outputfile(1:dotchar(end-idot+1)-1) '.xml'];
-    if exist(outputfile,'file')
-         backupfile=outputfile;
-         testexist=2;
+xmlfile=find_imadoc(RootPath,SubDir);
+if isempty(xmlfile)
+    checkupdate=0;
+else
+    checkupdate=1;
+end
+
+%% backup the existing xml file, adding a ~ to its name
+if checkupdate
+    if checkbackup
+        backupfile=xmlfile;
+        testexist=2;
         while testexist==2
             backupfile=[backupfile '~'];
             testexist=exist(backupfile,'file');
         end
-        [success,message]=movefile(outputfile,backupfile);%make backup
+        [success,message]=copyfile(xmlfile,backupfile);%make backup
         if success~=1
             errormsg=['errror in xml file backup: ' message];
             return
         end
     end
-end
-
-
-%% backup the output file if it already exist, and read it
-if exist(outputfile,'file')%=1 if the output file already exists, 0 else
-    testappend=1;
-    t=xmltree(outputfile); %read the file
+    t=xmltree(xmlfile); %read the file
     title=get(t,1,'name');
     if ~strcmp(title,'ImaDoc')
-        errormsg=[outputfile ' not appropriate for calibration'];
+        errormsg=[xmlfile ' not appropriate for calibration'];
         return
     end
     uid_calib=find(t,['ImaDoc/' StructName]);
@@ -66,41 +77,16 @@ if exist(outputfile,'file')%=1 if the output file already exists, 0 else
         uid_child=children(t,uid_calib);
         t=delete(t,uid_child);
     end
-end
-
-%% create a new xml file
-if ~testappend
+else   % create a new xml file
     t=xmltree;
     t=set(t,1,'name','ImaDoc');
-    % in case of movie (avi file), copy timing info in the new xml file
-    [pp,outputroot]=fileparts(outputfile);
-    %     imainfo=[];
-    if exist(fullfile(pp,[outputroot '.avi']),'file')
-        FileName=fullfile(pp,[outputroot '.avi']);
-        hhh=which('videoreader');
-        if isempty(hhh)%use old video function of matlab
-            imainfo=aviinfo(FileName);
-            imainfo.FrameRate=imainfo.FramesPerSecond;
-            imainfo.NumberOfFrames=imainfo.NumFrames;
-        else %use video function videoreader of matlab
-            imainfo=get(videoreader(FileName));
-        end
-        if ~isempty(imainfo)
-            [t,uid_camera]=add(t,1,'element','Camera');
-            Camera.TimeUnit='s';
-            Camera.BurstTiming.Time=0;
-            Camera.BurstTiming.Dti=1/imainfo.FrameRate;
-            Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
-            t=struct2xml(Camera,t,uid_camera);
-        end
-    end
     [t,uid_calib]=add(t,1,'element',StructName);
 end
 
 %% save the output file
 t=struct2xml(Struct,t,uid_calib);
 try
-    save(t,outputfile);
+    save(t,xmlfile);
 catch ME
-    errormsg=['error in saving ' outputfile ': ' ME.message];
+    errormsg=['error in saving ' xmlfile ': ' ME.message];
 end
