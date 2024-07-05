@@ -902,7 +902,9 @@ for ifield=1:NbField
         end
         time_total=toc(tstart);
         disp(['ellapsed time ' num2str(time_total/60,2) ' minutes'])
-        disp(['time image reading ' num2str(time_input,2) ' s'])
+        if exist('time_input','var')
+            disp(['time image reading ' num2str(time_input,2) ' s'])
+        end
         disp(['time civ1 ' num2str(time_civ1,2) ' s'])
         disp(['time patch1 ' num2str(time_patch1,2) ' s'])
         disp(['time civ2 ' num2str(time_civ2,2) ' s'])

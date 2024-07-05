@@ -139,9 +139,6 @@ switch FileType
         end
 
         iview_image=2;%line # for the input images
-    case 'civxdata'% case of  civx data,
-        msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
-        return
     otherwise 
         if ~strcmp(FieldType,'image')
         msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
@@ -215,7 +212,7 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
-    if size(time,1)<MaxIndex_i;
+    if size(time,1)<MaxIndex_i
         msgbox_uvmat('WARNING','maximum i index restricted by the timing of the xml file');
     elseif size(time,2)<MaxIndex_j
         msgbox_uvmat('WARNING','maximum j index restricted by the timing of the xml file');
@@ -251,27 +248,42 @@ if ind_opening==0  %case of image opening, start with Civ1
         set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
     end
 else  %case of netcdf file opening, start with the stage read in the file if the input file is being refreshed
-%     if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
-%             ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource')) 
-            for index = 1:min(ind_opening,5)
-                set(handles.(ListOptions{index}),'value',0)
-                fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
-            end
-            if isempty(FileInfo)
-            FileInfo.FileName='';
-end
-            set(handles.ConfigSource,'String',FileInfo.FileName);
-            set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
-            for index = ind_opening+2:6
-                set(handles.(ListOptions{index}),'value',0)
-            end
-            checkrefresh=1;
-%     end
-    if ind_opening>=3
-        set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
-    else
-        set(handles.CheckCiv3,'Visible','off')
+    %     if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
+    %             ~(isfield(Param,'ActionInput') && isfield(Param.ActionInput,'ConfigSource'))
+    for index = 1:min(ind_opening,5)
+        set(handles.(ListOptions{index}),'value',0)
+        fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
     end
+    if isempty(FileInfo)
+        FileInfo.FileName='';
+    end
+    set(handles.ConfigSource,'String',FileInfo.FileName);
+    if ind_opening<6
+        for index = 1:ind_opening
+            set(handles.(ListOptions{index}),'value',0)
+        end
+        for index = ind_opening+1:6
+            set(handles.(ListOptions{index}),'value',1)
+        end
+        set(handles.CheckCiv3,'Visible','off')% make visible the switch 'iterate/repet' for Civ2.
+        set(handles.CheckCiv3,'Value',0)% select'iterate/repet' by default
+    else
+        for index = 1:3
+            set(handles.(ListOptions{index}),'value',0)
+        end
+        for index = 4:6
+            set(handles.(ListOptions{index}),'value',1)
+        end
+        set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
+        set(handles.CheckCiv3,'Value',1)% select'iterate/repet' by default
+    end
+    checkrefresh=1;
+    %     end
+    % if ind_opening==6
+    %     set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
+    % else
+    %     set(handles.CheckCiv3,'Visible','off')
+    % end
 end
 
 %% introduce the stored Civ parameters  if available (from previous input or ImportConfig in series)
@@ -1077,177 +1089,6 @@ else
     set(handles_CoorSmooth,'Visible','on')
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Callbacks in the uipanel Fix1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------
-% % --- Executes on button press in CheckMask.
-% function get_mask_fix1_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% maskval=get(handles.CheckMask,'Value');
-% if isequal(maskval,0)
-%     set(handles.Mask,'String','')
-% else
-%     mask_displ='no mask'; %default
-%     filebase=get(handles.RootPath,'String');
-%     [nbslice, flag_mask]=get_mask(filebase,handles);
-%     if isequal(flag_mask,1)
-%         mask_displ=[num2str(nbslice) 'mask'];
-%     elseif get(handles.ListCompareMode,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
-%         filebase_a=get(handles.RootFile_1,'String');
-%         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-%         if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
-%             mask_displ='no mask';
-%         end
-%     end
-%     if isequal(mask_displ,'no mask')
-%         [FileName, PathName, filterindex] = uigetfile( ...
-%             {'*.png', ' (*.png)';
-%             '*.png',  '.png files '; ...
-%             '*.*', 'All Files (*.*)'}, ...
-%             'Pick a mask file *.png',filebase);
-%         mask_displ=fullfile(PathName,FileName);
-%         if ~exist(mask_displ,'file')
-%             mask_displ='no mask';
-%         end
-%     end
-%     if isequal(mask_displ,'no mask')
-%         set(handles.CheckMask,'Value',0)
-%         set(handles.CheckMask,'Value',0)
-%         set(handles.CheckMask,'Value',0)
-%     else
-%         %set(handles.CheckMask,'Value',1)
-%         set(handles.CheckMask,'Value',1)
-%     end
-%     set(handles.Mask,'String',mask_displ)
-%     set(handles.Mask,'String',mask_displ)
-%     set(handles.Mask,'String',mask_displ)
-% end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Callbacks in the uipanel Civ2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------
-% --- Executes on button press in CheckMask: select box for mask option
-function get_mask_civ2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-maskval=get(handles.CheckMask,'Value');
-if isequal(maskval,0)
-    set(handles.Mask,'String','')
-else
-    mask_displ='no mask'; %default
-    filebase=get(handles.RootPath,'String');
-    [nbslice, flag_mask]=get_mask(filebase,handles);
-    if isequal(flag_mask,1)
-        mask_displ=[num2str(nbslice) 'mask'];
-    elseif get(handles.ListCompareMode,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
-        filebase_a=get(handles.RootFile_1,'String');
-        [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-        if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
-            mask_displ='no mask';
-        end
-    end
-    if isequal(mask_displ,'no mask')
-        [FileName, PathName, filterindex] = uigetfile( ...
-            {'*.png', ' (*.png)';
-            '*.png',  '.png files '; ...
-            '*.*', 'All Files (*.*)'}, ...
-            'Pick a mask file *.png',filebase);
-        mask_displ=fullfile(PathName,FileName);
-        if ~exist(mask_displ,'file')
-            mask_displ='no mask';
-        end
-    end
-    if isequal(mask_displ,'no mask')
-        set(handles.CheckMask,'Value',0)
-        set(handles.CheckMask,'Value',0)
-    else
-        set(handles.CheckMask,'Value',1)
-    end
-    set(handles.Mask,'String',mask_displ)
-end
-
-% %------------------------------------------------------------------------
-% % --- Executes on button press in CheckMask.
-% function get_mask_fix2_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% maskval=get(handles.CheckMask,'Value');
-% if isequal(maskval,0)
-%     set(handles.Mask,'String','')
-% else
-%     mask_displ='no mask'; %default
-%     filebase=get(handles.RootPath,'String');
-%     [nbslice, flag_mask]=get_mask(filebase,handles);
-%     if isequal(flag_mask,1)
-%         mask_displ=[num2str(nbslice) 'mask'];
-%     elseif get(handles.ListCompareMode,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
-%         filebase_a=get(handles.RootFile_1,'String');
-%         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-%         if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
-%             mask_displ='no mask';
-%         end
-%     end
-%     if isequal(mask_displ,'no mask')
-%         [FileName, PathName, filterindex] = uigetfile( ...
-%             {'*.png', ' (*.png)';
-%             '*.png',  '.png files '; ...
-%             '*.*', 'All Files (*.*)'}, ...
-%             'Pick a mask file *.png',filebase);
-%         mask_displ=fullfile(PathName,FileName);
-%         if ~exist(mask_displ,'file')
-%             mask_displ='no mask';
-%         end
-%     end
-%     if isequal(mask_displ,'no mask')
-%         set(handles.CheckMask,'Value',0)
-%     end
-%     set(handles.Mask,'String',mask_displ)
-% end
-
-%------------------------------------------------------------------------
-% --- function called to look for mask files
-function [nbslice, flag_mask]=get_mask(filebase,handles)
-%------------------------------------------------------------------------
-%detect mask files, images with appropriate file base
-%[filebase '_' xx 'mask'], xx=nbslice
-%flag_mask=1 indicates detection
-
-flag_mask=0;%default
-nbslice=1;
-
-% subdir=get(handles.Civ1_ImageB,'String');
-[Path,Name]=fileparts(filebase);
-if ~isdir(Path)
-    msgbox_uvmat('ERROR','no path for input files')
-    return
-end
-% currentdir=pwd;
-% cd(Path);%move in the dir of the root name filebase
-maskfiles=dir(fullfile(Path,[Name '_*mask_*.png']));%look for mask files
-% cd(currentdir);%come back to the current working directory
-if ~isempty(maskfiles)
-    %     msgbox_uvmat('ERROR','no mask available, to create it use Tools/Make mask in the upper menu bar of uvmat')
-    % else
-    flag_mask=1;
-    maskname=maskfiles(1).name;% take the first mask file in the list
-    [Path2,Name,ext]=fileparts(maskname);
-    Namedouble=double(Name);
-    val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
-    ind_mask=findstr('mask',Name);
-    i=ind_mask-1;
-    while val(i)==0 && i>0
-        i=i-1;
-    end
-    nbslice=str2double(Name(i+1:ind_mask-1));
-    if ~isnan(nbslice) && Name(i)=='_'
-        flag_mask=1;
-    else
-        msgbox_uvmat('ERROR',['bad mask file ' Name ext ' found in ' Path2])
-        return
-        nbslice=1;
-    end
-end
-
 %------------------------------------------------------------------------
 % --- function called to look for grid files
 function [nbslice, flag_grid]=get_grid(filebase,handles)
@@ -1418,33 +1259,35 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 % --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
 function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-value=get(hObject,'Value');
 hparent=get(hObject,'parent');
-parent_tag=get(hparent,'Tag');
 hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','Mask');% look for the mask name box in the same panel
-handle_NbSlice=findobj(hchildren,'tag','num_NbSlice');% look for the mask name box in the same panel
+% handle_NbSlice=findobj(hchildren,'tag','num_NbSlice');% look for the mask name box in the same panel
 testmask=0;
-if value
+if get(hObject,'Value')% if the checkbox is activated
     hseries=findobj(allchild(0),'Tag','series');
     hhseries=guidata(hseries);
     InputTable=get(hhseries.InputTable,'Data');
-    ind_A=1;% line index of the (first) image series
-    if strcmp(InputTable{1,5},'.nc');
-        ind_A=2;
+    if strcmp(InputTable{1,5},'.nc')
+        ind_A=2;%case of nc file as input (for civ3), image in second line
+    else
+        ind_A=1;% line index of the (first) image series
     end
- % browse for a mask
-        filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
-        [FilePath,FileName,Ext]=fileparts(filemask);    
-        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName,Ext]);
+    % browse for a mask
+    filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
+    if ~isempty(filemask)
+        [FilePath,FileName,FileExt]=fileparts(filemask);
+        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
         if strcmp(NomType,'_1')
-           NbSlice=i1_series(1,2,end);
-           set(handles.num_NbSlice,'String',num2str(NbSlice))
+            NbSlice=i1_series(1,2,end);
+            set(handles.num_NbSlice,'String',num2str(NbSlice))
+        elseif ~strcmp(NomType,'*')
+            msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
+            return
         end
         set(hObject,'UserData',filemask);%store for future use
-        if ~isempty(filemask)
-            testmask=1;
-        end
+        testmask=1;
+    end
 end
 if testmask
     set(handles.Mask,'Visible','on')

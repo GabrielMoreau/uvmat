@@ -190,26 +190,28 @@ function [var,role,vel_type_out,errormsg]=varcivx_generator(ProjModeRequest,vel_
 if ~exist('vel_type','var'),vel_type='';end
 if iscell(vel_type),vel_type=vel_type{1}; end%transform cell to string if needed
 errormsg='';
+if CivStage>=6
+    CivStage=6;
+end
 
 %% select the priority order for automatic vel_type selection
-if strcmp(vel_type,'civ2') && strcmp(ProjModeRequest,'derivatives')
-    vel_type='filter2';
-elseif strcmp(vel_type,'civ1') && strcmp(ProjModeRequest,'derivatives')
-    vel_type='filter1';
+if strcmp(ProjModeRequest,'derivatives')&& numel(vel_type)>=3 && strcmp(vel_type(1:3),'civ')
+    vel_type=['filter' vel_type(4:end)];
 end
 if isempty(vel_type)||strcmp(vel_type,'*')
     vel_type='filter2';% case CivStage >=6
     switch CivStage
+        case {1,2}% civ1 available but not filter1
+            vel_type='civ1';
+        case 3
+            vel_type='filter1';
+
         case {4,5}% civ2 available but not filter2
             if strcmp(ProjModeRequest,'derivatives')% derivatives needed
                 vel_type='filter1';
             else
                 vel_type='civ2';
             end
-        case 3
-            vel_type='filter1';
-        case {1,2}% civ1 available but not filter1
-            vel_type='civ1';
     end
 end
 

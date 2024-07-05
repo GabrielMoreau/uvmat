@@ -2877,33 +2877,35 @@ if isequal(get(handles.CheckMask,'Value'),1)
         if isempty(MaskFullName)
             set(handles.CheckMask,'Value',0)
         end
+
         [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
-        [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt],0);
-        if ~(isempty(i2_series) && isempty(j2_series))
-            MaskNomType='*';
+        [tild,tild,MaskFile,i1_series,i2,j1,j2,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt],0);
+        if strcmp(NomType,'_1')
+            NbSlice=i1_series(1,2,end);
+           set(handles.num_NbSlice,'String',num2str(NbSlice))
         end
     end
-    Mask.Path=MaskPath;
-    if isempty(MaskFile)
-        Mask.File='';
-    elseif ischar(MaskFile)
-        Mask.File=MaskFile;
-    else
-        Mask.File=MaskFile{1};
-    end
-    Mask.NbSlice_i=1;
-    Mask.NbSlice_j=1;
-    if isempty(j1_series)
-        if isempty(i1_series)
-            MaskNomType='*';
-        else
-        Mask.NbSlice_i=i1_series(1,2,end);
-        end
-    else
-        Mask.NbSlice_j=j1_series(1,end,2);
-    end
-    Mask.Ext=MaskExt;
-    Mask.NomType=MaskNomType;
+    % Mask.Path=MaskPath;
+    % if isempty(MaskFile)
+    %     Mask.File='';
+    % elseif ischar(MaskFile)
+    %     Mask.File=MaskFile;
+    % else
+    %     Mask.File=MaskFile{1};
+    % end
+    % Mask.NbSlice_i=1;
+    % Mask.NbSlice_j=1;
+    % if isempty(j1_series)
+    %     if isempty(i1_series)
+    %         MaskNomType='*';
+    %     else
+    %     Mask.NbSlice_i=i1_series(1,2,end);
+    %     end
+    % else
+    %     Mask.NbSlice_j=j1_series(1,end,2);
+    % end
+    % Mask.Ext=MaskExt;
+    % Mask.NomType=MaskNomType;
     set(handles.CheckMask,'UserData',Mask);
     errormsg=update_mask(handles);
 else % desactivate mask display
@@ -4945,43 +4947,33 @@ end
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus:
-function menu=set_veltype_display(Civ,FileType)
+function menu=set_veltype_display(CivStage,FileType)
 %------------------------------------------------------------------------
 if ~exist('FileType','var')
     FileType='civx';
 end
 imin=1;
+if CivStage>=6
+    CivStage=6;
+end
 switch FileType
     case 'civx'
         menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
-        if isequal(Civ,0)
+        if isequal(CivStage,0)
             imax=0;
-        elseif isequal(Civ,1) || isequal(Civ,2)
+        elseif isequal(CivStage,1) || isequal(CivStage,2)
             imax=1;
-        elseif isequal(Civ,3)
+        elseif isequal(CivStage,3)
             imax=3;
-        elseif isequal(Civ,4) || isequal(Civ,5)
+        elseif isequal(CivStage,4) || isequal(CivStage,5)
             imax=4;
-        elseif isequal(Civ,6) %patch2
+        elseif isequal(CivStage,6) %patch2
             imax=6;
         end
     case {'civdata','pivdata_fluidimage'}
-        menu={'civ1';'filter1';'civ2';'filter2';'civ3';'filter3'};
+        menu={'civ1';'filter1';'civ2';'filter2'};
         imax=[0 1 1 2 3 3 4 5 5 6];
-        imax=imax(min(Civ+1,10));
-%         if isequal(Civ,0)
-%             imax=0;
-%         elseif isequal(Civ,1) || isequal(Civ,2)
-%             imax=1;
-%         elseif isequal(Civ,3)
-%             imax=2;
-%         elseif isequal(Civ,4) || isequal(Civ,5)
-%             imax=3;
-%         elseif Civ==6 %patch2
-%             imax=4;
-%         else
-%             imax=4;imin=3;
-%         end
+        imax=imax(min(CivStage+1,10));
 end
 menu=menu(imin:imax);
 
