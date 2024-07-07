@@ -571,11 +571,11 @@ for iview=1:nbview
         j2=[];%default
         PairString=get(handles.PairString,'Data');
         if numel(PairString)>=iview
-            checkpair=strfind(PairString{iview},'j=');
-            if checkpair
-                j1=str2double(PairString{iview}(4));
-                j2=str2double(PairString{iview}(6));
-            end
+                r=regexp(PairString{iview},'(?<num1>\d+)-(?<num2>\d+)' ,'names');
+                if ~isempty(r)
+                j1=str2double(r.num1);
+                j2=str2double(r.num2);
+                end
         end
         InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
         [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
@@ -1399,6 +1399,13 @@ end
 if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequal(Param.InputFields.FieldName,'add_field...')
     errormsg='input field name(s) not defined, select add_field...';
     return
+end
+[status,result]=system(['svn info ' Param.Action.ActionPath]);
+if status==0
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
+    if ~isempty(t)
+        Param.UvmatRevision=t.rev; %version nbre of the current package
+    end
 end
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
@@ -2304,7 +2311,7 @@ if isequal(ActionName,'more...')
     if length(FileName)<2
         return
     end
-    [tild,ActionName,ActionExt]=fileparts(FileName);
+    [~,ActionName,ActionExt]=fileparts(FileName);
 
     % insert the choice in the menu ActionName
     ActionIndex=find(strcmp(ActionName,ActionList),1); % look for the selected function in the menu Action
@@ -2396,8 +2403,8 @@ cd(current_dir)
 
 %% Activate the Action fct to adapt the configuration of the GUI series and bring specific parameters in SeriesData
 Param=read_GUI_series(handles); % read the parameters from the GUI series
-Param.Action.RUN=0;
-Param.SeriesData=SeriesData;
+Param.Action.RUN=0;% indicate that we are in the mode of parameter input, not program run
+Param.SeriesData=SeriesData;% info stored in 'UserData' of the fig 'series'
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
 
 
@@ -2464,21 +2471,21 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
         ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
         for ilist=1:numel(ind_var)
-            if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
+            if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName), 1))
                 FieldList={}; % previous choice not consistent with new input field
                 set(handles.FieldName,'Value',1)
                 break
             end
         end
-        if ~isempty(FieldList)iview_netcdf
-            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
-                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
+        if ~isempty(FieldList)
+            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName), 1))||...
+                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName), 1))
                 FieldList={};
                 set(handles.Coord_x,'String','')
                 set(handles.Coord_y,'String','')
             end
             Coord_z=get(handles.Coord_z,'String');
-            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))REFRESH
+            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName), 1))
                 FieldList={};
                 set(handles.Coord_z,'String','')
             end
@@ -2488,29 +2495,29 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
         set(handles.Field_text,'Visible','off')
     end
     set(handles_coord,'Visible','on')
-    if isempty(find(strcmp('add_field...',FieldList)))
+    if isempty(find(strcmp('add_field...',FieldList), 1))
         FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
     end
     if FieldNameRequest_1 && numel(iview_netcdf)>=2
         set(handles.FieldName_1,'Visible','on')
         set(handles.Field_text_1,'Visible','on')
         if CheckPivData_1==0        % not civ input made
-            FieldList_1={'add_field...'}
+            FieldList_1={'add_field...'};
             ListVarName=SeriesData.FileInfo{iview_netcdf(2)}.ListVarName;
             ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
             for ilist=1:numel(ind_var)
-                if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName)))
+                if isempty(find(strcmp(FieldList{ind_var(ilist)},ListVarName), 1))
                     %FieldList_1={}; % previous choice not consistent with new input field
                     set(handles.FieldName_1,'Value',1)
                     break
                 end
             end
             warn_coord=0;
-            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName)))||...
-                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName)))
+            if isempty(find(strcmp(get(handles.Coord_x,'String'),ListVarName), 1))||...
+                    isempty(find(strcmp(get(handles.Coord_y,'String'),ListVarName), 1))
                 warn_coord=1;
             end
-            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName)))
+            if ~isempty(Coord_z) && isempty(find(strcmp(Coord_z,ListVarName), 1))
                 FieldList_1={'add_field...'};
                 warn_coord=1;
             end
@@ -2546,7 +2553,7 @@ end
 
 %% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
-    [tild,iview]=sort(Param.InputTable(:,2)); % subdirectories sorted in alphabetical order
+    [~,iview]=sort(Param.InputTable(:,2)); % subdirectories sorted in alphabetical order
     set(handles.InputTable,'Data',Param.InputTable(iview,:));
     MinIndex_i=get(handles.MinIndex_i,'Data');
     MinIndex_j=get(handles.MinIndex_j,'Data');
@@ -2631,9 +2638,6 @@ else
 end
 
 %% NbSlice visibility
-% if isfield(ParamOut,'OutputFileMode')&& strcmp(ParamOut.OutputFileMode,'NbSlice')
-%     ParamOut.NbSlice='on';
-% end
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')
@@ -2689,6 +2693,8 @@ if isfield(ParamOut,'Mask')
     MaskVisible=ParamOut.Mask;
 end
 set(handles.CheckMask,'Visible',MaskVisible);
+set(handles.MaskTable,'Visible',MaskVisible);
+
 %% Setting of expected iteration time
 if isfield(ParamOut,'CPUTime')
     set(handles.num_CPUTime,'String',num2str(ParamOut.CPUTime));
@@ -2697,7 +2703,7 @@ end
 %% definition of the path for the output files
 InputTable=get(handles.InputTable,'Data');
 [OutputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
-[OutputPath,Experiment,ExperimentExt]=fileparts(OutputPath);
+[~,Experiment,ExperimentExt]=fileparts(OutputPath);
 set(handles.Device,'String',[Device DeviceExt])
 set(handles.Device,'Visible','on')
 set(handles.Device_title,'Visible','on')
@@ -2709,7 +2715,6 @@ set(handles.OutputPath,'Visible','on')
 set(handles.OutputPathBrowse,'Visible','on')
 
 %% definition of the subdirectory containing the output files
-
 if  ~(isfield(SeriesData,'ActionName') && strcmp(ActionName,SeriesData.ActionName))
     OutputDirExt='.series'; % default
     if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
@@ -2751,7 +2756,6 @@ set(handles.OutputSubDir,'String',SubDirOut)
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])% set edit box to white color to indicate refreshment
 set(handles.OutputDirExt,'Visible',OutputDirVisible)
 set(handles.OutputSubDir,'Visible',OutputDirVisible)
-% set(handles.OutputDir_title,'Visible',OutputDirVisible)
 SeriesData.ActionName=ActionName; % record ActionName for next use
 
 
@@ -2775,11 +2779,9 @@ end
 
 %% definition of an additional parameter set, determined by an ancillary GUI
 if isfield(ParamOut,'ActionInput')
-%     set(handles.ActionInput,'Visible','on')
     ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
     SeriesData.ActionInput=ParamOut.ActionInput;
 else
-%     set(handles.ActionInput,'Visible','off')
     if isfield(SeriesData,'ActionInput')
         SeriesData=rmfield(SeriesData,'ActionInput');
     end

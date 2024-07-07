@@ -25,12 +25,13 @@ xx=double(get(hObject,'CurrentCharacter')); %get the keyboard character
 if ~isempty(xx)
     switch xx
         case {29,28,30,31}    %arrows for displacement
+            hhh=get(hObject,'CurrentObject');
             AxeData=get(cur_axes,'UserData');
             if isfield(AxeData,'ZoomAxes')&&ishandle(AxeData.ZoomAxes)
                 cur_axes=AxeData.ZoomAxes;% move the field of the zoom sub-plot instead of the main axes  if it exsits
                 axes(cur_axes)
             end
-            if ~isempty(cur_axes)
+            if ~isempty(cur_axes) && ~strcmp(get(hhh,'Type'),'uicontrol')
                 xlimit=get(cur_axes,'XLim');
                 ylimit=get(cur_axes,'Ylim');
                 dx=(xlimit(2)-xlimit(1))/10;

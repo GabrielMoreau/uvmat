@@ -2015,14 +2015,14 @@ end
 
 %------------------------------------------------------------------------
 % open the GUI 'series'
-function MenuSeries_Callback(hObject, eventdata, handles)
+function MenuRun1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 Param=read_GUI(handles.uvmat);
 Param.HiddenData=get(handles.uvmat,'UserData');
 series(Param); %run the series interface
 
 % --------------------------------------------------------------------
-function MenuPIV_Callback(hObject, eventdata, handles)
+function MenuRun2_Callback(hObject, eventdata, handles)
 Param=read_GUI(handles.uvmat);
 Param.HiddenData=get(handles.uvmat,'UserData');
 hseries=series(Param);
@@ -2032,13 +2032,13 @@ index_action=find(strcmp('civ_series',ActionMenu));
 set(hhseries.ActionName,'Value',index_action);
 series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
 
-%------------------------------------------------------------------------
-% -- open the GUI civ.fig for PIV
-function MenuCIVx_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
- [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
- FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-civ(FileName);% interface de civ(not in the uvmat file)
+% %------------------------------------------------------------------------
+% % -- open the GUI civ.fig for PIV
+% function MenuCIVx_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+%  [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+%  FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+% civ(FileName);% interface de civ(not in the uvmat file)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuHelp Callback
@@ -2602,9 +2602,9 @@ switch FileInfo.FieldType
         set(handles.ColorScalar,'Value',1)
         set(handles.ColorScalar,'String',ColorList)
         set(handles.Vectors,'Visible','on')
-        %set(handles.Coord_x,'Value',1);
         set(handles.Coord_x,'String','X');
         set(handles.Coord_y,'String','Y');
+        set(handles.MenuRun3,'Label','test_filter_tps')
     case {'netcdf','mat'}
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
@@ -6107,7 +6107,6 @@ if IndexObj<=old_index
 end
 
 
-
 % --------------------------------------------------------------------
 % --- Executes on button press in CheckTable.
 % --------------------------------------------------------------------
@@ -6120,8 +6119,13 @@ end
 
 
 
-
-
-
-
-
+% --------------------------------------------------------------------
+function MenuRun3_Callback(hObject, eventdata, handles)
+Param=read_GUI(handles.uvmat);
+Param.HiddenData=get(handles.uvmat,'UserData');
+hseries=series(Param);
+hhseries=guidata(hseries);
+ActionMenu=get(hhseries.ActionName,'String');
+index_action=find(strcmp('test_filter_tps',ActionMenu));
+set(hhseries.ActionName,'Value',index_action);
+series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates

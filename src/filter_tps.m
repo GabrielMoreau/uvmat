@@ -5,7 +5,7 @@
 % OUTPUT:
 % SubRange(NbCoord,2,NbSubdomain): range (min, max) of the coordinates x and y respectively, for each subdomain
 % NbCentre(NbSubdomain): number of source points for each subdomain
-% FF: false flags preserved from the input, or equal to 20 for vectors excluded by the difference with the smoothed field
+% FF: false flags preserved from the input, or equal to true for vectors excluded by the difference with the smoothed field
 % U_smooth, V_smooth: filtered velocity components at the positions of the initial data
 % Coord_tps(NbCentre,NbCoord,NbSubdomain): positions of the tps centres
 % U_tps,V_tps: weight of the tps centers for each subdomain
@@ -60,9 +60,10 @@ CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 
 %% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
-%smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%optimum smoothing increase as the area of the subdomain (division by 1000 to reach good values with the default GUI input)
+%smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%old calculation before 03 May < r1129
 NbVecSub=NbVec/NbSubDomain;% refined estimation of the nbre of vectors per subdomain
 smoothing=sqrt(Siz(1)*Siz(2)/NbVecSub)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/NbVecSub)^1/2
+Threshold=Threshold*Threshold;% take the square of the threshold to work with the modulus squared (not done before r1154)
 
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
@@ -74,7 +75,7 @@ W_tps=[];%default (2 component case)
 U_smooth=zeros(NbVec,1); % smoothed velocity U at the initial positions
 V_smooth=zeros(NbVec,1);% smoothed velocity V at the initial positions
 W_smooth=[];%default (2 component case)
-FF=zeros(NbVec,1);
+FF=false(NbVec,1);%false flag=0 (false) by default
 nb_select=zeros(NbVec,1);
 check_empty=zeros(1,NbSubDomain);
 
@@ -87,7 +88,8 @@ for isub=1:NbSubDomain
     %increase iteratively the subdomain if it contains less than SubDomainNbVec/4 source vectors
     while numel(ind_sel)>numel(ind_sel_previous)
         ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration 
-        ind_sel= find(FF==0 & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
+        ind_sel= find(~FF & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
+        %ind_sel= find( Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
         % if no vector in the subdomain  #isub, skip the subdomain
         if isempty(ind_sel)
             check_empty(isub)=1;
@@ -96,7 +98,7 @@ for isub=1:NbSubDomain
         elseif numel(ind_sel)<SubDomainSize/4 && ~isequal( ind_sel,ind_sel_previous)
             SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
             SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
-        % subdomain includes enough vectors, perform tps interpolation
+        % if subdomain includes enough vectors, perform tps interpolation
         else
             [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel,:),U(ind_sel),smoothing);
             [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel,:),V(ind_sel),smoothing);
@@ -105,8 +107,8 @@ for isub=1:NbSubDomain
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
             ind_ind_sel=1:numel(ind_sel);%default
             if exist('Threshold','var')&&~isempty(Threshold)
-                FF(ind_sel)=4*(NormDiff>Threshold);%put FF value to 4 to identify the criterium of elimmination
-                ind_ind_sel=find(FF(ind_sel)==0); % select the indices of remaining vectors in the subset of ind_sel vectors 
+                FF(ind_sel)=(NormDiff>Threshold);%put FF value to 1 to identify the criterium of elimmination
+                ind_ind_sel=find(~FF(ind_sel)); % select the indices of remaining vectors in the subset of ind_sel vectors 
             end
             % if no value exceeds threshold, the result is recorded
             if isequal(numel(ind_ind_sel),numel(ind_sel))
@@ -115,6 +117,7 @@ for isub=1:NbSubDomain
                 x_dist=(Coord(ind_sel,1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
                 y_dist=(Coord(ind_sel,2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
                 weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+                %weight=1;% case for r1129 and before
                 U_smooth(ind_sel)=U_smooth(ind_sel)+weight.*U_smooth_sub;
                 V_smooth(ind_sel)=V_smooth(ind_sel)+weight.*V_smooth_sub;
                 NbCentre(isub)=numel(ind_sel);
@@ -137,6 +140,7 @@ for isub=1:NbSubDomain
                 x_dist=(Coord(ind_sel(ind_ind_sel),1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
                 y_dist=(Coord(ind_sel(ind_ind_sel),2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
                 weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+                %weight=1;
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+weight.*U_smooth_sub;
                 V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+weight.*V_smooth_sub;
                 NbCentre(isub)=numel(ind_ind_sel);
@@ -165,8 +169,17 @@ end
 nb_select(nb_select==0)=1;
 U_smooth=U_smooth./nb_select;% take the average at the intersection of several subdomains
 V_smooth=V_smooth./nb_select;
-U_smooth(FF==4)=U(FF==4);% set to the initial values the eliminated vectors (flagged as false)
-V_smooth(FF==4)=V(FF==4);
+
+%eliminate the vectors with diff>threshold not yet eliminated
+if exist('Threshold','var')&&~isempty(Threshold)
+UDiff=U_smooth-U;% difference between interpolated U component and initial value
+VDiff=V_smooth-V;% difference between interpolated V component and initial value
+NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
+FF(NormDiff>Threshold)=true;%put FF value to 1 to identify the criterium of elimmination
+end
+
+U_smooth(FF)=U(FF);% set to the initial values the eliminated vectors (flagged as false)
+V_smooth(FF)=V(FF);
 fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
 Coord_tps=cat(1,Coord_tps,fill);
 

@@ -140,10 +140,10 @@ switch FileType
 
         iview_image=2;%line # for the input images
     otherwise 
-        if ~strcmp(FieldType,'image')
-        msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
-        return
-        end
+        % if ~strcmp(FileType,'image')
+        % msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
+        % return
+        % end
 end
         
 %% prepare the GUI with input parameters 

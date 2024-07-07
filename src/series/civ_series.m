@@ -126,7 +126,7 @@ if CheckInputFile
         MinIndex_j=Param.IndexRange.MinIndex_j;
     end
     if isfield(Param,'InputTable')
-        [tild,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+        [~,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
         iview_A=0;% series index (iview) for the first image series
         iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
         if Param.ActionInput.CheckCiv1
@@ -194,8 +194,6 @@ if CheckInputFile
                 end
                 j2_series_Civ2=j2_series_Civ1;
                 NomTypeNc='_1';
-            case 'PIV volume'
-                % TODO, TODO
         end
         %determine frame indices for input with movie or other multiframe input file
         if isempty(j1_series_Civ1)% simple movie with index i
@@ -251,6 +249,9 @@ end
 ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
+if isfield(Param,'UvmatRevision')
+    Data.Program=[Data.Program ', uvmat r' Param.UvmatRevision];
+end
 Data.CivStage=0;%default
 
 %% get timing from the ImaDoc file or input video
@@ -508,7 +509,7 @@ for ifield=1:NbField
         else %usual PIV
             % caluclate velocity data (y and v in indices, reverse to y component)
             tstart_civ1=tic;
-            [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
+            [xtable, ytable, utable, vtable, ctable, FF, result_conv, errormsg] = civ (par_civ1);
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
@@ -518,7 +519,7 @@ for ifield=1:NbField
             Data.Civ1_U=reshape(utable,[],1);
             Data.Civ1_V=reshape(-vtable,[],1);
             Data.Civ1_C=reshape(ctable,[],1);
-            Data.Civ1_FF=reshape(F,[],1);
+            Data.Civ1_FF=reshape(FF,[],1);
             time_civ1=toc(tstart_civ1);
         end
     else% we use existing Civ1 data
@@ -600,12 +601,11 @@ for ifield=1:NbField
         end
 
         % perform Patch calculation using the UVMAT fct 'filter_tps'
-       
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
-        Data.Civ1_FF(ind_good)=uint8(FFres);
+        Data.Civ1_FF(ind_good)=uint8(4*FFres);
         time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
     end
@@ -769,7 +769,7 @@ for ifield=1:NbField
         
         % calculate velocity data (y and v in image indices, reverse to y component)
         
-        [xtable, ytable, utable, vtable, ctable, F,result_conv,errormsg] = civ (par_civ2);
+        [xtable, ytable, utable, vtable, ctable, FF,result_conv,errormsg] = civ (par_civ2);
         
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
@@ -809,7 +809,7 @@ for ifield=1:NbField
         Data.Civ2_U=reshape(utable,[],1);
         Data.Civ2_V=reshape(-vtable,[],1);
         Data.Civ2_C=reshape(ctable,[],1);
-        Data.Civ2_FF=reshape(F,[],1);
+        Data.Civ2_FF=reshape(FF,[],1);
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
@@ -820,15 +820,6 @@ for ifield=1:NbField
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
             end
-%         elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
-%             Data.ListGlobalAttribute={};
-%             Data.ListVarName={};
-%             Data.VarDimName={};
-%             Data.Civ2_X=Param.Civ2_X;
-%             Data.Civ2_Y=Param.Civ2_Y;
-%             Data.Civ2_U=Param.Civ2_U;
-%             Data.Civ2_V=Param.Civ2_V;
-%             Data.Civ2_FF=Param.Civ2_FF;
         end
     end
     
@@ -885,7 +876,7 @@ for ifield=1:NbField
             filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
         Data.Civ2_U_smooth(ind_good)=Ures;
         Data.Civ2_V_smooth(ind_good)=Vres;
-        Data.Civ2_FF(ind_good)=FFres;
+        Data.Civ2_FF(ind_good)=uint8(4*FFres);
         Data.CivStage=Data.CivStage+1;
         time_patch2=toc(tstart_patch2);
         disp('patch2 performed')
@@ -920,7 +911,7 @@ end
 %
 % OUTPUT:
 % xtable: set of x coordinates
-% ytable: set of y coordiantes
+% ytable: set of y coordinates
 % utable: set of u displacements (along x)
 % vtable: set of v displacements (along y)
 % ctable: max image correlation for each vector
@@ -1277,7 +1268,7 @@ FF=FFIn;%default, good vectors
 % FF=1, for correlation max at edge, not set in this function
 % FF=2, for too small correlation
 % FF=3, for velocity outside bounds
-% FF=4 for exclusion by difference with the smoothed field, not set in this function
+% FF=4 for exclusion by difference with the smoothed field, set by call to function filter_tps
 
 if isfield (Param,'MinCorr')
      FF(C<Param.MinCorr & FFIn==0)=2;
