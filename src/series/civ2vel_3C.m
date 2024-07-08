@@ -436,6 +436,9 @@ for index=1:NbField
     mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
     mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
     MergeData.Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
+    MergeData.U(MergeData.Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
+    MergeData.V(MergeData.Error>1)=NaN;
+    MergeData.W(MergeData.Error>1)=NaN;
     errormsg=struct2nc(OutputFile,MergeData);%save result file
     if isempty(errormsg)
         disp(['output file ' OutputFile ' written'])

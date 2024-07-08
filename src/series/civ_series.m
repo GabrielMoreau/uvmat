@@ -363,13 +363,13 @@ for ifield=1:NbField
                 end
                 if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
                     FieldName_A=Param.InputFields.FieldName;
-                    [DataIn,tild,tild,errormsg]=nc2struct(ImageName_A,{FieldName_A});
+                    [DataIn,~,~,errormsg]=nc2struct(ImageName_A,{FieldName_A});
                     par_civ1.ImageA=DataIn.(FieldName_A);
                 else % usual image formats for image A
                     if isempty(FileType_A)% open the image object if not already done in case of movie input
                         [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                         FileType_A=FileInfo_A.FileType;
-                        if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'})))% case of video input
+                        if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'}), 1))% case of video input
                             Time=zeros(FileInfo_A.NumberOfFrames+1,2);
                             Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
                         end
@@ -382,7 +382,7 @@ for ifield=1:NbField
                             Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
                         end
                     end
-                    if isempty(regexp(ImageName_A,'(^http://)|(^https://)')) && ~exist(ImageName_A,'file')
+                    if isempty(regexp(ImageName_A,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_A,'file')
                         disp([ImageName_A ' missing'])
                         continue
                     end
@@ -393,14 +393,14 @@ for ifield=1:NbField
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
                 if strcmp(FileExt_B,'.nc') % case of input images in format netcdf
                     FieldName_B=Param.InputFields.FieldName;
-                    [DataIn,tild,tild,errormsg]=nc2struct(ImageName_B,{FieldName_B});
+                    [DataIn,~,~,errormsg]=nc2struct(ImageName_B,{FieldName_B});
                     par_civ1.ImageB=DataIn.(FieldName_B);
                 else % usual image formats for image B
                     if isempty(FileType_B)
                         [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
                         FileType_B=FileInfo_B.FileType;
                     end
-                    if isempty(regexp(ImageName_B,'(^http://)|(^https://)')) && ~exist(ImageName_B,'file')
+                    if isempty(regexp(ImageName_B,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_B,'file')
                         disp([ImageName_B ' missing'])
                         continue
                     end
@@ -461,7 +461,7 @@ for ifield=1:NbField
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             if isfield(par_civ1,'NbSlice')
-                [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
+                [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
                 i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
             else
@@ -470,7 +470,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
-                if ~isempty(regexp(maskname,'(^http://)|(^https://)'))|| exist(maskname,'file')
+                if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
                     try
                         par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
                     catch ME
@@ -605,7 +605,7 @@ for ifield=1:NbField
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
-        Data.Civ1_FF(ind_good)=uint8(4*FFres);
+        Data.Civ1_FF(ind_good)=uint8(4*FFres);%set FF to value =4 for vectors eliminated by filter_tps
         time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
     end
@@ -720,9 +720,22 @@ for ifield=1:NbField
                 end
             end
         end
-        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)        
+        i1=i1_series_Civ2(ifield);
+        i2=i1;
+        if ~isempty(i2_series_Civ2)
+            i2=i2_series_Civ1(ifield);
+        end
+        j1=1;
+        if ~isempty(j1_series_Civ2)
+            j1=j1_series_Civ1(ifield);
+        end
+        j2=j1;
+        if ~isempty(j2_series_Civ2)
+            j2=j2_series_Civ2(ifield);
+        end
+        if par_civ2.CheckMask&&~isempty(par_civ2.Mask)
             if isfield(par_civ2,'NbSlice')
-                [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
+                [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
                 i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
             else
@@ -893,14 +906,14 @@ for ifield=1:NbField
         end
         time_total=toc(tstart);
         disp(['ellapsed time ' num2str(time_total/60,2) ' minutes'])
-        if exist('time_input','var')
-            disp(['time image reading ' num2str(time_input,2) ' s'])
-        end
         disp(['time civ1 ' num2str(time_civ1,2) ' s'])
         disp(['time patch1 ' num2str(time_patch1,2) ' s'])
         disp(['time civ2 ' num2str(time_civ2,2) ' s'])
         disp(['time patch2 ' num2str(time_patch2,2) ' s'])
-        disp(['time other ' num2str((time_total-time_input-time_civ1-time_patch1-time_civ2-time_patch2),2) ' s'])
+        if exist('time_input','var')
+            disp(['time image reading ' num2str(time_input,2) ' s'])
+            disp(['time other ' num2str((time_total-time_input-time_civ1-time_patch1-time_civ2-time_patch2),2) ' s'])
+        end
     end
 end
 

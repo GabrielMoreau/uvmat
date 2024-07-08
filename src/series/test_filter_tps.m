@@ -106,7 +106,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
             case {4,5}
                 CivStage='civ2';
                 MaxDiff=1.5; SubDomainSize=250; FieldSmooth=5; %default
-            case 6
+            otherwise
                 CivStage='civ2';
                  MaxDiff=Data.Patch2_MaxDiff;
                SubDomainSize=Data.Patch2_SubDomainSize;
