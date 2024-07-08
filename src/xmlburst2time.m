@@ -11,7 +11,7 @@ for k=1:length(BurstTiming)
     if isfield(BurstTiming{k},'FrameFrequency')
         Frequency=BurstTiming{k}.FrameFrequency;
     end
-    if isfield(BurstTiming{k},'Time')
+    if ~isfield(BurstTiming{k},'Time')
         BurstTiming{k}.Time=0;%time origin set to zero by default
     end
     Dtj=[];

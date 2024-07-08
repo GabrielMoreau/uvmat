@@ -29,22 +29,23 @@
 %=======================================================================
 
 function XmlFileName=find_imadoc(RootPath,SubDir)
-
-dotchar=regexp(SubDir,'\.');%detect the dots in the folder name
-if isempty(dotchar)
-    XmlFileName=fullfile(RootPath,[SubDir '.xml']);
-else %go upward to the root name, stop if an xml file already exists
-    for idot=1:numel(dotchar)
-        SubDir=SubDir(1:dotchar(end-idot+1)-1);
-        XmlFileName=fullfile(RootPath,[SubDir '.xml']);
-        if exist(XmlFileName,'file')
-            break
+XmlFileName=fullfile(RootPath,[SubDir '.xml']);
+if ~exist(XmlFileName,'file')
+    dotchar=regexp(SubDir,'\.');%detect the dots in the folder name
+    if ~isempty(dotchar)
+        for idot=1:numel(dotchar)
+            SubDir=SubDir(1:dotchar(end-idot+1)-1);
+            XmlFileName=fullfile(RootPath,[SubDir '.xml']);
+            if exist(XmlFileName,'file')
+                break
+            end
         end
     end
+    if ~exist(XmlFileName,'file')
+        XmlFileName='';
+    end
 end
-if ~exist(XmlFileName,'file')
-    XmlFileName='';
-end
+
 
 
 

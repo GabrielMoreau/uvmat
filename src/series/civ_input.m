@@ -342,7 +342,7 @@ if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'PairIndices')
     PairIndex=find(strcmp(Param.ActionInput.PairIndices.ListPairMode,PairMenu));%retrieve the previous option
 end
 if strcmp(Param.Action.ActionName,'civ_3D')
-    PairIndex=1
+    PairIndex=1;
 else
     if isempty(PairIndex)
         if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
@@ -788,24 +788,13 @@ set(handles.ref_j,'Visible',state)
 function ListPairCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %reproduce by default the chosen pair in the checkciv2 menu
-list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
-PairString=list_pair{get(handles.ListPairCiv1,'Value')};
-
-[ind1,ind2]=...
-    find_pair_indices(PairString);
-hseries=findobj(allchild(0),'Tag','series');
-hhseries=guidata(hseries);
-set(hhseries.num_first_j,'String',num2str(ind1));
-set(hhseries.num_last_j,'String',num2str(ind2));
-set(hhseries.num_incr_j,'String',num2str(ind2-ind1));
-set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ& by default
-
+set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ1 by default
+ListPairCiv2_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv2.
 function ListPairCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
 
 %------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)

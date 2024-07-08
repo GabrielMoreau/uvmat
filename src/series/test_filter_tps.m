@@ -58,7 +58,7 @@ function ParamOut=test_filter_tps (Param)
 %%%%%%%%%%%%%%%%%    INPUT PREPARATION MODE (no RUN)    %%%%%%%%%%%%%%%%%
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='one';% prescribes the file index ranges from min to max (options 'off'/'on'/'one' (single input index), 'off' by default)
     ParamOut.NbSlice='off'; % edit box nbre of slices made active
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -213,7 +213,11 @@ NbSmooth=numel(FieldSmooth);
 %% Prepare the structure of output netcdf file
 DataOut.ListGlobalAttribute={'Conventions','Program','CivStage','SubDomainSize','MaxDiff','CoordUnit','FieldSmooth'};
 DataOut.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+if isfield(Param,'UvmatRevision')
 DataOut.Program=['test_patch_tps, uvmat r' Param.UvmatRevision];
+else
+    DataOut.Program='test_patch_tps';
+end
 DataOut.CivStage=CivStage;%update the current civStage after smoothing
 DataOut.SubDomainSize=SubDomainSize;
 DataOut.MaxDiff=MaxDiff;
@@ -286,21 +290,23 @@ for iter=1:NbSmooth
 end
 time=toc
 
-
+%plot rms difference and proportion of excluded vectors
 figure(2)
 cla
 if CivStage==3% civ1
-ref=0.2; %recommanded value for diff rms
+    ref=0.2; %recommanded value for diff rms
+    txt='civ1';
 else
     ref=0.1;
+    txt='civ2';
 end
 semilogx(FieldSmooth,DataOut.Diff_rms,'b+-',FieldSmooth,DataOut.NbExclude,'m+-',FieldSmooth,ref*ones(size(FieldSmooth)),'b--')
 grid on
-title( [filecell{1,1} ':' Param.InputFields.VelType])
-legend({'rms vel. diff. ' ;' ratio excluded vectors';'recommended diff'},'Location','northwest')
+title( [filecell{1,1} ':' txt])
+legend({'rms vel. diff. ' ;' ratio excluded vectors';['recommended diff for' txt]},'Location','northwest')
 xlabel('smoothing parameter')
-ylabel('rms (pixels) and exclusion ratio')
-OutputFig=fullfile(OutputPath,OutputDir,'plot_rms_diff.png')
+ylabel('rms (pixels) and proportion of excluded vectors')
+OutputFig=fullfile(OutputPath,OutputDir,'plot_rms_diff.png');
 saveas(2,OutputFig)
 
 

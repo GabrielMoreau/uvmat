@@ -539,7 +539,7 @@ ActionInput_Callback([],[], handles)
 % --- check the input file series.
 function check_input_file_series(handles)
 %------------------------------------------------------------------------
-InputTable=get(handles.InputTable,'Data');
+InputTable=get(handles.InputTable,'Data');%read the table of input file series
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
@@ -547,7 +547,7 @@ empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
     empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));%check the empty lines in the input table
 end
-if ~isempty(find(empty_line,1))
+if ~isempty(find(empty_line,1))%removes the empty lines in the table
     InputTable(empty_line,:)=[]; % remove empty lines
     set(handles.InputTable,'Data',InputTable)
     ListTable={'MinIndex_i','MaxIndex_i','MinIndex_j','MaxIndex_j','PairString','TimeTable'};
@@ -578,7 +578,7 @@ for iview=1:nbview
                 end
         end
         InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
-        [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=...
+        [RootPath,~,RootFile,i1_series,i2_series,j1_series,j2_series,~,FileInfo,MovieObject]=...
                 find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
     % if no file is found, open a browser
@@ -588,7 +588,7 @@ for iview=1:nbview
             set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
             return
         else
-            display_file_name(handles,fileinput,iview)
+            display_file_name(handles,fileinput,iview)% update the table of input file series, then call update_rootinfo
         end
     else
        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview)
@@ -770,7 +770,8 @@ if isempty(find(str_find,1))
     MenuFile=[{fileinput};MenuFile]; % insert the current file if not already in the list
 end
 for ifile=1:min(length(MenuFile),5)
-    eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
+    ffname=['MenuFile_' num2str(ifile)];
+    set(handles.(ffname),'Label',MenuFile{ifile});
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -791,7 +792,7 @@ SeriesData.Ref_j2=j2;
 [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
 set(handles.Device,'String',[Device DeviceExt])
 set(handles.Experiment,'String',[Experiment ExperimentExt])
-if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
+if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)', 'once'))
     set(handles.OutputPathBrowse,'Value',1)% an output folder needs to be specified for OpenDAP data
 end
 
@@ -813,6 +814,7 @@ set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,iview);
+
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
 
@@ -828,6 +830,13 @@ function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInf
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 
+%% make the j indices visible if relevant
+if (isempty(j1_series)|| ~isempty(j2_series))% no j series or j1-j2 pair
+    enable_j(handles,'off');
+else
+   enable_j(handles,'on')%%%%remark: put series with j index at the end in the case of a list
+end
+
 %% display the min and max indices for the whole file series
 if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
     MinIndex_j=1; % index j set to 1 by default
@@ -837,10 +846,10 @@ if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
 else
     ref_i=squeeze(max(i1_series(1,:,:),[],2)); % select ref_j index for each ref_i
     ref_j=squeeze(max(j1_series(1,:,:),[],3)); % select ref_i index for each ref_j
-     MinIndex_i=min(find(ref_i))-1;
-     MaxIndex_i=max(find(ref_i))-1;
-     MaxIndex_j=max(find(ref_j))-1;
-     MinIndex_j=min(find(ref_j))-1;
+     MinIndex_i=find(ref_i, 1 )-1;
+     MaxIndex_i=find(ref_i, 1, 'last' )-1;
+     MaxIndex_j=find(ref_j, 1, 'last' )-1;
+     MinIndex_j=find(ref_j, 1 )-1;
     diff_j_max=diff(ref_j);
     diff_i_max=diff(ref_i);
     if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
@@ -872,6 +881,8 @@ set(handles.MinIndex_i,'Data',MinIndex_i_table)%display the min indices in the t
 set(handles.MinIndex_j,'Data',MinIndex_j_table)%display the max indices in the table MaxIndex
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table)%display the min indices in the table MinIndex
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table)%display the max indices in the table MaxIndex
+
+
 SeriesData=get(handles.series,'UserData');
 
 %% adjust the first and last indices for the selected series, only if requested by the bounds
@@ -1062,7 +1073,7 @@ else
 end
 
 
-%% display the set of existing files as an image
+%% display the set of existing files as an image with black bands for gaps showing gaps in the series
 set(handles.FileStatus,'Units','pixels')
 Position=get(handles.FileStatus,'Position');
 set(handles.FileStatus,'Units','normalized')
@@ -1315,12 +1326,6 @@ if numel(eventdata.Indices)>=1
     end
 end
 
-%-------------------------------------
-function enable_i(handles,state)
-set(handles.i_txt,'Visible',state)
-set(handles.num_first_i,'Visible',state)
-set(handles.num_last_i,'Visible',state)
-set(handles.num_incr_i,'Visible',state)
 
 %-----------------------------------
 function enable_j(handles,state)
@@ -2578,10 +2583,9 @@ end
 if ~isfield(ParamOut,'WholeIndexRange')
     ParamOut.WholeIndexRange='off';
 end
-if ~isfield(ParamOut,'WholeIndexRange_j')
-    ParamOut.WholeIndexRange_j='off';
+if ~isfield(ParamOut,'IndexRange_j')
+    ParamOut.IndexRange_j='on';% accept Index_j as input by default
 end
-
 if strcmp(ParamOut.WholeIndexRange,'on')
     MinIndex_i=get(handles.MinIndex_i,'Data');
     MaxIndex_i=get(handles.MaxIndex_i,'Data');
@@ -2595,7 +2599,7 @@ else
         last_i=Param.IndexRange.last_i;
     end
 end
-if strcmp(ParamOut.WholeIndexRange,'on')||strcmp(ParamOut.WholeIndexRange_j,'on')
+if strcmp(ParamOut.WholeIndexRange,'on')||strcmp(ParamOut.IndexRange_j,'whole')
     MinIndex_j=get(handles.MinIndex_j,'Data');
     MaxIndex_j=get(handles.MaxIndex_j,'Data');
     set(handles.num_first_j,'String',num2str(MinIndex_j(1)))% set first as the min index (for the first line)
@@ -2612,30 +2616,42 @@ else  % check index ranges
 end
 
 %% enable or desable j index visibility
-status_j='on'; % default
-if isfield(SeriesData,'j1_series') && isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)) % case of empty j indices
-    status_j='off'; % no j index needed
-elseif strcmp(get(handles.PairString,'Visible'),'on')
-    check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j')); % =0 for burst case, 1 otherwise
-    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
-        status_j='off'; % no j index needed for bust case
+if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
+    enable_j(handles,'off')
+else% show j index if relevant in the input series
+    j1_series=SeriesData.j1_series;
+    for iview=1:size(j1_series,1)
+        if ~isempty(j1_series{iview})
+            enable_j(handles,'on')
+            break
+        end
     end
 end
-enable_j(handles,status_j) % no j index needed
-if isfield(ParamOut,'j_index_1')&& isfield(ParamOut,'j_index_2')%strcmp(ParamOut.Desable_j_index,'on')
-    %status_j='off';
-    set(handles.num_first_j,'String',num2str(ParamOut.j_index_1))
-    set(handles.num_last_j,'String',num2str(ParamOut.j_index_2))
-    % set(handles.num_first_j,'enable','off')
-    % set(handles.num_last_j,'enable','off')
-    set(handles.num_first_j,'visible','off')
-    set(handles.num_last_j,'visible','off')
-    set(handles.num_incr_j,'visible','off')
-else
-    set(handles.num_first_j,'visible','on')
-    set(handles.num_last_j,'visible','on')
-    set(handles.num_incr_j,'visible',status_j)
-end
+
+% status_j='on'; % default
+% if isfield(SeriesData,'j1_series') && isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)) % case of empty j indices
+%     status_j='off'; % no j index needed
+% elseif strcmp(get(handles.PairString,'Visible'),'on')
+%     check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j')); % =0 for burst case, 1 otherwise
+%     if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
+%         status_j='off'; % no j index needed for bust case
+%     end
+% end
+% enable_j(handles,status_j) % no j index needed
+% if isfield(ParamOut,'j_index_1')&& isfield(ParamOut,'j_index_2')%strcmp(ParamOut.Desable_j_index,'on')
+%     %status_j='off';
+%     set(handles.num_first_j,'String',num2str(ParamOut.j_index_1))
+%     set(handles.num_last_j,'String',num2str(ParamOut.j_index_2))
+%     % set(handles.num_first_j,'enable','off')
+%     % set(handles.num_last_j,'enable','off')
+%     set(handles.num_first_j,'visible','off')
+%     set(handles.num_last_j,'visible','off')
+%     set(handles.num_incr_j,'visible','off')
+% else
+%     set(handles.num_first_j,'visible','on')
+%     set(handles.num_last_j,'visible','on')
+%     set(handles.num_incr_j,'visible',status_j)
+% end
 
 %% NbSlice visibility
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))

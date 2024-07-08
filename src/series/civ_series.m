@@ -52,8 +52,6 @@ errormsg='';
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-
-
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
     %App=civ_input_App
@@ -75,22 +73,25 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices') && strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-        if isfield(Data.ActionInput.PairIndices,'ListPairCiv2')
-            str_civ=Data.ActionInput.PairIndices.ListPairCiv2;
-        else
-            str_civ=Data.ActionInput.PairIndices.ListPairCiv1;
-        end
-        r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
-        if isempty(r)
-            r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
-            if isempty(r)
-                r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
-            end
-        end
-        if ~isempty(r)
-            Data.j_index_1=stra2num(r.num1);
-            Data.j_index_2=stra2num(r.num2);
-        end
+        Data.IndexRange_j='off';%no j index display in series
+        % if isfield(Data.ActionInput.PairIndices,'ListPairCiv2')
+        %     str_civ=Data.ActionInput.PairIndices.ListPairCiv2;
+        % else
+        %     str_civ=Data.ActionInput.PairIndices.ListPairCiv1;
+        % end
+        % r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
+        % if isempty(r)
+        %     r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+        %     if isempty(r)
+        %         r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+        %     end
+        % end
+        % if ~isempty(r)
+        %     Data.j_index_1=stra2num(r.num1);
+        %     Data.j_index_2=stra2num(r.num2);
+        % end
+    else
+        Data.IndexRange_j='on';% j index display in series if relevant
     end
     return
 end
