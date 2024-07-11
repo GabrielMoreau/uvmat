@@ -417,6 +417,12 @@ for index=1:NbField
         MergeData.ListVarName={'coord_x','coord_y','U','V','W','Error'};
         MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
             {'coord_y','coord_x'},{'coord_y','coord_x'}};
+        MergeData.VarAttribute{1}.Role='coord_x';
+        MergeData.VarAttribute{2}.Role='coord_y';
+        MergeData.VarAttribute{3}.Role='vector_x';
+        MergeData.VarAttribute{4}.Role='vector_y';
+        MergeData.VarAttribute{5}.Role='vector_z';
+        MergeData.VarAttribute{6}.Role='ancillary';
         MergeData.VarAttribute{6}.unit='pixel'; %error estimate expressed in pixel
         if CheckZ
             MergeData.ListVarName=[MergeData.ListVarName {'Z'}];

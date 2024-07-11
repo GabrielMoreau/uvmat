@@ -26,6 +26,7 @@
 %  nc:  name of a NetCDF file (char string) or NetCDF object
 %  additional arguments:
 %       -no additional arguments: all the variables of the NetCDF file are read.
+%       - empty argument []: the field structure with the names of variables is read, without their values
 %       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} )
 %         if ListVarName=[] or {}, no variable value is read (only global attributes and list of variables and dimensions)
 %         if ListVarName is absent, or = '*', ALL the variables of the NetCDF file are read.

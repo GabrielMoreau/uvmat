@@ -77,7 +77,7 @@ switch FileExt
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}
-        [A,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
+        [~,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
     case '.im7'
         try
              Input=readimx(fileinput);
@@ -88,12 +88,12 @@ switch FileExt
              FileInfo.Width=size(Image,1);
              FileInfo.TimeName='timestamp';
              for ilist=1:numel(Input.Attributes)
-                 if strcmp(Input.Attributes{ilist}.Name,'_Date')
-                     DateString=Input.Attributes{ilist}.Value;
-                 end
-                 if strcmp(Input.Attributes{ilist}.Name,'_Time')
-                     TimeString=Input.Attributes{ilist}.Value;
-                 end
+                 % if strcmp(Input.Attributes{ilist}.Name,'_Date')
+                 %     DateString=Input.Attributes{ilist}.Value;
+                 % end
+                 % if strcmp(Input.Attributes{ilist}.Name,'_Time')
+                 %     TimeString=Input.Attributes{ilist}.Value;
+                 % end
              end
         catch ME
             msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'})
@@ -174,6 +174,7 @@ switch FileExt
                             else
                                 FileInfo.FileType='netcdf';
                                 FileInfo.ListVarName=Data.ListVarName;
+                                FileInfo.VarAttribute=Data.VarAttribute;
                             end
                         end
                     catch ME

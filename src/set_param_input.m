@@ -8,6 +8,7 @@
 
 
 function [ParamOut,errormsg] = set_param_input(ListParam,DefaultValue,ParamIn,Comment)
+ParamOut=[];
 errormsg=[];
 NbParam=numel(ListParam);
 if numel(DefaultValue)~=NbParam
@@ -31,7 +32,9 @@ for ilist=1:numel(ListParam)
     end
 end
 dlg_title = 'get the input parameters';
-answer = inputdlg(ListParam,dlg_title,NbParam,prompt);
+options.Resize='on';
+answer = inputdlg(ListParam,dlg_title,NbParam,prompt,options);
+%answer = msgbox_uvmat('INPUT_TXT',ListParam);
 if isempty(answer)
     return
 end

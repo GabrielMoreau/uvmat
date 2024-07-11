@@ -1,6 +1,6 @@
-%'sliding_average': calculate the time correlation function at each point
+%'filter_time': apply a a sliding filter in a time series 
 %------------------------------------------------------------------------
-% function ParamOut=turb_correlation_time(Param)
+% function ParamOut=filter_time(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -55,7 +55,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=sliding_average(Param)
+function ParamOut=filter_time(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -69,37 +69,29 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.tfilter';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice'; % '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-   
+    
     %% check the first input file in the series
-     first_j=[];% 
+    first_j=[];%
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2); 
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
         FileInfo=get_file_info(FirstFileName);
         if ~(isfield(FileInfo,'FileType')&& strcmp(FileInfo.FileType,'netcdf'))
             msgbox_uvmat('ERROR','this fct works only on netcdf files (fields projected on a grid, notraw civ data)')
-        return
+            return
         end
     else
         msgbox_uvmat('ERROR',['the input file ' FirstFileName ' does not exist'])
         return
     end
-
-    %% setting of intput parameters 
-%     answer = msgbox_uvmat('INPUT_MENU','select the variables to filter',ListVarName');
-%     ParamOut.ListVarName=ListVarName(answer);
-    answer = msgbox_uvmat('INPUT_TXT','set the filering window length','3');
-    ParamOut.WindowLength=str2double(answer);
     
-%         [ParamOut.ActionInput,errormsg] = set_param_input(ListParam,DefaultValue,ParamIn);
-%         if ~isempty(errormsg)
-%             msgbox_uvmat('ERROR',errormsg)
-%         end
-%     [ParamOut,errormsg] = set_param_input(ListParam,DefaultValue,ParamIn);
+    %% setting the fltering window length
+    answer = msgbox_uvmat('INPUT_TXT','set the filering window length','3');
+    ParamOut.ActionInput.WindowLength=str2double(answer);
     return
 end
 
@@ -116,9 +108,7 @@ hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
-%% define the directory for result file (with path=RootPath{1})
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
-    
+
 %% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
@@ -134,142 +124,87 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%% NbView=1 : a single input series
-NbView=numel(i1_series);%number of input file series (lines in InputTable)
+
 NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
-%% determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
-NcTypeOptions={'netcdf','civx','civdata'};
-for iview=1:NbView
-    if ~exist(filecell{iview,1}','file')
-        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
-        return
-    end
-    [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
-    FileType{iview}=FileInfo{iview}.FileType;
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
-    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
-    if ~isempty(j1_series{iview})
-        frame_index{iview}=j1_series{iview};
-    else
-        frame_index{iview}=i1_series{iview};
-    end
-end
+%% define the output file (unique for the whole series)
+OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+first_j=[];last_j=[];% %% check the first input file in the series
 
-%% calibration data and timing: read the ImaDoc files
-XmlData=[];
-[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
-if size(time,1)>1
-    diff_time=max(max(diff(time)));
-    if diff_time>0
-        msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
-    end   
-end
-
-%% coordinate transform or other user defined transform
-transform_fct='';%default
-if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-    addpath(Param.FieldTransform.TransformPath)
-    transform_fct=str2func(Param.FieldTransform.TransformName);
-    rmpath(Param.FieldTransform.TransformPath)
-end
-
-%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
- % EDIT FROM HERE
-
-%% check the validity of  input file types
-if CheckImage{1}
-    FileExtOut='.png'; % write result as .png images for image inputs
-elseif CheckNc{1}
-    FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else
-    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
-    return
-end
+PairString='';
+if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
 
 
-%% settings for the output file
-NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
-first_i=i1_series{1}(1);
-last_i=i1_series{1}(end);
-if isempty(j1_series{1})% if there is no second index j
-    first_j=1;last_j=1;
-else
-    first_j=j1_series{1}(1);
-    last_j=j1_series{1}(end);
-end
+% OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
+% RootFileOut=RootFile{1};
+% NomTypeOut='_1';
 
-%% Set field names and velocity types
-InputFields{1}=[];%default (case of images)series
-if isfield(Param,'InputFields')
-    InputFields{1}=Param.InputFields;
-end
-
-nbfiles=0;
-nbmissing=0;
-
-%% initialisation output data
-
-DataOut.ListGlobalAttribute= {'Conventions'};
-DataOut.Conventions='uvmat';
-DataOut.ListVarName={'Time','coord_y','coord_x','Ufilter','Vfilter'};
-DataOut.VarDimName={'Time','coord_y','coord_x',{'Time','coord_y','coord_x'},{'Time','coord_y','coord_x'}};
-
-%%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-% First get time %
-[Data,tild,errormsg]=nc2struct(filecell{1,1});    
-Time_1=Data.Time;
-if ~isempty(errormsg)
-    disp_uvmat('ERROR',errormsg,checkrun)
-    return
-end
-[Data,tild,errormsg]=nc2struct(filecell{1,2});    
-Time_2=Data.Time;
-dt=(Time_2-Time_1); %time interval 
-NpTime=21; %Nbre de champ pour la moyenne glissante (choisir impair)
-
-OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
-RootFileOut=RootFile{1};
-NomTypeOut='_1';
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 disp('loop for filtering started')
+     
 for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
-    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        break
-    end
-    [Field,tild,~] = read_field(filecell{1,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+    index
+    
+    Field= read_field(filecell{1,index},'netcdf',Param.InputFields);
     
     %%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-    if index==1 %first field
-        DataOut.coord_x=Field.coord_x;
-        DataOut.coord_y=Field.coord_y;
-        npy=numel(DataOut.coord_y);
-        npx=numel(DataOut.coord_x);
-        Ufilter=zeros(NpTime,npy,npx);
-        Vfilter=zeros(NpTime,npy,npx);
-    end
-    Time(index)=Field.Time;%time 
-    Ufilter=circshift(Ufilter,[-1 0 0]); %shift U by ishift along the first index
-    Vfilter=circshift(Vfilter,[-1 0 0]); %shift U by ishift along the first index    
-    Ufilter(end,:,:)=Field.U;
-    Vfilter(end,:,:)=Field.V;
-    DataOut.Time=(Time(index)-(NpTime-1)*dt/2);%mid time 
-    DataOut.Ufilter=squeeze(nanmean(Ufilter,1));
-    DataOut.Vfilter=squeeze(nanmean(Vfilter,1));
-    
+    if index==1 %first field, initialisation output data
 
-    % writing the result file as netcdf file
-    i1=i1_series{1}(index)-ceil(NpTime/2);
-    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeOut,i1);
-    errormsg=struct2nc(OutputFile, DataOut);
-    if isempty(errormsg)
-        disp([OutputFile ' written'])
-    else
-        disp(errormsg)
+        DataOut.ListGlobalAttribute= {'Conventions','Time'};
+        DataOut.Conventions='uvmat';
+        %DataOut.ListVarName={'coord_y','coord_x','Ufilter','Vfilter','Wfilter'};
+        ListFields=Param.InputFields.FieldName;
+        YName=Param.InputFields.Coord_y;
+        XName=Param.InputFields.Coord_x;
+        NbField=numel(ListFields);
+        for ilist=1:NbField
+            ListFilter{ilist}=[ListFields{ilist} '_filter'];
+            VarDimName{ilist}={YName,XName};
+        end
+       DataOut.ListVarName=[{YName,XName} ListFilter];
+        DataOut.VarDimName=[{YName,XName} VarDimName]; 
+        npy=numel(Field.(YName));
+        npx=numel(Field.(XName));
+        DataOut.(XName)=Field.(XName);
+        DataOut.(YName)=Field.(YName);
+        TimeBlock=zeros(Param.ActionInput.WindowLength,1);
+        
+        UVblock=zeros(Param.ActionInput.WindowLength,NbField,npy,npx);
+        % Vblock=zeros(Param.ActionInput.WindowLength,npy,npx);
+        % Wblock=zeros(Param.ActionInput.WindowLength,npy,npx);
     end
+    TimeBlock=circshift(TimeBlock,[-1 0 ]);
+    UVblock=circshift(UVblock,[-1 0 0 0]); %shift U by ishift along the first index
+    % Vblock=circshift(Vblock,[-1 0 0 0]); %shift U by ishift along the first index
+    % Wblock=circshift(Wblock,[-1 0 0]); %shift U by ishift along the first index
+    TimeBlock(end)=Field.Time;
+    for ilist=1:NbField
+    UVblock(end,ilist,:,:)=Field.(ListFields{ilist});
+    end
+    % Vblock(end,:,:)=Field.V;
+    % Vblock(end,:,:)=Field.W;
+    sumindex=min(index,Param.ActionInput.WindowLength)-1;
+    DataOut.Timefilter=mean(TimeBlock(end-sumindex:end,:));%mid time
+    for ilist=1:NbField
+    DataOut.(ListFilter{ilist})=squeeze(mean(UVblock(end-sumindex:end,ilist,:,:),1,'omitnan'));
+    end
+    % DataOut.Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
+    % DataOut.Wfilter=squeeze(mean(Wblock(end-sumindex:end,:,:),1,'omitnan'));
+    %updating output the netcdf file
+    [i1,i2,j1,j2] = get_file_index(i1_series{1}(index),[],PairString{1});
+    OutputFile=fullfile_uvmat(OutputPath,OutputDir,Param.InputTable{1,3},'.nc',NomType{1},i1,i2,j1,j2);
+    errormsg=struct2nc(OutputFile, DataOut);
+        if isempty(errormsg)
+            disp([OutputFile ' written'])
+        else
+            disp(errormsg)
+        end
 end
-    
+    % writing the result file as netcdf file
+    %     i1=i1_series{1}(index)-ceil(NpTime/2);
+    %     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeOut,i1);
+
+'END'

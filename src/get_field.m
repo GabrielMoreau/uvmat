@@ -508,27 +508,20 @@ function set_coord_y_options(handles,VarName)
 Field=get(handles.get_field,'UserData');
 VarIndex=find(strcmp(VarName,Field.Display.ListVarName),1);
 DimCell=Field.Display.VarDimName{VarIndex};
-% y_index=get(handles.Coord_y,'Value');
-% y_menu=get(handles.Coord_y,'String');
-% if isempty(y_menu)
-%     return
-% else
-% YName=y_menu{y_index};
-% end
+
 
 %% set list of possible coordinates
-% test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
+
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
-% ListCoord={''};
-% dim_var=Field.Display.VarDimName{y_index};%list of dimensions of the selected variable
 
 for ilist=1:numel(Field.Display.VarDimName)
-    dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-    if isequal(dimnames,DimCell)||isequal(dimnames(1:end-1),DimCell)||isequal(dimnames(2:end),DimCell)
-        test_coord(ilist)=1;
-    end
+    %dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+    % if isequal(dimnames,DimCell)||isequal(dimnames(1:end-1),DimCell)||isequal(dimnames(2:end),DimCell)
+    % if numel(dimnames)==1 || 
+    %     test_coord(ilist)=1;
+    % end
 end
-ListCoord=Field.Display.ListVarName(find(test_coord));
+ListCoord=Field.Display.ListVarName;%(find(test_coord));
 set(handles.Coord_y,'String',ListCoord)
 val_y=1;
 if strcmp(VarName,ListCoord{1})&& numel(ListCoord)>=2
@@ -983,9 +976,9 @@ TimeName_Callback(hObject, [], handles)
 function update_field(handles,VarName)
 %-----------------------------------------------------------------------
 Field=get(handles.get_field,'UserData');
-index=name2index(VarName,Field.ListVarName);
+index=name2index(VarName,Field.ListVarName); %index of the selectd variable
 if ~isempty(index)
-    set(handles.variables,'Value',index+1)
+    set(handles.variables,'Value',index+1) %indicate which variable is selected in the list (+1 because of the '*' display)
     variables_Callback(handles.variables, VarName, handles)
 end
 

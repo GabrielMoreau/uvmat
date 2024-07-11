@@ -9,13 +9,14 @@
 %INPUT:
 % title: string indicating the type of message box (the title is displayed in the upper bar of the fig):
 %                ='INPUT_TXT'(default), input data is asked in an edit box
+%                = 'INPUT_MENU', input data must be selected from  a menu choice
 %                ='CONFIMATION'', 'ERROR', 'WARNING','RULER' the figure remains  opened until a button 'OK' is pressed
 %                ='RULER' is used for display of length and angle from the ruler tool. 
 %                ='INPUT_Y-N', an answer Yes/No is requested
 %                ='INPUT_Y-N-Cancel'
 %                ='WAITING...' the figure remains open until the program deletes it
 % display: displayed text
-% default_answer: default answer in the edit box (only used with title='INPUT_TXT')
+% default_answer: default answer in the edit box (only used with title='INPUT_TXT' or 'INPUT_MENU')
 
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -68,6 +69,9 @@ function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display_str,d
 handles.output = 'Cancel';
 set(handles.figure1,'Units','pixels')
 FigPos=[100 150 500 50];%default position
+if strcmp(title,'INPUT_MENU')
+    FigPos=[100 150 500 200];%default position
+end
 if exist('Position','var') && numel(Position)>=2
     FigPos(1)=Position(1);
     FigPos(2)=Position(2)-FigPos(4);% upper left corner set by input Position
@@ -163,6 +167,7 @@ elseif testinputstring==2
     set(handles.edit_box,'style','listbox')
     set(handles.edit_box, 'Visible', 'on');
     set(handles.edit_box,'String', default_answer)
+    set(handles.edit_box,'Max',2);% allows for multiple selection
 else
     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
 end

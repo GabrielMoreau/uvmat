@@ -300,7 +300,7 @@ for ifield=1:NbField
         end
     end
     if CheckInputFile
-        OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
+        OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
         if iview_A==0 % no nc file has been entered
             ncfile=fullfile_uvmat(OutputPath,Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
                 NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),j1_series_Civ1(ifield),j2_series_Civ1(ifield));

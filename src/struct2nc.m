@@ -37,6 +37,7 @@
 
 function [errormsg,nc]=struct2nc(flname,Data,action,ListDimName,DimValue,VarDimIndex)
 nc=[];
+errormsg='';
 if ~ischar(flname)
     errormsg='invalid input for the netcf file name';
     return
@@ -80,7 +81,7 @@ if isfield(Data,'ListGlobalAttribute')
                 end
             end
             if ~testvar               
-                eval(['cte=Data.' keys{iattr} ';'])
+                cte=Data.(keys{iattr});
                 if (ischar(cte) ||isnumeric(cte)) &&  ~isempty(cte)%&& ~isequal(cte,'')
                     %write constant only if it is numeric or char string, and not empty
                     netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),keys{iattr},cte)
@@ -105,6 +106,7 @@ end
 
 %% create the variables
 varid=nan(1,length(Data.ListVarName));
+VarClass=cell(1,length(ListVarName));
 for ivar=1:length(ListVarName)
     if isfield(Data,ListVarName{ivar})
         VarClass{ivar}=class(Data.(ListVarName{ivar}));
@@ -140,7 +142,7 @@ if testattr
 end
 netcdf.endDef(nc); %put in data mode
 
-%% fill the variables with input data
+%% fill the variables with input data except in mode 'keep_open' (variables will be filled later)
 if ~(exist('action','var') && strcmp(action,'keep_open'))
     for ivar=1:length(ListVarName)
         if ~isnan(varid(ivar))
@@ -168,8 +170,10 @@ if ~(exist('action','var') && strcmp(action,'keep_open'))
         end
     end
 end
+if ~ (exist('action','var') && strcmp(action,'keep_open'))
  netcdf.close(nc)
 [success,errormsg] = fileattrib(flname ,'+w');% allow writing access for the group of users
+end
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
 %------------------------------------------------------------------------
 % [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data)

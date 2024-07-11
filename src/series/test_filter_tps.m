@@ -71,24 +71,15 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %% root input file(s) and type
     % check the existence of the first file in the series
      first_j=[];% note that the function will propose to cover the whole range of indices
-    if isfield(Param.IndexRange,'MinIndex_j'); first_j=Param.IndexRange.MinIndex_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'MaxIndex_j'); last_j=Param.IndexRange.MaxIndex_j; end
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
-        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
+        msgbox_uvmat('ERROR',['the input file ' FirstFileName ' does not exist'])
         return
-    else
-        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
-        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-        if ~exist(FirstFileName,'file')
-             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
-        end
     end
 
     %% check the validity of  input file types
@@ -113,7 +104,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
                FieldSmooth=Data.Patch2_FieldSmooth;
         end
     else
-        msgbox_uvmat('ERROR',['invalid file type input: ' FileType ' not a civ data'])
+        msgbox_uvmat('ERROR','invalid file type input: test_filter_tps proceeds raw civ data')
         return
     end
 

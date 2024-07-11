@@ -62,6 +62,9 @@ if ~exist('RootPath','var')
 end
 
 %% default input
+if iscell(NomType)
+NomType=NomType{1}
+end
 if ~exist('j2','var') 
     j2=[];
 end
