@@ -4,9 +4,10 @@
 % Then oarsub -l "walltime=20:00:00" /fsnet/project/coriolis/2018/18ADDUCE/TOP_View/extract.sh
 %%%%%%%%%%%%%%  CHOOSE THE ROOT FOLDER %%%%%%%%%%
 
-RootDir='DATA'
+RootDir='1_DATA'
 %RootFolder=fullfile('/fsnet/project/coriolis/2018/18JEVERB',RootDir);
-RootFolder=fullfile('/fsnet/project/edt/2021/21CORIOFARM',RootDir)
+%RootFolder=fullfile('/fsnet/project/edt/2021/21CORIOFARM',RootDir)
+RootFolder=fullfile('/fsnet/project/coriolis/2024/24PLUME',RootDir)
 %ParamFile=fullfile(RootFolder,'extract_param.xml');
 %Param=xml2struct(ParamFile);
 
@@ -43,7 +44,7 @@ for ilist=1:numel(ListNames)%loop on experiments
         ListNamesSubSub=ListCellsSubSub(1,:);
         ind_rdvision=[];
         for isubsub=1:numel(ListNamesSubSub)
-            if ~isempty(regexp(ListNamesSubSub{isubsub},'^2021-'))
+            if ~isempty(regexp(ListNamesSubSub{isubsub},'^2024-'))
                 ind_rdvision=[ind_rdvision isubsub];%detect rdvision folders
             end
         end
@@ -83,12 +84,16 @@ for ilist=1:numel(ListNames)%loop on experiments
                 status='image folder not created';
                 if exist(ExtractFolder,'dir') && exist(PngFolder,'dir')
                     filename_seq=fullfile(ExtractFolder,'im.seq');
+                    try
                     s=ini2struct(filename_seq);
                     FileInfo=s.sequenceSettings;
                     if isfield(s.sequenceSettings,'numberoffiles')
                         NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
                     else
                         status='bad seq file';
+                    end
+                    catch ME
+                        disp(['error in ' filename_seq])
                     end
                     DirPng=dir(PngFolder);
                     if numel(DirPng)==NumberOfFrames+2

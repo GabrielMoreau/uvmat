@@ -991,9 +991,9 @@ if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 else
    %S=skewness(double(reshape(A,1,[])));
-   A=double(A);
+   A=double(sum(A,3));%sum of ther three components for color images
    A=A-mean(mean(A));
-   S=mean(mean(A.*A.*A))/(mean(mean(A.*A)))^1.5
+   S=mean(mean(A.*A.*A))/(mean(mean(A.*A)))^1.5; %skewness used to istinguish white or black markers
    grid_input.CheckWhite=sign(S);%propose white markers if image skewness>0, black markers otherwise
 end
 [T,CalibData.grid,CalibData.grid.CheckWhite,CalibData.grid.FilterWindow]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
