@@ -164,10 +164,19 @@ if strcmp(htype,'axes')
                                 end
                             end
                             %display the field values
+                                if isfield (CellInfo{icell},'XName')
+                                    XName=CellInfo{icell}.XName;
+                                    text_displ_2=[XName '=' num2str(Field.(XName)(ivec),4)];
+                                end
+                                if isfield (CellInfo{icell},'YName')
+                                    YName=CellInfo{icell}.YName;
+                                    text_displ_2=[text_displ_2 ',' YName '=' num2str(Field.(YName)(ivec),4)];
+                                end
                             for ivar=1:numel(CellInfo{icell}.VarIndex)
                                 VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
                                 VarVal=Field.(VarName)(ivec);
                                 var_text=[VarName '=' num2str(VarVal,4) ','];
+  
                                 if isequal(ivar,CellInfo{icell}.CoordIndex(end))||isequal(ivar,CellInfo{icell}.CoordIndex(end-1))||isequal(ivar,CellInfo{icell}.CoordIndex(1))
                                     text_displ_1=[text_displ_1 var_text];
                                 elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...

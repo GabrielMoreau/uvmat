@@ -179,16 +179,17 @@ Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each s
 Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
 Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
 % set the list of variables
-Data.ListVarName={'Coord_z','Coord_y','Coord_x','Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
-Data.VarDimName={'npz','npy','npx',{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'},...
+Data.ListVarName={'Coord_z','Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
+Data.VarDimName={'npz',{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'},...
     {'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'}};
-Data.VarAttribute{1}.Role='coord_x';
-Data.VarAttribute{2}.Role='coord_y';
-Data.VarAttribute{3}.Role='vector_x';
-Data.VarAttribute{4}.Role='vector_y';
-Data.VarAttribute{5}.Role='vector_z';
-Data.VarAttribute{6}.Role='ancillary';
-Data.VarAttribute{7}.Role='errorflag';
+Data.VarAttribute{1}.Role='coord_z';
+Data.VarAttribute{2}.Role='coord_x';
+ata.VarAttribute{3}.Role='coord_y';
+Data.VarAttribute{4}.Role='vector_x';
+Data.VarAttribute{5}.Role='vector_y';
+Data.VarAttribute{6}.Role='vector_z';
+Data.VarAttribute{7}.Role='ancillary';
+Data.VarAttribute{8}.Role='errorflag';
 Data.Coord_z=j1_series_Civ1;
 % path for output nc file
 OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device),[Param.OutputSubDir Param.OutputDirExt]);
@@ -296,15 +297,15 @@ for ifield=1:NbField_i
         par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);%image block initiation
         par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
         
-        z_index=1;%first vertical block centered at image index z_index=par_civ1.Dz
-        for iz=1:par_civ1.Dz+SearchRange_z
+        z_index=1;%first vertical block centered at image index z_index=SearchRange_z+1
+        for iz=1:2*SearchRange_z+1
             j_image_index=j1_series_Civ1(iz,1)% j index of the current image
             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%
             A= read_image(ImageName_A,FileType_A);
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j_image_index);
             B= read_image(ImageName_B,FileType_B);
-            par_civ1.ImageA(iz+par_civ1.Dz-1,:,:) = A;
-            par_civ1.ImageB(iz+par_civ1.Dz-1,:,:) = B;
+            par_civ1.ImageA(iz,:,:) = A;
+            par_civ1.ImageB(iz,:,:) = B;
         end
         % calculate velocity data at the first position z, corresponding to j_index=par_civ1.Dz
         [Data.Civ1_X(1,:,:),Data.Civ1_Y(1,:,:), Data.Civ1_U(1,:,:), Data.Civ1_V(1,:,:),Data.Civ1_W(1,:,:),...
@@ -337,7 +338,7 @@ for ifield=1:NbField_i
         Data.Civ1_C=double(Data.Civ1_C);
         Data.Civ1_C(Data.Civ1_C==Inf)=0;
         [npz,npy,npx]=size(Data.Civ1_X);
-        Data.Coord_z=1:npz;
+        Data.Coord_z=SearchRange_z+1:par_civ1.Dz:NbSlice-1;
         Data.Coord_y=1:npy;
         Data.Coord_x=1:npx;
         % case of mask TO ADAPT
@@ -787,12 +788,20 @@ end
 function [xtable,ytable,utable,vtable,wtable,ctable,FF,result_conv,errormsg] = civ3D (par_civ)
 
 %% prepare measurement grid
-
-minix=floor(par_civ.Dx/2)-0.5;
-maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
-miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
-maxiy=miniy+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
-[GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+nbinterv_x=floor((par_civ.ImageWidth-1)/par_civ.Dx);
+gridlength_x=nbinterv_x*par_civ.Dx;
+minix=ceil((par_civ.ImageWidth-gridlength_x)/2);
+nbinterv_y=floor((par_civ.ImageHeight-1)/par_civ.Dy);
+gridlength_y=nbinterv_y*par_civ.Dy;
+miniy=ceil((par_civ.ImageHeight-gridlength_y)/2);
+[GridX,GridY]=meshgrid(minix:par_civ.Dx:par_civ.ImageWidth-1,miniy:par_civ.Dy:par_civ.ImageHeight-1);
+% minix:par_civ.Dx:par_civ.ImageWidth-1
+% miniy:par_civ.Dy:par_civ.ImageHeight-1
+% minix=floor(par_civ.Dx/2)-0.5;
+% maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
+% miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
+% maxiy=miniy+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
+% [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
 par_civ.Grid(:,:,1)=GridX;
 par_civ.Grid(:,:,2)=GridY;% increases with array index,
 [nbvec_y,nbvec_x,~]=size(par_civ.Grid);
@@ -930,50 +939,61 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         image2_crop=(image2_crop-image2_mean);
                     end
 
-                
-                    
-                    for kz=1:par_civ.SearchBoxSize(3)
+                    npxycorr=par_civ.SearchBoxSize(1:2)-par_civ.CorrBoxSize(1:2)+1;
+                    result_conv=zeros([par_civ.SearchBoxSize(3) npxycorr]);%initialise the conv product
+                    max_xy=zeros(par_civ.SearchBoxSize(3),1);%initialise the max correlation vs z
+                    xk=ones(par_civ.SearchBoxSize(3),1);%initialise the x displacement corresponding to the max corr 
+                    yk=ones(par_civ.SearchBoxSize(3),1);%initialise the y displacement corresponding to the max corr 
+                  
+                    for kz=kref:kref%par_civ.SearchBoxSize(3)
                         subima2=squeeze(image2_crop(kz,:,:));
                         subima1=squeeze(image1_crop(kref,:,:));
                         correl_xy=conv2(subima2,flip(flip(subima1,2),1),'valid');
-                          result_conv(kz,:,:)= correl_xy;
+                        result_conv(kz,:,:)= 255*correl_xy;
                         max_xy(kz)=max(max(correl_xy));
-                    [xk(kz),yk(kz)]=find(correl_xy==max_xy(kz),1);
-               
+                        % max_xy(kz)=max(max(correl_xy));
+                         [yk(kz),xk(kz)]=find(correl_xy==max_xy(kz),1);
                     end
-                    [corrmax,zmax]=max(max_xy);
-                
-                    x=xk(zmax);
-                    y=yk(zmax);
-                    result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-                    subimage2_crop=squeeze(image2_crop(zmax,y:y+2*iby2/mesh,x:x+2*ibx2/mesh));%subimage of image 2 corresponding to the optimum displacement of first image
-                    sum_square=sum(sum(squeeze(image1_crop(zmax,:,:).*image1_crop(zmax,:,:))));
+                    [corrmax,dz]=max(max_xy);
+                    dx=xk(dz);
+                    dy=yk(dz);
+                 
+                    % 
+                    % result_conv=255*result_conv/corrmax; %normalize, peak=always 255
+                    % for kz=1:par_civ.SearchBoxSize(3)
+                    %     [dy,dx] = find(result_conv(kz,:,:)==255,1)
+                    %     if ~isempty(dy)
+                    %         dz=kz;
+                    %         break
+                    %     end
+                    % end
+                    subimage2_crop=squeeze(image2_crop(dz,dy:dy+2*iby2/mesh,dx:dx+2*ibx2/mesh));%subimage of image 2 corresponding to the optimum displacement of first image
+                    sum_square=sum(sum(squeeze(image1_crop(dz,:,:).*image1_crop(dz,:,:))));
                     sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
                     sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
-                    if ~isempty(y) && ~isempty(x)
-       
-                            if par_civ.CorrSmooth==1
-                                [vector,FF(ivec_y,ivec_x)] = SUBPIXGAUSS (squeeze(result_conv(zmax,:,:)),x,y);%TODO: improve by max optimisation along z
-                            elseif par_civ.CorrSmooth==2
-                                [vector,FF(ivec_y,ivec_x)] = SUBPIX2DGAUSS (squeeze(result_conv(zmax,:,:)),x,y);
-                            else
-                                [vector,FF(ivec_y,ivec_x)] = quadr_fit(squeeze(result_conv(zmax,:,:)),x,y);
-                            end
-                            utable(ivec_y,ivec_x)=vector(1)*mesh+shiftx(ivec_y,ivec_x);
-                            vtable(ivec_y,ivec_x)=vector(2)*mesh+shifty(ivec_y,ivec_x);
-                            xtable(ivec_y,ivec_x)=iref+utable(ivec_y,ivec_x)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                            ytable(ivec_y,ivec_x)=jref+vtable(ivec_y,ivec_x)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                            iref=round(xtable(ivec_y,ivec_x)+0.5);% nearest image index for the middle of the vector
-                            jref=round(ytable(ivec_y,ivec_x)+0.5);
-                            wtable(ivec_y,ivec_x)=zmax-kref;
-                            % eliminate vectors located in the mask
-                            if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
-                                utable(ivec_y,ivec_x)=0;
-                                vtable(ivec_y,ivec_x)=0;
-                                FF(ivec_y,ivec_x)=1;
-                            end
-                            ctable(ivec_y,ivec_x)=corrmax/sum_square;% correlation value
-
+                    if ~isempty(dz)&& ~isempty(dy) && ~isempty(dx)
+                        if par_civ.CorrSmooth==1
+                            [vector,FF(ivec_y,ivec_x)] = SUBPIXGAUSS (result_conv,dx,dy,dz);
+                        elseif par_civ.CorrSmooth==2
+                            [vector,FF(ivec_y,ivec_x)] = SUBPIX2DGAUSS (result_conv,dx,dy,dz);
+                        else
+                            [vector,FF(ivec_y,ivec_x)] = quadr_fit(result_conv,dx,dy,dz);
+                        end
+                        utable(ivec_y,ivec_x)=vector(1)+shiftx(ivec_y,ivec_x);
+                        vtable(ivec_y,ivec_x)=vector(2)+shifty(ivec_y,ivec_x);
+                        wtable(ivec_y,ivec_x)=vector(3);
+                        xtable(ivec_y,ivec_x)=iref+utable(ivec_y,ivec_x)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                        ytable(ivec_y,ivec_x)=jref+vtable(ivec_y,ivec_x)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+                        iref=round(xtable(ivec_y,ivec_x)+0.5);% nearest image index for the middle of the vector
+                        jref=round(ytable(ivec_y,ivec_x)+0.5);
+                  
+                        % eliminate vectors located in the mask
+                        if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
+                            utable(ivec_y,ivec_x)=0;
+                            vtable(ivec_y,ivec_x)=0;
+                            FF(ivec_y,ivec_x)=1;
+                        end
+                        ctable(ivec_y,ivec_x)=corrmax/sum_square;% correlation value
                     else
                         FF(ivec_y,ivec_x)=true;
                     end
@@ -992,33 +1012,33 @@ result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation mat
 % INPUT:
 % x,y: position of the maximum correlation at integer values
 
-function [vector,FF] = SUBPIXGAUSS (result_conv,x,y)
+function [vector,FF] = SUBPIXGAUSS (result_conv,x,y,z)
 %------------------------------------------------------------------------
-vector=[0 0]; %default
-[npy,npx]=size(result_conv);
+
+[npz,npy,npx]=size(result_conv);
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
 FF=false;
-    peaky = y;
-    if y < npy && y > 1
-        f0 = log(result_conv(y,x));
-        f1 = log(result_conv(y-1,x));
-        f2 = log(result_conv(y+1,x));
-        peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        FF=true; % error flag for vector truncated by the limited search box in y
-    end
-    peakx=x;
-    if x < npx-1 && x > 1
-        f0 = log(result_conv(y,x));
-        f1 = log(result_conv(y,x-1));
-        f2 = log(result_conv(y,x+1));
-        peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        FF=true; % warning flag for vector truncated by the limited search box in x
-    end
-    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+peakz=z;peaky=y;peakx=x;
+if z < npz && z > 1 && y < npy && y > 1 && x < npx && x > 1
+    f0 = log(result_conv(z,y,x));
+    f1 = log(result_conv(z-1,y,x));
+    f2 = log(result_conv(z+1,y,x));
+    peakz = peakz+ (f1-f2)/(2*f1-4*f0+2*f2);
+
+    f1 = log(result_conv(z,y-1,x));
+    f2 = log(result_conv(z,y+1,x));
+    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+
+    f1 = log(result_conv(z,y,x-1));
+    f2 = log(result_conv(z,y,x+1));
+    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+else
+    FF=true;
+end
+
+vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1 peakz-floor(npz/2)-1];
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation

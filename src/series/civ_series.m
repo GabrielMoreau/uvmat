@@ -961,13 +961,24 @@ if isfield(par_civ,'Grid')% grid points set as input, central positions of the s
     end
     % else par_civ.Grid is already an array, no action here
 else% automatic grid in x, y image coordinates
-    minix=floor(par_civ.Dx/2)-0.5;
-    maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
-    miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
-    maxiy=minix+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
-    [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+nbinterv_x=floor((par_civ.ImageWidth-1)/par_civ.Dx);
+gridlength_x=nbinterv_x*par_civ.Dx;
+minix=ceil((par_civ.ImageWidth-gridlength_x)/2);
+nbinterv_y=floor((par_civ.ImageHeight-1)/par_civ.Dy);
+gridlength_y=nbinterv_y*par_civ.Dy;
+miniy=ceil((par_civ.ImageHeight-gridlength_y)/2);
+[GridX,GridY]=meshgrid(minix:par_civ.Dx:par_civ.ImageWidth-1,miniy:par_civ.Dy:par_civ.ImageHeight-1);
     par_civ.Grid(:,1)=reshape(GridX,[],1);
     par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
+    % 
+    % 
+    % minix=floor(par_civ.Dx/2)-0.5;
+    % maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
+    % miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
+    % maxiy=minix+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
+    % [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+    % par_civ.Grid(:,1)=reshape(GridX,[],1);
+    % par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
 end
 nbvec=size(par_civ.Grid,1);
 
@@ -1006,7 +1017,7 @@ check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 
 par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
 par_civ.ImageB=sum(double(par_civ.ImageB),3);
-[npy_ima npx_ima]=size(par_civ.ImageA);
+[npy_ima,npx_ima]=size(par_civ.ImageA);
 if ~isequal(size(par_civ.ImageB),[npy_ima npx_ima])
     errormsg='image pair with unequal size';
     return
@@ -1115,7 +1126,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 end
                 sum_square=sum(sum(image1_crop.*image1_crop));
                 %reference: Oliver Pust, PIV: Direct Cross-Correlation
-                result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+                result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
                 corrmax= max(max(result_conv));
                 result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
                 %Find the correlation max, at 255
@@ -1175,24 +1186,19 @@ F=0;
 result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
-peaky = y;
-if y < npy && y > 1
+peaky = y;peakx=x;
+if y < npy && y > 1 && x < npx-1 && x > 1
     f0 = log(result_conv(y,x));
     f1 = log(result_conv(y-1,x));
     f2 = log(result_conv(y+1,x));
     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-else
-    F=1; % warning flag for vector truncated by the limited search box
-end
-peakx=x;
-if x < npx-1 && x > 1
-    f0 = log(result_conv(y,x));
     f1 = log(result_conv(y,x-1));
     f2 = log(result_conv(y,x+1));
     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
 else
     F=1; % warning flag for vector truncated by the limited search box
 end
+
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 %------------------------------------------------------------------------

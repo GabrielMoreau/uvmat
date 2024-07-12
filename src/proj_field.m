@@ -1359,7 +1359,7 @@ for icell=1:length(CellInfo)
                         end
                         if ~(check3D && ivar==CellInfo{icell}.CoordIndex(1))
                             ListVarName=[ListVarName VarName];
-                            VarDimName=[VarDimName DimCell];
+                            VarDimName=[VarDimName {DimCell}];
                             nbvar=nbvar+1;
                             if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute) >=ivar
                                 VarAttribute{nbvar}=FieldData.VarAttribute{ivar};

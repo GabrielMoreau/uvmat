@@ -194,7 +194,7 @@ for index=1:NbField
     % DataOut.Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
     % DataOut.Wfilter=squeeze(mean(Wblock(end-sumindex:end,:,:),1,'omitnan'));
     %updating output the netcdf file
-    [i1,i2,j1,j2] = get_file_index(i1_series{1}(index),[],PairString{1});
+    [i1,i2,j1,j2] = get_file_index(i1_series{1}(index),[],PairString);
     OutputFile=fullfile_uvmat(OutputPath,OutputDir,Param.InputTable{1,3},'.nc',NomType{1},i1,i2,j1,j2);
     errormsg=struct2nc(OutputFile, DataOut);
         if isempty(errormsg)
