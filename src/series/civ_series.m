@@ -951,7 +951,7 @@ end
 %  .DVDX:
 %  .DVDY
 
-function [xtable,ytable,utable,vtable,ctable,F,result_conv,errormsg] = civ (par_civ)
+function [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ (par_civ)
 
 %% prepare measurement grid
 if isfield(par_civ,'Grid')% grid points set as input, central positions of the sub-images in image A
@@ -970,7 +970,6 @@ miniy=ceil((par_civ.ImageHeight-gridlength_y)/2);
 [GridX,GridY]=meshgrid(minix:par_civ.Dx:par_civ.ImageWidth-1,miniy:par_civ.Dy:par_civ.ImageHeight-1);
     par_civ.Grid(:,1)=reshape(GridX,[],1);
     par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
-    % 
     % 
     % minix=floor(par_civ.Dx/2)-0.5;
     % maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
@@ -1000,7 +999,7 @@ ytable=round(par_civ.ImageHeight-par_civ.Grid(:,2)+0.5)-0.5;% y index correspond
 utable=shiftx;%zeros(nbvec,1);
 vtable=shifty;%zeros(nbvec,1);
 ctable=zeros(nbvec,1);
-F=zeros(nbvec,1);
+FF=zeros(nbvec,1);
 result_conv=[];
 errormsg='';
 
@@ -1057,7 +1056,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
     for ivec=1:nbvec
         iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
         jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);%  j index  for the middle of the correlation box in the image A
-        F(ivec)=0;
+        FF(ivec)=0;
         subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
         subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
@@ -1077,7 +1076,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
             sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
             if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
-                F(ivec)=1; %
+                FF(ivec)=1; %
                 utable(ivec)=NaN;
                 vtable(ivec)=NaN;
             else
@@ -1091,14 +1090,14 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             image2_mean=mean(mean(image2_crop));
         end
         %threshold on image minimum
-        if F(ivec)~=1
+        if FF(ivec)==0
             if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                F(ivec)=1;
+                FF(ivec)=1;
                 %threshold on image maximum
             elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                F(ivec)=1;
+                FF(ivec)=1;
             end
-            if F(ivec)==1
+            if FF(ivec)==1
                 utable(ivec)=NaN;
                 vtable(ivec)=NaN;
             else
@@ -1126,7 +1125,9 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 end
                 sum_square=sum(sum(image1_crop.*image1_crop));
                 %reference: Oliver Pust, PIV: Direct Cross-Correlation
+                %%%%%% correlation calculation
                 result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 corrmax= max(max(result_conv));
                 result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
                 %Find the correlation max, at 255
@@ -1137,11 +1138,11 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 if ~isempty(y) && ~isempty(x)
                     try
                         if par_civ.CorrSmooth==1
-                            [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                            [vector,FF(ivec)] = SUBPIXGAUSS (result_conv,x,y);
                         elseif par_civ.CorrSmooth==2
-                            [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                            [vector,FF(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                         else
-                            [vector,F(ivec)] = quadr_fit(result_conv,x,y);
+                            [vector,FF(ivec)] = quadr_fit(result_conv,x,y);
                         end
                         utable(ivec)=vector(1)*mesh+shiftx(ivec);
                         vtable(ivec)=vector(2)*mesh+shifty(ivec);
@@ -1153,15 +1154,15 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
                             utable(ivec)=0;
                             vtable(ivec)=0;
-                            F(ivec)=1;
+                            FF(ivec)=1;
                         end
                         ctable(ivec)=corrmax/sum_square;% correlation value
                     catch ME
-                        F(ivec)=1;
+                        FF(ivec)=1;
                         disp(ME.message)
                     end
                 else
-                    F(ivec)=1;
+                    FF(ivec)=1;
                 end
             end
         end
@@ -1187,17 +1188,17 @@ result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 b
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
 peaky = y;peakx=x;
-if y < npy && y > 1 && x < npx-1 && x > 1
-    f0 = log(result_conv(y,x));
-    f1 = log(result_conv(y-1,x));
-    f2 = log(result_conv(y+1,x));
-    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-    f1 = log(result_conv(y,x-1));
-    f2 = log(result_conv(y,x+1));
-    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-else
-    F=1; % warning flag for vector truncated by the limited search box
-end
+% if y < npy && y > 1 && x < npx-1 && x > 1
+%     f0 = log(result_conv(y,x));
+%     f1 = log(result_conv(y-1,x));
+%     f2 = log(result_conv(y+1,x));
+%     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+%     f1 = log(result_conv(y,x-1));
+%     f2 = log(result_conv(y,x+1));
+%     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+% else
+%     F=1; % warning flag for vector truncated by the limited search box
+% end
 
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 

@@ -84,20 +84,32 @@ for ilist=1:numel(ListNames)%loop on experiments
                 status='image folder not created';
                 if exist(ExtractFolder,'dir') && exist(PngFolder,'dir')
                     filename_seq=fullfile(ExtractFolder,'im.seq');
+                    NumberOfFrames=0;
                     try
-                    s=ini2struct(filename_seq);
-                    FileInfo=s.sequenceSettings;
-                    if isfield(s.sequenceSettings,'numberoffiles')
-                        NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
-                    else
-                        status='bad seq file';
-                    end
+                        s=ini2struct(filename_seq);
+                        FileInfo=s.sequenceSettings;
+
+                        if isfield(s.sequenceSettings,'numberoffiles')
+                            NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
+                        else
+                            status='bad seq file';
+                        end
                     catch ME
                         disp(['error in ' filename_seq])
                     end
-                    DirPng=dir(PngFolder);
+                    DirPng=dir(PngFolder);         
+
                     if numel(DirPng)==NumberOfFrames+2
-                        Checkdelete=1;
+                        PngCells=struct2cell(DirPng);
+                        mm=cell2mat(PngCells(4,:));% check the sizes of extracted images
+                        sizemax=max(mm);
+                        sizemin=min(mm(3:end));
+                        disp(['max size(Mbytes)=' num2str(sizemax/1000000)]);
+                        if min(mm(3:end))<0.9*sizemax
+                            status=['WARNING' 'min size(Mbytes)=' num2str(sizemin/1000000)];
+                        else
+                            Checkdelete=1;% approve deletion of the source bin files
+                        end
                     else
                         status=['extraction not finished,' num2str(numel(DirPng)-2) ' images extracted'];
                     end
@@ -140,3 +152,4 @@ if ~isempty(List2delete)
         end
     end
 end
+'END'

@@ -15,7 +15,6 @@
 %     Param.InputTable: sets the input file(s)
 %           if absent, the fct looks for input data in Param.ActionInput     (test mode)
 %     Param.OutputSubDir: sets the folder name of output file(s,
-%           if absent no file is produced, result in the output structure Data (test mode)
 %     Param.ActionInput: substructure with the parameters provided by the GUI civ_input
 %                      .Civ1: parameters for civ1cc
 %                      .Fix1: parameters for detect_false1
@@ -184,7 +183,7 @@ Data.VarDimName={'npz',{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx
     {'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'}};
 Data.VarAttribute{1}.Role='coord_z';
 Data.VarAttribute{2}.Role='coord_x';
-ata.VarAttribute{3}.Role='coord_y';
+Data.VarAttribute{3}.Role='coord_y';
 Data.VarAttribute{4}.Role='vector_x';
 Data.VarAttribute{5}.Role='vector_y';
 Data.VarAttribute{6}.Role='vector_z';
@@ -309,12 +308,13 @@ for ifield=1:NbField_i
         end
         % calculate velocity data at the first position z, corresponding to j_index=par_civ1.Dz
         [Data.Civ1_X(1,:,:),Data.Civ1_Y(1,:,:), Data.Civ1_U(1,:,:), Data.Civ1_V(1,:,:),Data.Civ1_W(1,:,:),...
-            Data.Civ1_C(1,:,:), Data.Civ1_FF(1,:,:), result_conv, errormsg] = civ3D (par_civ1);
+            Data.Civ1_C(1,:,:), Data.Civ1_FF(1,:,:), ~, errormsg] = civ3D (par_civ1);
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
-        for z_index=2:floor((NbSlice-1)/par_civ1.Dz)% loop on slices
+        %for z_index=2:floor((NbSlice-1)/par_civ1.Dz)% loop on slices
+        for z_index=2:floor((NbSlice-SearchRange_z)/par_civ1.Dz)% loop on slices
             par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz);%shift the indices in the image block upward by par_civ1.Dz
             par_civ1.ImageB=circshift(par_civ1.ImageA,-par_civ1.Dz);
             for iz=1:par_civ1.Dz %read the new images at the end of the image block
@@ -335,12 +335,12 @@ for ifield=1:NbField_i
                 return
             end
         end
-        Data.Civ1_C=double(Data.Civ1_C);
-        Data.Civ1_C(Data.Civ1_C==Inf)=0;
+        Data.Civ1_V=-Data.Civ1_V;%reverse v
+        Data.Civ1_Y=npy-Data.Civ1_Y+1;%reverse y
         [npz,npy,npx]=size(Data.Civ1_X);
         Data.Coord_z=SearchRange_z+1:par_civ1.Dz:NbSlice-1;
-        Data.Coord_y=1:npy;
-        Data.Coord_x=1:npx;
+      %  Data.Coord_y=flip(1:npy);
+       % Data.Coord_x=1:npx;
         % case of mask TO ADAPT
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             if isfield(par_civ1,'NbSlice')
@@ -444,7 +444,7 @@ for ifield=1:NbField_i
 
         % perform Patch calculation using the UVMAT fct 'filter_tps'
 
-        [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
+        [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,~,Ures, Vres,~,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
         Data.Civ1_V_smooth(ind_good)=Vres;
@@ -658,20 +658,11 @@ for ifield=1:NbField_i
     elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
         if exist('ncfile','var')
             CivFile=ncfile;
-            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and detect_false1 data in the existing netcdf file
+            [Data,~,~,errormsg]=nc2struct(CivFile);%read civ1 and detect_false1 data in the existing netcdf file
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
             end
-            %         elseif isfield(Param,'Civ2_X')% use Civ2 data as input in Param (test mode)
-            %             Data.ListGlobalAttribute={};
-            %             Data.ListVarName={};
-            %             Data.VarDimName={};
-            %             Data.Civ2_X=Param.Civ2_X;
-            %             Data.Civ2_Y=Param.Civ2_Y;
-            %             Data.Civ2_U=Param.Civ2_U;
-            %             Data.Civ2_V=Param.Civ2_V;
-            %             Data.Civ2_FF=Param.Civ2_FF;
         end
     end
 
@@ -786,34 +777,25 @@ end
 %  .DVDY
 
 function [xtable,ytable,utable,vtable,wtable,ctable,FF,result_conv,errormsg] = civ3D (par_civ)
+%% check image sizes
+[npz,npy_ima,npx_ima]=size(par_civ.ImageA);% npz = 
+if ~isequal(size(par_civ.ImageB),[npz npy_ima npx_ima])
+    errormsg='image pair with unequal size';
+    return
+end
 
 %% prepare measurement grid
-nbinterv_x=floor((par_civ.ImageWidth-1)/par_civ.Dx);
+nbinterv_x=floor((npx_ima-1)/par_civ.Dx);
 gridlength_x=nbinterv_x*par_civ.Dx;
-minix=ceil((par_civ.ImageWidth-gridlength_x)/2);
-nbinterv_y=floor((par_civ.ImageHeight-1)/par_civ.Dy);
+minix=ceil((npx_ima-gridlength_x)/2);
+nbinterv_y=floor((npy_ima-1)/par_civ.Dy);
 gridlength_y=nbinterv_y*par_civ.Dy;
-miniy=ceil((par_civ.ImageHeight-gridlength_y)/2);
-[GridX,GridY]=meshgrid(minix:par_civ.Dx:par_civ.ImageWidth-1,miniy:par_civ.Dy:par_civ.ImageHeight-1);
-% minix:par_civ.Dx:par_civ.ImageWidth-1
-% miniy:par_civ.Dy:par_civ.ImageHeight-1
-% minix=floor(par_civ.Dx/2)-0.5;
-% maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
-% miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
-% maxiy=miniy+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
-% [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+miniy=ceil((npy_ima-gridlength_y)/2);
+[GridX,GridY]=meshgrid(minix:par_civ.Dx:npx_ima-1,miniy:par_civ.Dy:npy_ima-1);
 par_civ.Grid(:,:,1)=GridX;
 par_civ.Grid(:,:,2)=GridY;% increases with array index,
 [nbvec_y,nbvec_x,~]=size(par_civ.Grid);
-% 
-% 
-% minix=floor(par_civ.Dx/2)-0.5;
-%     maxix=minix+par_civ.Dx*floor((par_civ.ImageWidth-1)/par_civ.Dx);
-%     miniy=floor(par_civ.Dy/2)-0.5;% first automatic grid point at half the mesh Dy
-%     maxiy=miniy+par_civ.Dy*floor((par_civ.ImageHeight-1)/par_civ.Dy);
-%     [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
-%     par_civ.Grid(:,1)=reshape(GridX,[],1);
-%     par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
+
 
 %% prepare correlation and search boxes
 ibx2=floor(par_civ.CorrBoxSize(1)/2);
@@ -825,30 +807,25 @@ kref=isz2+1;%middle index of the z slice
 shiftx=round(par_civ.SearchBoxShift(:,1));%use the input shift estimate, rounded to the next integer value
 shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
 if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
-    shiftx=shiftx*ones(nbvec_y,nbvec_x,1);
-    shifty=shifty*ones(nbvec_y,nbvec_x,1);
+    shiftx=shiftx*ones(nbvec_y,nbvec_x);
+    shifty=shifty*ones(nbvec_y,nbvec_x);
 end
 
 %% Array initialisation and default output  if par_civ.CorrSmooth=0 (just the grid calculated, no civ computation)
 xtable=round(par_civ.Grid(:,:,1)+0.5)-0.5;
-ytable=round(par_civ.ImageHeight-par_civ.Grid(:,:,2)+0.5)-0.5;% y index corresponding to the position in image coordiantes
-utable=shiftx;%zeros(nbvec,1);
-vtable=shifty;%zeros(nbvec,1);
+%ytable=round(npy_ima-par_civ.Grid(:,:,2)+0.5)-0.5;% y index corresponding to the position in image coordiantes
+ytable=round(par_civ.Grid(:,:,2)+0.5)-0.5;
+utable=shiftx;
+vtable=shifty;
 wtable=zeros(size(utable));
-ctable=zeros(nbvec_y,nbvec_x,1);
-FF=zeros(nbvec_y,nbvec_x,1);
+ctable=zeros(nbvec_y,nbvec_x);
+FF=false(nbvec_y,nbvec_x);
 result_conv=[];
 errormsg='';
 
 %% prepare mask
 check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
 check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
-
-[npz,npy_ima,npx_ima]=size(par_civ.ImageA);
-if ~isequal(size(par_civ.ImageB),[npz npy_ima npx_ima])
-    errormsg='image pair with unequal size';
-    return
-end
 
 %% Apply mask
 % Convention for mask, IDEAS NOT IMPLEMENTED
@@ -859,118 +836,107 @@ end
 %  20>=mask: velocity=0
 checkmask=0;
 MinA=min(min(min(par_civ.ImageA)));
-%MinB=min(min(par_civ.ImageB));
-%check_undefined=false(size(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     checkmask=1;
     if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
         errormsg='mask must be an image with the same size as the images';
         return
     end
-    check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
+    check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );% logical of the size of the image block =true for masked pixels
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
 corrmax=0;
 sum_square=1;% default
 mesh=1;% default
-CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
-if CheckDeformation
-    mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
-    par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
-end
+% CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
+% if CheckDeformation
+%     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
+%     par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
+% end
 
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec_x=1:nbvec_x
         for ivec_y=1:nbvec_y
             iref=round(par_civ.Grid(ivec_y,ivec_x,1)+0.5);% xindex on the image A for the middle of the correlation box
-            jref=round(par_civ.ImageHeight-par_civ.Grid(ivec_y,ivec_x,2)+0.5);%  j index  for the middle of the correlation box in the image A
+            jref=round(npy_ima-par_civ.Grid(ivec_y,ivec_x,2)+0.5);%  j index  for the middle of the correlation box in the image A
             subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
             subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
             subrange2_x=iref+shiftx(ivec_y,ivec_x)-isx2:iref+shiftx(ivec_y,ivec_x)+isx2;%x indices defining the second subimage
             subrange2_y=jref+shifty(ivec_y,ivec_x)-isy2:jref+shifty(ivec_y,ivec_x)+isy2;%y indices defining the second subimage
             image1_crop=MinA*ones(npz,numel(subrange1_y),numel(subrange1_x));% default value=min of image A
             image2_crop=MinA*ones(npz,numel(subrange2_y),numel(subrange2_x));% default value=min of image A
-            check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
-            check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
-            check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
-            check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
+            check1_x=subrange1_x>=1 & subrange1_x<=npx_ima;% check which points in the subimage 1 are contained in the initial image 1
+            check1_y=subrange1_y>=1 & subrange1_y<=npy_ima;
+            check2_x=subrange2_x>=1 & subrange2_x<=npx_ima;% check which points in the subimage 2 are contained in the initial image 2
+            check2_y=subrange2_y>=1 & subrange2_y<=npy_ima;
             image1_crop(:,check1_y,check1_x)=par_civ.ImageA(:,subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
             image2_crop(:,check2_y,check2_x)=par_civ.ImageB(:,subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-            if checkmask
-                mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
-                mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
-                mask1_crop(check1_y,check1_x)=check_undefined(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
-                mask2_crop(check2_y,check2_x)=check_undefined(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
-                sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
+            if checkmask% case of mask images
+                mask1_crop=true(npz,2*iby2+1,2*ibx2+1);% default value=1 for mask
+                mask2_crop=true(npz,2*isy2+1,2*isx2+1);% default value=1 for mask
+                mask1_crop(npz,check1_y,check1_x)=check_undefined(npz,subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
+                mask2_crop(npz,check2_y,check2_x)=check_undefined(npz,subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
+                sizemask=sum(sum(mask1_crop,2),3)/(npz*(2*ibx2+1)*(2*iby2+1));%size of the masked part relative to the correlation sub-image
                 if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
                     FF(ivec_y,ivec_x)=1; %
                     utable(ivec_y,ivec_x)=NaN;
                     vtable(ivec_y,ivec_x)=NaN;
                 else
-                    FF(ivec_y,ivec_x)=0;
                     image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
                     image2_crop=image2_crop.*~mask2_crop;
-                    image1_mean=mean(mean(image1_crop))/(1-sizemask);
-                    image2_mean=mean(mean(image2_crop))/(1-sizemask);
+                    image1_mean=mean(mean(image1_crop,2),3)/(1-sizemask);
+                    image2_mean=mean(mean(image2_crop,2),3)/(1-sizemask);
                 end
             else
-                image1_mean=mean(mean(image1_crop));
-                image2_mean=mean(mean(image2_crop));
+                image1_mean=mean(mean(image1_crop,2),3);
+                image2_mean=mean(mean(image2_crop,2),3);
             end
-            %threshold on image minimum
+     
             if FF(ivec_y,ivec_x)==0
                 if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                    FF(ivec_y,ivec_x)=1;
-                    %threshold on image maximum
+                    FF(ivec_y,ivec_x)=1;       %threshold on image minimum
+                
                 elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                    FF(ivec_y,ivec_x)=1;
+                    FF(ivec_y,ivec_x)=1;    %threshold on image maximum
                 end
                 if FF(ivec_y,ivec_x)==1
-                    utable(ivec_y,ivec_x)=NaN;
+                    utable(ivec_y,ivec_x)=NaN;  
                     vtable(ivec_y,ivec_x)=NaN;
                 else
-                    %mask
-                    if checkmask
-                        image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
-                        image2_crop=(image2_crop-image2_mean).*~mask2_crop;
-                    else
-                        image1_crop=(image1_crop-image1_mean);
-                        image2_crop=(image2_crop-image2_mean);
-                    end
+                    % case of mask
+                    % if checkmask
+                    %     image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
+                    %     image2_crop=(image2_crop-image2_mean).*~mask2_crop;% TO MODIFY !!!!!!!!!!!!!!!!!!!!!
+                    % else
+                    %     % image1_crop=(image1_crop-image1_mean);
+                    %     % image2_crop=(image2_crop-image2_mean);
+                    % end
 
                     npxycorr=par_civ.SearchBoxSize(1:2)-par_civ.CorrBoxSize(1:2)+1;
                     result_conv=zeros([par_civ.SearchBoxSize(3) npxycorr]);%initialise the conv product
                     max_xy=zeros(par_civ.SearchBoxSize(3),1);%initialise the max correlation vs z
-                    xk=ones(par_civ.SearchBoxSize(3),1);%initialise the x displacement corresponding to the max corr 
-                    yk=ones(par_civ.SearchBoxSize(3),1);%initialise the y displacement corresponding to the max corr 
-                  
-                    for kz=kref:kref%par_civ.SearchBoxSize(3)
-                        subima2=squeeze(image2_crop(kz,:,:));
-                        subima1=squeeze(image1_crop(kref,:,:));
+                    xk=ones(npz,1);%initialise the x displacement corresponding to the max corr 
+                    yk=ones(npz,1);%initialise the y displacement corresponding to the max corr 
+                    subima1=squeeze(image1_crop(kref,:,:))-image1_mean(kref);
+                    for kz=1:npz
+                        subima2=squeeze(image2_crop(kz,:,:))-image2_mean(kz);   
                         correl_xy=conv2(subima2,flip(flip(subima1,2),1),'valid');
-                        result_conv(kz,:,:)= 255*correl_xy;
+                        result_conv(kz,:,:)=correl_xy;
                         max_xy(kz)=max(max(correl_xy));
-                        % max_xy(kz)=max(max(correl_xy));
-                         [yk(kz),xk(kz)]=find(correl_xy==max_xy(kz),1);
+                         [yk(kz),xk(kz)]=find(correl_xy>=0.999*max_xy(kz),1);%find the indices of the maximum, use 0.999 to avoid rounding errors
                     end
                     [corrmax,dz]=max(max_xy);
+                    result_conv=result_conv*255/corrmax;% normalise with a max =255
                     dx=xk(dz);
                     dy=yk(dz);
-                 
-                    % 
-                    % result_conv=255*result_conv/corrmax; %normalize, peak=always 255
-                    % for kz=1:par_civ.SearchBoxSize(3)
-                    %     [dy,dx] = find(result_conv(kz,:,:)==255,1)
-                    %     if ~isempty(dy)
-                    %         dz=kz;
-                    %         break
-                    %     end
-                    % end
-                    subimage2_crop=squeeze(image2_crop(dz,dy:dy+2*iby2/mesh,dx:dx+2*ibx2/mesh));%subimage of image 2 corresponding to the optimum displacement of first image
-                    sum_square=sum(sum(squeeze(image1_crop(dz,:,:).*image1_crop(dz,:,:))));
+                    subimage2_crop=squeeze(image2_crop(dz,dy:dy+2*iby2/mesh,dx:dx+2*ibx2/mesh))-image2_mean(dz);%subimage of image 2 corresponding to the optimum displacement of first image
+                    sum_square=sum(sum(subima1.*subima1));
                     sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
                     sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
+                    % if ivec_x==3 && ivec_y==4
+                    %     'test'
+                    % end
                     if ~isempty(dz)&& ~isempty(dy) && ~isempty(dx)
                         if par_civ.CorrSmooth==1
                             [vector,FF(ivec_y,ivec_x)] = SUBPIXGAUSS (result_conv,dx,dy,dz);
@@ -986,7 +952,9 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         ytable(ivec_y,ivec_x)=jref+vtable(ivec_y,ivec_x)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
                         iref=round(xtable(ivec_y,ivec_x)+0.5);% nearest image index for the middle of the vector
                         jref=round(ytable(ivec_y,ivec_x)+0.5);
-                  
+                       % if utable(ivec_y,ivec_x)==0 && vtable(ivec_y,ivec_x)==0
+                       %     'test'
+                       % end
                         % eliminate vectors located in the mask
                         if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
                             utable(ivec_y,ivec_x)=0;
@@ -1016,27 +984,27 @@ function [vector,FF] = SUBPIXGAUSS (result_conv,x,y,z)
 %------------------------------------------------------------------------
 
 [npz,npy,npx]=size(result_conv);
-result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
+result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (to avoid divergence in the log)
 %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
 %http://urapiv.wordpress.com
 FF=false;
 peakz=z;peaky=y;peakx=x;
-if z < npz && z > 1 && y < npy && y > 1 && x < npx && x > 1
-    f0 = log(result_conv(z,y,x));
-    f1 = log(result_conv(z-1,y,x));
-    f2 = log(result_conv(z+1,y,x));
-    peakz = peakz+ (f1-f2)/(2*f1-4*f0+2*f2);
-
-    f1 = log(result_conv(z,y-1,x));
-    f2 = log(result_conv(z,y+1,x));
-    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-
-    f1 = log(result_conv(z,y,x-1));
-    f2 = log(result_conv(z,y,x+1));
-    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-else
-    FF=true;
-end
+% if z < npz && z > 1 && y < npy && y > 1 && x < npx && x > 1
+%     f0 = log(result_conv(z,y,x));
+%     f1 = log(result_conv(z-1,y,x));
+%     f2 = log(result_conv(z+1,y,x));
+%     peakz = peakz+ (f1-f2)/(2*f1-4*f0+2*f2);
+% 
+%     f1 = log(result_conv(z,y-1,x));
+%     f2 = log(result_conv(z,y+1,x));
+%     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+% 
+%     f1 = log(result_conv(z,y,x-1));
+%     f2 = log(result_conv(z,y,x+1));
+%     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+% else
+%     FF=true;
+% end
 
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1 peakz-floor(npz/2)-1];
 
