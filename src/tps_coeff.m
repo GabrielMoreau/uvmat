@@ -18,7 +18,7 @@
 %  U_tps: tps weights of the centres and columns of the linear
 
 % INPUT:
-%  ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension)
+%  ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension, N>=3)
 %  U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
 %  smoothing: smoothing parameter: the result is smoother for larger smoothing.
 %

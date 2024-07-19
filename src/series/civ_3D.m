@@ -313,12 +313,12 @@ for ifield=1:NbField_i
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
-        %for z_index=2:floor((NbSlice-1)/par_civ1.Dz)% loop on slices
+     % loop on slices
         for z_index=2:floor((NbSlice-SearchRange_z)/par_civ1.Dz)% loop on slices
-            par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz);%shift the indices in the image block upward by par_civ1.Dz
-            par_civ1.ImageB=circshift(par_civ1.ImageA,-par_civ1.Dz);
+            par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz,1);%shift the indices in the image block upward by par_civ1.Dz
+            par_civ1.ImageB=circshift(par_civ1.ImageB,-par_civ1.Dz,1);
             for iz=1:par_civ1.Dz %read the new images at the end of the image block
-                j_image_index=j1_series_Civ1(z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz,1)
+                j_image_index=j1_series_Civ1(z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz+1,1)
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%
                 A= read_image(ImageName_A,FileType_A);
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j_image_index);
@@ -329,7 +329,6 @@ for ifield=1:NbField_i
             % caluclate velocity data (y and v in indices, reverse to y component)
             [Data.Civ1_X(z_index,:,:),Data.Civ1_Y(z_index,:,:), Data.Civ1_U(z_index,:,:), Data.Civ1_V(z_index,:,:),Data.Civ1_W(z_index,:,:),...
                 Data.Civ1_C(z_index,:,:), Data.Civ1_FF(z_index,:,:), result_conv, errormsg] = civ3D (par_civ1);
-
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
                 return
@@ -522,26 +521,11 @@ for ifield=1:NbField_i
             Civ1_Dt=Data.Civ1_Dt;
             Data.CivStage=4;
         end
-        % else
-        %     SubRange= par_civ2.Civ1_SubRange;
-        %     NbCentres=par_civ2.Civ1_NbCentres;
-        %     Coord_tps=par_civ2.Civ1_Coord_tps;
-        %     U_tps=par_civ2.Civ1_U_tps;
-        %     V_tps=par_civ2.Civ1_V_tps;
-        %     Civ1_Dt=par_civ2.Civ1_Dt;
-        %     Civ2_Dt=par_civ2.Civ1_Dt;
-        %     Data.ListVarName={};
-        %     Data.VarDimName={};
-        % end
+
         Shiftx=zeros(size(par_civ2.Grid,1),1);% shift expected from civ1 data
         Shifty=zeros(size(par_civ2.Grid,1),1);
         nbval=zeros(size(par_civ2.Grid,1),1);% nbre of interpolated values at each grid point (from the different patch subdomains)
-        if par_civ2.CheckDeformation
-            DUDX=zeros(size(par_civ2.Grid,1),1);
-            DUDY=zeros(size(par_civ2.Grid,1),1);
-            DVDX=zeros(size(par_civ2.Grid,1),1);
-            DVDY=zeros(size(par_civ2.Grid,1),1);
-        end
+
         NbSubDomain=size(SubRange,3);
         for isub=1:NbSubDomain% for each sub-domain of Patch1
             nbvec_sub=NbCentres(isub);% nbre of Civ vectors in the subdomain
@@ -554,13 +538,6 @@ for ifield=1:NbField_i
                 EM = tps_eval(epoints,ctrs);% thin plate spline (tps) coefficient
                 Shiftx(ind_sel)=Shiftx(ind_sel)+EM*U_tps(1:nbvec_sub+3,isub);%velocity shift estimated by tps from civ1
                 Shifty(ind_sel)=Shifty(ind_sel)+EM*V_tps(1:nbvec_sub+3,isub);
-                if par_civ2.CheckDeformation
-                    [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
-                    DUDX(ind_sel)=DUDX(ind_sel)+EMDX*U_tps(1:nbvec_sub+3,isub);
-                    DUDY(ind_sel)=DUDY(ind_sel)+EMDY*U_tps(1:nbvec_sub+3,isub);
-                    DVDX(ind_sel)=DVDX(ind_sel)+EMDX*V_tps(1:nbvec_sub+3,isub);
-                    DVDY(ind_sel)=DVDY(ind_sel)+EMDY*V_tps(1:nbvec_sub+3,isub);
-                end
             end
         end
         if par_civ2.CheckMask&&~isempty(par_civ2.Mask)
@@ -923,8 +900,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         subima2=squeeze(image2_crop(kz,:,:))-image2_mean(kz);   
                         correl_xy=conv2(subima2,flip(flip(subima1,2),1),'valid');
                         result_conv(kz,:,:)=correl_xy;
-                        max_xy(kz)=max(max(correl_xy));
-                         [yk(kz),xk(kz)]=find(correl_xy>=0.999*max_xy(kz),1);%find the indices of the maximum, use 0.999 to avoid rounding errors
+                        max_xy(kz)=max(max(correl_xy));             
+                         [yk(kz),xk(kz)]=find(correl_xy==max_xy(kz),1);%find the indices of the maximum, use 0.999 to avoid rounding errors
                     end
                     [corrmax,dz]=max(max_xy);
                     result_conv=result_conv*255/corrmax;% normalise with a max =255
@@ -989,22 +966,22 @@ result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (to a
 %http://urapiv.wordpress.com
 FF=false;
 peakz=z;peaky=y;peakx=x;
-% if z < npz && z > 1 && y < npy && y > 1 && x < npx && x > 1
-%     f0 = log(result_conv(z,y,x));
-%     f1 = log(result_conv(z-1,y,x));
-%     f2 = log(result_conv(z+1,y,x));
-%     peakz = peakz+ (f1-f2)/(2*f1-4*f0+2*f2);
-% 
-%     f1 = log(result_conv(z,y-1,x));
-%     f2 = log(result_conv(z,y+1,x));
-%     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-% 
-%     f1 = log(result_conv(z,y,x-1));
-%     f2 = log(result_conv(z,y,x+1));
-%     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-% else
-%     FF=true;
-% end
+if z < npz && z > 1 && y < npy && y > 1 && x < npx && x > 1
+    f0 = log(result_conv(z,y,x));
+    f1 = log(result_conv(z-1,y,x));
+    f2 = log(result_conv(z+1,y,x));
+    peakz = peakz+ (f1-f2)/(2*f1-4*f0+2*f2);
+
+    f1 = log(result_conv(z,y-1,x));
+    f2 = log(result_conv(z,y+1,x));
+    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+
+    f1 = log(result_conv(z,y,x-1));
+    f2 = log(result_conv(z,y,x+1));
+    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+else
+    FF=true;
+end
 
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1 peakz-floor(npz/2)-1];
 

@@ -121,7 +121,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     filexml=[fullfile(RootPath,Param.InputTable{iview,2},Param.InputTable{iview,3}) '.xml'];%xml at the level of the image folder
     if exist(filexml,'file')
         [XmlData,errormsg]=imadoc2struct(filexml);
-        if ~isempty(errormsg)
+        if isempty(errormsg)
+            msgbox_uvmat('CONFIRMATION',[filexml ' used' ]);
+        else
             msgbox_uvmat('ERROR',errormsg);
             return
         end

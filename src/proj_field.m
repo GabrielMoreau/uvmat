@@ -1722,7 +1722,7 @@ for icell=1:length(CellInfo)
                         ProjData.coord_x=coord_x_proj;
                         ProjData.coord_y=coord_y_proj;
                         ProjData.(VarName)=interp3(Coord{3},Coord{2},Coord{1},double(FieldData.(VarName)),XI_proj,YI_proj,ZI_proj,'*linear');
-                        ProjData.(VarName)=nanmean(ProjData.(VarName),3);
+                        ProjData.(VarName)=mean(ProjData.(VarName),3,'omitnan');
                         ProjData.(VarName)=squeeze(ProjData.(VarName));
                     end
                 end

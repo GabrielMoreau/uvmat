@@ -2614,17 +2614,21 @@ else  % check index ranges
     if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
             set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end
 end
+num_first_i_Callback(hObject, eventdata, handles)
+num_first_j_Callback(hObject, eventdata, handles)
 
 %% enable or desable j index visibility
 if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
     enable_j(handles,'off')
 else% show j index if relevant in the input series
+    if isfield(SeriesData,'j1_series')
     j1_series=SeriesData.j1_series;
     for iview=1:size(j1_series,1)
         if ~isempty(j1_series{iview})
             enable_j(handles,'on')
             break
         end
+    end
     end
 end
 

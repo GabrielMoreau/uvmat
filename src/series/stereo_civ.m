@@ -37,7 +37,7 @@
 %     GNU General Public License (open UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [Data,errormsg,result_conv]= stereo_civ(Param)
+function [Data,errormsg,result_conv, XmlData]= stereo_civ(Param)
 Data=[];
 errormsg='';
 
@@ -84,6 +84,11 @@ hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
+%%%%%%%%%%%%%%%% Modif pour test %%%%%%%%%%%%%%%%%%
+% CheckInputFile=isfield(Param,'InputTable');%= 1 in test use for TestCiv (no nc file involved)
+CheckOutputFile = isfield(Param,'OutputSubDir') ; %= 1 in test use for TestPatch (no nc file produced)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% input files and indexing
 MaxIndex_i=Param.IndexRange.MaxIndex_i;
 MinIndex_i=Param.IndexRange.MinIndex_i;
@@ -94,6 +99,7 @@ end
 [tild,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 time=[];
 for iview=1:size(Param.InputTable,1)
+    %XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},Param.InputTable{iview,5});
     XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2});
     if isempty(XmlFileName)
         disp_uvmat('ERROR', [XmlFileName ' not found'],checkrun)
@@ -234,7 +240,11 @@ else
 end
 
 %% Output directory
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+OutputDir='/Test';
+if CheckOutputFile
+    OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+end
+
 
 ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
@@ -251,8 +261,8 @@ if isempty(time) && ismember(FileType_A,{'mmreader','video','cine_phantom'})% ca
     ColorType='truecolor';
 end
 if isempty(time)% time = index i  by default
-    MaxIndex_i=max(i2_series_Civ1);
-    MaxIndex_j=max(j2_series_Civ1);
+    MaxIndex_i=max(i2_series_Civ1, [], 'all');
+    MaxIndex_j=max(j2_series_Civ1, [], 'all');
     time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
     time=[zeros(1,MaxIndex_j);time];% insert a first line of zeros
     time=[zeros(MaxIndex_i+1,1) time];% insert a first column of zeros
@@ -311,7 +321,7 @@ for ifield=1:NbField
         
 
         
-        [A,Rangx,Rangy]=phys_ima(A,XmlData,1);
+        [A,Rangx,Rangy]=phys_ima(A,XmlData,1);%transform image A in phys coordinates
         [Npy,Npx]=size(A{1});
         PhysImageA=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],1);
         PhysImageB=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],2);
@@ -371,6 +381,20 @@ for ifield=1:NbField
         Data.Civ1_C=reshape(ctable,[],1);
         Data.Civ1_F=reshape(F,[],1);
 
+        %%%%%%%%%%%%%%%% ajout fonction test %%%%%%%
+        if ~isfield (Param.ActionInput,'Civ2') && ~isfield (Param.ActionInput,'Civ3') && ~isfield(Param.ActionInput,'Patch1')
+            [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+                Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+                Rangy, Npx, Npy, Data.Civ1_X, Data.Civ1_Y, Data.Civ1_U, ...
+                Data.Civ1_V, XmlData);
+    
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     end
     
     %% Fix1
@@ -413,15 +437,42 @@ for ifield=1:NbField
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
-        
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
+
+        %%%%%%%%%%%%%%%%%%%% modif fonction test %%%%%%%%%%%%%%%%%%%%%%%
+        try
+            Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
+        catch
+            Data.ListGlobalAttribute={'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'};
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            
         Data.Patch1_FieldSmooth=Param.ActionInput.Patch1.FieldSmooth;
         Data.Patch1_MaxDiff=Param.ActionInput.Patch1.MaxDiff;
         Data.Patch1_SubDomainSize=Param.ActionInput.Patch1.SubDomainSize;
-        nbvar=length(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
-            {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
+
+        %%%%%%%%%%%%%%%%%%% modif fonction test %%%%%%%%%%%%%%%%%%%%%%%%
+        try
+            nbvar=length(Data.ListVarName);
+            Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
+            Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
+                {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
+        catch
+            nbvar=0;
+            Data.ListVarName={'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'};
+            Data.VarDimName={'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
+                {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}};
+        end
+        
+        if ~isfield(Param.ActionInput,'Civ1')
+            Data.Civ1_X = Param.Civ1_X ;
+            Data.Civ1_Y = Param.Civ1_Y ;
+            Data.Civ1_U = Param.Civ1_U ;
+            Data.Civ1_V = Param.Civ1_V ;
+            Data.Civ1_FF = Param.Civ1_FF ;
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         Data.VarAttribute{nbvar+1}.Role='vector_x';
         Data.VarAttribute{nbvar+2}.Role='vector_y';
         Data.VarAttribute{nbvar+5}.Role='coord_tps';
@@ -435,13 +486,52 @@ for ifield=1:NbField
             ind_good=1:numel(Data.Civ1_X);
         end
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
-            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
+            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);  
+            
         Data.Civ1_U_smooth(ind_good)=Ures;
         Data.Civ1_V_smooth(ind_good)=Vres;
         Data.Civ1_FF(ind_good)=FFres;
-        Data.CivStage=3;
+        Data.CivStage=3; 
+
+        if ~isfield (Param.ActionInput,'Civ2') && ~isfield (Param.ActionInput,'Civ3')
+
+            %%%%%%%%% modif fonction test %%%%%%%%%%%%%%%%%
+            try
+                [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+                    Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+                    Rangy, Npx, Npy, Data.Civ1_X, Data.Civ1_Y, Data.Civ1_U_smooth, ...
+                    Data.Civ1_V_smooth, XmlData);
+            catch % si on a pas Rangx, Rangy, Npx, Npy on ouvre les images pour les recalculer
+                try
+                    ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
+                    [A{1},VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
+                    ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
+                    [A{2},VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+                catch ME
+                    if ~isempty(ME.message)
+                        disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
+                        return
+                    end
+                end
+                [A,Rangx,Rangy]=phys_ima(A,XmlData,1);%transform image A in phys coordinates
+                [Npy,Npx]=size(A{1});
+                [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+                    Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+                    Rangy, Npx, Npy, Data.Civ1_X, Data.Civ1_Y, Data.Civ1_U_smooth, ...
+                    Data.Civ1_V_smooth, XmlData);
+            end              
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end
+        end
                
     end
+
+    
+    
     
     %% Civ2
     if isfield (Param.ActionInput,'Civ2')
@@ -552,6 +642,20 @@ for ifield=1:NbField
         Data.Civ2_C=reshape(ctable,[],1);
         Data.Civ2_F=reshape(F,[],1);
         Data.CivStage=Data.CivStage+1;
+
+        %%%%%%%%%%%%%%%% ajout fonction test %%%%%%%
+        if ~isfield (Param.ActionInput,'Civ3') && ~isfield(Param.ActionInput,'Patch2')
+            [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+                Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+                Rangy, Npx, Npy, Data.Civ2_X, Data.Civ2_Y, Data.Civ2_U, ...
+                Data.Civ2_V, XmlData);
+    
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
     
     %% Fix2
@@ -611,6 +715,20 @@ for ifield=1:NbField
         Data.Civ2_V_smooth(ind_good)=Vres;
         Data.Civ2_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
+
+
+        if ~isfield (Param.ActionInput,'Civ3')
+            [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+                Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+                Rangy, Npx, Npy, Data.Civ2_X, Data.Civ2_Y, Data.Civ2_U_smooth, ...
+                Data.Civ2_V_smooth, XmlData);
+    
+            if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
+                return
+            end
+        end
+
     end
     
         
@@ -768,12 +886,12 @@ end
         Data.Civ3_FF(ind_good)=FFres;
         Data.CivStage=Data.CivStage+1;
            
-         % get z from u and v (displacements)     
-        Data.Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data.Civ3_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-        Data.Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data.Civ3_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-        Data.Uphys=Data.Civ3_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
-        Data.Vphys=Data.Civ3_V_smooth*(Rangy(1)-Rangy(2))/(Npy-1);
-        [Data.Zphys,Data.Xphys,Data.Yphys,Data.Error]=shift2z(Data.Xmid,Data.Ymid,Data.Uphys,Data.Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytemp)
+        
+        [Data.Xmid, Data.Ymid, Data.Uphys, Data.Vphys, Data.Zphys, ...
+            Data.Yphys, Data.Xphys, Data.Error] = getPhysValues(Rangx, ...
+            Rangy, Npx, Npy, Data.Civ3_X, Data.Civ3_Y, Data.Civ3_U_smooth, ...
+            Data.Civ3_V_smooth, XmlData);
+
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
@@ -783,32 +901,69 @@ end
       
     
     %% write result in a netcdf file if requested
+
     if LSM ~= 1 % store all data
-        if exist('ncfile','var')
-            errormsg=struct2nc(ncfile,Data);
+        if exist('ncfile2','var')
+            errormsg=struct2nc(ncfile2,Data);
             if isempty(errormsg)
-                disp([ncfile ' written'])
+                disp([ncfile2 ' written'])
             else
                 disp(errormsg)
             end
         end
     else
+        
+        
        % store only phys data
-        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ3_C','DX','DY','Error'};
+        Data_light.ListVarName={'Xphys','Yphys','Zphys','Civ_C','DX','DY','Error'};
         Data_light.VarDimName={'nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3','nb_vec_3'};
         Data_light.VarAttribute{1}.Role='coord_x';
          Data_light.VarAttribute{2}.Role='coord_y';
          Data_light.VarAttribute{3}.Role='scalar';
          Data_light.VarAttribute{5}.Role='vector_x';
          Data_light.VarAttribute{6}.Role='vector_y';
-        ind_good=find(Data.Civ3_FF==0);
-        Data_light.Zphys=Data.Zphys(ind_good);
-        Data_light.Yphys=Data.Yphys(ind_good);
-        Data_light.Xphys=Data.Xphys(ind_good);
-        Data_light.Civ3_C=Data.Civ3_C(ind_good);
-        Data_light.DX=Data.Uphys(ind_good);
-        Data_light.DY=Data.Vphys(ind_good);
-        Data_light.Error=Data.Error(ind_good);
+        
+         % vrifie la dernire passe effectue
+        if isfield (Param.ActionInput,'Civ3')
+            try
+                ind_good=find(Data.Civ3_FF==0);
+                Data_light.Civ_C=Data.Civ3_C(ind_good);
+            catch
+                Data_light.Civ_C=Data.Civ3_C;
+            end
+        elseif isfield (Param.ActionInput,'Civ2')
+            try
+                ind_good=find(Data.Civ2_FF==0);
+                Data_light.Civ_C=Data.Civ2_C(ind_good);
+            catch
+                Data_light.Civ_C=Data.Civ2_C;
+            end
+        elseif isfield (Param.ActionInput,'Civ1')
+            try
+                ind_good=find(Data.Civ1_FF==0);
+                Data_light.Civ_C=Data.Civ1_C(ind_good);
+            catch
+                Data_light.Civ_C=Data.Civ1_C;
+            end
+        end
+        
+        try
+            Data_light.Zphys=Data.Zphys(ind_good);
+            Data_light.Yphys=Data.Yphys(ind_good);
+            Data_light.Xphys=Data.Xphys(ind_good);
+            Data_light.DX=Data.Uphys(ind_good);
+            Data_light.DY=Data.Vphys(ind_good);
+            Data_light.Error=Data.Error(ind_good);
+        catch
+            Data_light.Zphys=Data.Zphys;
+            Data_light.Yphys=Data.Yphys;
+            Data_light.Xphys=Data.Xphys;
+            Data_light.DX=Data.Uphys;
+            Data_light.DY=Data.Vphys;
+            Data_light.Error=Data.Error;
+        end
+
+
        if exist('ncfile2','var')
             errormsg=struct2nc(ncfile2,Data_light);
             if isempty(errormsg)
@@ -826,7 +981,7 @@ while toc < rand(1)*10
     for i = 1:100000, sqrt(1237); end
 end
 
-
+end
 
 % 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
 %--------------------------------------------------------------------------
@@ -1067,6 +1222,7 @@ for ivec=1:nbvec
     end
 end
 result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
+end
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
@@ -1097,6 +1253,7 @@ else
     F=-2; % warning flag for vector truncated by the limited search box
 end
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+end
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
@@ -1140,6 +1297,7 @@ if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
     end
 end
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+end
 
 %'RUN_FIX': function for fixing velocity fields:
 %-----------------------------------------------
@@ -1188,6 +1346,7 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
     end
 end
 
+end
 
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file
@@ -1249,6 +1408,7 @@ switch mode
         j1_series=ind1*ones(1,size(i_series,2));% j index is fixed by pair choice
         j2_series=ind2*ones(1,size(i_series,2));
         check_bounds=zeros(size(i1_series));% no limitations due to min-max indices
+    end
 end
 
 %INPUT:
@@ -1257,6 +1417,8 @@ end
 % xmid+ u/2: set of apparent phys x coordinates in the ref plane, image B
 % ymid+ v/2: set of apparent phys y coordinates in the ref plane, image B
 % XmlData: content of the xml files containing geometric calibration parameters
+
+
 function [z,Xphy,Yphy,Error]=shift2z(xmid, ymid, u, v,XmlData)
 z=0;
 error=0;
@@ -1319,8 +1481,17 @@ ynew(1,:)=Dya.*z+y_a;
 ynew(2,:)=Dyb.*z+y_b;
 Xphy=mean(xnew,1);
 Yphy=mean(ynew,1);
+end
 
+function [Xmid, Ymid, Uphys, Vphys, Zphys, Yphys, Xphys, Error] ...
+    = getPhysValues(Rangx, Rangy, Npx, Npy, Data_Civ_X, Data_Civ_Y, ...
+    Data_Civ_U_smooth, Data_Civ_V_smooth, XmlData)
+    
+    % get z from u and v (displacements)     
+    Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data_Civ_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
+    Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data_Civ_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
+    Uphys=Data_Civ_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
+    Vphys=Data_Civ_V_smooth*(Rangy(1)-Rangy(2))/(Npy-1);
+    [Zphys,Xphys,Yphys,Error]=shift2z(Xmid,Ymid,Uphys,Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytempy
 
-
-
-
+end

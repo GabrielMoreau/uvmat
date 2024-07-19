@@ -1051,7 +1051,7 @@ if CheckDeformation
     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
     par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
 end
-
+ 
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec=1:nbvec
         iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
@@ -1129,9 +1129,10 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                 result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 corrmax= max(max(result_conv));
-                result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+        
+                %result_conv=(result_conv/corrmax); %normalize, peak=always 255
                 %Find the correlation max, at 255
-                [y,x] = find(result_conv==255,1);
+                [y,x] = find(result_conv==corrmax,1);
                 subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
                 sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
                 sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
@@ -1168,60 +1169,66 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         end
     end
 end
-result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
+result_conv=result_conv*corrmax/sum_square;% keep the last (not normalised) correlation matrix for output
 
 %------------------------------------------------------------------------
-% --- Find the maximum of the correlation function after interpolation
+% --- Find the maximum of the correlation function with subpixel resolution
+% make a fit with a gaussian curve from the three correlation values across the max, along each direction.
 % OUPUT:
 % vector = optimum displacement vector with subpixel correction
-% F =flag: =0 OK
-%           =-2 , warning: max too close to the edge of the search box (1 pixel margin)
+% FF =flag: =0 OK
+%           =1 , max too close to the edge of the search box (1 pixel margin)
 % INPUT:
+% result_conv: 2D correlation fct
 % x,y: position of the maximum correlation at integer values
 
-function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
+function [vector,FF] = SUBPIXGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
 % vector=[0 0]; %default
-F=0;
+FF=true;% error flag for vector truncated by the limited search box
 [npy,npx]=size(result_conv);
-result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
-%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ??? Israel Institute of Technology
-%http://urapiv.wordpress.com
-peaky = y;peakx=x;
-% if y < npy && y > 1 && x < npx-1 && x > 1
-%     f0 = log(result_conv(y,x));
-%     f1 = log(result_conv(y-1,x));
-%     f2 = log(result_conv(y+1,x));
-%     peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-%     f1 = log(result_conv(y,x-1));
-%     f2 = log(result_conv(y,x+1));
-%     peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-% else
-%     F=1; % warning flag for vector truncated by the limited search box
-% end
+
+peaky = y; peakx=x;
+if y < npy && y > 1 && x < npx-1 && x > 1
+   FF=false; % no error by the limited search box
+    max_conv=result_conv(y,x);% max correlation
+    peak2noise= max(4,max_conv/std(reshape(result_conv,1,[])));% ratio of max conv to standard deviation of correlations (estiamtion of noise level), set to value 4 if it is too low
+    result_conv=result_conv*peak2noise/max_conv;% renormalise the correlation with respect to the noise 
+    result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
+    
+    f0 = log(result_conv(y,x));
+    f1 = log(result_conv(y-1,x));
+    f2 = log(result_conv(y+1,x));
+    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+    f1 = log(result_conv(y,x-1));
+    f2 = log(result_conv(y,x+1));
+    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+end
 
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
-function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
+function [vector,FF] = SUBPIX2DGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
 % vector=[0 0]; %default
-F=1;
+FF=true;
 peaky=y;
 peakx=x;
-result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
 [npy,npx]=size(result_conv);
 if (x < npx) && (y < npy) && (x > 1) && (y > 1)
-    F=0;
+    FF=false;
+max_conv=result_conv(y,x);% max correlation
+    peak2noise= max(4,max_conv/std(reshape(result_conv,1,[])));% ratio of max conv to standard deviation of correlations (estiamtion of noise level), set to value 4 if it is too low
+    result_conv=result_conv*peak2noise/max_conv;% renormalise the correlation with respect to the noise 
+    result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
     for i=-1:1
         for j=-1:1
-            %following 15 lines based on
-            %H. Nobach ??? M. Honkanen (2005)
-            %Two-dimensional Gaussian regression for sub-pixel displacement
-            %estimation in particle image velocimetry or particle position
-            %estimation in particle tracking velocimetry
-            %Experiments in Fluids (2005) 38: 511???515
+  %following 15 lines based on  H. Nobach and M. Honkanen (2005)
+  % Two-dimensional Gaussian regression for sub-pixel displacement
+  % estimation in particle image velocimetry or particle position
+  % estimation in particle tracking velocimetry
+  % Experiments in Fluids (2005) 38: 511-515
             c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
             c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
             c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));
@@ -1234,8 +1241,8 @@ if (x < npx) && (y < npy) && (x > 1) && (y > 1)
     c11=(1/4)*sum(sum(c11));
     c20=(1/6)*sum(sum(c20));
     c02=(1/6)*sum(sum(c02));
-    deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11^2);
-    deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11^2);
+    deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11*c11);
+    deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11*c11);
     if abs(deltax)<1
         peakx=x+deltax;
     end

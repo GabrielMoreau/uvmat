@@ -283,7 +283,7 @@ time=toc
 
 %plot rms difference and proportion of excluded vectors
 figure(2)
-cla
+clf
 if CivStage==3% civ1
     ref=0.2; %recommanded value for diff rms
     txt='civ1';

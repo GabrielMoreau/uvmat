@@ -169,7 +169,10 @@ switch FileExt
                                     FileInfo.CivStage=1;
                                 end
                             elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
-                                FileInfo.FileType='civdata'; % test for civx velocity fields
+                                FileInfo.FileType='civdata'; % test for civ velocity fields
+                                FileInfo.CivStage=Data.CivStage;
+                            elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata_3D')
+                                FileInfo.FileType='civdata_3D'; % test for 3D volume civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;
                             else
                                 FileInfo.FileType='netcdf';

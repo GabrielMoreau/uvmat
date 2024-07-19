@@ -50,6 +50,7 @@ AspectRatio=Range(2)/Range(1);
 NbSubDomain=NbVec/SubDomainSize;% estimated number of subdomains
 NbSubDomainX=max(floor(sqrt(NbSubDomain/AspectRatio)),1);% estimated number of subdomains in x
 NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
+NbSubDomainZ=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
 NbSubDomain=NbSubDomainX*NbSubDomainY;% new estimated number of subdomains in a matrix shape partition in subdomains
 Siz(1)=Range(1)/NbSubDomainX;%width of subdomains
 Siz(2)=Range(2)/NbSubDomainY;%height of subdomains

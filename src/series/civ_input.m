@@ -131,7 +131,7 @@ switch FileType
             series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
                     [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
        % [~,~,~,~,~,~,~,~,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
-             else
+             elseif isfield(Data,'Civ2_ImageA')
                  series('display_file_name',hhseries,Data.Civ2_ImageA,'append');%append the image series to the input list
                          [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ2_ImageA);
         %[RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ2_ImageB);
@@ -414,8 +414,8 @@ Param.ConfigSource='\default';
 
 %% Civ1 parameters
 %Param.CheckCiv1=1;
-Param.Civ1.CorrBoxSize=[25 25 1];
-Param.Civ1.SearchBoxSize=[55 55 5];
+Param.Civ1.CorrBoxSize=[31 31 1];
+Param.Civ1.SearchBoxSize=[61 61 5];
 Param.Civ1.SearchBoxShift=[0 0];
 Param.Civ1.CorrSmooth=1;
 Param.Civ1.Dx=20;
@@ -431,8 +431,8 @@ Param.Fix1.MinCorr=0.2000;
 
 %% Patch1 parameters
 %Param.CheckPatch1=1;
-Param.Patch1.FieldSmooth=20;
-Param.Patch1.MaxDiff=2;
+Param.Patch1.FieldSmooth=200;
+Param.Patch1.MaxDiff=1.5;
 Param.Patch1.SubDomainSize=125;
 
 %% Civ2 parameters
@@ -451,10 +451,9 @@ Param.Civ2.CheckThreshold=0;
 Param.Fix2.MinCorr=0.2000;
 
 %% Patch2 parameters
-Param.Patch2.FieldSmooth=5;
-Param.Patch2.MaxDiff=1.5000;
+Param.Patch2.FieldSmooth=20;
+Param.Patch2.MaxDiff=1;
 Param.Patch2.SubDomainSize=250;
-Param.Patch2.TestPatch2=0;
 
 fill_GUI(Param,handles.civ_input)% fill the elements of the GUI series with the input parameters
 update_CivOptions(handles,0)
@@ -705,7 +704,7 @@ else
         mode_list={mode_list};
     end  
     mode_value=get(handles.ListPairMode,'Value');
-    if isempty(mode_value)
+    if isempty(mode_value)|| mode_value>numel(mode_list)
         mode_value=1;
     end
     mode_selected=mode_list{mode_value};
@@ -834,7 +833,7 @@ if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
  
     mode_list=get(handles.ListPairMode,'String');
     mode_value=get(handles.ListPairMode,'Value');
-    if isempty(mode_value)
+    if isempty(mode_value)||mode_value>numel(mode_list)
         mode_value=1;
     end
     if isempty(mode_list)

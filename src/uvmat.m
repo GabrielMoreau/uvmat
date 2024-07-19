@@ -2138,7 +2138,7 @@ end
 if ~isempty(errormsg) && get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    [RootPath,SubDir,~,i1_series,i2_series,j1_series,j2_series,~,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
     if isempty(i1_series)
         fileinput=uigetfile_uvmat('pick an input file for the second line',fullfile(RootPath,SubDir));
         hh=dir(fileinput);
@@ -2153,7 +2153,7 @@ if ~isempty(errormsg) && get(handles.SubField,'Value')
             end
         end
     else
-        % initiate the input file series and inputfilerefresh the current field view:
+        % initiate the input file series and refresh the current field view:
         errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,2);
     end
 end
@@ -2493,7 +2493,7 @@ end
 % time not set by the input file: images or civ data: indicate that time is read from the xml file
 %FileType=FileInfo.FileType;
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time) && ...
-        (strcmp(FileInfo.FileType,'image')|| strcmp(FileInfo.FileType,'multimage'))%||strcmp(FileType,'civdata')||strcmp(FileType,'civx'))
+        (strcmp(FileInfo.FileType,'image')|| strcmp(FileInfo.FileType,'multimage'))
     TimeName='xml';
 elseif strcmp(FileInfo.FieldType,'civdata')% ajouter pivdata_fluidimage
     TimeName='civdata';
@@ -3417,7 +3417,7 @@ set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back in 
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in InputFileREFRESH.
+% --- Executes on button press in InputFileREFRESH. 
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the REFRESH button in yellow to indicate its activity
@@ -3469,6 +3469,7 @@ function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1
 %------------------------------------------------------------------------
 
 %% initialisation
+errormsg='';
 pointer=get(handles.uvmat,'Pointer');
 if strcmp(pointer,'watch')% reinitialise the mouse if stuck to 'watch'
     set(handles.CheckZoom,'Value',0)
@@ -3485,22 +3486,22 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at 
 end
 
 %% determine the main input file information for action
-if isempty(regexp(FileName,'^http://')) &&~exist(FileName,'file')
+if isempty(regexp(FileName,'^http://', 'once')) &&~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
 end
 NomType=get(handles.NomType,'String');
-NomType_1='';
-if strcmp(get(handles.NomType_1,'Visible'),'on')
-    NomType_1=get(handles.NomType_1,'String');
-end
+% NomType_1='';
+% if strcmp(get(handles.NomType_1,'Visible'),'on')
+%     NomType_1=get(handles.NomType_1,'String');
+% end
 %update the z position index
 mode_slice=get(handles.slices,'String');
 if strcmp(mode_slice,'volume')
     z_index=num_j1;
     set(handles.z_index,'String',num2str(z_index))
 else
-    nbslice=str2num(get(handles.num_NbSlice,'String'));
+    nbslice=str2double(get(handles.num_NbSlice,'String'));
     z_index=mod(num_i1-1,nbslice)+1;
     set(handles.z_index,'String',num2str(z_index))
 end
@@ -3555,7 +3556,7 @@ switch UvData.FileInfo{1}.FieldType
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
         if strcmp(FieldName,'get_field...')
-            FieldName_Callback(hObject, eventdata, handles)
+            FieldName_Callback(get(handles.FieldName), [], handles)
             return
         else
             if get(handles.FixVelType,'Value')

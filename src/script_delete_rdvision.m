@@ -96,6 +96,7 @@ for ilist=1:numel(ListNames)%loop on experiments
                         end
                     catch ME
                         disp(['error in ' filename_seq])
+                        disp(ME.message)
                     end
                     DirPng=dir(PngFolder);         
 

@@ -1796,6 +1796,8 @@ else
 end
 set(handles.configSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%   TEST functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1813,9 +1815,7 @@ if get(handles.TestCiv1,'Value')
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
-     if isfield(Param.ActionInput,'Fix1')
-         Param.ActionInput=rmfield(Param.ActionInput,'Fix1');
-     end
+
      if isfield(Param.ActionInput,'Patch1')
          Param.ActionInput=rmfield(Param.ActionInput,'Patch1');
      end
@@ -1828,17 +1828,38 @@ if get(handles.TestCiv1,'Value')
      if isfield(Param.ActionInput,'Patch2')
          Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
      end
-     if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     if isfield(Param.ActionInput,'Civ3')%remove options that may be selected beyond Patch1
+         Param.ActionInput=rmfield(Param.ActionInput,'Civ3');
      end
+     if isfield(Param.ActionInput,'Fix3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix3');
+     end
+     if isfield(Param.ActionInput,'Patch3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch3');
+     end
+%      if isfield(Param,'OutputSubDir')
+%         Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+%      end
      Param.ActionInput.Civ1.CorrSmooth=0;% launch Civ1 with no data point (to get the image names for A and B)
-     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results 
-     if ~isempty(errormsg), return, end % rmq: error msg displayed in civ_series
+     [Data,errormsg, ~, xmlData]=stereo_civ(Param);% get the civ1+fix1 results 
+     % if ~isempty(errormsg), return, end % rmq: error msg displayed in civ_series
      
  %% create image data ImageData for display
      ImageData.ListVarName={'ny','nx','A'};
      ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
-     ImageData.A=imread(Data.Civ1_ImageA); % read the first image
+
+     %%%%%%%%%%%%%%%%% modif fonction test %%%%%%%%%%%
+     ImageData.VarAttribute{1}.Role='coord_y';
+     ImageData.VarAttribute{2}.Role='coord_x';
+     ImageData.VarAttribute{3}.Role='scalar';
+
+     A{1}=imread(Data.Civ1_ImageA); % read the first image
+     A{2}=imread(Data.Civ1_ImageB); % read the first image
+
+     phys_img = phys_ima(A,xmlData,1);%transform image A in phys coordinates
+     ImageData.A = phys_img{1};
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
      if ndims(ImageData.A)==3 %case of color image
          ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
      end
@@ -1855,7 +1876,11 @@ if get(handles.TestCiv1,'Value')
      ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
      ViewData.PlotAxes.X=Data.Civ1_X';
      ViewData.PlotAxes.Y=Data.Civ1_Y';
-     ViewData.PlotAxes.B=imread(Data.Civ1_ImageB);%store the second image in the UserData of the GUI view_field
+
+     %%%%%%%%%%%%%%%%%%%%%%%
+     ViewData.PlotAxes.B=phys_img{2};%store the second image in the UserData of the GUI view_field
+     %%%%%%%%%%%%%%%%%%%%%%%
+
      set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
     
     %% look for a current figure for image correlation display
@@ -1896,6 +1921,7 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
+
      if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
          Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
      end
@@ -1905,12 +1931,23 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
      if isfield(Param.ActionInput,'Patch2')
          Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
      end
-     if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     if isfield(Param.ActionInput,'Civ3')%remove options that may be selected beyond Patch1
+         Param.ActionInput=rmfield(Param.ActionInput,'Civ3');
      end
+     if isfield(Param.ActionInput,'Fix3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix3');
+     end
+     if isfield(Param.ActionInput,'Patch3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch3');
+     end
+     % if isfield(Param,'OutputSubDir')
+     % Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     % end
+
      ParamPatch1=Param.ActionInput.Patch1; %store the patch1 parameters
      Param.ActionInput=rmfield(Param.ActionInput,'Patch1');% does not execute Patch
-     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+
+     [Data,errormsg]=stereo_civ(Param);% get the civ1+fix1 results
      bckcolor=get(handles.civ_input,'Color');
      set(handles.Civ1,'BackgroundColor',bckcolor)% indicate civ1 calculation is finished
      
@@ -1920,7 +1957,11 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
      Param.Civ1_U=Data.Civ1_U;
      Param.Civ1_V=Data.Civ1_V;
      Param.Civ1_FF=Data.Civ1_FF;
-     Param=rmfield(Param,'InputTable');%desactivate input file reading
+
+     %%%%% modif fonction test %%%%%%
+     % Param=rmfield(Param,'InputTable');%desactivate input file reading
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     if isfield(Param.ActionInput,'Civ1')
         Param.ActionInput=rmfield(Param.ActionInput,'Civ1');%desactivate civ1: remove civ1 input param if relevant
     end
@@ -1934,11 +1975,15 @@ if get(handles.TestPatch1,'Value')% if TestPatch1 is activated
     Param.ActionInput.Patch1=ParamPatch1;% retrieve Patch1 parameters
     for irho=1:7
         Param.ActionInput.Patch1.FieldSmooth=SmoothingParam(irho);
-        [Data,errormsg]= civ_series(Param);%apply the processing fct
-        if ~isempty(errormsg)
-            msgbox_uvmat('ERROR',errormsg)
-            return
-        end
+        [Data,errormsg]= stereo_civ(Param);%apply the processing fct
+
+        %%%%%%%%%% modif fonction test %%%%%%%%%%%%%% 
+        % if ~isempty(errormsg)
+        %     msgbox_uvmat('ERROR',errormsg)
+        %     return
+        % end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         ind_good=find(Data.Civ1_FF==0);
         Civ1_U_Diff=Data.Civ1_U(ind_good)-Data.Civ1_U_smooth(ind_good);
         Civ1_V_Diff=Data.Civ1_V(ind_good)-Data.Civ1_V_smooth(ind_good);
@@ -1975,19 +2020,47 @@ if get(handles.TestCiv2,'Value')
      Param=read_GUI(hseries);
      Param.Action.RUN=1;
      Param.ActionInput=read_GUI(handles.civ_input);
-     if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+
+     if isfield(Param.ActionInput,'Patch2')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
      end
+     if isfield(Param.ActionInput,'Civ3')%remove options that may be selected beyond Patch1
+         Param.ActionInput=rmfield(Param.ActionInput,'Civ3');
+     end
+     if isfield(Param.ActionInput,'Fix3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Fix3');
+     end
+     if isfield(Param.ActionInput,'Patch3')
+         Param.ActionInput=rmfield(Param.ActionInput,'Patch3');
+     end
+
+     % if isfield(Param,'OutputSubDir')
+     % Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
+     % end
+
      Param.ActionInput.Civ2.CorrSmooth=0;% launch Civ2 with no data point (to get the image names for A and B)
      set(handles.Civ1,'BackgroundColor',[1 1 0])
      set(handles.Fix1,'BackgroundColor',[1 1 0])
      set(handles.Patch1,'BackgroundColor',[1 1 0])
-     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results
+     [Data,errormsg, ~, xmlData]=stereo_civ(Param);% get the civ1+fix1+patch1+civ2+fix2 results
+     % if ~isempty(errormsg), return, end
      
      %% create image data ImageData for display
      ImageData.ListVarName={'ny','nx','A'};
      ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
-     ImageData.A=imread(Data.Civ2_ImageA); % read the first image
+
+     %%%%%%%%%%%%%%%%% modif fonction test %%%%%%%%%%%
+     ImageData.VarAttribute{1}.Role='coord_y';
+     ImageData.VarAttribute{2}.Role='coord_x';
+     ImageData.VarAttribute{3}.Role='scalar';
+
+     A{1}=imread(Data.Civ2_ImageA); % read the first image
+     A{2}=imread(Data.Civ2_ImageB); % read the first image
+
+     phys_img = phys_ima(A,xmlData,1);%transform image A in phys coordinates
+     ImageData.A = phys_img{1};
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
      if ndims(ImageData.A)==3 %case of color image
          ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
      end
@@ -2011,7 +2084,11 @@ if get(handles.TestCiv2,'Value')
     ViewData=get(hview_field,'UserData'); % get the currently plotted field (the image A)
     % store info in the UserData of view-field
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-    ViewData.PlotAxes.B=imread(Data.Civ2_ImageB);%store the second image in the UserData of the GUI view_field
+
+    %%%%%%%%%%%% modif fonction test %%%%%%%%%%%%%%%%%%%%%%%%%%
+    ViewData.PlotAxes.B=phys_img{2};%store the second image in the UserData of the GUI view_field
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     ViewData.PlotAxes.X=Data.Civ2_X';
     ViewData.PlotAxes.Y=Data.Civ2_Y';
     ViewData.PlotAxes.ShiftX=Data.Civ2_U';% shift at each point (from patch1) estimated by the preliminary run of civ2 
@@ -2037,9 +2114,9 @@ if get(handles.TestCiv2,'Value')
         set(corrfig,'tag','corrfig')
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
-        set(handles.TestCiv1,'BackgroundColor',[1 0 0])
+        set(handles.TestCiv2,'BackgroundColor',[1 0 0])
     else
-        set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
+        set(handles.TestCiv2,'BackgroundColor',[1 0 0])% paint button to red
         corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
         if ~isempty(corrfig)
             delete(corrfig)

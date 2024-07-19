@@ -53,46 +53,49 @@ for ilist=1:numel(ListNames)%loop on experiments
                 TifFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{isubsub});
                 DirPCORaw=dir(TifFolder);
                 DirPCORawCells=struct2cell(DirPCORaw);
-                CheckTif=regexp(DirPCORAwCells(1,:),'.tif$');
+                CheckTif=regexp(DirPCORawCells(1,:),'.tif$');
                 IndexTif=find(~cellfun('isempty',CheckTif));
-                ListTif=DirPCORAwCells(1,IndexTif);
+                ListTif=DirPCORawCells(1,IndexTif);
                 try
-                Info=imfinfo(fullfile(TifFolder,ListTif{1}));
-                RecordLength=numel(Info);%Number of frames in fullfile(TifFolder,FileName)
-                Info=imfinfo(fullfile(TifFolder,ListTif{end}));
-                NumberOfFrames=numel(Info)+(numel(ListTif)-1)*RecordLength%Number of frames in fullfile(TifFolder,FileName)
+                    Info=imfinfo(fullfile(TifFolder,ListTif{1}));
+                    RecordLength=numel(Info);%Number of frames in fullfile(TifFolder,FileName)
+                    Info=imfinfo(fullfile(TifFolder,ListTif{end}));
+                    NumberOfFrames=numel(Info)+(numel(ListTif)-1)*RecordLength%Number of frames in fullfile(TifFolder,FileName)
                 catch ME
                     disp(ME.message)
                     List2check=[List2check;TifFolder];
                 end
                 ind_png=find(strcmp([ListNamesSubSub{isubsub} '.png'],ListNamesSubSub)); %index of the .png folder corresponding to the raw PCO folder
-                PngFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{ind_png})
-                if exist(PngFolder,'dir')
-                    DirPng=dir(PngFolder);
-                    if numel(DirPng)==NumberOfFrames+6
-                        PngCells=struct2cell(DirPng(7:end));
-                        mm=cell2mat(PngCells(4,:));% check the sizes of extracted images
-                        sizemax=max(mm)
-                        sizemin=min(mm(3:end))
-                        disp(['max size(Mbytes)=' num2str(sizemax/1000000)]);
-                        if min(mm(3:end))<0.9*sizemax
-                            status=['WARNING' 'min size(Mbytes)=' num2str(sizemin/1000000)];
-                            List2check=[List2check;PngFolder];
-                        else
-                            List2delete=[List2delete;PngFolder];% approve deletion of the source multitif files
-                        end
-                    else
-                        status=['extraction not finished,' num2str(numel(DirPng)-6) ' images extracted'];
-                        List2check=[List2check;PngFolder];
-                    end
-                else
+                if isempty(ind_png)
                     List2extract=[List2extract;TifFolder];
+                else
+                    PngFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{ind_png})
+                    if exist(PngFolder,'dir')
+                        DirPng=dir(PngFolder);
+                        if numel(DirPng)==NumberOfFrames+6
+                            PngCells=struct2cell(DirPng(7:end));
+                            mm=cell2mat(PngCells(4,:));% check the sizes of extracted images
+                            sizemax=max(mm)
+                            sizemin=min(mm(3:end))
+                            disp(['max size(Mbytes)=' num2str(sizemax/1000000)]);
+                            if min(mm(3:end))<0.9*sizemax
+                                status=['WARNING' 'min size(Mbytes)=' num2str(sizemin/1000000)];
+                                List2check=[List2check;PngFolder];
+                            else
+                                List2delete=[List2delete;TifFolder];% approve deletion of the source multitif files
+                            end
+                        else
+                            status=['extraction not finished,' num2str(numel(DirPng)-6) ' images extracted'];
+                            List2check=[List2check;PngFolder];
+                        end
+                    end
                 end
             end
         end
     end
 end
-        
+
+
 
 List2extract
 List2check
