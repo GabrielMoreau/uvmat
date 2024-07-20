@@ -2017,20 +2017,52 @@ end
 % open the GUI 'series'
 function MenuRun1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-Param=read_GUI(handles.uvmat);
-Param.HiddenData=get(handles.uvmat,'UserData');
-series(Param); %run the series interface
+MenuRun(hObject,handles);
+
 
 % --------------------------------------------------------------------
 function MenuRun2_Callback(hObject, eventdata, handles)
+MenuRun(hObject,handles);
+% Param=read_GUI(handles.uvmat);
+% Param.HiddenData=get(handles.uvmat,'UserData');
+% hseries=series(Param);
+% hhseries=guidata(hseries);
+% ActionMenu=get(hhseries.ActionName,'String');
+% index_action=find(strcmp('civ_series',ActionMenu));
+% set(hhseries.ActionName,'Value',index_action);
+% series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+
+% --------------------------------------------------------------------
+function MenuRun3_Callback(hObject, eventdata, handles)
+MenuRun(hObject,handles);
+% Param=read_GUI(handles.uvmat);
+% Param.HiddenData=get(handles.uvmat,'UserData');
+% hseries=series(Param);
+% hhseries=guidata(hseries);
+% ActionMenu=get(hhseries.ActionName,'String');
+% index_action=find(strcmp('test_filter_tps',ActionMenu));
+% set(hhseries.ActionName,'Value',index_action);
+% series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+
+function MenuRun(hObject,handles)
 Param=read_GUI(handles.uvmat);
 Param.HiddenData=get(handles.uvmat,'UserData');
-hseries=series(Param);
-hhseries=guidata(hseries);
-ActionMenu=get(hhseries.ActionName,'String');
-index_action=find(strcmp('civ_series',ActionMenu));
+hseries=series(Param); %run the series interface
+ActionName=get(hObject,'Label');
+if ~strcmp(ActionName,'series')
+    hhseries=guidata(hseries);
+    ActionMenu=get(hhseries.ActionName,'String');
+index_action=find(strcmp(ActionName,ActionMenu));
+if isempty(index_action) %add to the menu
+    NbBuiltinAction=get(hhseries.Action,'UserData');
+    ActionMenu(NbBuiltinAction+1)=[];
+    ActionMenu=[ActionMenu(1:end-1); {ActionName} ;{'more...'}];%insert the required action at the penultimate rank in the menu
+    index_action=numel(ActionMenu)-1;
+    set(hhseries.ActionName,'String',ActionMenu);
+end
 set(hhseries.ActionName,'Value',index_action);
-series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+series('ActionName_Callback',hObject,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+end
 
 % %------------------------------------------------------------------------
 % % -- open the GUI civ.fig for PIV
@@ -2239,19 +2271,11 @@ switch FieldType
     case 'xls'% Excel file opended by editxml
         editxml(fileinput);
         return
-%     case 'mat'% matlab data file
-% %         global Data_uvmat
-% Data_uvmat.Field=load(fileinput);
-% evalin('base','global Data_uvmat')%make CurData global in the workspace
-% disp('Data_uvmat.Field=')
-% evalin('base','Data_uvmat.Field') %display CurData in the workspace
-% commandwindow; %brings the Matlab command window to the front
-% return
     otherwise
         set(handles_RootPath,'String',RootPath);
         set(handles_SubDir,'String',['/' SubDir]);
         set(handles_RootFile,'String',['/' RootFile]); %display the separator
-        if isempty(regexp(RootPath,'^http://'))
+        if isempty(regexp(RootPath,'^http://', 'once'))
             rootname=fullfile(RootPath,SubDir,RootFile);
         else
             rootname=[RootPath '/' SubDir '/' RootFile];
@@ -2463,17 +2487,6 @@ if ~isempty(XmlFileName)
         XmlData.Slice=XmlData.GeometryCalib;%default
         if isfield(XmlDataRead, 'Slice') && ~isempty(XmlDataRead.Slice)
             XmlData.Slice=XmlDataRead.Slice;
-            % check whether the GUI geometry_calib is opened
-%             hgeometry_calib=findobj('tag','geometry_calib');
-%             if ~isempty(hgeometry_calib) % check whether the display of the GUI geometry_calib is consistent with the current calib param
-%                 GUserData=get(hgeometry_calib,'UserData');
-%                 if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,XmlFileName))
-%                     answer=msgbox_uvmat('INPUT_Y-N','refresh the display of the GUI geometry_calib with the new input data?');
-%                     if strcmp(answer,'Yes')
-%                         geometry_calib(XmlFileName);%diplay the new calibration points and parameters in geometry_calib
-%                     end
-%                 end
-%             end
         end
         if isfield(XmlData.Slice,'CheckVolumeScan') && isequal(XmlData.Slice.CheckVolumeScan,1)
                 set (handles.slices,'String','volume')
@@ -2497,6 +2510,8 @@ if isfield(XmlData,'Time')&& ~isempty(XmlData.Time) && ...
     TimeName='xml';
 elseif strcmp(FileInfo.FieldType,'civdata')% ajouter pivdata_fluidimage
     TimeName='civdata';
+elseif strcmp(FileInfo.FieldType,'civdata_3D')% ajouter pivdata_fluidimage
+    TimeName='civdata_3D';
 end
 if index==1
     set(handles.TimeName,'String',TimeName)
@@ -2592,7 +2607,7 @@ end
 %% set default options in menu 'FieldName'
 switch FileInfo.FieldType
     case 'civdata'
-        [FieldList,ColorList]=set_field_list('U','V','C');
+        [FieldList,VecColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
         if index==1
@@ -2600,11 +2615,27 @@ switch FileInfo.FieldType
             set(handles.FieldName_1,'String',[{''};{'image'};FieldList;{'get_field...'}]);%standard menu for civx data reproduced for the second field
         end
         set(handles.ColorScalar,'Value',1)
-        set(handles.ColorScalar,'String',ColorList)
+        set(handles.ColorScalar,'String',VecColorList)
         set(handles.Vectors,'Visible','on')
         set(handles.Coord_x,'String','X');
         set(handles.Coord_y,'String','Y');
-        set(handles.MenuRun3,'Label','test_filter_tps')
+        set(handles.MenuRun2,'Label','test_filter_tps')
+        set(handles.MenuRun3,'Label','civ_series')
+    case 'civdata_3D'
+        [FieldList,VecColorList]=set_field_list('U','V','C','W');
+        set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
+        set(handles_Fields,'Value',2) % set menu to 'velocity
+        if index==1
+            set(handles.FieldName_1,'Value',1);
+            set(handles.FieldName_1,'String',[{''};{'image'};FieldList;{'get_field...'}]);%standard menu for civx data reproduced for the second field
+        end
+        set(handles.ColorScalar,'Value',1)
+        set(handles.ColorScalar,'String',VecColorList)
+        set(handles.Vectors,'Visible','on')
+        set(handles.Coord_x,'String','X');
+        set(handles.Coord_y,'String','Y');
+        set(handles.MenuRun2,'Label','')
+        set(handles.MenuRun3,'Label','')
     case {'netcdf','mat'}
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
@@ -2619,6 +2650,8 @@ switch FileInfo.FieldType
         %set(handles.Coord_x,'Value',1);
         set(handles.Coord_x,'String','Coord_x');
     set(handles.Coord_y,'String','Coord_y');
+    set(handles.MenuRun2,'Label','civ_series')
+    set(handles.MenuRun3,'Label','sub_background')
 end
 
 
@@ -2634,36 +2667,36 @@ if index==2
     end
 end
 if ~isempty(i1_series)
-[ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
-if ~isempty(j1_series)
+    [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
+    if ~isempty(j1_series)
         state_j='on';
         if index==1
             if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first value
                 scan_option='j'; %scan j indext
             end
         end
-end
-if isequal(scan_option,'i')
-    diff_ref_i=diff(ref_i,1);
-    if isempty(diff_ref_i)
-        diff_ref_i=1;
     end
-    if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
-        set(handles.num_IndexIncrement,'String',num2str(diff_ref_i(1)))
+    if isequal(scan_option,'i')
+        diff_ref_i=diff(ref_i,1);
+        if isempty(diff_ref_i)
+            diff_ref_i=1;
+        end
+        if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
+            set(handles.num_IndexIncrement,'String',num2str(diff_ref_i(1)))
+        end
+        set(handles.scan_i,'Value',1)
+        scan_i_Callback([],[], handles);
+    else
+        diff_ref_j=diff(ref_j);
+        if isempty(diff_ref_j)
+            diff_ref_j=1;
+        end
+        if isequal (diff_ref_j,diff_ref_j(1)*ones(size(diff_ref_j)))
+            set(handles.num_IndexIncrement,'String',num2str(diff_ref_j(1)))
+        end
+        set(handles.scan_j,'Value',1)
+        scan_j_Callback([],[], handles);
     end
-     set(handles.scan_i,'Value',1)
-     scan_i_Callback([],[], handles);
-else
-    diff_ref_j=diff(ref_j);
-    if isempty(diff_ref_j)
-        diff_ref_j=1;
-    end
-    if isequal (diff_ref_j,diff_ref_j(1)*ones(size(diff_ref_j)))
-        set(handles.num_IndexIncrement,'String',num2str(diff_ref_j(1)))
-    end
-     set(handles.scan_j,'Value',1)
-     scan_j_Callback([],[], handles);
-end
 end
 set(handles.scan_j,'Visible',state_j)
 set(handles.j1,'Visible',state_j)
@@ -3139,10 +3172,10 @@ InputFile.SubDir=regexprep(InputFile.SubDir,'^[\\/]|[\\/]$','');%suppress possib
 FileExt=InputFile.FileExt;
 NomType=InputFile.NomType;
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
-if isempty(i1)
-    i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+if isempty(i1)% no i index set by the input file name
+    i1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
 elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
-    j1=str2num(get(handles.j1,'String'));%case of indexed movie
+    j1=str2double(get(handles.j1,'String'));%case of indexed movie
 end
 % if movie_status% we read the second index from the edit box
 %     i2=str2num(get(handles.i2,'String'));%read the field indices (for movie, it is not given by the file name)
@@ -3170,8 +3203,8 @@ end
 CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&& isempty(j2));
 
 % the pair i1-i2 or j1-j2 is imposed (check box CheckFixPair selected)
-if CheckFixPair && isnumeric(increment)
-    if get(handles.scan_i,'Value')==1% case of scanning along index i
+if isnumeric(increment)
+    if get(handles.scan_i,'Value')==1  % case of scanning along index i
         i1=i1+increment;
         i2=i2+increment;
         if sub_value
@@ -3552,7 +3585,7 @@ if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldTyp
     end
 end
 switch UvData.FileInfo{1}.FieldType
-    case {'civdata','netcdf','mat'}
+    case {'civdata','civdata_3D','netcdf','mat'}
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
         if strcmp(FieldName,'get_field...')
@@ -3572,6 +3605,14 @@ switch UvData.FileInfo{1}.FieldType
                 list_code=get(handles.ColorScalar,'String');% list menu fields
                 index_code=get(handles.ColorScalar,'Value');% selected string index
                 ParamIn.ColorVar= list_code{index_code}; % selected field
+            end
+        end
+        if strcmp(UvData.FileInfo{1}.FieldType,'civdata_3D')
+            if num_j1>UvData.FileInfo{1}.NumberOfFrames
+                errormsg='specified frame index exceeds file content';
+                return
+            else
+                frame_index=num_j1;% frame index from a set of indexed movies
             end
         end
     case 'vol' %TODO: update
@@ -3662,7 +3703,7 @@ if ~isempty(FileName_1)
         end
     end
     switch UvData.FileInfo{2}.FileType
-        case {'civx','civdata','netcdf','pivdata_fluidimage','mat'}
+        case {'civx','civdata','civdata_3D','netcdf','pivdata_fluidimage','mat'}
             list_fields=get(handles.FieldName_1,'String');% list menu fields
             FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
             if ~strcmp(FieldName_1,'get_field...')
@@ -3727,7 +3768,7 @@ end
 
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
-if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldType,'civdata')&& ~strcmp(FieldName,'get_field...')
+if isfield(UvData.FileInfo{1},'FieldType') && ismember(UvData.FileInfo{1}.FieldType,{'civdata','civdata_3D'})&& ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
@@ -4634,12 +4675,13 @@ switch field
 
         %read selection from get_field
         [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-        if isempty(regexp(RootPath,'^http://'))
+        if isempty(regexp(RootPath,'^http://', 'once'))
         FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
         else
             FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
         end
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
+            
         FieldList={};
         VecColorList={''};
         XName='';
@@ -4697,7 +4739,7 @@ switch field
                     set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-                    set(handles.NomType,'String','*')
+                   % set(handles.NomType,'String','*')
                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
                     set(handles.i1,'String','1')% set counter to 1 (now the time index in the input matrix)
                     MaxIndex_i=get(handles.MaxIndex_i,'String');
@@ -4971,7 +5013,7 @@ switch FileType
         elseif isequal(CivStage,6) %patch2
             imax=6;
         end
-    case {'civdata','pivdata_fluidimage'}
+    case {'civdata','civdata_3D','pivdata_fluidimage'}
         menu={'civ1';'filter1';'civ2';'filter2'};
         imax=[0 1 1 2 3 3 4 5 5 6];
         imax=imax(min(CivStage+1,10));
@@ -5254,7 +5296,10 @@ if strcmp(transform_name,'more...')
         [PathName,transform_name]=fileparts(transform_fct_chosen);
         ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
         if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
-            menu=[menu(1:end-1);{transform_name};{'more...'}];
+            if numel(menu)>12
+                menu(4:numel(menu)-9)=[];%remove the old items, preserving the three first ones
+            end
+            menu=[menu(1:end-1);{transform_name};{'more...'}];% insert the new fct in the menu
             ichoice=numel(menu)-1;
         end
         list_path{ichoice}=PathName;%update the list fo fct paths
@@ -6120,13 +6165,3 @@ end
 
 
 
-% --------------------------------------------------------------------
-function MenuRun3_Callback(hObject, eventdata, handles)
-Param=read_GUI(handles.uvmat);
-Param.HiddenData=get(handles.uvmat,'UserData');
-hseries=series(Param);
-hhseries=guidata(hseries);
-ActionMenu=get(hhseries.ActionName,'String');
-index_action=find(strcmp('test_filter_tps',ActionMenu));
-set(hhseries.ActionName,'Value',index_action);
-series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates

@@ -1,6 +1,6 @@
 %'read_field': read the fields from files in different formats (netcdf files, images, video)
 %--------------------------------------------------------------------------
-%  function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
+%  function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,frame_index)
 %
 % OUTPUT:
 % Field: matlab structure representing the field
@@ -19,8 +19,8 @@
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
-%     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'num'
-% num: frame number for movies
+%     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'frame_index'
+% frame_index: frame number for movies or multidimensional netcdf files with dim >2
 %
 % see also read_image.m,read_civxdata.m,read_civdata.m,
 
@@ -42,21 +42,21 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
+function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,frame_index)
 %% default output and check input
 Field=[];
-if ~exist('num','var')
-    num=1;
+if ~exist('frame_index','var')
+    frame_index=1;
 end
-if isempty(num)
-    num=1;
+if isempty(frame_index)
+    frame_index=1;
 end
 if ~exist('ParamIn','var')
     ParamIn=[];
 end
 ParamOut=ParamIn;%default
 errormsg='';
-if isempty(regexp(FileName,'^http://'))&& ~exist(FileName,'file')
+if isempty(regexp(FileName,'^http://', 'once'))&& ~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
 end
@@ -80,8 +80,8 @@ end
 
 %% distingush different input file types
 switch FileType
-    case 'civdata'% new format for civ results
-        [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
+    case {'civdata','civdata_3D'}% new format for civ results
+        [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType,frame_index);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
     case 'pivdata_fluidimage'
@@ -101,7 +101,7 @@ switch FileType
         ProjModeRequest={};
         % scan the list InputField
         Operator=cell(1,numel(InputField));
-        InputVar=cell(1,numel(InputField));
+        %InputVar=cell(1,numel(InputField));
         for ilist=1:numel(InputField)
             % look for input variables to read
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
@@ -144,10 +144,10 @@ switch FileType
         end
         NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
-            if numel(num)~=1
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
+            if numel(frame_index)~=1
                 NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
             end
         else
@@ -156,22 +156,22 @@ switch FileType
         if ~isempty(errormsg)
             return
         end
-        CheckStructured=1;
+       % CheckStructured=1;
         %scan all the variables
         NbCoord=0;
         if ~isempty(ParamIn.Coord_x)
-            index_Coord_x=find(strcmp(ParamIn.Coord_x,Field.ListVarName));
+            index_Coord_x=strcmp(ParamIn.Coord_x,Field.ListVarName);
             Field.VarAttribute{index_Coord_x}.Role='coord_x';%
             NbCoord=NbCoord+1;
         end
         if ~isempty(ParamIn.Coord_y)
             if ischar(ParamIn.Coord_y)
-                index_Coord_y=find(strcmp(ParamIn.Coord_y,Field.ListVarName));
+                index_Coord_y=strcmp(ParamIn.Coord_y,Field.ListVarName);
                 Field.VarAttribute{index_Coord_y}.Role='coord_y';%
                 NbCoord=NbCoord+1;
             else
                 for icoord_y=1:numel(ParamIn.Coord_y)
-                    index_Coord_y=find(strcmp(ParamIn.Coord_y{icoord_y},Field.ListVarName));
+                    index_Coord_y=strcmp(ParamIn.Coord_y{icoord_y},Field.ListVarName);
                     Field.VarAttribute{index_Coord_y}.Role='coord_y';%
                     NbCoord=NbCoord+1;
                 end
@@ -179,16 +179,13 @@ switch FileType
         end
         NbDim=1;
         if ~isempty(ParamIn.Coord_z)
-            index_Coord_z=find(strcmp(ParamIn.Coord_z,Field.ListVarName));
+            index_Coord_z=strcmp(ParamIn.Coord_z,Field.ListVarName);
             Field.VarAttribute{index_Coord_z}.Role='coord_z';%
             NbCoord=NbCoord+1;
             NbDim=3;
         elseif ~isempty(ParamIn.FieldName)
             NbDim=2;
         end
-        NormName='';
-        UName='';
-        VName='';
         if numel(Field.ListVarName)>NbCoord % if there are variables beyond coord (exclude 1 D plots)
             VarAttribute=cell(1,numel(ListVarName));
             for ilist=1:numel(ListVarName)
@@ -235,18 +232,18 @@ switch FileType
             Field.VarAttribute=[Field.VarAttribute(1:NbCoord) VarAttribute];
         end  
     case 'video'
-        if strcmp(class(ParamIn),'VideoReader')
-            A=read(ParamIn,num);
+        if isa(ParamIn,'VideoReader')
+            A=read(ParamIn,frame_index);
         else
             ParamOut=VideoReader(FileName);
-            A=read(ParamOut,num);
+            A=read(ParamOut,frame_index);
         end
     case 'mmreader'
-        if strcmp(class(ParamIn),'mmreader')
-            A=read(ParamIn,num);
+        if isa(ParamIn,'mmreader')
+            A=read(ParamIn,frame_index);
         else
             ParamOut=mmreader(FileName);
-            A=read(ParamOut,num);
+            A=read(ParamOut,frame_index);
         end
     case 'vol'
         A=imread(FileName);
@@ -254,18 +251,17 @@ switch FileType
         A=reshape(A',ParamIn.Npx,ParamIn.Npy,Npz);
         A=permute(A,[3 2 1]);
     case 'multimage'
-        %  warning 'off'
-        A=imread(FileName,num);
+        A=imread(FileName,frame_index);
     case 'image'
         A=imread(FileName);
     case 'rdvision'
-        [A,FileInfo,timestamps,errormsg]=read_rdvision(FileName,num);
+        [A,FileInfo,timestamps,errormsg]=read_rdvision(FileName,frame_index);
     case 'image_DaVis'
         Input=readimx(FileName);
         if numel(Input.Frames)==1
-            num=1;
+            frame_index=1;
         end
-        A=Input.Frames{num}.Components{1}.Planes{1}';
+        A=Input.Frames{frame_index}.Components{1}.Planes{1}';
         for ilist=1:numel(Input.Frames{1}.Attributes)
             if strcmp(Input.Frames{1}.Attributes{ilist}.Name,'AcqTimeSeries')
                 timestamps=str2num(Input.Frames{1}.Attributes{ilist}.Value(1:end-3))/1000000;
@@ -273,7 +269,7 @@ switch FileType
             end
         end
     case 'cine_phantom'
-        [A,FileInfo] = read_cine_phantom(FileName,num );
+        [A,FileInfo] = read_cine_phantom(FileName,frame_index );
     otherwise
         errormsg=[ FileType ': invalid input file type for uvmat'];
         
@@ -298,7 +294,7 @@ if ~isempty(A)
     Field.VarAttribute{2}.Role='coord_x';
     Field.VarAttribute{3}.Role='scalar';
     if ndims(A)==3
-        if Npz==1;%color
+        if Npz==1%color
             Field.VarDimName={'Coord_y','Coord_x',{'Coord_y','Coord_x','rgb'}}; %
             Field.Coord_y=[npxy(1)-0.5 0.5];
             Field.Coord_x=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers

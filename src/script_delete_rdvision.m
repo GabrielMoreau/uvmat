@@ -44,7 +44,7 @@ for ilist=1:numel(ListNames)%loop on experiments
         ListNamesSubSub=ListCellsSubSub(1,:);
         ind_rdvision=[];
         for isubsub=1:numel(ListNamesSubSub)
-            if ~isempty(regexp(ListNamesSubSub{isubsub},'^2024-'))
+            if ~isempty(regexp(ListNamesSubSub{isubsub},'^2024-', 'once'))
                 ind_rdvision=[ind_rdvision isubsub];%detect rdvision folders
             end
         end
@@ -52,7 +52,7 @@ for ilist=1:numel(ListNames)%loop on experiments
         %% extract the rdvision image series if it was not done
         if numel(ind_rdvision)==1%
             DataFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{ind_rdvision});
-            if isempty(regexp(DataFolder,'.extract$'))% if the detected folder is not .extract
+            if isempty(regexp(DataFolder,'.extract$', 'once'))% if the detected folder is not .extract
                 %     ExtractFolder=fullfile(Param.InputTable{1},[Param.InputTable{2} '.extract']);
                 %     mkdir(ExtractFolder)
                 % %     if ~isempty(XmlFile)
@@ -75,11 +75,11 @@ for ilist=1:numel(ListNames)%loop on experiments
         status='';
         if numel(ind_rdvision)==2
             for irdvision=1:2
-                CheckExtract(irdvision)=isempty(regexp(fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{irdvision}), '.extract$'));
+                CheckExtract(irdvision)=isempty(regexp(fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{irdvision}), '.extract$', 'once'));
             end
             status='extract missing';
             if numel(find(CheckExtract))==1
-                ExtractFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{find(CheckExtract)});
+                ExtractFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},ListNamesSubSub{CheckExtract});
                 PngFolder=fullfile(RootFolder,ListNames{ilist},ListNamesSub{isub},'im');
                 status='image folder not created';
                 if exist(ExtractFolder,'dir') && exist(PngFolder,'dir')

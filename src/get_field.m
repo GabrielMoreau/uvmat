@@ -1031,19 +1031,21 @@ end
 
 % --- Executes on selection change in TimeName.
 function TimeName_Callback(hObject, eventdata, handles)
+
 Field=get(handles.get_field,'UserData');
-index=get(handles.SwitchVarIndexTime,'Value');
+TimeMenu=get(handles.SwitchVarIndexTime,'String');
+TimeOption=TimeMenu{get(handles.SwitchVarIndexTime,'Value')};
 MenuIndex=get(handles.TimeName,'Value');
 string=get(handles.TimeName,'String');
 TimeName='';%default
 if ~isempty(string)&&iscell(string)
 TimeName=string{MenuIndex};
 end
-switch index
-    case 1
+switch TimeOption
+    case 'file index'
         set(handles.num_TimeDimension,'String','')
         set(handles.TimeUnit,'String','index')
-    case 2
+    case 'attribute'
         set(handles.num_TimeDimension,'String','')
         attr_index=find(strcmpi([TimeName 'Unit'],Field.ListGlobalAttribute));% look for time unit
         if ~isempty(attr_index)
@@ -1052,8 +1054,7 @@ switch index
         else
             set(handles.TimeUnit,'String','')
         end
-    case {3 ,4}
-        if index==3  % TimeName is used to chose a variable
+    case 'variable' % TimeName is used to chose a variable
             VarIndex=name2index(TimeName,Field.ListVarName);
             DimName=Field.VarDimName{VarIndex};
             DimIndex=name2index(DimName,Field.ListDimName);
@@ -1065,13 +1066,12 @@ switch index
             end
             set(handles.TimeUnit,'String',unit)
             update_field(handles,TimeName)
-        elseif index==4% TimeName is used to chose a dimension
+     case 'matrix index' % TimeName is used to chose a dimension
             DimName=string{MenuIndex};
             DimIndex=name2index(DimName,Field.ListDimName);
             DimValue=Field.DimValue(DimIndex);
             set(handles.num_TimeDimension,'String',num2str(DimValue))
             set(handles.TimeUnit,'String','index')
-        end
 end
 
 %-----------------------------------------------------------------------

@@ -54,6 +54,7 @@
 %=======================================================================
 
 function [FileInfo,VideoObject]=get_file_info(fileinput)
+
 VideoObject=[];
 FileInfo.FileType='';% input file does not exist
 FileInfo.FieldType=''; %default output
@@ -64,8 +65,8 @@ end
 if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
     FileInfo.FileType='txt'; %default
- else
-     return %input file does not exist.
+else
+    return %input file does not exist.
 end
 [tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
@@ -80,21 +81,21 @@ switch FileExt
         [~,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
     case '.im7'
         try
-             Input=readimx(fileinput);
-             Image=Input.Frames{1}.Components{1}.Planes{1};
-             FileInfo.FileType='image_DaVis';
-             FileInfo.NumberOfFrames=numel(Input.Frames);
-             FileInfo.Height=size(Image,2);
-             FileInfo.Width=size(Image,1);
-             FileInfo.TimeName='timestamp';
-             for ilist=1:numel(Input.Attributes)
-                 % if strcmp(Input.Attributes{ilist}.Name,'_Date')
-                 %     DateString=Input.Attributes{ilist}.Value;
-                 % end
-                 % if strcmp(Input.Attributes{ilist}.Name,'_Time')
-                 %     TimeString=Input.Attributes{ilist}.Value;
-                 % end
-             end
+            Input=readimx(fileinput);
+            Image=Input.Frames{1}.Components{1}.Planes{1};
+            FileInfo.FileType='image_DaVis';
+            FileInfo.NumberOfFrames=numel(Input.Frames);
+            FileInfo.Height=size(Image,2);
+            FileInfo.Width=size(Image,1);
+            FileInfo.TimeName='timestamp';
+            for ilist=1:numel(Input.Attributes)
+                % if strcmp(Input.Attributes{ilist}.Name,'_Date')
+                %     DateString=Input.Attributes{ilist}.Value;
+                % end
+                % if strcmp(Input.Attributes{ilist}.Name,'_Time')
+                %     TimeString=Input.Attributes{ilist}.Value;
+                % end
+            end
         catch ME
             msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'})
             return
@@ -123,8 +124,8 @@ switch FileExt
         FileInfo.FrameRate=CameraSetup.FrameRate;
         FileInfo.Height=BitmapInfoHeader.biHeight;
         FileInfo.Width=BitmapInfoHeader.biWidth;
-         FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
-         FileInfo.TimeName='video';
+        FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
+        FileInfo.TimeName='video';
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -133,7 +134,7 @@ switch FileExt
                     FileInfo.FileType='image';
                     try
                         imainfo=imfinfo(fileinput);
-                        if length(imainfo) >1 %case of image with multiple frames   
+                        if length(imainfo) >1 %case of image with multiple frames
                             FileInfo=imainfo(1);%take info from the first frame
                             FileInfo.NumberOfFrames=length(imainfo);
                             FileInfo.FileType='multimage';
@@ -148,13 +149,11 @@ switch FileExt
                     end
                 else
                     error_nc=0;
-                    try
-                       [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
-                        if ~isempty(errormsg)
-                            error_nc=1;
-                        else
+                    try %try netcdf file
+                        [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
+                        if isempty(errormsg)
                             if isfield(Data,'absolut_time_T0') && isfield(Data,'hart') && ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                                FileInfo.FileType='civx';
+                                FileInfo.FileType='civx';%old civ data from the Fortran program
                                 if isfield(Data,'patch2') && isequal(Data.patch2,1)
                                     FileInfo.CivStage=6;
                                 elseif isfield(Data,'fix2') && isequal(Data.fix2,1)
@@ -174,25 +173,34 @@ switch FileExt
                             elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata_3D')
                                 FileInfo.FileType='civdata_3D'; % test for 3D volume civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;
+                                z_dim_index=find(strcmp(Data.ListDimName,'npz'));
+                                FileInfo.NumberOfFrames=Data.DimValue(z_dim_index);
                             else
                                 FileInfo.FileType='netcdf';
                                 FileInfo.ListVarName=Data.ListVarName;
-                                FileInfo.VarAttribute=Data.VarAttribute;
+                                FileInfo.VarAttribute={};
+                                if isfield(Data,'VarAttribute')
+                                    FileInfo.VarAttribute=Data.VarAttribute;
+                                end
+                                FileInfo.ListDimName=Data.ListDimName;
+                                FileInfo.NumberOfFrames=Data.DimValue;
                             end
+                        else
+                            error_nc=1;
                         end
                     catch ME
                         error_nc=1;
                     end
                     if error_nc
                         try
-                            if exist('VideoReader.m','file')%recent version of Matlab
-                                VideoObject=VideoReader(fileinput);
-                                FileInfo=get(VideoObject);
-                                FileInfo.FileType='video';
-                            elseif exist('mmreader.m','file')% Matlab 2009a
-                                VideoObject=mmreader(fileinput);
-                                FileInfo=get(VideoObject);
-                                FileInfo.FileType='mmreader';
+                            if exist('mmreader.m','file')% Matlab 2009a
+                                INFO=mmfileinfo (fileinput);
+                                if  ~isempty(INFO.Video.Format)
+                                    
+                                    VideoObject=mmreader(fileinput);
+                                    FileInfo=get(VideoObject);
+                                    FileInfo.FileType='mmreader';
+                                end
                             end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';
@@ -211,14 +219,14 @@ switch FileExt
 end
 
 if ismember (FileInfo.FileType,{'mat','image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
-        FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
+    FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 else
     FileInfo.FileIndexing='off';
 end
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
     case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom'}
-    FileInfo.FieldType='image';
+        FileInfo.FieldType='image';
     case {'civx','civdata','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';
 end

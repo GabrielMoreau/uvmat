@@ -992,6 +992,7 @@ if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
     shiftx=shiftx*ones(nbvec,1);
     shifty=shifty*ones(nbvec,1);
 end
+%TODO: shift the origin by -shift/2
 
 %% Array initialisation and default output  if par_civ.CorrSmooth=0 (just the grid calculated, no civ computation)
 xtable=round(par_civ.Grid(:,1)+0.5)-0.5;
@@ -1192,7 +1193,8 @@ peaky = y; peakx=x;
 if y < npy && y > 1 && x < npx-1 && x > 1
    FF=false; % no error by the limited search box
     max_conv=result_conv(y,x);% max correlation
-    peak2noise= max(4,max_conv/std(reshape(result_conv,1,[])));% ratio of max conv to standard deviation of correlations (estiamtion of noise level), set to value 4 if it is too low
+    %peak2noise= max(4,max_conv/std(reshape(result_conv,1,[])));% ratio of max conv to standard deviation of correlations (estiamtion of noise level), set to value 4 if it is too low
+    peak2noise=100;% TODO: make this threshold more precise, depending on the image noise
     result_conv=result_conv*peak2noise/max_conv;% renormalise the correlation with respect to the noise 
     result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
     

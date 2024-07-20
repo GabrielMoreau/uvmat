@@ -107,7 +107,7 @@ if isequal(varargin{1},'ListGlobalAttribute')
             valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),varargin{ilist});
         catch ME
         end
-        eval(['Data.' varargin{ilist} '=valuestr;'])
+        Data.(varargin{ilist})=valuestr;
     end
     netcdf.close(nc)
     return

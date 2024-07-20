@@ -42,23 +42,30 @@ function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smoo
 %% adjust subdomain decomposition
 warning off
 NbVec=size(Coord,1);% nbre of vectors in the field to interpolate
-NbCoord=size(Coord,2);% space dimension
+NbCoord=size(Coord,2);% space dimension,Coord(:,1)= x,Coord(:,2)=  y , Coord(:,3)=  z
 MinCoord=min(Coord,[],1);%lower coordinate bounds
 MaxCoord=max(Coord,[],1);%upper coordinate bounds
-Range=MaxCoord-MinCoord;
-AspectRatio=Range(2)/Range(1);
-NbSubDomain=NbVec/SubDomainSize;% estimated number of subdomains
-NbSubDomainX=max(floor(sqrt(NbSubDomain/AspectRatio)),1);% estimated number of subdomains in x
-NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
-NbSubDomainZ=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
+Range=MaxCoord-MinCoord;%along eacch coordiante x,y,z
+Cellmesh=(prod(Range)/NbVec)^(1/3);
+NbSubDomainX=floor(range(1)/Cellmesh);
+NbSubDomainY=floor(range(2)/Cellmesh);
+NbSubDomainZ=floor(range(3)/Cellmesh);
+
+% NbSubDomain=NbVec/SubDomainSize;% estimated number of subdomains
+% NbSubDomainX=max(floor(sqrt(NbSubDomain/(AspectRatio(1)*AspectRatio(2))),1);% estimated number of subdomains in x
+% NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
+% NbSubDomainZ=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
 NbSubDomain=NbSubDomainX*NbSubDomainY;% new estimated number of subdomains in a matrix shape partition in subdomains
 Siz(1)=Range(1)/NbSubDomainX;%width of subdomains
 Siz(2)=Range(2)/NbSubDomainY;%height of subdomains
+Siz(3)=Range(3)/NbSubDomainZ;%height of subdomains
 CentreX=linspace(MinCoord(1)+Siz(1)/2,MaxCoord(1)-Siz(1)/2,NbSubDomainX);% X positions of subdomain centres
 CentreY=linspace(MinCoord(2)+Siz(2)/2,MaxCoord(2)-Siz(2)/2,NbSubDomainY);% Y positions of subdomain centres
-[CentreX,CentreY]=meshgrid(CentreX,CentreY);
+CentreZ=linspace(MinCoord(3)+Siz(3)/2,MaxCoord(3)-Siz(3)/2,NbSubDomainZ);% Y positions of subdomain centres
+[CentreX,CentreY,CentreZ]=meshgrid(CentreX,CentreY,CentreZ);
 CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
+CentreZ=reshape(CentreZ,1,[]);% Y positions of subdomain centres
 
 %% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
 %smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%old calculation before 03 May < r1129

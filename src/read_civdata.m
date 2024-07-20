@@ -58,9 +58,12 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Field,VelTypeOut,errormsg]=read_civdata(FileName,FieldNames,VelType)
+function [Field,VelTypeOut,errormsg]=read_civdata(FileName,FieldNames,VelType,frame_index)
 
 %% default input
+if ~exist('frame_index','var')
+    frame_index=1;
+end
 if ~exist('VelType','var')
     VelType='';
 end
@@ -73,7 +76,7 @@ end
 Field=[];
 VelTypeOut=VelType;
 errormsg='';
-if ischar(FieldNames), FieldNames={FieldNames}; end;
+if ischar(FieldNames), FieldNames={FieldNames}; end
 ProjModeRequest='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
@@ -89,7 +92,7 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','CivStage');
+[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','Conventions','CivStage');
 if ~isempty(errormsg)
      errormsg=['read_civdata: ' errormsg];
     return
@@ -100,7 +103,11 @@ if isempty(varlist)
     errormsg=['read_civdata: unknow velocity type ' VelType];
     return
 else
+    if strcmp(Data.Conventions,'uvmat/civdata_3D')
+        [Field,vardetect]=nc2struct(FileName,'TimeDimName','npz',frame_index,varlist);%read the variables in the netcdf file
+    else   
     [Field,vardetect]=nc2struct(FileName,varlist);%read the variables in the netcdf file
+    end
 end
 if isfield(Field,'Txt')
     errormsg=Field.Txt;
