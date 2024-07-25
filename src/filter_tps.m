@@ -92,8 +92,6 @@ for isub=1:NbSubDomain
         ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration
         ind_sel= find(~FF & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
          check_partial_domain=sum(SubRange(:,1,isub)> MinCoord' | SubRange(:,2,isub)< MaxCoord');
-        % isub
-        % numel(ind_sel)
 
         % if no vector in the subdomain  #isub, skip the subdomain
         if isempty(ind_sel)

@@ -70,7 +70,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         ParamOut.FieldTransform = 'off';...%can use a transform function
         ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
         ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        ParamOut.CPUTime=0.1;% expected time for writting one image ( in minute)
+         ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+        ParamOut.CPUTime=0.25;% expected time for writting one image ( in minute)
     ParamOut.OutputDirExt='.extract';%set the output dir extension
     ParamOut.OutputSubDirMode='one'; %output folder given by the folder name of the first input line
     % detect the set of image folder
@@ -158,6 +159,20 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         for ii=1: numel(m.Data)
             timestamp(ii)=m.Data(ii).timestamp;
         end
+        
+%         
+%         %%%%%BRICOLAGE EXP40
+%         ind1=5*59-10;
+%         ind2=12*59-10;
+%         ind3=119*59-10;
+%         ind4=483*59-10;
+%         timestamp=[timestamp(1:ind4) timestamp(ind4) timestamp(ind4+1:end)];
+%          timestamp=[timestamp(1:ind3) timestamp(ind3) timestamp(ind3+1:end)];
+%           timestamp=[timestamp(1:ind2) timestamp(ind2) timestamp(ind2+1:end)];
+%            timestamp=[timestamp(1:ind1) timestamp(ind1) timestamp(ind1+1:end)];
+%            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           
+           
         if ParamOut.ActionInput.Createxml
             ParamOut.ActionInput.XmlData.Camera.BurstTiming=time2xmlburst(timestamp,ParamOut.ActionInput.BurstLength);
             Time=xmlburst2time(ParamOut.ActionInput.XmlData.Camera.BurstTiming);
@@ -173,6 +188,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         end
         difftime=timestamp-timexml;
         %if max(difftime)>0.01
+
         figure
         plot(timestamp,difftime)
         xlabel('timestamps(s)')
@@ -366,7 +382,7 @@ else
     NomTypeNew='_1';
 end
 
-[BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew,Param.IndexRange.first_i,Param.IndexRange.last_i);
+[BinList,errormsg]=binread_rdv_series(RootPath,SeqData,m.Data,nbfield2,NomTypeNew,Param.IndexRange.first_i,Param.IndexRange.last_i,Param.CheckOverwrite);
 if ~isempty(errormsg)
     disp_uvmat('ERROR',errormsg,checkrun)
     return
@@ -386,7 +402,7 @@ delete(fullfile(RootPath,'Running.xml'))%delete the  xml file to indicate that p
 %--------- reads a series of bin files
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew,first,last)
+function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew,first,last,checkoverwrite)
 % BINREAD_RDV Permet de lire les fichiers bin g???n???r???s par Hiris ??? partir du
 % fichier seq associ???.
 %   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
@@ -441,15 +457,35 @@ if ~exist(OutputDir,'dir')
 end
 bin_file_counter=0;
 %for ii=1:SeqData.nb_frames
+ %%%%%BRICOLAGE EXP40
+        ind1=5*59-10;
+        ind2=12*59-10;
+        ind3=119*59-10;
+        ind4=483*59-10;
+
 for ii=first:last
     j1=[];
+    iinew=ii; 
+%     %%%%%BRICOLAGE EXP40
+%     switch ii
+%         case  ii>=ind1 && ii<ind2
+%       iinew=ii+1;
+%         case ii>=ind2 && ii<ind3
+%         iinew=ii+2;
+%         case  ii>=ind3 && ii<ind4
+%       iinew=ii+3;
+%         case       ii>=ind4 && ii<ind3
+%         iinew=ii+4;    
+%     end
+%      %%%%%%%%%
     if ~isequal(nbfield2,1)
-        j1=mod(ii-1,nbfield2)+1;
+        j1=mod(iinew-1,nbfield2)+1;
     end
-    i1=floor((ii-1)/nbfield2)+1;
+    i1=floor((iinew-1)/nbfield2)+1;
+    
     OutputFile=fullfile_uvmat(PathDir,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
     fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
-    if exist(OutputFile,'file')% do not recreate existing image file
+    if  ~checkoverwrite && exist(OutputFile,'file') % manage the overwrite of existing files (default=1) % manage the overwrite of existing files (default=1)exist(OutputFile,'file')% do not recreate existing image file
         fid=0;
     else
         if fid==0 || ~strcmp(fname,fname_prev) % open the bin file if not in use

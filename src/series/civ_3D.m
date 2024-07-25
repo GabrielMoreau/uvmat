@@ -189,7 +189,7 @@ Data.VarAttribute{5}.Role='vector_y';
 Data.VarAttribute{6}.Role='vector_z';
 Data.VarAttribute{7}.Role='ancillary';
 Data.VarAttribute{8}.Role='errorflag';
-Data.Coord_z=j1_series_Civ1;
+% Data.Coord_z=j1_series_Civ1;
 % path for output nc file
 OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device),[Param.OutputSubDir Param.OutputDirExt]);
 
@@ -229,7 +229,7 @@ end
         par_civ1=Param.ActionInput.Civ1;% parameters for civ1
     par_civ1.ImageHeight=FileInfo.Height;npy=FileInfo.Height;
     par_civ1.ImageWidth=FileInfo.Width;npx=FileInfo.Width;
-SearchRange_z=floor(Param.ActionInput.Civ1.SearchBoxSize(3)/2);
+SearchRange_z=Param.ActionInput.Civ1.SearchRange(3);
     par_civ1.Dz=Param.ActionInput.Civ1.Dz;
     par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);
 par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
@@ -295,7 +295,7 @@ for ifield=1:NbField_i
         % read input images by vertical blocks with nbre of images equal to 2*SearchRange+1,
         par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);%image block initiation
         par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
-        
+        Data.Coord_z=SearchRange_z+1:par_civ1.Dz:NbSlice-1;
         z_index=1;%first vertical block centered at image index z_index=SearchRange_z+1
         for iz=1:2*SearchRange_z+1
             j_image_index=j1_series_Civ1(iz,1)% j index of the current image
@@ -314,15 +314,22 @@ for ifield=1:NbField_i
             return
         end
      % loop on slices
+
         for z_index=2:floor((NbSlice-SearchRange_z)/par_civ1.Dz)% loop on slices
             par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz,1);%shift the indices in the image block upward by par_civ1.Dz
             par_civ1.ImageB=circshift(par_civ1.ImageB,-par_civ1.Dz,1);
             for iz=1:par_civ1.Dz %read the new images at the end of the image block
+                image_index=z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz+1;
+                if image_index<=size(j1_series_Civ1,1)
                 j_image_index=j1_series_Civ1(z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz+1,1)
-                ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%
+                ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%            
                 A= read_image(ImageName_A,FileType_A);
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j_image_index);
                 B= read_image(ImageName_B,FileType_B);
+                else
+                    A=zeros(1,size(par_civ1.ImageA,2),size(par_civ1.ImageA,3));
+                    B=zeros(1,size(par_civ1.ImageA,2),size(par_civ1.ImageA,3));
+                end
                 par_civ1.ImageA(2*SearchRange_z+1-par_civ1.Dz+iz,:,:) = A;
                 par_civ1.ImageB(2*SearchRange_z+1-par_civ1.Dz+iz,:,:) = B;
             end
@@ -337,7 +344,7 @@ for ifield=1:NbField_i
         Data.Civ1_V=-Data.Civ1_V;%reverse v
         Data.Civ1_Y=npy-Data.Civ1_Y+1;%reverse y
         [npz,npy,npx]=size(Data.Civ1_X);
-        Data.Coord_z=SearchRange_z+1:par_civ1.Dz:NbSlice-1;
+        
       %  Data.Coord_y=flip(1:npy);
        % Data.Coord_x=1:npx;
         % case of mask TO ADAPT
@@ -421,20 +428,19 @@ for ifield=1:NbField_i
 
         % list the variables to record
         nbvar=length(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
-            {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
+        Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_W_smooth'}];
+        Data.VarDimName=[Data.VarDimName {{'npz','npy','npx'},{'npz','npy','npx'},{'npz','npy','npx'}}];
         Data.VarAttribute{nbvar+1}.Role='vector_x';
         Data.VarAttribute{nbvar+2}.Role='vector_y';
-        Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        Data.VarAttribute{nbvar+6}.Role='vector_x';
-        Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ1_U_smooth=Data.Civ1_U; % zeros(size(Data.Civ1_X));
-        Data.Civ1_V_smooth=Data.Civ1_V; %zeros(size(Data.Civ1_X));
+        Data.VarAttribute{nbvar+5}.Role='vector_z';      
+        Data.Civ1_U_smooth=Data.Civ1_U;
+        Data.Civ1_V_smooth=Data.Civ1_V; 
+        Data.Civ1_W_smooth=Data.Civ1_W; 
         if isfield(Data,'Civ1_FF')
             ind_good=find(Data.Civ1_FF==0);
         else
-            ind_good=1:numel(Data.Civ1_X);
+            disp_uvmat('ERROR','detection of error vectors (FIX operation) needed before PATCH' ,checkrun)
+            return
         end
         if isempty(ind_good)
             disp_uvmat('ERROR','all vectors of civ1 are bad, check input parameters' ,checkrun)
@@ -442,11 +448,13 @@ for ifield=1:NbField_i
         end
 
         % perform Patch calculation using the UVMAT fct 'filter_tps'
-
-        [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,~,Ures, Vres,~,FFres]=...
-            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
-        Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
-        Data.Civ1_V_smooth(ind_good)=Vres;
+Civ1_Z=0.5*Data.Civ1_W(ind_good);
+for iz=1:numel(Data.Coord_z)
+    Civ1_Z(iz,:,:)=Civ1_Z(iz,:,:)+Data.Coord_z(iz);
+end
+        [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,Data.Civ1_W_tps,...
+            Data.Civ1_U_smooth(ind_good),Data.Civ1_V_smooth(ind_good),Data.Civ1_V_smooth(ind_good),FFres]=...
+            filter_tps_3D([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Civ_1_Z,Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),Data.Civ1_W(ind_good),Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_FF(ind_good)=uint8(FFres);
         time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
@@ -777,9 +785,9 @@ par_civ.Grid(:,:,2)=GridY;% increases with array index,
 %% prepare correlation and search boxes
 ibx2=floor(par_civ.CorrBoxSize(1)/2);
 iby2=floor(par_civ.CorrBoxSize(2)/2);
-isx2=floor(par_civ.SearchBoxSize(1)/2);
-isy2=floor(par_civ.SearchBoxSize(2)/2);
-isz2=floor(par_civ.SearchBoxSize(3)/2);
+isx2=par_civ.SearchRange(1);
+isy2=par_civ.SearchRange(2);
+isz2=par_civ.SearchRange(3);
 kref=isz2+1;%middle index of the z slice
 shiftx=round(par_civ.SearchBoxShift(:,1));%use the input shift estimate, rounded to the next integer value
 shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
@@ -890,9 +898,9 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                     %     % image2_crop=(image2_crop-image2_mean);
                     % end
 
-                    npxycorr=par_civ.SearchBoxSize(1:2)-par_civ.CorrBoxSize(1:2)+1;
-                    result_conv=zeros([par_civ.SearchBoxSize(3) npxycorr]);%initialise the conv product
-                    max_xy=zeros(par_civ.SearchBoxSize(3),1);%initialise the max correlation vs z
+                    npxycorr=2*par_civ.SearchRange(1:2)+1;
+                    result_conv=zeros([2*par_civ.SearchRange(3)+1 npxycorr]);%initialise the conv product
+                    max_xy=zeros(2*par_civ.SearchRange(3)+1,1);%initialise the max correlation vs z
                     xk=ones(npz,1);%initialise the x displacement corresponding to the max corr 
                     yk=ones(npz,1);%initialise the y displacement corresponding to the max corr 
                     subima1=squeeze(image1_crop(kref,:,:))-image1_mean(kref);

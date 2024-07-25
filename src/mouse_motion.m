@@ -264,8 +264,8 @@ if strcmp(htype,'axes')
                 % mark the correlation box with a rectangle in view_field
                 ibx2=floor((par_civ.CorrBoxSize(1)-1)/2);
                 iby2=floor((par_civ.CorrBoxSize(2)-1)/2);
-                isx2=floor((par_civ.SearchBoxSize(1)-1)/2);
-                isy2=floor((par_civ.SearchBoxSize(2)-1)/2);
+                isx2=par_civ.SearchRange(1);
+                isy2=par_civ.SearchRange(2);
                 hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
                 hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
                 if isempty(hhh)

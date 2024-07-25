@@ -84,12 +84,18 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.png';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default='off')
     ParamOut.CPUTime=10;% expected time for writting the output of one source image ( in minute)
     %% root input file(s) and type
+ 
     % check the existence of the first file in the series
-        first_j=[];% note that the function will propose to cover the whole range of indices
-    if isfield(Param.IndexRange,'MinIndex_j'); first_j=Param.IndexRange.MinIndex_j; end
+    first_j=[];% note that the function will propose to cover the whole range of indices
+    if isfield(Param.IndexRange,'MinIndex_j')
+        first_j=Param.IndexRange.MinIndex_j;
+    else
+        msgbox_uvmat('ERROR',['select a multitif file labeled by a number, like im@0001.tif '])
+        return
+    end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
@@ -98,13 +104,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     end
-    ParamOut.NbSlice=Param.IndexRange.MaxIndex_i;
-    %% check the validity of  input file types
-    FileInfo=get_file_info(FirstFileName);
-    if ~strcmp(FileInfo.FileType,'multimage')
+       FileInfo=get_file_info(FirstFileName);
+    if ~strcmp(FileInfo.FileType,'multimage')%check the validity of  input file types
         msgbox_uvmat('ERROR',['invalid file type input: ' FileInfo.FileType ' not a tiff image series'])
         return
     end
+    
+    ParamOut.NbSlice=Param.IndexRange.MaxIndex_i;
+    
     ParamOut.ActionInput.XmlFile=uigetfile_uvmat('pick xml file for timing',fileparts(fileparts(FirstFileName)),'.xml');  
     return
 end

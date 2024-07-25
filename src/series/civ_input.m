@@ -78,7 +78,7 @@ switch Param.Action.ActionName
         set(handles.PairIndices,'Visible','on')
         set(handles.title_z,'Visible','on')
         set(handles.num_CorrBoxSize_3,'Visible','on')
-        set(handles.num_SearchBoxSize_3,'Visible','on')
+        set(handles.num_SearchRange_3,'Visible','on')
         set(handles.num_SearchBoxShift_3,'Visible','on')
         set(handles.num_Dz,'Visible','on')
         set(handles.title_Dz,'Visible','on')
@@ -118,27 +118,27 @@ switch FileType
             msgbox_uvmat('ERROR',['error in netcdf input file: ' errormsg])
             return
         end
-        if isfield(Data,'.Civ1_ImageA')
-        %[PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);%look for the source image A
-        %[PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);%look for the source image B
-        end
-        if isfield(Data,'Civ2_ImageA')
-            %[PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
-            %[PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
-        end
+        
         if size(Param.InputTable,1)==1
-             if isfield(Data,'.Civ1_ImageA')
-            series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
-                    [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
-       % [~,~,~,~,~,~,~,~,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
-             elseif isfield(Data,'Civ2_ImageA')
-                 series('display_file_name',hhseries,Data.Civ2_ImageA,'append');%append the image series to the input list
-                         [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ2_ImageA);
-        %[RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ2_ImageB);
+            
+            Param.InputTable(2,:)=Param.InputTable(1,:);
+              set(hhseries.InputTable,'Data',Param.InputTable)
+             if isfield(Data,'Civ2_ImageA')
+                 ImageName=Data.Civ2_ImageA;
+             elseif isfield(Data,'Civ1_ImageA')
+                 ImageName=Data.Civ1_ImageA;
              end
+            series('display_file_name',hhseries,ImageName,1);%append the image series to the input list
+                    [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(ImageName);
+      
+%              elseif isfield(Data,'Civ2_ImageA')
+%                  series('display_file_name',hhseries,Data.Civ2_ImageA,'append');%append the image series to the input list
+%                          [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ2_ImageA);
+%      
+%              end
         end
 
-        iview_image=2;%line # for the input images
+        iview_image=1;%line # for the input images
     otherwise 
         % if ~strcmp(FileType,'image')
         % msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
@@ -161,8 +161,8 @@ if isempty(Param.IndexRange.MaxIndex_i)|| isempty(Param.IndexRange.MinIndex_i)
     msgbox_uvmat('ERROR','REFRESH the input files in the GUI series')
      return
 end
-MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
-MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
+MaxIndex_i=Param.IndexRange.MaxIndex_i(1);
+MinIndex_i=Param.IndexRange.MinIndex_i(1);
 MaxIndex_j=1;%default
 MinIndex_j=1;
 if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')...
@@ -261,19 +261,20 @@ else  %case of netcdf file opening, start with the stage read in the file if the
     if ind_opening<6
         for index = 1:ind_opening
             set(handles.(ListOptions{index}),'value',0)
+            set(handles.(ListOptions{index}),'String',regexprep(ListOptions{index},'Check','redo '))
         end
-        for index = ind_opening+1:6
-            set(handles.(ListOptions{index}),'value',1)
-        end
+%         for index = ind_opening+1:6
+%             set(handles.(ListOptions{index}),'value',1)
+%         end
         set(handles.CheckCiv3,'Visible','off')% make visible the switch 'iterate/repet' for Civ2.
         set(handles.CheckCiv3,'Value',0)% select'iterate/repet' by default
     else
         for index = 1:3
             set(handles.(ListOptions{index}),'value',0)
         end
-        for index = 4:6
-            set(handles.(ListOptions{index}),'value',1)
-        end
+%         for index = 4:6
+%             set(handles.(ListOptions{index}),'value',1)
+%         end
         set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
         set(handles.CheckCiv3,'Value',1)% select'iterate/repet' by default
     end
@@ -289,6 +290,17 @@ end
 %% introduce the stored Civ parameters  if available (from previous input or ImportConfig in series)
 if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Program,Param.Action.ActionName)% the program fits with the stored data
     fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
+
+    if isfield(Param.ActionInput,'Civ1')&& isfield(Param.ActionInput.Civ1,'SearchBoxSize')
+               SearchRange=round((Param.ActionInput.Civ1.SearchBoxSize-Param.ActionInput.Civ1.CorrBoxSize)/2);
+                set(handles.num_SearchRange_1(1),'String',num2str(SearchRange(1)))
+                set(handles.num_SearchRange_2(1),'String',num2str(SearchRange(2)))
+            end
+            if isfield(Param.ActionInput,'Civ2')&& isfield(Param.ActionInput.Civ2,'SearchBoxSize')
+               SearchRange=round((Param.ActionInput.Civ2.SearchBoxSize-Param.ActionInput.Civ2.CorrBoxSize)/2);
+                set(handles.num_SearchRange_1(2),'String',num2str(SearchRange(1)))
+                set(handles.num_SearchRange_2(2),'String',num2str(SearchRange(2)))
+            end
     hcheckgrid=findobj(handles.civ_input,'Tag','CheckGrid');
     for ilist=1:numel(hcheckgrid)
         if get(hcheckgrid(ilist),'Value')% if a grid is used, do not show Dx and Dy for an automatic grid
@@ -415,7 +427,7 @@ Param.ConfigSource='\default';
 %% Civ1 parameters
 %Param.CheckCiv1=1;
 Param.Civ1.CorrBoxSize=[31 31 1];
-Param.Civ1.SearchBoxSize=[61 61 5];
+Param.Civ1.SearchRange=[15 15 2];
 Param.Civ1.SearchBoxShift=[0 0];
 Param.Civ1.CorrSmooth=1;
 Param.Civ1.Dx=20;
@@ -438,7 +450,7 @@ Param.Patch1.SubDomainSize=125;
 %% Civ2 parameters
 %Param.CheckCiv2=1;
 Param.Civ2.CorrBoxSize=[21 21];
-Param.Civ2.SearchBoxSize=[27 27];
+Param.Civ2.SearchRange=[3 3];
 Param.Civ2.CorrSmooth=1;
 Param.Civ2.Dx=10;
 Param.Civ2.Dy=10;
@@ -514,36 +526,55 @@ end
 function CheckCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckCiv1')
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix1.
 function CheckFix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckFix1')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch1.
 function CheckPatch1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckPatch1')
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckCiv2.
 function CheckCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckCiv2')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix2.
 function CheckFix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckFix2')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch2.
 function CheckPatch2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_CivOptions(handles,0)
+update_frame(handles,'CheckPatch2')
+
+function update_frame(handles,option)
+if get(handles.(option),'Value')
+    option=regexprep(option,'Check','');
+set(handles.(option),'Visible','on')
+children=get(handles.(option),'children');
+set(children,'Enable','on')
+else
+    option=regexprep(option,'Check','');
+    set(handles.(option),'Visible','off')
+end
 
 %------------------------------------------------------------------------
 % --- activated by any checkbox controling the selection of Civ1,Fix1,Patch1,Civ2,Fix2,Patch2
@@ -590,9 +621,12 @@ end
 options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
 for ilist=1:length(options)
     if checkbox(ilist)
-        set(handles.(options{ilist}),'Visible','on')
+%          set(handles.(options{ilist}),'Visible','on')
+        set(handles.(options{ilist}),'Enable','on')
+%         set(handles.(['Check' options{ilist}]),'Strin
     else
-        set(handles.(options{ilist}),'Visible','off')
+%         set(handles.(options{ilist}),'Visible','off')
+        set(handles.(options{ilist}),'Enable','off')
     end
 end
 
@@ -607,16 +641,16 @@ ActionInput=read_GUI(handles.civ_input);% read the infos on the GUI civ_input
 if isfield(ActionInput,'Civ1')
     checkeven=(mod(ActionInput.Civ1.CorrBoxSize,2)==0);
     ActionInput.Civ1.CorrBoxSize(checkeven)=ActionInput.Civ1.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ1.SearchBoxSize(1:2)=max(ActionInput.Civ1.SearchBoxSize(1:2),ActionInput.Civ1.CorrBoxSize(1:2)+8);% insure that the search box size is large enough
-    checkeven=(mod(ActionInput.Civ1.SearchBoxSize,2)==0);
-    ActionInput.Civ1.SearchBoxSize(checkeven)=ActionInput.Civ1.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
+    %ActionInput.Civ1.SearchBoxSize(1:2)=max(ActionInput.Civ1.SearchBoxSize(1:2),ActionInput.Civ1.CorrBoxSize(1:2)+8);% insure that the search box size is large enough
+    %checkeven=(mod(ActionInput.Civ1.SearchBoxSize,2)==0);
+    %ActionInput.Civ1.SearchBoxSize(checkeven)=ActionInput.Civ1.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
 if isfield(ActionInput,'Civ2')
     checkeven=(mod(ActionInput.Civ2.CorrBoxSize,2)==0);
     ActionInput.Civ2.CorrBoxSize(checkeven)=ActionInput.Civ2.CorrBoxSize(checkeven)+1;% set correlation box sizes to odd values
-    ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+4);
-    checkeven=(mod(ActionInput.Civ2.SearchBoxSize,2)==0);
-    ActionInput.Civ2.SearchBoxSize(checkeven)=ActionInput.Civ2.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
+    %ActionInput.Civ2.SearchBoxSize=max(ActionInput.Civ2.SearchBoxSize,ActionInput.Civ2.CorrBoxSize+4);
+    % checkeven=(mod(ActionInput.Civ2.SearchBoxSize,2)==0);
+    %ActionInput.Civ2.SearchBoxSize(checkeven)=ActionInput.Civ2.SearchBoxSize(checkeven)+1;% set search box sizes to odd values
 end
 
 %% correct mask or grid name for Windows system (replace '\' by '/')
@@ -1001,7 +1035,7 @@ ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in 
 % Callbacks in the uipanel Civ1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
-% --- Executes on button press in SearchRange: determine the search range num_SearchBoxSize_1,num_SearchBoxSize_2
+% --- Executes on button press in SearchRange: determine the search range num_SearchRange_1,num_SearchRange_2
 function SearchRange_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %determine pair numbers
@@ -1023,7 +1057,7 @@ else
 end
 
 %------------------------------------------------------------------------
-% ---  determine the search range num_SearchBoxSize_1,num_SearchBoxSize_2 and shift
+% ---  determine the search range num_SearchRange_1,num_SearchRange_2 and shift
 function get_search_range(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 param_civ1=read_GUI(handles.Civ1);
@@ -1055,8 +1089,8 @@ if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
     isy=2*ceil(isy/2)+1;
     set(handles.num_SearchBoxShift_1,'String',num2str(shiftx));
     set(handles.num_SearchBoxShift_2,'String',num2str(shifty));
-    set(handles.num_SearchBoxSize_1,'String',num2str(isx));
-    set(handles.num_SearchBoxSize_2,'String',num2str(isy));
+    set(handles.num_SearchRange_1,'String',num2str(isx));
+    set(handles.num_SearchRange_2,'String',num2str(isy));
 end
 
 %------------------------------------------------------------------------
@@ -1086,7 +1120,7 @@ nbslice=1;
 [Path,Name]=fileparts(filebase);
 currentdir=pwd;
 cd(Path);%move in the dir of the root name filebase
-gridfiles=dir([Name '_*grid_*.grid']);%look for grid files
+gridfiles=dir([Name '_*grid_*.nc']);%look for grid files
 cd(currentdir);%come back to the current working directory
 if ~isempty(gridfiles)
     flag_grid=1;
@@ -1167,79 +1201,71 @@ end
 % --- Executes on button press in CheckGrid.
 function CheckGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-value=get(hObject,'Value');
-hparent=get(hObject,'parent');%handles of the parent panel
-hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
-handle_dx=findobj(hchildren,'tag','num_Dx');
-handle_dy=findobj(hchildren,'tag','num_Dy');
-handle_title_dx=findobj(hchildren,'tag','title_Dx');
-handle_title_dy=findobj(hchildren,'tag','title_Dy');
-testgrid=0;
-filegrid='';
-if value
-        hseries=findobj(allchild(0),'Tag','series');
+hparent=get(hObject,'parent');
+PanelName=get(hparent,'tag');
+handle_txtbox=handles.Grid
+if strcmp(PanelName,'civ2')
+    handle_txtbox=handle_txtbox(2);
+end
+% hchildren=get(hparent,'children');
+% handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
+% handle_NbSlice=findobj(hchildren,'tag','num_NbSlice');% look for the mask name box in the same panel
+testgrid=false;
+corrstatus='on';
+if get(hObject,'Value')% if the checkbox is activated
+    hseries=findobj(allchild(0),'Tag','series');
     hhseries=guidata(hseries);
     InputTable=get(hhseries.InputTable,'Data');
-     ind_A=1;% line index of the (first) image series
-    if strcmp(InputTable{1,5},'.nc');
-        ind_A=2;
-    end
-    filebase=InputTable{ind_A,1};
-    [nbslice, flag_grid]=get_grid(filebase,handles);% look for a grid with appropriate name 
-    if isequal(flag_grid,1)
-        filegrid=[num2str(nbslice) 'grid'];
-        testgrid=1;
-    else % browse for a grid 
-        filegrid=get(hObject,'UserData');%look for previous grid name stored as UserData
-        if exist(filegrid,'file')
-            filebase=filegrid;
+    % browse for a grid file
+    filegrid= uigetfile_uvmat('pick a grid netcdf file (made by script_makegrid.m):',InputTable{1,1},'.nc');
+    if ~isempty(filegrid)
+        [FilePath,FileName,FileExt]=fileparts(filegrid);
+        Data=nc2struct(filegrid);
+        if isfield(Data,'Grid')
+        testgrid=true;
         end
-       filegrid = uigetfile_uvmat('pick a grid file .grid:',filebase,'.grid'); 
-        set(hObject,'UserData',filegrid);%store for future use
-        if ~isempty(filegrid)
-            testgrid=1;
-        end 
-        set(hObject,'UserData',filegrid);%store for future use
+        if isfield(Data,'CorrBox')
+        corrstatus='off';
+        end
     end
 end
 if testgrid
-    set(handle_dx,'Visible','off');
-    set(handle_dy,'Visible','off');
-    set(handle_title_dy,'Visible','off');
-    set(handle_title_dx,'Visible','off');
     set(handle_txtbox,'Visible','on')
     set(handle_txtbox,'String',filegrid)
+    set(handles.num_Dx,'Visible','off')
+    set(handles.num_Dy,'Visible','off')
 else
-    set(hObject,'Value',0);
-    set(handle_dx,'Visible','on'); 
-    set(handle_dy,'Visible','on');
-    set(handle_title_dy,'Visible','on');
-    set(handle_title_dx,'Visible','on');
+    set(handles.num_Dx,'Visible','on')
+    set(handles.num_Dy,'Visible','on')
+    set(hObject,'Value',0)
     set(handle_txtbox,'Visible','off')
 end
 
+set(handles.num_CorrBoxSize_1,'Visible',corrstatus)
+set(handles.num_CorrBoxSize_2,'Visible',corrstatus)
+
+
 %% if hObject is on the checkciv1 frame, duplicate action for checkciv2 frame
-PanelName=get(hparent,'tag');
-if strcmp(PanelName,'Civ1')
-    hchildren=get(handles.Civ2,'children');
-    handle_checkbox=findobj(hchildren,'tag','CheckGrid');
-    handle_txtbox=findobj(hchildren,'tag','Grid');
-    handle_dx=findobj(hchildren,'tag','num_Dx');
-    handle_dy=findobj(hchildren,'tag','num_Dy');
-    handle_title_dx=findobj(hchildren,'tag','title_Dx');
-    handle_title_dy=findobj(hchildren,'tag','title_Dy');
-    set(handle_checkbox,'UserData',filegrid);%store for future use
-    if testgrid
-        set(handle_checkbox,'Value',1);
-        set(handle_dx,'Visible','off');
-        set(handle_dy,'Visible','off');
-        set(handle_title_dx,'Visible','off');
-        set(handle_title_dy,'Visible','off');
-        set(handle_txtbox,'Visible','on')
-        set(handle_txtbox,'String',filegrid)
-    end 
-end
+% PanelName=get(hparent,'tag');
+% if strcmp(PanelName,'Civ1')
+%     hchildren=get(handles.Civ2,'children');
+%     handle_checkbox=findobj(hchildren,'tag','CheckGrid');
+%     handle_txtbox=findobj(hchildren,'tag','Grid');
+%     handle_dx=findobj(hchildren,'tag','num_Dx');
+%     handle_dy=findobj(hchildren,'tag','num_Dy');
+%     handle_title_dx=findobj(hchildren,'tag','title_Dx');
+%     handle_title_dy=findobj(hchildren,'tag','title_Dy');
+%     %set(handle_checkbox,'UserData',filegrid);%store for future use
+%     if testgrid
+%         set(handle_checkbox,'Value',1);
+%         set(handle_dx,'Visible','off');
+%         set(handle_dy,'Visible','off');
+%         set(handle_title_dx,'Visible','off');
+%         set(handle_title_dy,'Visible','off');
+%         set(handle_txtbox,'Visible','on')
+%         set(handle_txtbox,'String',filegrid)
+%     end 
+% end
 set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
 
@@ -1700,7 +1726,7 @@ function fill_civ_input(Data,handles)
 
 %% Civ param
 % lists of parameters to enter
-ListParamNum={'CorrBoxSize','SearchBoxSize','SearchBoxShift','Dx','Dy','Dz','MinIma','MaxIma'};% list of numerical values (to transform in strings)
+ListParamNum={'CorrBoxSize','SearchRange','SearchBoxShift','Dx','Dy','Dz','MinIma','MaxIma'};% list of numerical values (to transform in strings)
 ListParamValue={'CorrSmooth','CheckGrid','CheckMask','CheckThreshold'};
 ListParamString={'Grid','Mask'};
 % CorrSmooth ??
@@ -1737,6 +1763,8 @@ end
 %------------------------------------------------------------------------
 function fill_panel(Data,handles,panel,ListParamNum,ListParamValue,ListParamString)
 children=get(handles.(panel),'children');%handles of the children of the input GUI with handle 'GUI_handle'
+set(children,'enable','off')
+set(handles.(panel),'Visible','on')
 handles_panel=[];
 for ichild=1:numel(children)
     if ~isempty(get(children(ichild),'tag'))
@@ -1811,10 +1839,20 @@ if ~isempty(filexml)
     end
     check_input=0;
     if isfield(Param,'ActionInput')
-        if isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'civ_series')
+        if isfield(Param.ActionInput,'Program')&& ismember(Param.ActionInput.Program,{'civ_series','civ_3D'})
             fill_GUI(Param.ActionInput,handles.civ_input)% fill the elements of the GUI series with the input parameters
             set(handles.ConfigSource,'String',filexml)
             check_input=1;
+            if isfield(Param.ActionInput,'Civ1')&& isfield(Param.ActionInput.Civ1,'SearchBoxSize')
+               SearchRange=round((Param.ActionInput.Civ1.SearchBoxSize-Param.ActionInput.Civ1.CorrBoxSize)/2);
+                set(handles.num_SearchRange_1(1),'String',num2str(SearchRange(1)))
+                set(handles.num_SearchRange_2(1),'String',num2str(SearchRange(2)))
+            end
+            if isfield(Param.ActionInput,'Civ2')&& isfield(Param.ActionInput.Civ2,'SearchBoxSize')
+               SearchRange=round((Param.ActionInput.Civ2.SearchBoxSize-Param.ActionInput.Civ2.CorrBoxSize)/2);
+                set(handles.num_SearchRange_1(2),'String',num2str(SearchRange(1)))
+                set(handles.num_SearchRange_2(2),'String',num2str(SearchRange(2)))
+            end
             update_CivOptions(handles,0)             
         end
     end
@@ -1874,10 +1912,6 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
 end
 
 
-function num_CorrBoxSize_3_Callback(hObject, eventdata, handles)
-
-
-function num_SearchBoxSize_3_Callback(hObject, eventdata, handles)
 
 
 function MinIndex_j_Callback(hObject, eventdata, handles)
@@ -1885,3 +1919,13 @@ function MinIndex_j_Callback(hObject, eventdata, handles)
 
 % --- Executes on selection change in field_ref2.
 function field_ref2_Callback(hObject, eventdata, handles)
+
+
+
+function num_SearchRange_3_Callback(hObject, eventdata, handles)
+% hObject    handle to num_SearchRange_3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_SearchRange_3 as text
+%        str2double(get(hObject,'String')) returns contents of num_SearchRange_3 as a double

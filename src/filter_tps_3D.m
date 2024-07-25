@@ -65,7 +65,7 @@ CentreZ=linspace(MinCoord(3)+Siz(3)/2,MaxCoord(3)-Siz(3)/2,NbSubDomainZ);% Y pos
 [CentreX,CentreY,CentreZ]=meshgrid(CentreX,CentreY,CentreZ);
 CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
-CentreZ=reshape(CentreZ,1,[]);% Y positions of subdomain centres
+CentreZ=reshape(CentreZ,1,[]);% Z positions of subdomain centres
 
 %% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
 %smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%old calculation before 03 May < r1129
@@ -91,6 +91,7 @@ check_empty=false(1,NbSubDomain);
 for isub=1:NbSubDomain
     SubRange(1,:,isub)=[CentreX(isub)-0.55*Siz(1) CentreX(isub)+0.55*Siz(1)];%bounds of subdomain #isub in x coordinate
     SubRange(2,:,isub)=[CentreY(isub)-0.55*Siz(2) CentreY(isub)+0.55*Siz(2)];%bounds of subdomain #isub in y coordinate
+    SubRange(3,:,isub)=[CentreZ(isub)-0.55*Siz(3) CentreZ(isub)+0.55*Siz(3)];%bounds of subdomain #isub in y coordinate
     ind_sel=0;%initialize set of vector indices in the subdomain
     %increase iteratively the subdomain if it contains less than
     %SubDomainNbVec/4 source vectors, until possibly cover the whole domain:check_partial_domain=false

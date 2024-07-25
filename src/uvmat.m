@@ -2062,6 +2062,7 @@ if isempty(index_action) %add to the menu
 end
 set(hhseries.ActionName,'Value',index_action);
 series('ActionName_Callback',hObject,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+series('ActionInput_Callback',hObject,[],hhseries); %open the menu or options from INPUT in series
 end
 
 % %------------------------------------------------------------------------
