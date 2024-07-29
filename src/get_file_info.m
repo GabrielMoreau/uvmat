@@ -152,24 +152,49 @@ switch FileExt
                     try %try netcdf file
                         [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
-                            if isfield(Data,'absolut_time_T0') && isfield(Data,'hart') && ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                                FileInfo.FileType='civx';%old civ data from the Fortran program
-                                if isfield(Data,'patch2') && isequal(Data.patch2,1)
-                                    FileInfo.CivStage=6;
-                                elseif isfield(Data,'fix2') && isequal(Data.fix2,1)
-                                    FileInfo.CivStage=5;
-                                elseif  isfield(Data,'civ2')&& isequal(Data.civ2,1)
-                                    FileInfo.CivStage=4;
-                                elseif isfield(Data,'patch')&&isequal(Data.patch,1)
-                                    FileInfo.CivStage=3;
-                                elseif isfield(Data,'fix')&&isequal(Data.fix,1)
-                                    FileInfo.CivStage=2;
-                                else
-                                    FileInfo.CivStage=1;
-                                end
-                            elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
+                            %                             if isfield(Data,'absolut_time_T0') && isfield(Data,'hart') && ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
+                            %                                 FileInfo.FileType='civx';%old civ data from the Fortran program
+                            %                                 if isfield(Data,'patch2') && isequal(Data.patch2,1)
+                            %                                     FileInfo.CivStage=6;
+                            %                                 elseif isfield(Data,'fix2') && isequal(Data.fix2,1)
+                            %                                     FileInfo.CivStage=5;
+                            %                                 elseif  isfield(Data,'civ2')&& isequal(Data.civ2,1)
+                            %                                     FileInfo.CivStage=4;
+                            %                                 elseif isfield(Data,'patch')&&isequal(Data.patch,1)
+                            %                                     FileInfo.CivStage=3;
+                            %                                 elseif isfield(Data,'fix')&&isequal(Data.fix,1)
+                            %                                     FileInfo.CivStage=2;
+                            %                                 else
+                            %                                     FileInfo.CivStage=1;
+                            %                                 end
+                            %                             else
+                            if isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
                                 FileInfo.FileType='civdata'; % test for civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;
+                                MaskFile='';
+                                if isfield(Data,'Civ2_Mask')
+                                    MaskFile=Data.Civ2_Mask;
+                                    if isfield(Data,'Civ2_NbSlice')
+                                        FileInfo.MaskNbSlice=Data.Civ2_NbSlice;
+                                    end
+                                elseif isfield(Data,'Civ1_Mask')
+                                    MaskFile=Data.Civ1_Mask;
+                                    if isfield(Data,'Civ1_NbSlice')
+                                        FileInfo.MaskNbSlice=Data.Civ1_NbSlice;
+                                    end
+                                end
+                                if isfield(Data,'VolumeScan')
+                                    FileInfo.VolumeScan=Data.VolumeScan;
+                                end
+                                if ~isempty(MaskFile)
+                                    [RootPath,SubDir,RootFile,~,~,~,~,FileExt,NomType]=fileparts_uvmat(MaskFile);
+                                    if strcmp(NomType,'_1')&& isfield(FileInfo,'MaskNbSlice')
+                                        FileInfo.MaskFile=fullfile(RootPath,SubDir,RootFile);
+                                    else
+                                        FileInfo.MaskFile=MaskFile;% single mask for the series (no indexing)
+                                    end
+                                    FileInfo.MaskExt=FileExt;
+                                end
                             elseif isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata_3D')
                                 FileInfo.FileType='civdata_3D'; % test for 3D volume civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;

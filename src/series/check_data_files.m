@@ -62,8 +62,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'off';%can use a transform function
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputSubDirMode='none'; %(options 'none'/'custom'/'auto'/'first'/'last','auto' by default)
+    ParamOut.OutputSubDirMode='auto'; %(options 'none'/'custom'/'auto'/'first'/'last','auto' by default)
     %                      'none' =no output files
+    ParamOut.OutputDirExt='.check_series';%set the output dir extension
     return
 end
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
@@ -119,7 +120,7 @@ end
 %% MAIN LOOP ON VIEWS (INPUT LINES)
 for iview=1:nbview
     if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')||isequal(FileType{iview},'multimage')
-        [FileInfo]=get_file_info(filecell{iview,1});
+        [FileInfo]=get_file_info(filecell{iview,1});% get infos on the first file in the current line
         Tabchar{1}=filecell{iview,1};%info.Filename;
         Tabchar{2}='';
         if isfield(FileInfo,'FrameRate')
@@ -127,18 +128,19 @@ for iview=1:nbview
         end
         message='';
     else
-        Tabchar={};
+        Tabchar=cell(nbfield_i+1,NbSlice);
         %LOOP ON SLICES
         for i_slice=1:NbSlice
             index_slice=i_slice:NbSlice:nbfield;
-            filefound={};
-            datnum=zeros(1,nbfield_j);
+            filefound=cell(nbfield_i);
+            datnum=zeros(1,nbfield_i);
+            Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
             for ifile=1:nbfield_i
-                update_waitbar(WaitbarHandle,ifile/nbfield_i)
-                if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-                    disp('program stopped by user')
-                    break
-                end
+ %               update_waitbar(WaitbarHandle,ifile/nbfield_i)
+%                 if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+%                     disp('program stopped by user')
+%                     break
+%                 end
                 file=filecell{iview,index_slice(ifile)};
                 [Path,Name,ext]=fileparts(file);
                 detect=exist(file,'file'); % check the existence of the file
@@ -148,24 +150,21 @@ for iview=1:nbview
                     datfile=dir(file);
                     if isfield(datfile,'datenum')
                         datnum(ifile)=datfile.datenum;
-                        filefound(ifile)={datfile.name};
+                        filefound{ifile}=datfile.name;
                     end
                     lastfield='';
-                    [FileInfo,Object]=get_file_info(file);
+                    [FileInfo]=get_file_info(file);
                     FileType{iview}=FileInfo.FileType;
                     if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                         if isfield(FileInfo,'CivStage')
                             liststage={'civ','fix','patch'};
                             stagechoice=1+mod(FileInfo.CivStage-1,3);
                             iter=1+floor((FileInfo.CivStage-1)/3);
-                            lastfield=[liststage{stagechoice} num2str(iter)];
-                            %liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};                        
-                            %lastfield=liststage{FileInfo.CivStage};                           
+                            lastfield=[liststage{stagechoice} num2str(iter)];                         
                         end
                     end
                     lastfield=[FileType{iview} ', ' lastfield];
                 end
-                Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
                 Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
             end
         end
@@ -176,8 +175,8 @@ for iview=1:nbview
                 message='no file found';
             end
         else
-            datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
-            filefound=filefound(find(datnum));
+            datnum=datnum(datnum);%keep the non zero values corresponding to existing files
+            filefound=filefound(datnum);
             [first,ind]=min(datnum);
             [last,indlast]=max(datnum);
             message={['oldest modification:  ' filefound{ind} ' : ' datestr(first)];...
@@ -187,20 +186,25 @@ for iview=1:nbview
             Tabchar=reshape(Tabchar,NbSlice*(nbfield_i+1),1);
         end
     end
-    hfig=figure(iview);
-    clf
-    if iview>1
-        pos=get(iview-1,'Position');
-        pos(1)=pos(1)+(iview-1)*pos(1)/nbview;
-        set(hfig,'Position',pos)
+    if checkrun
+        hfig=figure(iview);
+        clf
+        if iview>1
+            pos=get(iview-1,'Position');
+            pos(1)=pos(1)+(iview-1)*pos(1)/nbview;
+            set(hfig,'Position',pos)
+        end
+        set(hfig,'name',['check_data_files:view= ' num2str(iview)])
+        set(hfig,'MenuBar','none')% suppress the menu bar
+        set(hfig,'NumberTitle','off')%suppress the fig number in the title
+        h=uicontrol('Style','listbox', 'Position', [20 20 500 300], 'String', Tabchar, 'Callback', {'open_uvmat'});
+        hh=uicontrol('Style','listbox', 'Position', [20 340 500 40], 'String', message);
+    else % show results in log file
+        disp(Tabchar)
+        disp(message)
     end
-    set(hfig,'name',['check_data_files:view= ' num2str(iview)])
-    set(hfig,'MenuBar','none')% suppress the menu bar
-    set(hfig,'NumberTitle','off')%suppress the fig number in the title
-    h=uicontrol('Style','listbox', 'Position', [20 20 500 300], 'String', Tabchar, 'Callback', {'open_uvmat'});
-    hh=uicontrol('Style','listbox', 'Position', [20 340 500 40], 'String', message);
 end
-
+'END'
 % 'open_uvmat': open with uvmat the  field selected in the list of 'series/check_data_files'
 %------------------------------------------------------------------------
 %function open_uvmat(hObject, eventdata)

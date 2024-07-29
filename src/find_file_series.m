@@ -48,10 +48,10 @@ function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTy
 %------------------------------------------------------------------------
 
 %% get input root name and info on the input file
-if isempty(regexp(FilePath,'^http://','once'))
+if isempty(regexp(FilePath,'^http://','once'))% case of usual file input
 fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 else
-  fullfileinput=[FilePath '/' fileinput];
+  fullfileinput=[FilePath '/' fileinput]; % case of web input
 end
 [FileInfo,MovieObject]=get_file_info(fullfileinput);
 
@@ -104,51 +104,41 @@ if checkfileindexing
         sep1='';
         sep2='';
         i1_str='(?<i1>)';%will set i1=[];
-        i1_star='';
         i2_str='(?<i2>)';%will set i2=[];
-        i2_star='';
         j1_str='(?<j1>)';%will set j1=[];
-        j1_star='';
         j2_str='(?<j2>)';%will set j2=[];
-        j2_star='';
+
         %Look for cases with letter indexing for the second index
         r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<sep2>_?)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
         if ~isempty(r) %indexing image pair with letters
             sep1=r.sep1;
             sep2=r.sep2;
             i1_str='(?<i1>\d+)';
-            i1_star='*';
             if strcmp(lower(r.j1),r.j1)% lower case index
                 j1_str='(?<j1>[a-z])';
             else
                 j1_str='(?<j1>[A-Z])'; % upper case index
             end
-            j1_star='*';
             if ~isempty(r.j2)
                 if strcmp(lower(r.j1),r.j1)
                     j2_str='(?<j2>[a-z])';
                 else
                     j2_str='(?<j2>[A-Z])';
                 end
-                j2_star='*';
             end
         else %numerical indexing
             r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<i2>(-\d+)?)(?<j1>(_\d+)?)(?<j2>(-\d+)?)$','names');
             if ~isempty(r)
                 sep1=r.sep1;
                 i1_str='(?<i1>\d+)';
-                i1_star='*';
                 if ~isempty(r.i2)
                     i2_str='(?<i2>-\d+)';
-                    i2_star='-*';
                 end
                 if ~isempty(r.j1)
                     j1_str='(?<j1>_\d+)';
-                    j1_star='_*';
                 end
                 if ~isempty(r.j2)
                     j2_str='(?<j2>-\d+)';
-                    j2_star='-*';
                 end
             end
         end
@@ -289,6 +279,10 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         else
             i1_series=i1_series(:,2)*ones(1,FileInfo.NumberOfFrames);%
             i1_series=[zeros(size(i1_series,1),1) i1_series];
+            if ~isempty(i2_series)
+                i2_series=i2_series(:,2)*ones(1,FileInfo.NumberOfFrames);%
+            i2_series=[zeros(size(i2_series,1),1) i2_series];
+            end
             j1_series=ones(size(i1_series,1),1)*(1:FileInfo.NumberOfFrames);%
             j1_series=[zeros(size(i1_series,1),1) j1_series];
             %  include the first index in the root name

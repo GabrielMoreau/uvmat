@@ -100,12 +100,7 @@ ind_opening=0;%default
 NomTypeNc='';
 NomTypeImaA=NomTypeInput;
 iview_image=1;%line # for the input images
-switch FileType
-    case 'civdata'
-        if ~strcmp(Param.Action.ActionName,'civ_series')
-            msgbox_uvmat('ERROR','bad input data file: open an image or a nc file from civ_series')
-            return
-        end
+if ismember( FileType,{'civdata','civdata_3D'})
         NomTypeNc=NomTypeInput;
         ind_opening=SeriesData.FileInfo{1}.CivStage;
         if isempty(regexp(NomTypeInput,'[ab|AB|-]', 'once'))
@@ -119,31 +114,20 @@ switch FileType
             return
         end
         
-        if size(Param.InputTable,1)==1
-            
-            Param.InputTable(2,:)=Param.InputTable(1,:);
-              set(hhseries.InputTable,'Data',Param.InputTable)
+        if size(Param.InputTable,1)==1     
              if isfield(Data,'Civ2_ImageA')
                  ImageName=Data.Civ2_ImageA;
              elseif isfield(Data,'Civ1_ImageA')
                  ImageName=Data.Civ1_ImageA;
+             else
+                  msgbox_uvmat('ERROR','no original image defined in netcdf input file ')
+            return
              end
-            series('display_file_name',hhseries,ImageName,1);%append the image series to the input list
+            series('display_file_name',hhseries,ImageName,'append');%append the image series to the input list
                     [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(ImageName);
-      
-%              elseif isfield(Data,'Civ2_ImageA')
-%                  series('display_file_name',hhseries,Data.Civ2_ImageA,'append');%append the image series to the input list
-%                          [~,~,~,~,~,~,~,~,NomTypeImaA]=fileparts_uvmat(Data.Civ2_ImageA);
-%      
-%              end
         end
 
-        iview_image=1;%line # for the input images
-    otherwise 
-        % if ~strcmp(FileType,'image')
-        % msgbox_uvmat('ERROR','civ_series needs images, scalar fields in netcdf format, or civ data as input')
-        % return
-        % end
+        iview_image=2;%line # for the input images
 end
         
 %% prepare the GUI with input parameters 
@@ -161,6 +145,7 @@ if isempty(Param.IndexRange.MaxIndex_i)|| isempty(Param.IndexRange.MinIndex_i)
     msgbox_uvmat('ERROR','REFRESH the input files in the GUI series')
      return
 end
+
 MaxIndex_i=Param.IndexRange.MaxIndex_i(1);
 MinIndex_i=Param.IndexRange.MinIndex_i(1);
 MaxIndex_j=1;%default

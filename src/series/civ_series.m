@@ -116,8 +116,8 @@ if CheckInputFile
         iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
         if Param.ActionInput.CheckCiv1
             iview_A=1;% usual PIV, the image series is on the first line of the table
-        elseif Param.ActionInput.CheckCiv2 % civ2 is performed without Civ1, a netcdf file series is needed in the first table line
-            iview_A=2;% the second line is used for the input images of Civ2
+        else % Civ1 has been already stored in a netcdf file input 
+            iview_A=2;% the second line is used for the input images 
         end
         if iview_A~=0
             RootPath_A=Param.InputTable{iview_A,1};
@@ -273,9 +273,9 @@ end
 for ifield=1:NbField
     tstart=tic;
     time_civ1=0;
-  time_patch1=0;
-  time_civ2=0;
-  time_patch2=0;
+    time_patch1=0;
+    time_civ2=0;
+    time_patch2=0;
     if ~isempty(RUNHandle)% update the waitbar in interactive mode with GUI series  (checkrun=1)
         update_waitbar(WaitbarHandle,ifield/NbField)
         if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -334,7 +334,7 @@ for ifield=1:NbField
     
     %% Civ1
     % if Civ1 computation is requested
-    if isfield (Param.ActionInput,'Civ1')
+    if Param.ActionInput.CheckCiv1
         if CheckInputFile
             disp('civ1 started')
         end
@@ -376,21 +376,22 @@ for ifield=1:NbField
                     time_input=toc(tsart_input);
                 end
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-                    if isempty(FileType_B)% determine the image type for the first field
-                        [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-                        FileType_B=FileInfo_B.FileType;
-                    end
-                    if isempty(regexp(ImageName_B,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_B,'file')
-                        disp([ImageName_B ' missing'])
-                        continue
-                    end
-                    [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+                if isempty(FileType_B)% determine the image type for the first field
+                    [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
+                    FileType_B=FileInfo_B.FileType;
+                end
+                if isempty(regexp(ImageName_B,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_B,'file')
+                    disp([ImageName_B ' missing'])
+                    continue
+                end
+                [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
             catch ME % display errors in reading input images
                 if ~isempty(ME.message)
                     disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
                     continue
                 end
             end
+            
             % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
             % par_civ1.ImageHeight=size(par_civ1.ImageA,1);
             list_param=(fieldnames(Param.ActionInput.Civ1))';
@@ -424,6 +425,7 @@ for ifield=1:NbField
                 Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
             end
             Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
+            
             Data.CivStage=1;
         else
             i1=Param.ActionInput.PairIndices.ref_i; %case of TESTmode
@@ -437,7 +439,7 @@ for ifield=1:NbField
         Data.VarAttribute{4}.Role='vector_y';
         Data.VarAttribute{5}.Role='ancillary';
         Data.VarAttribute{6}.Role='errorflag';
-
+        
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
@@ -450,53 +452,56 @@ for ifield=1:NbField
             elseif isfield(par_civ1,'NbSlice')
                 i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
-            else
-                maskname=Param.ActionInput.Civ1.Mask;
-            end
-            if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
-                par_civ1.Mask=mask; %use mask already opened
-            else
-                if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
-                    try
-                        par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
-                    catch ME
-                        if ~isempty(ME.message)
-                            errormsg=['error reading input image: ' ME.message];
-                            disp_uvmat('ERROR',errormsg,checkrun)
-                            return
-                        end
-                    end
-                else
-                    par_civ1.Mask=[];
+                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
+                    par_civ1.NbSlice_j=par_civ1.NbSlice;
                 end
-                mask=par_civ1.Mask;
-                maskoldname=maskname;
             end
+        else
+            maskname=Param.ActionInput.Civ1.Mask;
         end
-
+        if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
+            par_civ1.Mask=mask; %use mask already opened
+        else
+            if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
+                try
+                    par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
+                catch ME
+                    if ~isempty(ME.message)
+                        errormsg=['error reading input image: ' ME.message];
+                        disp_uvmat('ERROR',errormsg,checkrun)
+                        return
+                    end
+                end
+            else
+                par_civ1.Mask=[];
+            end
+            mask=par_civ1.Mask;
+            maskoldname=maskname;
+        end
+        
+        
         % case of input grid
         if par_civ1.CheckGrid &&~isempty(par_civ1.Grid)
             GridData=nc2struct(Param.ActionInput.Civ1.Grid);
             par_civ1.Grid=GridData.Grid;
             par_civ1.CorrBoxSize=GridData.CorrBox;
         end
-
-        % caluclate velocity data 
+        
+        % caluclate velocity data
         tstart_civ1=tic;
         [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, result_conv, errormsg] = civ (par_civ1);
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
-
-    else% we use existing Civ1 data
+        
         if exist('ncfile','var')
             CivFile=ncfile;
-            [Data,tild,tild,errormsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
-            if ~isempty(errormsg)
-                disp_uvmat('ERROR',errormsg,checkrun)
-                return
-            end
+            % [Data,tild,tild,errormsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
+            % if ~isempty(errormsg)
+            %     disp_uvmat('ERROR',errormsg,checkrun)
+            %     return
+            % end
             [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
         elseif isfield(Param,'Civ1_X')
             Data.ListGlobalAttribute={};
@@ -509,6 +514,7 @@ for ifield=1:NbField
             Data.Civ1_FF=Param.Civ1_FF;
         end
     end
+
     
     %% Fix1
     if isfield (Param.ActionInput,'Fix1')
@@ -716,6 +722,9 @@ for ifield=1:NbField
                 i1=i1_series_Civ2(ifield);
                 i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
+                    par_civ2.NbSlice_j=par_civ2.NbSlice;
+                end
             else
                 maskname=Param.ActionInput.Civ2.Mask;
             end
@@ -875,7 +884,6 @@ for ifield=1:NbField
         errormsg=struct2nc(ncfile_out,Data);
         if isempty(errormsg)
             disp([ncfile_out ' written'])
-            %[success,msg] = fileattrib(ncfile_out ,'+w','g');% done in struct2nc
         else
             disp(errormsg)
         end

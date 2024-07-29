@@ -37,25 +37,27 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomainSize,FieldSmooth,Threshold)
+function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps_3D(Coord_x,Coord_y,Coord_z,U,V,W,SubDomainSize,FieldSmooth,Threshold)
 
 %% adjust subdomain decomposition
 warning off
-NbVec=size(Coord,1);% nbre of vectors in the field to interpolate
-NbCoord=size(Coord,2);% space dimension,Coord(:,1)= x,Coord(:,2)=  y , Coord(:,3)=  z
+% [npz,npy,npx]=size(Coord_x);
+Coord=[Coord_x Coord_y Coord_z];
+NbVec=numel(Coord_x);% nbre of vectors in the field to interpolate
+NbCoord=3;% space dimension,Coord(:,1)= x,Coord(:,2)=  y , Coord(:,3)=  z
 MinCoord=min(Coord,[],1);%lower coordinate bounds
 MaxCoord=max(Coord,[],1);%upper coordinate bounds
 Range=MaxCoord-MinCoord;%along eacch coordiante x,y,z
-Cellmesh=(prod(Range)/NbVec)^(1/3);
-NbSubDomainX=floor(range(1)/Cellmesh);
-NbSubDomainY=floor(range(2)/Cellmesh);
-NbSubDomainZ=floor(range(3)/Cellmesh);
+Cellmesh=(10*prod(Range)/NbVec)^(1/3);
+NbSubDomainX=ceil(Range(1)/Cellmesh);
+NbSubDomainY=ceil(Range(2)/Cellmesh);
+NbSubDomainZ=ceil(10*Range(3)/Cellmesh);
 
 % NbSubDomain=NbVec/SubDomainSize;% estimated number of subdomains
 % NbSubDomainX=max(floor(sqrt(NbSubDomain/(AspectRatio(1)*AspectRatio(2))),1);% estimated number of subdomains in x
 % NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
 % NbSubDomainZ=max(floor(sqrt(NbSubDomain*AspectRatio)),1);% estimated number of subdomains in y
-NbSubDomain=NbSubDomainX*NbSubDomainY;% new estimated number of subdomains in a matrix shape partition in subdomains
+NbSubDomain=NbSubDomainX*NbSubDomainY*NbSubDomainZ;% new estimated number of subdomains in a matrix shape partition in subdomains
 Siz(1)=Range(1)/NbSubDomainX;%width of subdomains
 Siz(2)=Range(2)/NbSubDomainY;%height of subdomains
 Siz(3)=Range(3)/NbSubDomainZ;%height of subdomains
@@ -70,7 +72,7 @@ CentreZ=reshape(CentreZ,1,[]);% Z positions of subdomain centres
 %% smoothing parameter: CHANGED 03 May 2024 TO GET RESULTS INDEPENDENT OF SUBDOMAINSIZE
 %smoothing=Siz(1)*Siz(2)*FieldSmooth/1000%old calculation before 03 May < r1129
 NbVecSub=NbVec/NbSubDomain;% refined estimation of the nbre of vectors per subdomain
-smoothing=sqrt(Siz(1)*Siz(2)/NbVecSub)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/NbVecSub)^1/2
+smoothing=(Siz(1)*Siz(2)*Siz(3)/NbVecSub)^(1/3)*FieldSmooth;%optimum smoothing increase as the typical mesh size =sqrt(SizX*SizY/NbVecSub)^1/2
 Threshold=Threshold*Threshold;% take the square of the threshold to work with the modulus squared (not done before r1154)
 
 %% default output
@@ -78,11 +80,11 @@ SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the boundaries of subdomains
 Coord_tps=zeros(1,NbCoord,NbSubDomain);% initialize coordinates of interpolated data
 U_tps=zeros(1,NbSubDomain);% initialize  interpolated u component
 V_tps=zeros(1,NbSubDomain);% initialize interpolated v component
+W_tps=zeros(1,NbSubDomain);% initialize interpolated v component
 NbCentre=zeros(1,NbSubDomain);%number of interpolated field values per subdomain, =0 by default
-W_tps=[];%default (2 component case)
 U_smooth=zeros(NbVec,1); % smoothed velocity U at the initial positions
 V_smooth=zeros(NbVec,1);% smoothed velocity V at the initial positions
-W_smooth=[];%default (2 component case)
+W_smooth=zeros(NbVec,1);%default (2 component case)
 FF=false(NbVec,1);%false flag=0 (false) by default
 nb_select=zeros(NbVec,1);
 check_empty=false(1,NbSubDomain);
@@ -99,7 +101,9 @@ for isub=1:NbSubDomain
     while check_partial_domain
         %check_next=false;% test to go to next iteration with wider subdomain
         ind_sel_previous=ind_sel;% record the set of selected vector indices for next iteration
-        ind_sel= find(~FF & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub) & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub));% indices of vectors in the subdomain #isub
+        ind_sel= find(~FF & Coord(:,1)>=SubRange(1,1,isub) & Coord(:,1)<=SubRange(1,2,isub)...
+            & Coord(:,2)>=SubRange(2,1,isub) & Coord(:,2)<=SubRange(2,2,isub)&...
+            Coord(:,3)>=SubRange(3,1,isub) & Coord(:,3)<=SubRange(3,2,isub));% indices of vectors in the subdomain #isub
          check_partial_domain=sum(SubRange(:,1,isub)> MinCoord' | SubRange(:,2,isub)< MaxCoord');
         % isub
         % numel(ind_sel)
@@ -120,9 +124,11 @@ for isub=1:NbSubDomain
         else
             [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel,:),U(ind_sel),smoothing);
             [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel,:),V(ind_sel),smoothing);
+            [W_smooth_sub,W_tps_sub]=tps_coeff(Coord(ind_sel,:),W(ind_sel),smoothing);
             UDiff=U_smooth_sub-U(ind_sel);% difference between interpolated U component and initial value
             VDiff=V_smooth_sub-V(ind_sel);% difference between interpolated V component and initial value
-            NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
+            WDiff=W_smooth_sub-W(ind_sel);% difference between interpolated V component and initial value
+            NormDiff=UDiff.*UDiff+VDiff.*VDiff+WDiff.*WDiff;% Square of difference norm
             ind_ind_sel=1:numel(ind_sel);%default
             if exist('Threshold','var')&&~isempty(Threshold)
                 FF(ind_sel)=(NormDiff>Threshold);%put FF value to 1 to identify the criterium of elimmination
@@ -133,16 +139,19 @@ for isub=1:NbSubDomain
             if isequal(numel(ind_ind_sel),numel(ind_sel))
                 x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;
                 y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;
+                z_width=(SubRange(3,2,isub)-SubRange(3,1,isub))/pi;
                 x_dist=(Coord(ind_sel,1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
                 y_dist=(Coord(ind_sel,2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
-                weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
-                %weight=1;% case for r1129 and before
+                z_dist=(Coord(ind_sel,3)-CentreZ(isub))/z_width;% relative ydistance to the retangle centre
+                weight=cos(x_dist).*cos(y_dist).*cos(z_dist);%weighting fct =1 at the rectangle center and 0 at edge
                 U_smooth(ind_sel)=U_smooth(ind_sel)+weight.*U_smooth_sub;
                 V_smooth(ind_sel)=V_smooth(ind_sel)+weight.*V_smooth_sub;
+                W_smooth(ind_sel)=W_smooth(ind_sel)+weight.*W_smooth_sub;
                 NbCentre(isub)=numel(ind_sel);
                 Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel,:);
-                U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
-                V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
+                U_tps(1:NbCentre(isub)+4,isub)=U_tps_sub;
+                V_tps(1:NbCentre(isub)+4,isub)=V_tps_sub;
+                W_tps(1:NbCentre(isub)+4,isub)=W_tps_sub;
                 nb_select(ind_sel)=nb_select(ind_sel)+weight;
                 display(['tps done with ' num2str(numel(ind_sel)) ' vectors in subdomain # ' num2str(isub)  ' among ' num2str(NbSubDomain)])
                 break
@@ -156,18 +165,23 @@ for isub=1:NbSubDomain
             else
                 [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),smoothing);
                 [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),smoothing);
+                [W_smooth_sub,W_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),W(ind_sel(ind_ind_sel)),smoothing);
                 x_width=(SubRange(1,2,isub)-SubRange(1,1,isub))/pi;
                 y_width=(SubRange(2,2,isub)-SubRange(2,1,isub))/pi;
+                z_width=(SubRange(3,2,isub)-SubRange(3,1,isub))/pi;
                 x_dist=(Coord(ind_sel(ind_ind_sel),1)-CentreX(isub))/x_width;% relative x distance to the retangle centre
                 y_dist=(Coord(ind_sel(ind_ind_sel),2)-CentreY(isub))/y_width;% relative ydistance to the retangle centre
-                weight=cos(x_dist).*cos(y_dist);%weighting fct =1 at the rectangle center and 0 at edge
+                  z_dist=(Coord(ind_sel(ind_ind_sel),3)-CentreZ(isub))/z_width;% relative ydistance to the retangle centre
+                weight=cos(x_dist).*cos(y_dist).*cos(z_dist);%weighting fct =1 at the rectangle center and 0 at edge
                 %weight=1;
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+weight.*U_smooth_sub;
                 V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+weight.*V_smooth_sub;
+                   W_smooth(ind_sel(ind_ind_sel))=W_smooth(ind_sel(ind_ind_sel))+weight.*W_smooth_sub;
                 NbCentre(isub)=numel(ind_ind_sel);
                 Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel(ind_ind_sel),:);
-                U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
-                V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
+                U_tps(1:NbCentre(isub)+4,isub)=U_tps_sub;
+                V_tps(1:NbCentre(isub)+4,isub)=V_tps_sub;
+                W_tps(1:NbCentre(isub)+4,isub)=W_tps_sub;
                 nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+weight;
                 display(['tps redone with ' num2str(numel(ind_sel)) ' vectors after elimination of ' num2str(numel(ind_sel)-numel(ind_ind_sel)) ' erratic vectors in subdomain # ' num2str(isub) ' among ' num2str(NbSubDomain)])
                 break
@@ -188,6 +202,7 @@ if ~isempty(ind_empty)
     Coord_tps(:,:,ind_empty)=[];
     U_tps(:,ind_empty)=[];
     V_tps(:,ind_empty)=[];
+    W_tps(:,ind_empty)=[];
     NbCentre(ind_empty)=[];
 end
 
@@ -195,17 +210,21 @@ end
 nb_select(nb_select==0)=1;
 U_smooth=U_smooth./nb_select;% take the average at the intersection of several subdomains
 V_smooth=V_smooth./nb_select;
+W_smooth=W_smooth./nb_select;
 
 %eliminate the vectors with diff>threshold not yet eliminated
 if exist('Threshold','var')&&~isempty(Threshold)
 UDiff=U_smooth-U;% difference between interpolated U component and initial value
 VDiff=V_smooth-V;% difference between interpolated V component and initial value
-NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
+WDiff=W_smooth-W;% difference between interpolated V component and initial value
+NormDiff=UDiff.*UDiff+VDiff.*VDiff+WDiff.*WDiff;% Square of difference norm
 FF(NormDiff>Threshold)=true;%put FF value to 1 to identify the criterium of elimmination
 end
 
 U_smooth(FF)=U(FF);% set to the initial values the eliminated vectors (flagged as false)
 V_smooth(FF)=V(FF);
+W_smooth(FF)=W(FF);
 fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
 Coord_tps=cat(1,Coord_tps,fill);
+
 

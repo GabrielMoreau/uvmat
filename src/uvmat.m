@@ -2197,7 +2197,7 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
 %------------------------------------------------------------------------
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
-function errormsg=display_file_name(handles,fileinput,index)
+function errormsg=display_file_name(handles,fileinput,input_line)
 %------------------------------------------------------------------------
 %% look for the input file existence
 errormsg='';%default
@@ -2207,18 +2207,18 @@ if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
     return
 end
 
-%% define the relevant handles for the first field series (index=1) or the second file series (index=2)
-if ~exist('index','var')
-    index=1;
+%% define the relevant handles for the first field series (input_line=1) or the second file series (input_line=2)
+if ~exist('input_line','var')
+    input_line=1;
 end
-if index==1
+if input_line==1
     handles_RootPath=handles.RootPath;
     handles_SubDir=handles.SubDir;
     handles_RootFile=handles.RootFile;
     handles_FileIndex=handles.FileIndex;
     handles_NomType=handles.NomType;
     handles_FileExt=handles.FileExt;
-elseif index==2
+elseif input_line==2
     handles_RootPath=handles.RootPath_1;
     handles_SubDir=handles.SubDir_1;
     handles_RootFile=handles.RootFile_1;
@@ -2286,12 +2286,25 @@ switch FieldType
         set(handles_FileIndex,'String',indices);
         set(handles_NomType,'String',NomType);
         set(handles_FileExt,'String',FileExt);
-        if index==1
+        if input_line==1
             % fill file index counters if the first file series is opened
             set(handles.i1,'String',num2str(i1));
             set(handles.i2,'String',num2str(i2));
             set(handles.j1,'String',num2stra(j1,NomType));
             set(handles.j2,'String',num2stra(j2,NomType));
+            if isfield(FileInfo,'MaskFile')
+                set(handles.CheckMask,'Value',1)
+                 Mask.File=FileInfo.MaskFile;
+                 if isfield(FileInfo,'MaskNbSlice')
+                     Mask.NbSlice=FileInfo.MaskNbSlice;
+                 elseif isfield(FileInfo,'VolumeScan')
+                     Mask.VolumeScan=FileInfo.VolumeScan;
+                 end  
+                 set(handles.CheckMask,'UserData', Mask)
+            else
+                set(handles.CheckMask,'Value',0)
+                CheckMask_Callback(handles.CheckMask, [], handles) 
+            end                         
         else %read the current field index to synchronise with the first series
             i1_s=str2num(get(handles.i1,'String'));
             i2_0=str2num(get(handles.i2,'String'));
@@ -2350,7 +2363,7 @@ switch FieldType
         set(handles.MenuTools,'Enable','on')
         
         % initiate input file series and inputfilerefresh the current field view:
-        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,index);
+        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,input_line);
 end
 
 %% update list of recent files in the menubar and save it for future opening
@@ -2378,17 +2391,17 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then inputfilerefresh current plots
-function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,index)
+function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,input_line)
 %------------------------------------------------------------------------
 errormsg=''; %default error msg
 
-%% define the relevant handles depending on the index (1=first file series, 2= second file series)
-if ~exist('index','var')
-    index=1;
+%% define the relevant handles depending on the input_line (1=first file series, 2= second file series)
+if ~exist('input_line','var')
+    input_line=1;
 end
-if index==1
+if input_line==1
     handles_Fields=handles.FieldName;
-elseif index==2
+elseif input_line==2
     handles_Fields=handles.FieldName_1;
 end
 set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
@@ -2397,13 +2410,13 @@ set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
-%UvData.FileType{index}=FileInfo.FileType;
-UvData.FileInfo{index}=FileInfo;
-UvData.MovieObject{index}=VideoObject;
-UvData.i1_series{index}=i1_series;
-UvData.i2_series{index}=i2_series;
-UvData.j1_series{index}=j1_series;
-UvData.j2_series{index}=j2_series;
+%UvData.FileType{input_line}=FileInfo.FileType;
+UvData.FileInfo{input_line}=FileInfo;
+UvData.MovieObject{input_line}=VideoObject;
+UvData.i1_series{input_line}=i1_series;
+UvData.i2_series{input_line}=i2_series;
+UvData.j1_series{input_line}=j1_series;
+UvData.j2_series{input_line}=j2_series;
 nbfield=max(max(max(i2_series)));% total number of fields (i index)
 if isempty(nbfield)
     nbfield=max(max(max(i1_series)));
@@ -2446,7 +2459,7 @@ end
 
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
 XmlData.GeometryCalib=[];%default
-if index==1
+if input_line==1
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 else
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
@@ -2514,7 +2527,7 @@ elseif strcmp(FileInfo.FieldType,'civdata')% ajouter pivdata_fluidimage
 elseif strcmp(FileInfo.FieldType,'civdata_3D')% ajouter pivdata_fluidimage
     TimeName='civdata_3D';
 end
-if index==1
+if input_line==1
     set(handles.TimeName,'String',TimeName)
 else
     set(handles.TimeName_1,'String',TimeName)
@@ -2530,16 +2543,16 @@ if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
 end
 last_i_cell=get(handles.MaxIndex_i,'String');
 if isempty(nbfield)
-    last_i_cell{index}='';
+    last_i_cell{input_line}='';
 else
-    last_i_cell{index}=num2str(nbfield);
+    last_i_cell{input_line}=num2str(nbfield);
 end
 set(handles.MaxIndex_i,'String',last_i_cell)
 last_j_cell=get(handles.MaxIndex_j,'String');
 if isempty(nbfield_j)
-     last_j_cell{index}='';
+     last_j_cell{input_line}='';
 else
-     last_j_cell{index}=num2str(nbfield_j);
+     last_j_cell{input_line}=num2str(nbfield_j);
 end
 set(handles.MaxIndex_j,'String',last_j_cell);
 
@@ -2551,7 +2564,7 @@ if isfield(XmlData,'GeometryCalib')
         set(handles.pxcmy,'String','')
         set(handles.pxcmx,'Visible','off')
         set(handles.pxcmy,'Visible','off')
-        if index==1
+        if input_line==1
         set(handles.TransformName,'Value',1); %  no transform by default
         end
     else
@@ -2567,7 +2580,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcmx,'String',num2str(pixcmx))
             set(handles.pxcmy,'String',num2str(pixcmy))
         end
-        if ~get(handles.CheckFixLimits,'Value')&& index==1
+        if ~get(handles.CheckFixLimits,'Value')&& input_line==1
             set(handles.TransformName,'Value',3); % phys transform by default if fixedLimits is off
         end
         if isfield(XmlData.Slice,'SliceCoord')
@@ -2590,13 +2603,13 @@ end
 
 %% update the data attached to the uvmat interface
 if ~isempty(TimeUnit)
-    if index==2 && isfield(UvData,'TimeUnit') && ~strcmp(UvData.TimeUnit,TimeUnit)
+    if input_line==2 && isfield(UvData,'TimeUnit') && ~strcmp(UvData.TimeUnit,TimeUnit)
         msgbox_uvmat('WARNING',['time unit for second file series ' TimeUnit ' inconsistent with first series'])
     else
         UvData.TimeUnit=TimeUnit;
     end
 end
-UvData.XmlData{index}=XmlData;
+UvData.XmlData{input_line}=XmlData;
 UvData.NewSeries=1;
 set(handles.uvmat,'UserData',UvData)
 
@@ -2611,7 +2624,7 @@ switch FileInfo.FieldType
         [FieldList,VecColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
-        if index==1
+        if input_line==1
             set(handles.FieldName_1,'Value',1);
             set(handles.FieldName_1,'String',[{''};{'image'};FieldList;{'get_field...'}]);%standard menu for civx data reproduced for the second field
         end
@@ -2626,7 +2639,7 @@ switch FileInfo.FieldType
         [FieldList,VecColorList]=set_field_list('U','V','C','W');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
-        if index==1
+        if input_line==1
             set(handles.FieldName_1,'Value',1);
             set(handles.FieldName_1,'String',[{''};{'image'};FieldList;{'get_field...'}]);%standard menu for civx data reproduced for the second field
         end
@@ -2640,7 +2653,7 @@ switch FileInfo.FieldType
     case {'netcdf','mat'}
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
-        if index==1
+        if input_line==1
             FieldName_Callback([],[], handles)
         else
             FieldName_1_Callback([],[], handles)
@@ -2659,7 +2672,7 @@ end
 %% set index navigation options
 scan_option='i';%default
 state_j='off'; %default
-if index==2
+if input_line==2
     if get(handles.scan_j,'Value')
         scan_option='j'; %keep the scan option for the second file series
     end
@@ -2671,7 +2684,7 @@ if ~isempty(i1_series)
     [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
     if ~isempty(j1_series)
         state_j='on';
-        if index==1
+        if input_line==1
             if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first value
                 scan_option='j'; %scan j indext
             end
@@ -2706,13 +2719,13 @@ set(handles.MaxIndex_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
 if ~isempty(i2_series)||~isempty(j2_series)
     set(handles.CheckFixPair,'Visible','on')
-elseif index==1
+elseif input_line==1
     set(handles.CheckFixPair,'Visible','off')
 end
 
 %% apply the effect of the transform fct and view the field
 transform=get(handles.TransformPath,'UserData');
-if index==2 && (~isa(transform,'function_handle')||nargin(transform)<3)
+if input_line==2 && (~isa(transform,'function_handle')||nargin(transform)<3)
     set(handles.TransformName,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
 end
 set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
@@ -2907,17 +2920,35 @@ if isequal(get(handles.CheckMask,'Value'),1)
         RootPath=MaskPath;
     end
     if mdetect==0 % if no mask is detected in the current folder
-        MaskFullName=uigetfile_uvmat('pick a mask image file:',RootPath,'image');
-        if isempty(MaskFullName)
-            set(handles.CheckMask,'Value',0)
-        end
-
-        [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
-        [tild,tild,MaskFile,i1_series,i2,j1,j2,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt],0);
+         filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+    if ~isempty(filemask)
+        [FilePath,FileName,FileExt]=fileparts(filemask);
+        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
         if strcmp(NomType,'_1')
             NbSlice=i1_series(1,2,end);
-           set(handles.num_NbSlice,'String',num2str(NbSlice))
+            set(handles.num_NbSlice,'String',num2str(NbSlice))
+        elseif ~strcmp(NomType,'*')
+            msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
+            return
         end
+        set(hObject,'UserData',filemask);%store for future use
+        testmask=1;
+    end
+        
+        %TO COMPLEMENT......................
+         
+        
+%         MaskFullName=uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+%         if isempty(MaskFullName)
+%             set(handles.CheckMask,'Value',0)
+%         end
+% 
+%         [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
+%         [tild,tild,MaskFile,i1_series,i2,j1,j2,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt],0);
+%         if strcmp(MaskNomType,'_1')
+%             NbSlice=i1_series(1,2,end);
+%            set(handles.num_NbSlice,'String',num2str(NbSlice))
+%         end
     end
     % Mask.Path=MaskPath;
     % if isempty(MaskFile)
@@ -2960,86 +2991,85 @@ end
 function errormsg=update_mask(handles)
 %------------------------------------------------------------------------
 errormsg=[];%default
-Mask=get(handles.CheckMask,'UserData');
-if strcmp(get(handles.z_index,'Visible'),'on')
-    MaskIndex_i=str2num(get(handles.z_index,'String'));
-else
-    MaskIndex_i=mod(str2num(get(handles.i1,'String'))-1,Mask.NbSlice_i)+1;
-end
-MaskIndex_z=MaskIndex_i;%default
-if Mask.NbSlice_j>1
-    MaskIndex_j=str2num(get(handles.j1,'String'));
-    MaskIndex_z=MaskIndex_j;
-else
-    MaskIndex_j=1;
-end
-if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
-    uistack(Mask.maskhandle,'top');
-end
-MaskName=fullfile_uvmat(Mask.Path,'',Mask.File,Mask.Ext,Mask.NomType,MaskIndex_i,[],MaskIndex_j);
-UvData=get(handles.uvmat,'UserData');
+MaskName='';
 
-%% update mask image if the mask is new
-if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
-    UvData.MaskName=MaskName; %update the recorded name on UvData
-    set(handles.uvmat,'UserData',UvData);
-    if ~exist(MaskName,'file')
-        if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
-            delete(Mask.maskhandle)
-        end
-    else
-        %read mask image
-        [MaskField,tild,errormsg] = read_field(MaskName,'image');
-        if ~isempty(errormsg)
-            return
-        end
-        npxy=size(MaskField.A);
-        if length(npxy)>2
-            errormsg=[MaskName ' is not a grey scale image'];
-            return
-        elseif ~isa(MaskField.A,'uint8')
-            errormsg=[MaskName ' is not a 8 bit grey level image'];
-            return
-        end
-        MaskField.ZIndex=MaskIndex_z;
-        %px to phys or other transform on field
-         menu_transform=get(handles.TransformName,'String');
-        choice_value=get(handles.TransformName,'Value');
-        transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-        transform=get(handles.TransformPath,'UserData');
-        if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
-            if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
-                Calib=UvData.XmlData{1}.GeometryCalib;
-                MaskField=transform(MaskField,UvData.XmlData{1});
-            end
-        end
-        flagmask=MaskField.A < 200;
-
-        %make brown color image
-        imflag(:,:,1)=0.9*flagmask;
-        imflag(:,:,2)=0.7*flagmask;
-        imflag(:,:,3)=zeros(size(flagmask));
-
-        %update mask image
-        hmask=[]; %default
-        if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
-            hmask=Mask.maskhandle;
-        end
-        if ~isempty(hmask)
-            set(hmask,'CData',imflag)
-            set(hmask,'AlphaData',flagmask*0.6)
-            set(hmask,'XData',MaskField.Coord_x);
-            set(hmask,'YData',MaskField.Coord_y);
-%             uistack(hmask,'top')
+%% get the current mask name recorded in CheckMask/UserData, possibly indexed with file index
+MaskInfo=get(handles.CheckMask,'UserData');
+if isfield(MaskInfo,'File')
+    if isfield(MaskInfo,'NbSlice')
+        if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScan
+            MaskIndex_i=str2num(get(handles.j1,'String'));
         else
-            axes(handles.PlotAxes)
-            hold on
-            Mask.maskhandle=image(MaskField.Coord_x,MaskField.Coord_y,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
-            set(handles.CheckMask,'UserData',Mask)
+            MaskIndex_i=mod(str2num(get(handles.i1,'String'))-1,MaskInfo.NbSlice)+1;
+        end
+        MaskName=[MaskInfo.File '_' num2str(MaskIndex_i) '.png'];
+    else
+        MaskIndex_i=1;
+        MaskName=MaskInfo.MaskFile;
+    end
+    
+    %% update mask image if the mask is new
+    UvData=get(handles.uvmat,'UserData');
+    if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
+        UvData.MaskName=MaskName; %update the recorded name on UvData
+        set(handles.uvmat,'UserData',UvData);
+        if ~exist(MaskName,'file')
+            if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
+                delete(Mask.maskhandle)
+            end
+        else
+            %read mask image
+            [MaskField,tild,errormsg] = read_field(MaskName,'image');
+            if ~isempty(errormsg)
+                return
+            end
+            npxy=size(MaskField.A);
+            if length(npxy)>2
+                errormsg=[MaskName ' is not a grey scale image'];
+                return
+            elseif ~isa(MaskField.A,'uint8')
+                errormsg=[MaskName ' is not a 8 bit grey level image'];
+                return
+            end
+            MaskField.ZIndex=MaskIndex_i;
+            %px to phys or other transform on field
+            menu_transform=get(handles.TransformName,'String');
+            choice_value=get(handles.TransformName,'Value');
+            transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
+            transform=get(handles.TransformPath,'UserData');
+            if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
+                if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
+                    Calib=UvData.XmlData{1}.GeometryCalib;
+                    MaskField=transform(MaskField,UvData.XmlData{1});
+                end
+            end
+            flagmask=MaskField.A < 200;
+            
+            %make brown color image
+            imflag(:,:,1)=0.9*flagmask;
+            imflag(:,:,2)=0.7*flagmask;
+            imflag(:,:,3)=zeros(size(flagmask));
+            
+            %update mask image
+            hmask=[]; %default
+            if isfield(MaskInfo,'maskhandle')&& ishandle(MaskInfo.maskhandle)
+                hmask=MaskInfo.maskhandle;
+            end
+            if ~isempty(hmask)
+                set(hmask,'CData',imflag)
+                set(hmask,'AlphaData',flagmask*0.6)
+                set(hmask,'XData',MaskField.Coord_x);
+                set(hmask,'YData',MaskField.Coord_y);
+                %             uistack(hmask,'top')
+            else
+                axes(handles.PlotAxes)
+                hold on
+                MaskInfo.maskhandle=image(MaskField.Coord_x,MaskField.Coord_y,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
+                set(handles.CheckMask,'UserData',MaskInfo)
+            end
         end
     end
 end
-
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 % III - MAIN InputFileREFRESH FUNCTIONS : 'FRAME PLOT'

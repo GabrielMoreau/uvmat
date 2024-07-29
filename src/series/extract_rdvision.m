@@ -159,20 +159,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         for ii=1: numel(m.Data)
             timestamp(ii)=m.Data(ii).timestamp;
         end
-        
-%         
-%         %%%%%BRICOLAGE EXP40
-%         ind1=5*59-10;
-%         ind2=12*59-10;
-%         ind3=119*59-10;
-%         ind4=483*59-10;
-%         timestamp=[timestamp(1:ind4) timestamp(ind4) timestamp(ind4+1:end)];
-%          timestamp=[timestamp(1:ind3) timestamp(ind3) timestamp(ind3+1:end)];
-%           timestamp=[timestamp(1:ind2) timestamp(ind2) timestamp(ind2+1:end)];
-%            timestamp=[timestamp(1:ind1) timestamp(ind1) timestamp(ind1+1:end)];
-%            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-           
-           
+
         if ParamOut.ActionInput.Createxml
             ParamOut.ActionInput.XmlData.Camera.BurstTiming=time2xmlburst(timestamp,ParamOut.ActionInput.BurstLength);
             Time=xmlburst2time(ParamOut.ActionInput.XmlData.Camera.BurstTiming);
@@ -456,28 +443,11 @@ if ~exist(OutputDir,'dir')
     end
 end
 bin_file_counter=0;
-%for ii=1:SeqData.nb_frames
- %%%%%BRICOLAGE EXP40
-        ind1=5*59-10;
-        ind2=12*59-10;
-        ind3=119*59-10;
-        ind4=483*59-10;
 
 for ii=first:last
     j1=[];
     iinew=ii; 
-%     %%%%%BRICOLAGE EXP40
-%     switch ii
-%         case  ii>=ind1 && ii<ind2
-%       iinew=ii+1;
-%         case ii>=ind2 && ii<ind3
-%         iinew=ii+2;
-%         case  ii>=ind3 && ii<ind4
-%       iinew=ii+3;
-%         case       ii>=ind4 && ii<ind3
-%         iinew=ii+4;    
-%     end
-%      %%%%%%%%%
+
     if ~isequal(nbfield2,1)
         j1=mod(iinew-1,nbfield2)+1;
     end
