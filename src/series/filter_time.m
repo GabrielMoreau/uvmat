@@ -127,7 +127,7 @@ FileExt=Param.InputTable(:,5);
 
 NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 NbField_i=size(i1_series{1},2); %nb of fields for the i index
-NbField=NbField_j*NbField_i; %total number of fields
+NbSeries=NbField_j*NbField_i; %total number of fields
 
 %% define the output file (unique for the whole series)
 OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
@@ -145,10 +145,12 @@ if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairStrin
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 disp('loop for filtering started')
      
-for index=1:NbField
+for index=1:NbSeries
     index
     
-    Field= read_field(filecell{1,index},'netcdf',Param.InputFields);
+    [Field,~,errormsg]= read_field(filecell{1,index},'netcdf',Param.InputFields);
+
+
     
     %%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %first field, initialisation output data
@@ -180,16 +182,24 @@ for index=1:NbField
     UVblock=circshift(UVblock,[-1 0 0 0]); %shift U by ishift along the first index
     % Vblock=circshift(Vblock,[-1 0 0 0]); %shift U by ishift along the first index
     % Wblock=circshift(Wblock,[-1 0 0]); %shift U by ishift along the first index
-    TimeBlock(end)=Field.Time;
-    for ilist=1:NbField
-    UVblock(end,ilist,:,:)=Field.(ListFields{ilist});
+   
+    if isempty(errormsg)
+        TimeBlock(end)=Field.Time;
+        for ilist=1:NbField
+            UVblock(end,ilist,:,:)=Field.(ListFields{ilist});
+        end
+    else
+        TimeBlock(end)=NaN;
+        for ilist=1:NbField
+            UVblock(end,ilist,:,:)=NaN;
+        end
     end
     % Vblock(end,:,:)=Field.V;
     % Vblock(end,:,:)=Field.W;
     sumindex=min(index,Param.ActionInput.WindowLength)-1;
-    DataOut.Timefilter=mean(TimeBlock(end-sumindex:end,:));%mid time
+    DataOut.Timefilter=mean(TimeBlock(end-sumindex:end,:),'omitnan');%mid time
     for ilist=1:NbField
-    DataOut.(ListFilter{ilist})=squeeze(mean(UVblock(end-sumindex:end,ilist,:,:),1,'omitnan'));
+    DataOut.(ListFilter{ilist})=squeeze(mean(UVblock(end-sumindex:end,ilist,:,:),1,'omitnan'));% take average in the block, omitting NaN
     end
     % DataOut.Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
     % DataOut.Wfilter=squeeze(mean(Wblock(end-sumindex:end,:,:),1,'omitnan'));

@@ -146,6 +146,8 @@ switch FileExt
                         FileInfo.FileName=FileInfo.Filename; %correct the info given by imfinfo
                         nbfield=numel(fieldnames(FileInfo));
                         FileInfo=orderfields(FileInfo,[nbfield nbfield-1 nbfield-2 (1:nbfield-3)]); %reorder the fields of fileInfo for clarity
+                    catch ME
+                        FileInfo.error=ME.message
                     end
                 else
                     error_nc=0;
@@ -208,7 +210,7 @@ switch FileExt
                                     FileInfo.VarAttribute=Data.VarAttribute;
                                 end
                                 FileInfo.ListDimName=Data.ListDimName;
-                                FileInfo.NumberOfFrames=Data.DimValue;
+%                                 FileInfo.NumberOfFrames=Data.DimValue;
                             end
                         else
                             error_nc=1;

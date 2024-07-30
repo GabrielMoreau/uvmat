@@ -298,16 +298,16 @@ for ifield=1:NbField_i
         % read input images by vertical blocks with nbre of images equal to 2*SearchRange+1,
         par_civ1.ImageA=zeros(2*SearchRange_z+1,npy,npx);%image block initiation
         par_civ1.ImageB=zeros(2*SearchRange_z+1,npy,npx);
-        Data.Coord_z=SearchRange_z+1:par_civ1.Dz:NbSlice-1;
-        z_index=1;%first vertical block centered at image index z_index=SearchRange_z+1
-        for iz=1:2*SearchRange_z+1
+        Data.Coord_z=(1:floor((NbSlice-SearchRange_z)/par_civ1.Dz))+SearchRange_z;%SearchRange_z+1:par_civ1.Dz:NbSlice-1;
+        z_index=1;%first vertical block centered at image index par_civ1.Dz (not SearchRange_z+1
+        for iz=1:par_civ1.Dz+SearchRange_z%2*SearchRange_z+1
             j_image_index=j1_series_Civ1(iz,1)% j index of the current image
             ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%
             A= read_image(ImageName_A,FileType_A);
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j_image_index);
             B= read_image(ImageName_B,FileType_B);
-            par_civ1.ImageA(iz,:,:) = A;
-            par_civ1.ImageB(iz,:,:) = B;
+            par_civ1.ImageA(iz+SearchRange_z-par_civ1.Dz+1,:,:) = A;
+            par_civ1.ImageB(iz+SearchRange_z-par_civ1.Dz+1,:,:) = B;
         end
         
         % case of mask TO ADAPT
@@ -353,9 +353,9 @@ for ifield=1:NbField_i
             par_civ1.ImageA=circshift(par_civ1.ImageA,-par_civ1.Dz,1);%shift the indices in the image block upward by par_civ1.Dz
             par_civ1.ImageB=circshift(par_civ1.ImageB,-par_civ1.Dz,1);
             for iz=1:par_civ1.Dz %read the new images at the end of the image block
-                image_index=z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz+1;
-                if image_index<=size(j1_series_Civ1,1)
-                    j_image_index=j1_series_Civ1(z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz+1,1)
+                j_image_index=z_index*par_civ1.Dz+SearchRange_z-par_civ1.Dz+iz
+                if j_image_index<=size(j1_series_Civ1,1)
+%                     j_image_index=j1_series_Civ1(image_index,1)
                     ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(1,ifield),[],j_image_index);%
                     A= read_image(ImageName_A,FileType_A);
                     ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(1,ifield),[],j_image_index);
@@ -443,6 +443,10 @@ for ifield=1:NbField_i
         Data.VarAttribute{nbvar+1}.Role='vector_x';
         Data.VarAttribute{nbvar+2}.Role='vector_y';
         Data.VarAttribute{nbvar+5}.Role='vector_z';
+        
+        [Data.ListVarName,IA]=unique(Data.ListVarName);%suppress duplicate definition of variables (in cas of patch redone from previous file)
+        Data.VarDimName=Data.VarDimName(IA);
+        Data.VarAttribute=Data.VarAttribute(IA);
         Data.Civ1_U_smooth=Data.Civ1_U;
         Data.Civ1_V_smooth=Data.Civ1_V;
         Data.Civ1_W_smooth=Data.Civ1_W;
@@ -465,7 +469,7 @@ for ifield=1:NbField_i
         [npz,npy,npx]=size(Data.Civ1_X);
         [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,Data.Civ1_W_tps,...
             Data.Civ1_U_smooth(ind_good),Data.Civ1_V_smooth(ind_good),Data.Civ1_W_smooth(ind_good),FFres]=...
-            filter_tps_3D(Data.Civ1_X(ind_good),Data.Civ1_Y(ind_good),Civ1_Z(ind_good),Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),Data.Civ1_W(ind_good),...
+            filter_tps_3D([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good) Civ1_Z(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),Data.Civ1_W(ind_good),...
             Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Data.Civ1_FF(ind_good)=uint8(4*FFres);
         Data.Civ1_FF=reshape(Data.Civ1_FF,npz,npy,npx);
@@ -698,6 +702,8 @@ for ifield=1:NbField_i
         Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
             {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
+     
+        
         
         Data.VarAttribute{nbvar+1}.Role='vector_x';
         Data.VarAttribute{nbvar+2}.Role='vector_y';

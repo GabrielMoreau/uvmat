@@ -37,18 +37,18 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps_3D(Coord_x,Coord_y,Coord_z,U,V,W,SubDomainSize,FieldSmooth,Threshold)
+function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps_3D(Coord,U,V,W,SubDomainSize,FieldSmooth,Threshold)
 
 %% adjust subdomain decomposition
 warning off
 % [npz,npy,npx]=size(Coord_x);
-Coord=[Coord_x Coord_y Coord_z];
-NbVec=numel(Coord_x);% nbre of vectors in the field to interpolate
+% Coord=[Coord_x Coord_y Coord_z];
+NbVec=size(Coord,1);% nbre of vectors in the field to interpolate
 NbCoord=3;% space dimension,Coord(:,1)= x,Coord(:,2)=  y , Coord(:,3)=  z
 MinCoord=min(Coord,[],1);%lower coordinate bounds
 MaxCoord=max(Coord,[],1);%upper coordinate bounds
 Range=MaxCoord-MinCoord;%along eacch coordiante x,y,z
-Cellmesh=(10*prod(Range)/NbVec)^(1/3);
+Cellmesh=(10*prod(Range)*SubDomainSize/NbVec)^(1/3);
 NbSubDomainX=ceil(Range(1)/Cellmesh);
 NbSubDomainY=ceil(Range(2)/Cellmesh);
 NbSubDomainZ=ceil(10*Range(3)/Cellmesh);

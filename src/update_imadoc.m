@@ -81,6 +81,7 @@ else   % create a new xml file
     t=xmltree;
     t=set(t,1,'name','ImaDoc');
     [t,uid_calib]=add(t,1,'element',StructName);
+    xmlfile=fullfile(RootPath,[SubDir '.xml']);
 end
 
 %% save the output file

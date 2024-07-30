@@ -849,10 +849,19 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.SubDir)
         filebase=[filebase '~'];
     end
     outputfile=[filebase '.xml'];
-    [~,RootFile]=fileparts(filebase);
-    [~,~,errormsg]=update_imadoc(RootPath,SubDir,'GeometryCalib',GeometryCalib,0);
-    if ~strcmp(errormsg,'')
-        msgbox_uvmat('ERROR',errormsg);
+ %   [~,RootFile]=fileparts(filebase);
+
+    t=xmltree;
+    t=set(t,1,'name','ImaDoc');
+    [t,uid_calib]=add(t,1,'element','GeometryCalib');
+   % xmlfile=[filebase '.xml'];
+    t=struct2xml(GeometryCalib,t,uid_calib);
+    save(t)
+    try
+        save(t,outputfile);
+    catch ME
+        errormsg=['error in saving ' outputfile ': ' ME.message];
+         msgbox_uvmat('ERROR',errormsg);
     end
     listfile=get(handles.ListCoordFiles,'string');
     if isequal(listfile,{''})

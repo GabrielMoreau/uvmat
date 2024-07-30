@@ -455,30 +455,29 @@ for ifield=1:NbField
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
                     par_civ1.NbSlice_j=par_civ1.NbSlice;
                 end
-            end
-        else
-            maskname=Param.ActionInput.Civ1.Mask;
-        end
-        if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
-            par_civ1.Mask=mask; %use mask already opened
-        else
-            if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
-                try
-                    par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
-                catch ME
-                    if ~isempty(ME.message)
-                        errormsg=['error reading input image: ' ME.message];
-                        disp_uvmat('ERROR',errormsg,checkrun)
-                        return
-                    end
-                end
             else
-                par_civ1.Mask=[];
+                maskname=Param.ActionInput.Civ1.Mask;
             end
-            mask=par_civ1.Mask;
-            maskoldname=maskname;
+            if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
+                par_civ1.Mask=mask; %use mask already opened
+            else
+                if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
+                    try
+                        par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
+                    catch ME
+                        if ~isempty(ME.message)
+                            errormsg=['error reading input image: ' ME.message];
+                            disp_uvmat('ERROR',errormsg,checkrun)
+                            return
+                        end
+                    end
+                else
+                    par_civ1.Mask=[];
+                end
+                mask=par_civ1.Mask;
+                maskoldname=maskname;
+            end
         end
-        
         
         % case of input grid
         if par_civ1.CheckGrid &&~isempty(par_civ1.Grid)
@@ -494,25 +493,29 @@ for ifield=1:NbField
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
-        
-        if exist('ncfile','var')
-            CivFile=ncfile;
-            % [Data,tild,tild,errormsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
-            % if ~isempty(errormsg)
-            %     disp_uvmat('ERROR',errormsg,checkrun)
-            %     return
-            % end
-            [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
-        elseif isfield(Param,'Civ1_X')
-            Data.ListGlobalAttribute={};
-            Data.ListVarName={};
-            Data.VarDimName={};
-            Data.Civ1_X=Param.Civ1_X;
-            Data.Civ1_Y=Param.Civ1_Y;
-            Data.Civ1_U=Param.Civ1_U;
-            Data.Civ1_V=Param.Civ1_V;
-            Data.Civ1_FF=Param.Civ1_FF;
-        end
+%         
+%         if exist('ncfile','var')
+%             CivFile=ncfile;
+%             % [Data,tild,tild,errormsg]=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
+%             % if ~isempty(errormsg)
+%             %     disp_uvmat('ERROR',errormsg,checkrun)
+%             %     return
+%             % end
+%             [Data,tild,tild,errormsg]=nc2struct(CivFile);%read civ1 and fix1 data in the existing netcdf file
+%             if ~isempty(errormsg)
+%                 disp(errormsg)
+%                 return
+%             end
+%         elseif isfield(Param,'Civ1_X')
+%             Data.ListGlobalAttribute={};
+%             Data.ListVarName={};
+%             Data.VarDimName={};
+%             Data.Civ1_X=Param.Civ1_X;
+%             Data.Civ1_Y=Param.Civ1_Y;
+%             Data.Civ1_U=Param.Civ1_U;
+%             Data.Civ1_V=Param.Civ1_V;
+%             Data.Civ1_FF=Param.Civ1_FF;
+%         end
     end
 
     
