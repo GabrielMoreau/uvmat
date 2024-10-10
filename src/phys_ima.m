@@ -2,7 +2,7 @@
 % phys_ima: transform several images in phys coordinates on a common pixel grid
 %------------------------------------------------------------------------
 % OUTPUT: 
-% A_out: cell array of oitput images corresponding to the transform of the input images
+% A_out: cell array of intput images corresponding to the transform of the input images
 % Rangx, Rangy; vectors with two elements defining the phys positions of first and last pixels in each direction
 %  (the same for all the ouput images)
 %
@@ -16,15 +16,20 @@ xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
-dx=ones(1,numel(A));
-dy=ones(1,numel(A));
+
 if isstruct(XmlData)
     XmlData={XmlData};
 end
 if ~exist('resolution_factor','var')
 resolution_factor=1;
 end
-
+checknumeric=0;
+if isnumeric(A)
+    A={A};
+    checknumeric=1;
+end
+dx=ones(1,numel(A));
+dy=ones(1,numel(A));
 for icell=1:numel(A)
     siz=size(A{icell});
     npx=[npx siz(2)];
@@ -100,4 +105,7 @@ for icell=1:numel(A)
             A_out{icell}=uint16(A_out{icell});
         end
     end
+end
+if checknumeric
+    A_out=A_out{1};
 end
