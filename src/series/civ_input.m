@@ -216,7 +216,7 @@ CivInputData.NomTypeIma=NomTypeImaA;
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
-set(handles.SearchRange,'UserData', pxcm_search);
+% set(handles.SearchRange,'UserData', pxcm_search);
 
 
 %% set the civ_input options, depending on the input file content if a nc file has been opened
@@ -230,7 +230,9 @@ if ind_opening==0  %case of image opening, start with Civ1
     index_max=find(checkbox, 1, 'last' );
     if isempty(index_max),index_max=1;end
     for index=1:index_max
-        set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
+        set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1 
+        update_CivOptions(handles,0)
+        update_frame(handles,ListOptions{index})
     end
 else  %case of netcdf file opening, start with the stage read in the file if the input file is being refreshed
     %     if isequal(get(hhseries.REFRESH,'BackgroundColor'),[1 1 0]) &&...
@@ -276,7 +278,7 @@ end
 if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Program,Param.Action.ActionName)% the program fits with the stored data
     fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
 
-    if isfield(Param.ActionInput,'Civ1')&& isfield(Param.ActionInput.Civ1,'SearchBoxSize')
+    if isfield(Param.ActionInput,'Civ1')&& isfield(Param.ActionInput.Civ1,'SearchBoxSize')%transform from SearchBoxSize to SearchRange (old to new convention)
                SearchRange=round((Param.ActionInput.Civ1.SearchBoxSize-Param.ActionInput.Civ1.CorrBoxSize)/2);
                 set(handles.num_SearchRange_1(1),'String',num2str(SearchRange(1)))
                 set(handles.num_SearchRange_2(1),'String',num2str(SearchRange(2)))
@@ -412,7 +414,7 @@ Param.ConfigSource='\default';
 %% Civ1 parameters
 %Param.CheckCiv1=1;
 Param.Civ1.CorrBoxSize=[31 31 1];
-Param.Civ1.SearchRange=[15 15 2];
+Param.Civ1.SearchRange=[15 15];
 Param.Civ1.SearchBoxShift=[0 0];
 Param.Civ1.CorrSmooth=1;
 Param.Civ1.Dx=20;
@@ -1914,3 +1916,15 @@ function num_SearchRange_3_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of num_SearchRange_3 as text
 %        str2double(get(hObject,'String')) returns contents of num_SearchRange_3 as a double
+
+
+
+function edit108_Callback(hObject, eventdata, handles)
+% hObject    handle to edit108 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit108 as text
+%        str2double(get(hObject,'String')) returns contents of edit108 as a double
+
+
