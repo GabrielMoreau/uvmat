@@ -256,7 +256,7 @@ isy2=iby2+ceil(par_civ.SearchRange(2));
     end
 end
 ytable=npy_ima-ytable+1;%reverse from j index to image coordinate y
-result_conv=result_conv*corrmax/sum_square;% keep the last (not normalised) correlation matrix for output
+result_conv=result_conv/sum_square;% keep the last correlation matrix for output
 
 
 

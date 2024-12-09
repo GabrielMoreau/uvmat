@@ -3223,10 +3223,16 @@ if get(handles.CheckMask,'Value')
         checkmask=0;
         FirstFileName=fullfile_uvmat(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},...
             Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);
-        Data=nc2struct(FirstFileName);
+        
+        [FileInfo,VideoObject]=get_file_info(FirstFileName);
+        
+        
+%         Data=nc2struct(FirstFileName);
         if isfield(Data,'Civ2_Mask')
+            if exist(Data.Civ2_Mask,'file')
             MaskTable{iview,1}=Data.Civ2_Mask;
             checkmask=1; 
+            end
         end
         if ~checkmask
             MaskTable{iview,1}=uigetfile_uvmat('select a mask file:',Param.InputTable{iview,1},'image');

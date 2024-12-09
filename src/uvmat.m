@@ -2293,7 +2293,11 @@ switch FieldType
             set(handles.j1,'String',num2stra(j1,NomType));
             set(handles.j2,'String',num2stra(j2,NomType));
             if isfield(FileInfo,'MaskFile')
+                if exist(FileInfo.MaskFile)
                 set(handles.CheckMask,'Value',1)
+                else
+                    set(handles.CheckMask,'Value',0)
+                end
                  Mask.File=FileInfo.MaskFile;
                  if isfield(FileInfo,'MaskNbSlice')
                      Mask.NbSlice=FileInfo.MaskNbSlice;
@@ -2931,7 +2935,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
         [MaskPath,FileName,FileExt]=fileparts(filemask);
         Mask.File=filemask;
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(MaskPath,[FileName FileExt]);
-        Mask.NbSlice=1;%default
+        Mask.NbSlice=[];%default
         Mask.VolumeScan=0;% TO UPDATE ***
         if strcmp(NomType,'_1')
             Mask.NbSlice=i1_series(1,2,end);
@@ -2943,6 +2947,9 @@ if isequal(get(handles.CheckMask,'Value'),1)
         %set(hObject,'UserData',filemask);%store for future use
         set(handles.CheckMask,'UserData',Mask);
         errormsg=update_mask(handles);
+        if ~isempty(errormsg)
+             msgbox_uvmat(['ERROR','error in displaying mask, ' errormsg]);
+        end
         testmask=1;
     end
 else % desactivate mask display
@@ -2968,7 +2975,7 @@ MaskName='';
 %% get the current mask name recorded in CheckMask/UserData, possibly indexed with file index
 MaskInfo=get(handles.CheckMask,'UserData');
 if isfield(MaskInfo,'File')
-    if isfield(MaskInfo,'NbSlice')
+    if isfield(MaskInfo,'NbSlice')&& ~isempty(MaskInfo.NbSlice)
         if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScan
             MaskIndex_i=str2num(get(handles.j1,'String'));
         else

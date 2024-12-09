@@ -283,7 +283,8 @@ for ifield=1:NbField
             break
         end
     end
-    if CheckInputFile
+%     if CheckInputFile
+    if CheckOutputFile
         OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
         if iview_A==0 % no nc file has been entered
             ncfile=fullfile_uvmat(OutputPath,Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
@@ -487,7 +488,7 @@ for ifield=1:NbField
         end
         
         % caluclate velocity data
-        tstart_civ1=tic;
+       % tstart_civ1=tic;
         [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, result_conv, errormsg] = civ (par_civ1);
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)

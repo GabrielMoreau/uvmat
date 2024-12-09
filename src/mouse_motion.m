@@ -275,16 +275,17 @@ if strcmp(htype,'axes')
                         'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
                         'LineStyle','-','Tag','PIV_box_marker');
                     rectangle('Curvature',[0 0],...
-                        'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2],'EdgeColor','m',...
+                        'Position',[xround-isx2-ibx2+shiftx yround-isy2-iby2+shifty 2*isx2+2*ibx2 2*isy2+2*iby2],'EdgeColor','m',...
                         'LineStyle','- -','Tag','PIV_search_marker');
                 else
                     set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
-                    set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
+                    set(hhhh,'Position',[xround-isx2-ibx2+shiftx yround-isy2-iby2+shifty 2*isx2+2*ibx2 2*isy2+2*iby2])
                 end
                 
                 % perform the PIV calculation as the single point xround yround
-                Param.CheckFix1=0;
-                Param.CheckPatch1=0;%desactivate all calculations except Civ2 or Civ1
+                Param.ActionInput.CheckCiv1=1;
+%                 Param.CheckFix1=0;
+%                 Param.CheckPatch1=0;%desactivate all calculations except Civ2 or Civ1
                 Param.Action.RUN=1;
                 Param.ActionInput.ListCompareMode='PIV';
                 Param.ActionInput.PairIndices=read_GUI(hhciv.PairIndices);
@@ -298,10 +299,14 @@ if strcmp(htype,'axes')
                 if ~isempty(errormsg)
                     text_displ_5=errormsg;
                 else
-                    rangx(1)=-(isx2-ibx2)+shiftx;
-                    rangx(2)=isx2-ibx2+shiftx;
-                    rangy(1)=-(isy2-iby2)-shifty;
-                    rangy(2)=(isy2-iby2)-shifty;
+%                     rangx(1)=-(isx2-ibx2)+shiftx;
+%                     rangx(2)=isx2-ibx2+shiftx;
+%                     rangy(1)=-(isy2-iby2)-shifty;
+%                     rangy(2)=(isy2-iby2)-shifty;
+                    rangx(1)=-isx2+shiftx;
+                    rangx(2)=isx2+shiftx;
+                    rangy(1)=-isy2-shifty;
+                    rangy(2)=isy2-shifty;
                     hcorr=[];
                     if isfield(AxeData,'CurrentCorrImage')
                         hcorr=AxeData.CurrentCorrImage;
