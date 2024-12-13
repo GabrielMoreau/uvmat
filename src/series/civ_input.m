@@ -1531,73 +1531,98 @@ function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 drawnow
 if get(handles.TestCiv1,'Value')
-    set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch  
+    set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
     set(handles.CheckFix1,'value',0)% desactivate next step
     set(handles.CheckPatch1,'value',0)% desactivate next step
     set(handles.CheckCiv2,'value',0)% desactivate next step
     set(handles.CheckFix2,'value',0)% desactivate next step
     set(handles.CheckPatch2,'value',0)% desactivate next step
     update_CivOptions(handles,0)
-      hseries=findobj(allchild(0),'Tag','series');
-     Param=read_GUI(hseries);
-     Param.Action.RUN=1;
-     Param.ActionInput=read_GUI(handles.civ_input);
-     if isfield(Param.ActionInput,'Fix1')
-         Param.ActionInput=rmfield(Param.ActionInput,'Fix1');
-     end
-     if isfield(Param.ActionInput,'Patch1')
-         Param.ActionInput=rmfield(Param.ActionInput,'Patch1');
-     end
-     if isfield(Param.ActionInput,'Civ2')%remove options that may be selected beyond Patch1
-         Param.ActionInput=rmfield(Param.ActionInput,'Civ2');
-     end
-     if isfield(Param.ActionInput,'Fix2')
-         Param.ActionInput=rmfield(Param.ActionInput,'Fix2');
-     end
-     if isfield(Param.ActionInput,'Patch2')
-         Param.ActionInput=rmfield(Param.ActionInput,'Patch2');
-     end
-     if isfield(Param,'OutputSubDir')
-     Param=rmfield(Param,'OutputSubDir'); %remove output file option from civ_series
-     end
-     Param.ActionInput.Civ1.CorrSmooth=0;% launch Civ1 with no data point (to get the image names for A and B)
-     Param.IndexRange.first_i=str2num(get(handles.ref_i,'String'));
-     Param.IndexRange.last_i=str2num(get(handles.ref_i,'String'));
-     if strcmp(get(handles.ref_j,'Visible'),'on')
-         Param.IndexRange.first_j=str2num(get(handles.ref_j,'String'));
-         Param.IndexRange.last_j=Param.IndexRange.first_j;
-     else
-         Param.IndexRange.first_j=1;
-         Param.IndexRange.last_j=1;
-     end
-     [Data,errormsg]=civ_series(Param);% get the civ1+fix1 results 
-     if ~isempty(errormsg), return, end % rmq: error msg displayed in civ_series
-     
- %% create image data ImageData for display
-     ImageData.ListVarName={'ny','nx','A'};
-     ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
-     ImageData.VarAttribute{1}.Role='coord_y';
-     ImageData.VarAttribute{2}.Role='coord_x';
-     ImageData.VarAttribute{3}.Role='scalar';
-     ImageData.A=imread(Data.Civ1_ImageA); % read the first image
-     if ndims(ImageData.A)==3 %case of color image
-         ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
-     end
-     ImageData.ny=[size(ImageData.A,1) 1];
-     ImageData.nx=[1 size(ImageData.A,2)];
-     ImageData.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly 
-
-     %% create the figure view_field for image visualization
-     hview_field=view_field(ImageData); %view the image in the GUI view_field 
-     set(0,'CurrentFigure',hview_field)
-     hhview_field=guihandles(hview_field);
-     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
-     ViewData=get(hview_field,'UserData');
-     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-     ViewData.PlotAxes.X=Data.Civ1_X';
-     ViewData.PlotAxes.Y=Data.Civ1_Y';
-     ViewData.PlotAxes.B=imread(Data.Civ1_ImageB);%store the second image in the UserData of the GUI view_field
-     set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field
+    % get info from the GUI 'series'
+    hseries=findobj(allchild(0),'Tag','series');
+    Param=read_GUI(hseries);
+    Param.Action.RUN=1;
+    Param.ActionInput=read_GUI(handles.civ_input);
+    i1=str2num(get(handles.ref_i,'String'));  %references indices
+    i2=i1;
+    j1=1;
+    if strcmp(get(handles.ref_j,'Visible'),'on')
+        j1=str2num(get(handles.ref_j,'String'));
+    end
+    j2=j1;
+    str_civ=Param.ActionInput.PairIndices.ListPairCiv1;
+    r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
+    if ~isempty(r)
+        if strmp(r.ind,'i')
+            i1=i1-str2num(r.num1);
+            i2=i2 +str2num(r.num2);
+        elseif strmp(r.ind,'j')
+            j1=j1-str2num(r.num1);
+            j2=j2 +str2num(r.num2);
+        end
+    else % mode='j1-j2';
+        r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
+        if isempty(r)
+            r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+            if isempty(r)
+                r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+            end
+        end
+        if isempty(r)
+            disp('wrong pair mode input option')
+        else
+            j1=stra2num(r.num1);
+            j2=stra2num(r.num2);
+        end
+    end
+    
+    par_civ1=Param.ActionInput.Civ1;
+      
+    if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+        ImageName_A=Param.ActionInput.RefFile;
+    else
+        RootPath_A=Param.InputTable{1,1};
+        SubDir_A=Param.InputTable{1,2};
+        RootFile_A=Param.InputTable{1,3};
+        NomType_A=Param.InputTable{1,4};
+        FileExt_A=Param.InputTable{1,5};
+        ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
+        ImageName_B=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i2,[],j2);
+    end
+    par_civ1.ImageA = read_image(ImageName_A);
+    par_civ1.ImageB = read_image(ImageName_B);
+    par_civ1.CorrSmooth=0;% will give only the grid of data points expected for PIV, computations will be activated by the fct mouse_motion.m
+    [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, ~, errormsg]=civ(par_civ1);
+    if ~isempty(errormsg)
+        disp(errormsg)
+        return
+    end % rmq: error msg displayed in civ_series
+    
+    %% create image data ImageData for display
+    ImageData.ListVarName={'ny','nx','A'};
+    ImageData.VarDimName= {'ny','nx',{'ny','nx'}};
+    ImageData.VarAttribute{1}.Role='coord_y';
+    ImageData.VarAttribute{2}.Role='coord_x';
+    ImageData.VarAttribute{3}.Role='scalar';
+    ImageData.A=par_civ1.ImageA; % get the first image
+    if ndims(ImageData.A)==3 %case of color image
+        ImageData.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
+    end
+    ImageData.ny=[size(ImageData.A,1) 1];
+    ImageData.nx=[1 size(ImageData.A,2)];
+    ImageData.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly
+    
+    %% create the figure view_field for image visualization
+    hview_field=view_field(ImageData); %view the image in the GUI view_field
+    set(0,'CurrentFigure',hview_field)
+    hhview_field=guihandles(hview_field);
+    set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
+    ViewData=get(hview_field,'UserData');
+    ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
+    ViewData.PlotAxes.X=Data.Civ1_X';
+    ViewData.PlotAxes.Y=Data.Civ1_Y';
+    ViewData.PlotAxes.B=par_civ1.ImageB;%store the second image in the UserData of the GUI view_field
+    set(hview_field,'UserData',ViewData)% store the info in the UserData of image view_field, to be used by mouse_motion.m
     
     %% look for a current figure for image correlation display
     corrfig=findobj(allchild(0),'tag','corrfig');
@@ -1622,7 +1647,7 @@ else
     hview_field=findobj(allchild(0),'Tag','view_field'); %view the image in the GUI view_field
     if ~isempty(hview_field)
         delete(hview_field)
-    end      
+    end
 end
 
 % --------------------------------------------------------------------
@@ -1635,7 +1660,7 @@ msgbox_uvmat('WARNING','open the civ file and run "series/test_filter_tps" ')
 %'nomtype2pair': creates nomenclature for index pairs knowing the image nomenclature
 %---------------------------------------------------------------------
 function NomTypeNc=nomtype2pair(NomTypeIma,mode_selected)
-%---------------------------------------------------------------------           
+%---------------------------------------------------------------------
 % OUTPUT:
 % NomTypeNc
 %---------------------------------------------------------------------
@@ -1644,23 +1669,23 @@ function NomTypeNc=nomtype2pair(NomTypeIma,mode_selected)
 
 NomTypeNc=NomTypeIma;%default
 switch mode_selected
-    case 'pair j1-j2'      
-    if ~isempty(regexp(NomTypeIma,'a$'))
-        NomTypeNc=[NomTypeIma 'b'];
-    elseif ~isempty(regexp(NomTypeIma,'A$'))
-        NomTypeNc=[NomTypeIma 'B'];
-    else
-        r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
-        if ~isempty(r)
-            NomTypeNc='_1_1-2';
+    case 'pair j1-j2'
+        if ~isempty(regexp(NomTypeIma,'a$'))
+            NomTypeNc=[NomTypeIma 'b'];
+        elseif ~isempty(regexp(NomTypeIma,'A$'))
+            NomTypeNc=[NomTypeIma 'B'];
+        else
+            r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+            if ~isempty(r)
+                NomTypeNc='_1_1-2';
+            end
         end
-    end
-    case 'series(Dj)'  
-%         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
-%         if ~isempty(r)
-            NomTypeNc='_1_1-2';
-%         end
-   case 'series(Di)'
+    case 'series(Dj)'
+        %         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+        %         if ~isempty(r)
+        NomTypeNc='_1_1-2';
+        %         end
+    case 'series(Di)'
         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
         if ~isempty(r)
             NomTypeNc='_1-2_1';

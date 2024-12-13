@@ -92,7 +92,7 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','Conventions','CivStage');
+[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','Conventions','CivStage');% read the global attributes to get Data.CivStage
 if ~isempty(errormsg)
      errormsg=['read_civdata: ' errormsg];
     return

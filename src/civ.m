@@ -43,12 +43,6 @@ end
 
 %% prepare measurement grid if not given as input
 if ~isfield(par_civ,'Grid')% grid points defining central positions of the sub-images in image A
-%     if ischar(par_civ.Grid)%read the grid file if the input is a file name (grid in x, y image coordinates)
-%         par_civ.Grid=dlmread(par_civ.Grid);
-%         par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
-%     end
-%     % else par_civ.Grid is already an array, no action here
-% else% automatic grid in x, y image coordinates
     nbinterv_x=floor((npx_ima-1)/par_civ.Dx);
     gridlength_x=nbinterv_x*par_civ.Dx;
     minix=ceil((npx_ima-gridlength_x)/2);
@@ -113,8 +107,6 @@ check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 %  20>=mask: velocity=0
 checkmask=0;
 MinA=min(min(par_civ.ImageA));
-%MinB=min(min(par_civ.ImageB));
-%check_undefined=false(size(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     checkmask=1;
     if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
@@ -125,7 +117,6 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
-corrmax=0;
 sum_square=1;% default
 mesh=1;% default
 CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
@@ -133,16 +124,16 @@ if CheckDeformation
     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
     par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
 end
- 
+
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec=1:nbvec
         iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
         jref=round(npy_ima-par_civ.Grid(ivec,2)+0.5);%  j index  for the middle of the correlation box in the image A
         FF(ivec)=0;
         ibx2=floor(CorrBoxSizeX(ivec)/2);
-iby2=floor(CorrBoxSizeY(ivec)/2);
-isx2=ibx2+ceil(par_civ.SearchRange(1));
-isy2=iby2+ceil(par_civ.SearchRange(2));
+        iby2=floor(CorrBoxSizeY(ivec)/2);
+        isx2=ibx2+ceil(par_civ.SearchRange(1));
+        isy2=iby2+ceil(par_civ.SearchRange(2));
         subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
         subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
@@ -215,7 +206,7 @@ isy2=iby2+ceil(par_civ.SearchRange(2));
                 result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 corrmax= max(max(result_conv));
-        
+                
                 %result_conv=(result_conv/corrmax); %normalize, peak=always 255
                 %Find the correlation max, at 255
                 [y,x] = find(result_conv==corrmax,1);
@@ -279,11 +270,11 @@ FF=true;% error flag for vector truncated by the limited search box
 
 peaky = y; peakx=x;
 if y < npy && y > 1 && x < npx-1 && x > 1
-   FF=false; % no error by the limited search box
+    FF=false; % no error by the limited search box
     max_conv=result_conv(y,x);% max correlation
     %peak2noise= max(4,max_conv/std(reshape(result_conv,1,[])));% ratio of max conv to standard deviation of correlations (estiamtion of noise level), set to value 4 if it is too low
     peak2noise=100;% TODO: make this threshold more precise, depending on the image noise
-    result_conv=result_conv*peak2noise/max_conv;% renormalise the correlation with respect to the noise 
+    result_conv=result_conv*peak2noise/max_conv;% renormalise the correlation with respect to the noise
     result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1  (=0 by discretisation, to avoid divergence in the log)
     
     f0 = log(result_conv(y,x));

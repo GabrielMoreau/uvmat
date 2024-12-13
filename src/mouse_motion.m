@@ -237,27 +237,10 @@ if strcmp(htype,'axes')
             % case of PIV correlation display
             if test_piv
                [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
-               if isfield(hhciv,'TestCiv2') && strcmp(get(hhciv.Civ2,'Visible'),'on')&& ...
-                                     strcmp(get(hhciv.TestCiv2,'Visible'),'on')&& get(hhciv.TestCiv2,'Value')% if TestCiv2 is activated
-                   CivOption='Civ2';
-                   Param.CheckCiv1=0;
-                   par_civ=read_GUI(hhciv.Civ2);%read the Civ2 panel in civ_input
-                   par_civ.Civ1_SubRange=Field.Civ1_SubRange;% get the subranges used for patch
-                   par_civ.Civ1_NbCentres=Field.Civ1_NbCentres;% get the nbre of civ1 data points in each subrange
-                   par_civ.Civ1_Coord_tps=Field.Civ1_Coord_tps;% get the positions of the centres (Civ1 data)
-                   par_civ.Civ1_U_tps=Field.Civ1_U_tps;% get the tps coefficients for spline, U component
-                   par_civ.Civ1_V_tps=Field.Civ1_V_tps;% get the tps coefficients for spline, V component
-                   par_civ.Civ1_Dt=Field.Civ1_Dt;
-                   par_civ.Civ2_Dt=Field.Civ2_Dt;
-                   shiftx=Field.ShiftX(ind_pt);% get field info stored in the cuirrent figure
-                   shifty=Field.ShiftY(ind_pt);
-               else
-                   CivOption='Civ1';
                    Param.CheckCiv2=0;
                    par_civ=read_GUI(hhciv.Civ1);%read the Civ1 panel in civ_input
                    shiftx=par_civ.SearchBoxShift(1);
                    shifty=par_civ.SearchBoxShift(2);
-               end
                 xround=Field.X(ind_pt);
                 yround=Field.Y(ind_pt);
                 
@@ -283,26 +266,15 @@ if strcmp(htype,'axes')
                 end
                 
                 % perform the PIV calculation as the single point xround yround
-                Param.ActionInput.CheckCiv1=1;
-%                 Param.CheckFix1=0;
-%                 Param.CheckPatch1=0;%desactivate all calculations except Civ2 or Civ1
-                Param.Action.RUN=1;
-                Param.ActionInput.ListCompareMode='PIV';
-                Param.ActionInput.PairIndices=read_GUI(hhciv.PairIndices);
                 par_civ.ImageA=Field.A;
                 par_civ.ImageB=Field.B;
                 par_civ.ImageHeight=size(par_civ.ImageA,1);
                 par_civ.ImageWidth=size(par_civ.ImageA,2);
                 par_civ.Grid=[xround yround];% PIV calculation with a single point 
-                Param.ActionInput.(CivOption)=par_civ;      
-                [Data,errormsg,result_conv]= civ_series(Param);
+                [~,~,utable,vtable,~,~,result_conv,errormsg]= civ(par_civ);
                 if ~isempty(errormsg)
                     text_displ_5=errormsg;
                 else
-%                     rangx(1)=-(isx2-ibx2)+shiftx;
-%                     rangx(2)=isx2-ibx2+shiftx;
-%                     rangy(1)=-(isy2-iby2)-shifty;
-%                     rangy(2)=(isy2-iby2)-shifty;
                     rangx(1)=-isx2+shiftx;
                     rangx(2)=isx2+shiftx;
                     rangy(1)=-isy2-shifty;
@@ -319,7 +291,7 @@ if strcmp(htype,'axes')
                         if ~isempty(corrfig)
                             set(0,'CurrentFigure',corrfig(1))
                             AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);% plot the correlation map, with full colormap from 0 to 1
-                            AxeData.CurrentVector=line([0 Data.([CivOption '_U'])],[0 Data.([CivOption '_V'])],'Tag','vector');
+                            AxeData.CurrentVector=line([0 utable],[0 vtable],'Tag','vector');
                             AxeData.TitleHandle=title(['[x,y]= ' num2str(par_civ.Grid) ' px']);
                             colorbar
                             set(CurrentAxes,'UserData',AxeData)
@@ -338,7 +310,7 @@ if strcmp(htype,'axes')
                         rangy(1)=min(rangy(1),0);
                          set(ParentAxe,'XLim',rangx)
                          set(ParentAxe,'YLim',[-rangy(2) -rangy(1)])
-                        set(AxeData.CurrentVector,'XData',[0 Data.([CivOption '_U'])],'YData',[0 Data.([CivOption '_V'])]);
+                        set(AxeData.CurrentVector,'XData',[0 utable],'YData',[0 vtable]);
                         set(AxeData.TitleHandle,'String',['[x,y]= ' num2str(par_civ.Grid) ' px'])
                     end
                 end

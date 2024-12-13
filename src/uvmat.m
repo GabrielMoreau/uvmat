@@ -2897,40 +2897,43 @@ function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %case of view mask selection
 if isequal(get(handles.CheckMask,'Value'),1)
-   [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-% if isempty(regexp(RootPath,'^http://'))
-%     fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
-% else
-%     fileinput=[RootPath '/' SubDir '/' RootFile FileIndex FileExt];%
-% end
-%  FileInfo=get_file_info(fileinput);
-     
-%     MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-%     MaskPath=fullfile(RootPath,[MaskSubDir '.mask']);
-    mdetect=0;
-%     if exist(MaskPath,'dir')
-%         ListStruct=dir(MaskPath);%look for a mask file
-%         ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-%         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-%         ListFiles=ListCells(1,:);%list of file and dri names
-%         ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
-%         if ~isempty(ListFiles)
-%             for ifile=1:numel(ListFiles)
-%                 [tild,tild,MaskExt]=fileparts(ListFiles{1});
-%                 [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileInfo]=find_file_series(MaskPath,ListFiles{ifile},0);
-%                 MaskFileType=MaskFileInfo.FileType;
-%                 if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
-%                     mdetect=1;
-%                 end
-%                 if ~strcmp(MaskFile{ifile},MaskFile{1})
-%                     mdetect=0;% cancel detection test in case of multiple masks, use the brower for selection
-%                     break
-%                 end
-%             end
-%         end
-%         RootPath=MaskPath;
-%     end
-    filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+    [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+    if isempty(regexp(RootPath,'^http://'))
+        fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% build the input file name (first line)
+    else
+        fileinput=[RootPath '/' SubDir '/' RootFile FileIndex FileExt];%
+    end
+    FileInfo=get_file_info(fileinput);
+    if isfield(FileInfo,'MaskFile')&& exist(FileInfo.MaskFile,'file')
+        filemask=FileInfo.MaskFile;
+    else
+        %     MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+        %     MaskPath=fullfile(RootPath,[MaskSubDir '.mask']);
+        %    mdetect=0;
+        %     if exist(MaskPath,'dir')
+        %         ListStruct=dir(MaskPath);%look for a mask file
+        %         ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        %         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+        %         ListFiles=ListCells(1,:);%list of file and dri names
+        %         ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
+        %         if ~isempty(ListFiles)
+        %             for ifile=1:numel(ListFiles)
+        %                 [tild,tild,MaskExt]=fileparts(ListFiles{1});
+        %                 [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileInfo]=find_file_series(MaskPath,ListFiles{ifile},0);
+        %                 MaskFileType=MaskFileInfo.FileType;
+        %                 if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
+        %                     mdetect=1;
+        %                 end
+        %                 if ~strcmp(MaskFile{ifile},MaskFile{1})
+        %                     mdetect=0;% cancel detection test in case of multiple masks, use the brower for selection
+        %                     break
+        %                 end
+        %             end
+        %         end
+        %         RootPath=MaskPath;
+        %     end
+        filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+    end
     if ~isempty(filemask)
         [MaskPath,FileName,FileExt]=fileparts(filemask);
         Mask.File=filemask;
@@ -2948,14 +2951,15 @@ if isequal(get(handles.CheckMask,'Value'),1)
         set(handles.CheckMask,'UserData',Mask);
         errormsg=update_mask(handles);
         if ~isempty(errormsg)
-             msgbox_uvmat(['ERROR','error in displaying mask, ' errormsg]);
+            msgbox_uvmat(['ERROR','error in displaying mask, ' errormsg]);
         end
         testmask=1;
     end
 else % desactivate mask display
     MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
-        delete(MaskData.maskhandle)
+       % delete(MaskData.maskhandle)
+       set(MaskData.maskhandle,'Visible','off')
     end
     set(handles.CheckMask,'UserData',[])
     UvData=get(handles.uvmat,'UserData');
@@ -3036,14 +3040,14 @@ if isfield(MaskInfo,'File')
             end
             if ~isempty(hmask)
                 set(hmask,'CData',imflag)
-                set(hmask,'AlphaData',flagmask*0.6)
+                set(hmask,'AlphaData',flagmask*0.3)
                 set(hmask,'XData',MaskField.Coord_x);
                 set(hmask,'YData',MaskField.Coord_y);
                 %             uistack(hmask,'top')
             else
                 axes(handles.PlotAxes)
                 hold on
-                MaskInfo.maskhandle=image(MaskField.Coord_x,MaskField.Coord_y,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
+                MaskInfo.maskhandle=image(MaskField.Coord_x,MaskField.Coord_y,imflag,'Tag','mask','HitTest','off','AlphaData',0.3*ones(size(flagmask)));
                 set(handles.CheckMask,'UserData',MaskInfo)
             end
         end
