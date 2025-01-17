@@ -78,4 +78,8 @@ switch FileType
                 else
         A=Input.Frames{num}.Components{1}.Planes{1}';
                 end
+    case 'telopsIR'     
+        [A,Header]=readIRCam(FileName,'Frames',num);
+         A=(reshape(A,Header(1).Width,Header(1).Height))';
+         A=flip(A,1);
 end

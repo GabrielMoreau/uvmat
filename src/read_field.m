@@ -238,6 +238,10 @@ switch FileType
             ParamOut=VideoReader(FileName);
             A=read(ParamOut,frame_index);
         end
+    case 'telopsIR'
+         [A,Header]=readIRCam(FileName,'Frames',frame_index);
+         A=(reshape(A,Header(1).Width,Header(1).Height))';
+         A=flip(A,1);
     case 'mmreader'
         if isa(ParamIn,'mmreader')
             A=read(ParamIn,frame_index);

@@ -876,7 +876,13 @@ PairCiv2Init=menu_pair{get(handles.ListPairCiv2,'Value')};%previous choice of pa
 ref_i=str2double(get(handles.ref_i,'String'));
 ref_j=[];
 if isequal(mode_selected,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
-    ref_j=0;
+     ref_j=0;
+    MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
+        MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
+        if MaxIndex_j-MinIndex_j>10
+            mode_selected= 'series(Dj)';
+           ref_j= str2double(get(handles.ref_j,'String'));
+        end
 elseif strcmp(get(handles.ref_j,'Visible'),'on')
     ref_j=str2double(get(handles.ref_j,'String'));
 end
@@ -934,8 +940,12 @@ switch mode_selected
             end
         end
     case 'pair j1-j2'%case of pairs
-        MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
-        MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
+%         MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
+%         MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
+%         if MaxIndex_j-MinIndex_j>10
+%             disp('too many pairs, switch to mode series(Dj)')
+%             return
+%         end
         index_pair=0;
         %get all the Time intervals in bursts
         displ_pair_dt='';

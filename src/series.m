@@ -139,13 +139,13 @@ if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
 end
 if exist(xmlfile,'file')
-    SeriesData.SeriesParam=xml2struct(xmlfile);
-    if ~(isfield(SeriesData.SeriesParam,'ClusterParam')&& isfield(SeriesData.SeriesParam.ClusterParam,'LaunchCmdFcn'))
+    SeriesData=xml2struct(xmlfile);
+    if ~(isfield(SeriesData,'ClusterParam')&& isfield(SeriesData.ClusterParam,'LaunchCmdFcn'))
         [success,message]=copyfile(xmlfile,fullfile(path_series,'series_old.xml'));% update the file series.xml inot correctly documented
         delete(xmlfile);
         [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
     end
-    SeriesData.SeriesParam=xml2struct(xmlfile);
+    SeriesData=xml2struct(xmlfile);
 end
 
 %% list of builtin functions in the menu ActionName
@@ -159,7 +159,12 @@ ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab 
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
-[s,w]=system(SeriesData.SeriesParam.ClusterParam.ExistenceTest); % look for cluster system presence
+if isfield(SeriesData.ClusterParam.ExistenceTest,'Text')
+    oarcommand=SeriesData.ClusterParam.ExistenceTest.Text;
+else
+    oarcommand=SeriesData.ClusterParam.ExistenceTest;
+end
+[s,w]=system(oarcommand); % look for cluster system presence
 if isequal(s,0)
     RunModeList=[RunModeList;{'cluster'}];
     set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
@@ -1532,8 +1537,8 @@ end
 %         NbCore=1; % no need to split the calculation
 %     case 'cluster'
 %         %proposed number of cores to reserve in the cluster
-%         NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
-%         NbCoreMax=min(NbProcess,SeriesData.SeriesParam.ClusterParam.NbCoreMax);
+%         NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
+%         NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);
 %         if NbCoreMax~=1
 %             if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
 %                 warning_string=', preferably use .sh option to save Matlab licences';
@@ -1823,8 +1828,8 @@ for iexp=1:NbExp
                 set(handles.num_CPUTime,'String',answer)
                 Param.Action.CPUTime=CPUTime;
             end
-            JobNumberMax=SeriesData.SeriesParam.ClusterParam.JobNumberMax;
-            JobCPUTimeAdvised=SeriesData.SeriesParam.ClusterParam.JobCPUTimeAdvised;
+            JobNumberMax=SeriesData.ClusterParam.JobNumberMax;
+            JobCPUTimeAdvised=SeriesData.ClusterParam.JobCPUTimeAdvised;
             if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
                 BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is JobCPUTimeAdvised.
                 BlockLength=max(BlockLength,ceil(numel(ref_i)*NbExp/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
@@ -1834,8 +1839,8 @@ for iexp=1:NbExp
             end
 
             %         %proposed number of cores to reserve in the cluster
-            NbCoreAdvised=SeriesData.SeriesParam.ClusterParam.NbCoreAdvised;
-            NbCoreMax=min(NbProcess,SeriesData.SeriesParam.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
+            NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
+            NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
             if NbCoreMax~=1
                 if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
                     warning_string=', preferably use .sh option to save Matlab licences';
@@ -2100,7 +2105,7 @@ for iexp=1:NbExp
                 errormsg=['error for writting the executable file:' errormsg];
             end
             CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
-            LaunchCmdFcn=SeriesData.SeriesParam.ClusterParam.LaunchCmdFcn;% command obtained from the function 
+            LaunchCmdFcn=SeriesData.ClusterParam.LaunchCmdFcn;% command obtained from the function 
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
             [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
             filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
@@ -2631,31 +2636,6 @@ else% show j index if relevant in the input series
     end
     end
 end
-
-% status_j='on'; % default
-% if isfield(SeriesData,'j1_series') && isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)) % case of empty j indices
-%     status_j='off'; % no j index needed
-% elseif strcmp(get(handles.PairString,'Visible'),'on')
-%     check_burst=cellfun(@isempty,regexp(get(handles.PairString,'Data'),'^j')); % =0 for burst case, 1 otherwise
-%     if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
-%         status_j='off'; % no j index needed for bust case
-%     end
-% end
-% enable_j(handles,status_j) % no j index needed
-% if isfield(ParamOut,'j_index_1')&& isfield(ParamOut,'j_index_2')%strcmp(ParamOut.Desable_j_index,'on')
-%     %status_j='off';
-%     set(handles.num_first_j,'String',num2str(ParamOut.j_index_1))
-%     set(handles.num_last_j,'String',num2str(ParamOut.j_index_2))
-%     % set(handles.num_first_j,'enable','off')
-%     % set(handles.num_last_j,'enable','off')
-%     set(handles.num_first_j,'visible','off')
-%     set(handles.num_last_j,'visible','off')
-%     set(handles.num_incr_j,'visible','off')
-% else
-%     set(handles.num_first_j,'visible','on')
-%     set(handles.num_last_j,'visible','on')
-%     set(handles.num_incr_j,'visible',status_j)
-% end
 
 %% NbSlice visibility
 if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
@@ -3962,7 +3942,7 @@ function TestCPUTime_Callback(hObject, eventdata, handles)
 % --- Executes on button press in DiskQuota.
 function DiskQuota_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.series,'UserData');
-system(SeriesData.SeriesParam.DiskQuotaCmd)
+system(SeriesData.DiskQuotaCmd)
 
 
 % --- Executes on button press in Replicate.

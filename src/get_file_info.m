@@ -126,6 +126,16 @@ switch FileExt
         FileInfo.Width=BitmapInfoHeader.biWidth;
         FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
         FileInfo.TimeName='video';
+    case '.hcc'
+        %cd 'TelopsToolbox_20230707(r20340)'
+         installToolboxIRCAM
+        [~,InfoArray]=readIRCam(fileinput,'HeadersOnly',true);
+         FileInfo.FileType='telopsIR';
+         FileInfo.Height=InfoArray(1).Height;
+         FileInfo.Width=InfoArray(1).Width;
+         FileInfo.FrameRate=InfoArray(1).AcquisitionFrameRate;
+         FileInfo.NumberOfFrames=numel(InfoArray);
+         FileInfo.TimeName='video';
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -252,7 +262,7 @@ else
 end
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
-    case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom'}
+    case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom','telopsIR'}
         FileInfo.FieldType='image';
     case {'civx','civdata','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';

@@ -72,7 +72,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices') && strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices') && isequal(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
         Data.IndexRange_j='off';%no j index display in series
     else
         Data.IndexRange_j='on';% j index display in series if relevant
@@ -345,9 +345,12 @@ for ifield=1:NbField
                 if isempty(FileType_A)% open the image object if not already done in case of movie input
                     [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                     FileType_A=FileInfo_A.FileType;
-                    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom'}), 1))% case of video input
-                        Time=zeros(FileInfo_A.NumberOfFrames+1,2);
+                    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom','telopsIR'}), 1))% case of video input
+                        Time=zeros(FileInfo_A.NumberOfFrames+1,2);                  
                         Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+                           if ~isempty(j1_series_Civ1) && j1_series_Civ1~=1
+                               Time=Time';
+                           end
                     end
                     if ~isempty(FileType_A) && isempty(Time)% Time = index i +0.001 index j by default
                         MaxIndex_i=max(i2_series_Civ1);
