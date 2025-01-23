@@ -137,15 +137,19 @@ SeriesData=[];
 xmlfile=fullfile(path_series,'series.xml');
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
+    if success==0
+        disp(message)
+        return
+    end
 end
 if exist(xmlfile,'file')
-    SeriesData=xml2struct(xmlfile);
+    SeriesData=xml2struct(xmlfile);% read the xml file containing parameters for series computations
     if ~(isfield(SeriesData,'ClusterParam')&& isfield(SeriesData.ClusterParam,'LaunchCmdFcn'))
-        [success,message]=copyfile(xmlfile,fullfile(path_series,'series_old.xml'));% update the file series.xml inot correctly documented
+        [success,message]=copyfile(xmlfile,fullfile(path_series,'series.xml~'));% backup the file series.xml, not correctly documented
         delete(xmlfile);
-        [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
+        [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);% use the defualt series.xml
     end
-    SeriesData=xml2struct(xmlfile);
+    SeriesData=xml2struct(xmlfile);% read again the xml file containing parameters for series computations
 end
 
 %% list of builtin functions in the menu ActionName
@@ -159,20 +163,21 @@ ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab 
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
-if isfield(SeriesData.ClusterParam.ExistenceTest,'Text')
-    oarcommand=SeriesData.ClusterParam.ExistenceTest.Text;
-else
+if isfield(SeriesData.ClusterParam, 'ExistenceTest')
     oarcommand=SeriesData.ClusterParam.ExistenceTest;
+    [s,w]=system(oarcommand); % look for cluster system presence
+    if isequal(s,0)% cluster detected
+        RunModeList=[RunModeList;{'cluster'}];
+        set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
+        set(handles.num_CPUTime,'Visible','on'); % make visible button for CPU time estimate for one ref index
+        set(handles.num_CPUTime,'String','')% default CPU time undefined
+        set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time title
+    end
+    set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
+else
+    disp('no cluster availability test in series.xml')
 end
-[s,w]=system(oarcommand); % look for cluster system presence
-if isequal(s,0)
-    RunModeList=[RunModeList;{'cluster'}];
-    set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
-    set(handles.num_CPUTime,'Visible','on'); % make visible button for CPU time estimate for one ref index
-    set(handles.num_CPUTime,'String','')% default CPU time undefined
-    set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time title
-end
-set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
+
 
 %% list of builtin transform functions in the menu TransformName
 TransformList={'';'sub_field';'phys';'phys_polar'}; % WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
@@ -1437,26 +1442,10 @@ path_series=fileparts(which('series'));
 %% create the Action fct handle if RunMode option = 'local'
 if strcmp(RunMode,'local')
     current_dir=pwd; % current working dir
-cd(ActionPath)
-h_fun=str2func(ActionName);% create the function handle for the function ActionName
-cd(current_dir)
-    % if ~isequal(ActionPath,path_series)
-    % 
-    %     %eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
-    %     if ~exist(ActionPath,'dir')
-    %         errormsg=['The prescribed function path ' ActionPath ' does not exist'];
-    %         return
-    %     end
-    %     spath=fileparts(which(ActionName));
-    %     if ~strcmp(spath,ActionPath)
-    %         addpath(ActionPath)% add the prescribed path if not the current one
-    %     end
-    % end
-    % eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
-    % if ~isequal(ActionPath,path_series)
-    %     rmpath(ActionPath)% add the prescribed path if not the current one
-    % end
- end
+    cd(ActionPath)
+    h_fun=str2func(ActionName);% create the function handle for the function ActionName
+    cd(current_dir)
+end
 
 %% Get  parameters from series.xml
 errormsg=''; % default error message
@@ -1532,32 +1521,6 @@ end
 %% set nbre of cluster cores and processes:
 % NbCore is the number of computer processors used
 % NbProcess is the number of independent processes in which the required calculation is split.
-% switch RunMode
-%     case {'local','background'}
-%         NbCore=1; % no need to split the calculation
-%     case 'cluster'
-%         %proposed number of cores to reserve in the cluster
-%         NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
-%         NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);
-%         if NbCoreMax~=1
-%             if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
-%                 warning_string=', preferably use .sh option to save Matlab licences';
-%             else
-%                 warning_string=')';
-%             end
-%             answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
-%             if isempty(answer)
-%                 errormsg='Action launch interrupted by user';
-%                 return
-%             end
-%             NbCore=str2double(answer);
-%             if NbCore > NbCoreMax
-%                 NbCore=NbCoreMax;
-%             end
-%         else
-%             NbCore=1;
-%         end
-% end
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
@@ -1585,44 +1548,30 @@ if get(handles.Replicate,'Value')
         NbExp=0; % counter of the number of experiments set by the GUI browse_data
         for iexp=1:numel(ListExp)
             if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-               %if strcmp(get(BrowseData.DataSeries,'enable'),'off') %case of a multiple input line for series
-%                     NbExp=NbExp+1;
-%                     ExpIndex{NbExp}=iexp;
-%                     for idevice=1:numel(ListDevices)
-%                         lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-%                             regexprep(ListDevices{idevice},'^\+/',''));
-%                         lpathout=fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
-%                             regexprep(ListDevices{idevice},'^\+/',''));
-%                         ldir=regexprep(ListDataSeries{idevice},'^\+/','');
-%                         ListPath{idevice,NbExp}=lpath;
-%                         ListPathOut{idevice,NbExp}=lpathout;
-%                         ListSubdir{idevice,NbExp}=ldir;
-%                     end
-                %else
-                    for idevice=1:numel(ListDevices)
-                        if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                            for isubdir=1:numel(ListDataSeries)
-                                if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                        regexprep(ListDevices{idevice},'^\+/',''));
-                                    lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
-                                        regexprep(ListDevices{idevice},'^\+/',''));
-                                    ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                                    if exist(fullfile(lpath,ldir),'dir')
-                                        NbExp=NbExp+1;
-                                        ExpIndex(NbExp)=ExpIndices(iexp);
-                                        DeviceIndex(NbExp)=DeviceIndices(idevice);
-                                        ListPath{NbExp}=lpath;
-                                        ListPathOut{NbExp}=lpathout;
-                                        ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
-                                        ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
-                                        ListSubdir{NbExp}=ldir;
-                                    end
+                for idevice=1:numel(ListDevices)
+                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                        for isubdir=1:numel(ListDataSeries)
+                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+                                    regexprep(ListDevices{idevice},'^\+/',''));
+                                lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
+                                    regexprep(ListDevices{idevice},'^\+/',''));
+                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+                                if exist(fullfile(lpath,ldir),'dir')
+                                    NbExp=NbExp+1;
+                                    ExpIndex(NbExp)=ExpIndices(iexp);
+                                    DeviceIndex(NbExp)=DeviceIndices(idevice);
+                                    ListPath{NbExp}=lpath;
+                                    ListPathOut{NbExp}=lpathout;
+                                    ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
+                                    ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
+                                    ListSubdir{NbExp}=ldir;
                                 end
                             end
                         end
                     end
-%                 end
+                end
+                %                 end
             end
         end
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
@@ -1828,8 +1777,18 @@ for iexp=1:NbExp
                 set(handles.num_CPUTime,'String',answer)
                 Param.Action.CPUTime=CPUTime;
             end
-            JobNumberMax=SeriesData.ClusterParam.JobNumberMax;
-            JobCPUTimeAdvised=SeriesData.ClusterParam.JobCPUTimeAdvised;
+            if isfield(SeriesData.ClusterParam,'JobNumberMax')
+                JobNumberMax=SeriesData.ClusterParam.JobNumberMax;
+            else
+                disp('ClusterParam.JobNumberMax not documented in series.xml, set to 500 by default')
+                JobNumberMax=500;
+            end
+            if isfield(SeriesData.ClusterParam,'JobCPUTimeAdvised')
+                JobCPUTimeAdvised=SeriesData.ClusterParam.JobCPUTimeAdvised;
+            else
+                disp('ClusterParam.JobCPUTimeAdvised not documented in series.xml, set to 120 minutes by default')
+                JobCPUTimeAdvised=120;
+            end
             if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
                 BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is JobCPUTimeAdvised.
                 BlockLength=max(BlockLength,ceil(numel(ref_i)*NbExp/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
@@ -1837,18 +1796,28 @@ for iexp=1:NbExp
             else
                 NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
             end
-
+            
             %         %proposed number of cores to reserve in the cluster
-            NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
-            NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
+             if isfield(SeriesData.ClusterParam,'NbCoreAdvised')
+                NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
+            else
+                disp('ClusterParam.NbCoreAdvised not documented in series.xml, set to 16 by default')
+                NbCoreAdvised=16;
+             end
+                if isfield(SeriesData.ClusterParam,'NbCoreMax')
+                NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
+            else
+                disp('ClusterParam.NbCoreMax not documented in series.xml, set to 36 by default')
+                NbCoreMax=min(NbProcess,36);
+                end
             if NbCoreMax~=1
                 if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
                     warning_string=', preferably use .sh option to save Matlab licences';
                 else
                     warning_string=')';
                 end
-                answer=msgbox_uvmat('INPUT_TXT',['Number of cores (max ' num2str(NbCoreMax) ', ' warning_string],num2str(NbCoreAdvised));
-                if isempty(answer)
+                answer=msgbox_uvmat('INPUT_TXT',['Number of cores (limited to ' num2str(NbCoreMax) warning_string],num2str(NbCoreAdvised));
+                if isempty(answer)||strcmp(answer,'Cancel')
                     errormsg='Action launch interrupted by user';
                     return
                 end
@@ -2105,7 +2074,12 @@ for iexp=1:NbExp
                 errormsg=['error for writting the executable file:' errormsg];
             end
             CPUTimeProcess=CPUTime*BlockLength*nbfield_j; % estimated CPU time for one individual process (in minutes)
+            if isfield(SeriesData.ClusterParam,'LaunchCmdFcn')&& exist(SeriesData.ClusterParam.LaunchCmdFcn,'file')
             LaunchCmdFcn=SeriesData.ClusterParam.LaunchCmdFcn;% command obtained from the function 
+            else
+                disp('no ClusterParam.LaunchCmdFcn defined in series.xml')
+                return
+            end
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
             [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
             filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'

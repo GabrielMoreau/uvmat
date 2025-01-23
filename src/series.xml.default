@@ -2,7 +2,7 @@
 <SeriesParam>
    <DiskQuotaCmd>quota -s -g -A</DiskQuotaCmd> 
    <ClusterParam>
-      <ExistenceTest>oarstat</ExistenceTest>
+      <ExistenceTest>oarstat</ExistenceTest>                   <!-- command used to detect the availability of the cluster -->
       <NbCoreAdvised>16</NbCoreAdvised>                        <!-- proposed default number of parallel cores attributed for the computations -->
       <NbCoreMax>36</NbCoreMax>                                <!-- maximum number of cores allowed for the computations -->
       <JobCPUTimeAdvised unit="minute">20</JobCPUTimeAdvised>  <!-- used to group the iterations into jobs of sufficient CPU time -->

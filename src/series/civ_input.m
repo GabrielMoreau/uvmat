@@ -1563,10 +1563,10 @@ if get(handles.TestCiv1,'Value')
     str_civ=Param.ActionInput.PairIndices.ListPairCiv1;
     r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
     if ~isempty(r)
-        if strmp(r.ind,'i')
+        if strcmp(r.ind,'i')
             i1=i1-str2num(r.num1);
             i2=i2 +str2num(r.num2);
-        elseif strmp(r.ind,'j')
+        elseif strcmp(r.ind,'j')
             j1=j1-str2num(r.num1);
             j2=j2 +str2num(r.num2);
         end
