@@ -492,6 +492,7 @@ if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
         end
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         Coord=get(h_ListCoord,'Data');
+        Coord=Coord(:,1:6);
         %data=read_geometry_calib(Coord);%transform char cell to numbers
         xlim=get(haxes,'XLim');
         ind_range_x=abs((xlim(2)-xlim(1))/50);

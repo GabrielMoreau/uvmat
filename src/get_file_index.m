@@ -1,4 +1,15 @@
-%=======================================================================
+
+%'get_file_index': determine the frame indexes from ref indices and pair option for civ
+% [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString)
+%------------------------------------------------------------------------
+% OUTPUT:
+% i1,i2,j1,j2: frem indices i and j for image 1 and 2
+%
+% INPUT:
+% ref_i,ref_j: reference indices set in the GUI series
+% PairString: string defining the choice of pairing: 'Di=..','Dj=..','-'
+
+%=====================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr

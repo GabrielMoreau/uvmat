@@ -228,9 +228,8 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-%hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
-[filecell,i1_series,i2_series,j1_series]=get_file_series(Param);
-% if ~isempty(hdisp),delete(hdisp),end;
+[filecell,i1_series,i2_series,j1_series]=get_file_series(Param);%series of file names organised as a single array
+
 %%%%%%%%%%%%
     % The cell array filecell is the list of input file names, while
     % filecell{iview,fileindex}:
@@ -279,8 +278,6 @@ if Param.ActionInput.CheckVolume% case of volume scan: the background images mus
 else 
     step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
     NbSlice_j=1;
-    %nbfield_i=floor(nbfield_i/NbSlice_i);%total number of  indexes in a slice (adjusted to an integer number of slices)
-    %nbfield=nbfield_i*NbSlice_i; %total number of fields after adjustement
     nbfield_series=nbfield_i*nbfield_j;
 end
 nbfield=nbfield_j*nbfield_i; %total number of fields
@@ -313,18 +310,32 @@ catch ME
     return
 end
 
-
-%%%%%%%  LOOP ON SLICES FOR VOLUME SCAN %%%%%%%
-for j_slice=1:NbSlice_j
-    %% select the series of i indices to process
-    indselect=j_slice:step*NbSlice_j:nbfield;% select file indices of the slice
-    for ifield=1:step-1
-        indselect=[indselect;indselect(end,:)+NbSlice_j];
+%selection of frame indices
+if Param.ActionInput.CheckVolume 
+    nbfield=floor(nbfield/NbSlice_j)*NbSlice_j;% truncate the total number of frames in case of incomplete series
+    indselect=1:nbfield;
+     indselect=reshape(indselect,NbSlice_j,[]);
+      NbSlice=NbSlice_j;
+else
+       NbSlice=NbSlice_i;
+    nbfield=floor(nbfield/NbSlice)*NbSlice;% truncate the total number of frames in case of incomplete series
+    indselect=reshape(1:nbfield,NbSlice,[]);
+    for j_slice=1:NbSlice
+    indselect(j_slice,:)=j_slice:step*NbSlice:nbfield;% select file indices of the slice
     end
+end
+
+%%%%%%%  LOOP ON SLICES %%%%%%%
+for j_slice=1:NbSlice
+    %% select the series of i indices to process
+ %   indselect=j_slice:step*NbSlice_j:nbfield;% select file indices of the slice
+%     for ifield=1:step-1
+%         indselect=[indselect;indselect(end,:)+NbSlice];
+%     end
     
     %% read the first series of nbaver_ima images and sort by luminosity at each pixel
     for ifield = 1:nbaver_ima
-        ifile=indselect(ifield);
+        ifile=indselect(jslice,ifield);
         filename=filecell{1,ifile};
         Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
         if ndims(Aread)==3%color images
@@ -340,7 +351,7 @@ for j_slice=1:NbSlice_j
     for ifield=1:step*(halfnbaver+1)% nbre of images treated by the first background image
         Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
         Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-        ifile=indselect(ifield);
+        ifile=indselect(jslice,ifield);
         j1=1;
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
@@ -380,7 +391,7 @@ for j_slice=1:NbSlice_j
             end
             %incorporate next burst in the current image series
             for iburst=1:step
-                ifile=indselect(ifield+iburst+step*halfnbaver);
+                ifile=indselect(jslice,ifield+iburst+step*halfnbaver);
                 j1=1;
                 if ~isempty(j1_series{1})
                     j1=j1_series{1}(ifile);
@@ -399,7 +410,7 @@ for j_slice=1:NbSlice_j
             for iburst=1:step
                 Acor=double(Ak(:,:,step*halfnbaver+iburst))-double(B); %the current image has been already read ans stored as index step*halfnbaver+iburst in the current series
                 Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-                ifile=indselect(ifield+iburst);
+                ifile=indselect(jslice,ifield+iburst);
                 if ~isempty(j1_series{1})
                     j1=j1_series{1}(ifile);
                 end
@@ -427,7 +438,7 @@ for j_slice=1:NbSlice_j
     for  ifield=nbfield_series-step*halfnbaver+1:nbfield_series
         Acor=double(Ak(:,:,ifield-nbfield_series+step*(2*halfnbaver+1)))-double(B);
         Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-        ifile=indselect(ifield);
+        ifile=indselect(jslice,ifield);
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
