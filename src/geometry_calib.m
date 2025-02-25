@@ -1441,11 +1441,19 @@ figure(handles.geometry_calib)
 %------------------------------------------------------------------------
 function Copy_Callback(hObject, eventdata, handles)
 global Coord
-evalin('base','global Coord')%make CurData global in the workspace
-Coord=get(handles.ListCoord,'Data');
-display('coordinates of calibration points (phys,px,marker) :')
-evalin('base','Coord') %display CurData in the workspace
-commandwindow; %brings the Matlab command window to the front
+if isequal (get(handles.Copy,'BackGroundColor'),[0 1 0])
+    evalin('base','global Coord')%make CurData global in the workspace
+    Coord=get(handles.ListCoord,'Data');
+    display('coordinates of calibration points (phys,px,marker) :')
+    evalin('base','Coord') %display CurData in the workspace
+    commandwindow; %brings the Matlab command window to the front
+    set(handles.Copy,'BackGroundColor',[1 1 0])
+    set(handles.Copy,'String','IMPORT PTS')
+else
+    set(handles.ListCoord,'Data',Coord)
+    set(handles.Copy,'String','EXPORT PTS')
+    set(handles.Copy,'BackGroundColor',[0 1 0])
+end
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in ListCoord.
