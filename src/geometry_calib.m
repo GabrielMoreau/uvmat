@@ -725,8 +725,9 @@ else
 end
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_3D_extrinsic(Coord,est_dist, Intrinsic)
+function [GeometryCalib,errormsg]=calib_3D_extrinsic(Coord,est_dist, Intrinsic)
 %------------------------------------------------------------------
+errormsg='';
 path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 x_1=double(Coord(:,4:5)');%image coordinates
@@ -739,14 +740,13 @@ if ~strcmp(get(hhuvmat.Scalar,'Visible'),'on')
 end
 ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
-n_ima=1;
+%n_ima=1;
 GeometryCalib.CalibrationType='3D_extrinsic';
 fx=Intrinsic.fx;
 fy=Intrinsic.fy;
 Cx=Intrinsic.Cx;
 Cy=Intrinsic.Cy;
 kc=Intrinsic.kc;
-errormsg='';
 if isempty(fx)
     errormsg='focal length fx needs to be introduced';
 elseif isempty(fy)
@@ -758,8 +758,8 @@ elseif isempty(Cy)
 end
 if ~isempty(errormsg)
     GeometryCalib=[];
-    msgbox_uvmat('ERROR',errormsg)
-    return
+     msgbox_uvmat('ERROR',errormsg)
+     return
 end
 GeometryCalib.fx_fy(1)=fx;
 GeometryCalib.fx_fy(2)=fy;
@@ -895,7 +895,8 @@ set(handles.ListCoordFiles,'String',{''})
 function CheckEnableMouse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 choice=get(handles.CheckEnableMouse,'Value');
-if choice
+if choice% if button selected
+    set(handles.CheckEnableMouse,'BackgroundColor',[1 1 0])
     huvmat=findobj(allchild(0),'tag','uvmat');
     if ishandle(huvmat)
         hhuvmat=guidata(huvmat);
@@ -906,6 +907,14 @@ if choice
         end
         set(hhuvmat.MenuRuler,'checked','off')%desactivate ruler
     end
+    if ~isequal(get(hhuvmat.TransformName,'Value'),1) %active if transform function is activated to return to the raw image
+        set(hhuvmat.TransformName,'Value',1)
+        uvmat('TransformName_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+        set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' (to sse the whole field)
+         PLOT_Callback(hObject, eventdata, handles)
+    end
+else
+      set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 % --------------------------------------------------------------------
@@ -1297,54 +1306,56 @@ end
 if ~isempty(s.Heading)
     Heading=s.Heading;
 end
+checkcoord=false;
 if isfield (s,'GeometryCalib')
-GeometryCalib=s.GeometryCalib;
-fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
-CoordCell={};
-Tabchar={};%default
-val_cal=1;%default
-if ~isempty(GeometryCalib)
-    % choose the calibration option
-    if isfield(GeometryCalib,'CalibrationType')
-        calib_list=get(handles.calib_type,'String');
-        for ilist=1:numel(calib_list)
-            if strcmp(calib_list{ilist},GeometryCalib.CalibrationType)
-                val_cal=ilist;
-                break
+    GeometryCalib=s.GeometryCalib;
+    %fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
+    %CoordCell={};
+    %Tabchar={};%default
+    val_cal=1;%default
+    if ~isempty(GeometryCalib)
+        % choose the calibration option
+        if isfield(GeometryCalib,'CalibrationType')
+            calib_list=get(handles.calib_type,'String');
+            for ilist=1:numel(calib_list)
+                if strcmp(calib_list{ilist},GeometryCalib.CalibrationType)
+                    val_cal=ilist;
+                    break
+                end
             end
         end
+        display_intrinsic(GeometryCalib,handles)%intrinsic param
+        %extrinsic param
+        if isfield(GeometryCalib,'Tx_Ty_Tz')
+            %Tx_Ty_Tz=GeometryCalib.Tx_Ty_Tz;
+            set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
+            set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
+            set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
+        end
+        if isfield(GeometryCalib,'omc')
+            set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
+            set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
+            set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
+        end
+        if isfield(GeometryCalib,'SourceCalib')&& isfield(GeometryCalib.SourceCalib,'PointCoord')
+            calib=GeometryCalib.SourceCalib.PointCoord;
+            Coord=[calib zeros(size(calib,1),1)];
+            set(handles.ListCoord,'Data',Coord)
+            checkcoord=true;
+        end
+        PLOT_Callback(handles.geometry_calib, [], handles)
+        set(handles.APPLY,'BackgroundColor',[1 0 1])
     end
-    display_intrinsic(GeometryCalib,handles)%intrinsic param
-    %extrinsic param
-    if isfield(GeometryCalib,'Tx_Ty_Tz')
-        Tx_Ty_Tz=GeometryCalib.Tx_Ty_Tz;
-        set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
-        set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
-        set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
-    end
-    if isfield(GeometryCalib,'omc')
-        set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
-        set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
-        set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
-    end
-    if isfield(GeometryCalib,'SourceCalib')&& isfield(GeometryCalib.SourceCalib,'PointCoord')
-        calib=GeometryCalib.SourceCalib.PointCoord;
-        Coord=[calib zeros(size(calib,1),1)];
-        set(handles.ListCoord,'Data',Coord)
-    end
-    PLOT_Callback(handles.geometry_calib, [], handles)
-    set(handles.APPLY,'BackgroundColor',[1 0 1])
-end
-set(handles.calib_type,'Value',val_cal)
-
-if isempty(CoordCell)% allow mouse action by default in the absence of input points
-    set(handles.CheckEnableMouse,'Value',1)
-    set(handles.CheckEnableMouse,'BackgroundColor',[1 1 0])
-else % does not allow mouse action by default in the presence of input points
+    set(handles.calib_type,'Value',val_cal)
+end    
+if checkcoord % does not allow mouse action by default in the presence of input points
     set(handles.CheckEnableMouse,'Value',0)
     set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
+else   % allow mouse action by default in the absence of input points
+    set(handles.CheckEnableMouse,'Value',1)
+    set(handles.CheckEnableMouse,'BackgroundColor',[1 1 0])
 end
-end
+
 %------------------------------------------------------------------------
 %---display calibration intrinsic parameters
 function display_intrinsic(GeometryCalib,handles)
@@ -1455,7 +1466,7 @@ function ListCoord_CellEditCallback(hObject, eventdata, handles)
 Input=str2num(eventdata.EditData);%pasted input
 Coord=get(handles.ListCoord,'Data');
 iline=eventdata.Indices(1);% selected line number
-if size(Coord,1)<iline+numel(Input)
+if numel(Input)>1 && size(Coord,1)<iline+numel(Input)
     Coord=[Coord ; zeros(iline+numel(Input)-size(Coord,1),6)];% append zeros to fit the new column
 end
 Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';

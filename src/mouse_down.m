@@ -484,7 +484,7 @@ if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
     hh_geometry_calib=guidata(h_geometry_calib);
     h_CheckEnableMouse=hh_geometry_calib.CheckEnableMouse;
     if isequal(get(h_CheckEnableMouse,'Value'),1) && ~isempty(haxes)
-        if ~isequal(get(hhuvmat.TransformName,'Value'),1); %active only with no transform (px coordinates)
+        if ~isequal(get(hhuvmat.TransformName,'Value'),1) %active only with no transform (px coordinates)
             set(hhuvmat.TransformName,'Value',1)
             uvmat('TransformName_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
             set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' (to sse the whole field)
@@ -492,7 +492,9 @@ if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
         end
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         Coord=get(h_ListCoord,'Data');
-        Coord=Coord(:,1:6);
+        if size(Coord,2)>6
+        Coord(:,7:end)=[];
+        end
         %data=read_geometry_calib(Coord);%transform char cell to numbers
         xlim=get(haxes,'XLim');
         ind_range_x=abs((xlim(2)-xlim(1))/50);
