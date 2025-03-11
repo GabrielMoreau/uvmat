@@ -50,6 +50,9 @@ errormsg='';
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
+    if 0==1 %never satisfied but trigger compilation with the appropriate transform functions ('eval' inactive for compilation)
+        ima_rescale
+    end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
@@ -65,7 +68,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.NbSlice='off'; %nbre of slices ('off' by default)
     Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     Data.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    Data.FieldTransform = 'off';%can use a transform function
+    Data.FieldTransform = 'on';%can use a transform function
     Data.ProjObject='off';%can use projection object(option 'off'/'on',
     Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     Data.OutputDirExt='.civ';%set the output dir extension
@@ -98,7 +101,7 @@ RUNHandle=[];
 % CheckInputFile=isfield(Param,'InputTable');%= 1 in test use for TestCiv (no nc file involved)
 % CheckOutputFile=isfield(Param,'OutputSubDir');%= 1 in test use for TestPatch (no nc file produced)
 
-%% input files and indexing (skipped in Test mode)
+%% input files and indexing 
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -111,14 +114,12 @@ if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j
 end
 if isfield(Param,'InputTable')
     [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-    %         iview_A=0;% series index (iview) for the first image series
     iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
     if Param.ActionInput.CheckCiv1
         iview_A=1;% usual PIV, the image series is on the first line of the table
     else % Civ1 has been already stored in a netcdf file input
         iview_A=2;% the second line is used for the input images
     end
-    %         if iview_A~=0
     RootPath_A=Param.InputTable{iview_A,1};
     RootFile_A=Param.InputTable{iview_A,3};
     SubDir_A=Param.InputTable{iview_A,2};
@@ -252,7 +253,14 @@ if ~isempty(XmlFileName)
         end
     end
 end
-% end
+
+%% introduce input image transform
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
+        addpath(Param.FieldTransform.TransformPath)
+    transform_fct=str2func(Param.FieldTransform.TransformName);
+    rmpath(Param.FieldTransform.TransformPath)
+end
+
 
 %%%%% MAIN LOOP %%%%%%
 maskoldname='';% initiate the mask name
@@ -275,18 +283,8 @@ for ifield=1:NbField
             break
         end
     end
-    %     %     if CheckInputFile
-    %     if CheckOutputFile
     OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
-    %         if iview_A==0 % no nc file has been entered
-    %             ncfile=fullfile_uvmat(OutputPath,Param.InputTable{1,2},Param.InputTable{1,3},Param.InputTable{1,5},...
-    %                 NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-    %         else% an existing nc file has been entered
-    %             if iview_A==1% if Civ1 is performed
-    %                 Civ1Dir=OutputDir;
-    %             else
-    %                 Civ1Dir=Param.InputTable{1,2};
-    %             end
+
     if strcmp(Param.ActionInput.ListCompareMode,'PIV')
         ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
@@ -294,7 +292,6 @@ for ifield=1:NbField
         ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     end
-    %         end
     ncfile_out=ncfile;% by default
     
     if isfield (Param.ActionInput,'Civ2')
@@ -379,11 +376,16 @@ for ifield=1:NbField
                 continue
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+            
         catch ME % display errors in reading input images
             if ~isempty(ME.message)
                 disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
                 continue
             end
+        end
+        %% user defined image transform
+        if ~isempty(transform_fct)
+               par_civ1 =transform_fct(par_civ1,Param);
         end
         
         % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
@@ -596,6 +598,12 @@ for ifield=1:NbField
             par_civ2.Grid(:,1)=reshape(GridX,[],1);
             par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
         end
+        
+                %% user defined image transform
+        if ~isempty(transform_fct)
+               par_civ2 =transform_fct(par_civ2,Param);
+        end
+        
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
         if iview_A==2 && isfield (par_civ2,'CheckCiv3') && strcmp(par_civ2.CheckCiv3,'iterate(civ3)') %get the guess from  patch2% Civ1 data read in a netcdf file

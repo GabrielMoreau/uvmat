@@ -4018,6 +4018,7 @@ if strcmp(FieldName,'')
     end
     set(handles.Histogram,'Visible','off')
     set(handles.HistoMenu,'Visible','off')
+    set(handles.LogLinHisto,'Visible','off')
     set(handles.HistoAxes,'Visible','off')
     hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
     if ~isempty(hlegend)
@@ -4264,6 +4265,7 @@ else
         set(handles.HistoMenu,'String',menu_histo)
         set(handles.Histogram,'Visible','on')
         set(handles.HistoMenu,'Visible','on')
+        set(handles.LogLinHisto,'Visible','on')
         set(handles.HistoAxes,'Visible','on')
         HistoMenu_Callback(handles.HistoMenu, [], handles)% plot first histogram
     end
@@ -4382,9 +4384,14 @@ else
                 B=FieldHisto(:,:,col);
                 C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
                 Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
+                if isequal(get(handles.LogLinHisto,'Value'),2)
+                    PlotParam.Type='semilogx';
+                else
+                    PlotParam.Type='plot';
+                end
             end
         end
-        plot_field(Histo,handles.HistoAxes);
+        plot_field(Histo,handles.HistoAxes,PlotParam);
         hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
         if isempty(hlegend)
             hlegend=legend;
@@ -6177,5 +6184,18 @@ else
     set(handles.TableDisplay,'Visible','off')
 end
 
+
+
+
+
+% --- Executes on selection change in LogLinHisto.
+function LogLinHisto_Callback(hObject, eventdata, handles)
+    HistoMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to LogLinHisto (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns LogLinHisto contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from LogLinHisto
 
 

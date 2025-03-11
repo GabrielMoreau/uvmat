@@ -150,8 +150,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
     end
     BrightnessRankThreshold=0.1;
-   % CheckSubmedian='No';
-%     SaturationCoeff=0;
     if isfield(Param,'ActionInput')
         if isfield(Param.ActionInput,'CheckVolume') && Param.ActionInput.CheckVolume
             CheckVolume='Yes';

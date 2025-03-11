@@ -408,7 +408,11 @@ else
 end
 
 %% prepare the string for plot command
+if isfield(PlotParam,'Type')&& strcmp(PlotParam.Type,'semilogx')
+   plotstr='hhh=semilogx(';
+else
 plotstr='hhh=plot(';
+end
 xtitle='';
 ytitle='';
 test_newplot=~CheckHold;
