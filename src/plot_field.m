@@ -408,6 +408,7 @@ else
 end
 
 %% prepare the string for plot command
+plotstr='hhh=plot(';
 if isfield(PlotParam,'Type')
     switch PlotParam.Type
         case 'semilogx'
@@ -416,8 +417,6 @@ if isfield(PlotParam,'Type')
             plotstr='hhh=semilogy(';
         case 'loglog'
             plotstr='hhh=loglog(';
-        otherwise
-            plotstr='hhh=plot(';
     end
 end
 xtitle='';

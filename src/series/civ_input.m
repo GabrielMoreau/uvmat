@@ -327,7 +327,7 @@ set(handles.ListPairCiv2,'String',{''})
 if isequal(MaxIndex_j,MinIndex_j)|| strcmp(Param.Action.ActionName,'civ_3D')% no possibility of j pairs
     PairMenu={'series(Di)'};
 elseif MaxIndex_j-MinIndex_j==1
-    PairMenu={'pair j1-j2'};
+    PairMenu={'pair j1-j2';'series(Di)'};
 elseif  MaxIndex_i==MinIndex_i && MaxIndex_j-MinIndex_j>2% simple series in j
     PairMenu={'pair j1-j2';'series(Dj)'};
 else
@@ -1967,8 +1967,8 @@ function edit108_Callback(hObject, eventdata, handles)
 function CheckBackground_Callback(hObject, eventdata, handles)
 hparent=get(hObject,'parent');
 hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','Background');% look for the mask name box in the same panel
-testmask=0;
+handle_txtbox=findobj(hchildren,'tag','Background');% look for the background name box in the same panel
+testbackground=0;
 if get(hObject,'Value')% if the checkbox is activated
     hseries=findobj(allchild(0),'Tag','series');
     hhseries=guidata(hseries);
@@ -1978,7 +1978,7 @@ if get(hObject,'Value')% if the checkbox is activated
     else
         ind_A=1;% line index of the (first) image series
     end
-    % browse for a mask
+    % browse for a background
     filebackground= uigetfile_uvmat('pick a background image file:',InputTable{ind_A,1},'image');
     if ~isempty(filebackground)
         [FilePath,FileName,FileExt]=fileparts(filebackground);
@@ -1991,10 +1991,10 @@ if get(hObject,'Value')% if the checkbox is activated
             return
         end
         set(hObject,'UserData',filebackground);%store for future use
-        testmask=1;
+        testbackground=1;
     end
 end
-if testmask
+if testbackground
     set(handles.Background,'Visible','on')
     set(handles.Background,'String',filebackground)
     set(handles.CheckBackground,'Value',1)
@@ -2008,13 +2008,3 @@ else
 end
 set(handles.ConfigSource,'String','NEW')
 set(handles.ConfigSource,'BackgroundColor',[1 0 1])
-
-
-
-function Background_Callback(hObject, eventdata, handles)
-% hObject    handle to Background (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Background as text
-%        str2double(get(hObject,'String')) returns contents of Background as a double
