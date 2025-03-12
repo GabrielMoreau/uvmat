@@ -182,10 +182,10 @@ if isempty(index_2D)
     plot_plane([],[],haxes,[]);%removes images or vector plots in the absence of 2D field plot
 else  %plot 2D field
 %     if ~exist('PosColorbar','var'),PosColorbar=[];end;
-    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut);
+    [~,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut);
     AxeData.NbDim=2;
     if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut);
+        [zoomaxes,PlotParamOut,~,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut);
         AxeData.ZoomAxes=zoomaxes;
     end
 end
@@ -408,10 +408,17 @@ else
 end
 
 %% prepare the string for plot command
-if isfield(PlotParam,'Type')&& strcmp(PlotParam.Type,'semilogx')
-   plotstr='hhh=semilogx(';
-else
-plotstr='hhh=plot(';
+if isfield(PlotParam,'Type')
+    switch PlotParam.Type
+        case 'semilogx'
+            plotstr='hhh=semilogx(';
+        case 'semilogy'
+            plotstr='hhh=semilogy(';
+        case 'loglog'
+            plotstr='hhh=loglog(';
+        otherwise
+            plotstr='hhh=plot(';
+    end
 end
 xtitle='';
 ytitle='';

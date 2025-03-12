@@ -4384,10 +4384,15 @@ else
                 B=FieldHisto(:,:,col);
                 C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
                 Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
-                if isequal(get(handles.LogLinHisto,'Value'),2)
-                    PlotParam.Type='semilogx';
-                else
-                    PlotParam.Type='plot';
+                switch get(handles.LogLinHisto,'Value')
+                    case 1
+                        PlotParam.Type='plot';
+                    case 2
+                    PlotParam.Type='semilogy';
+                    case 3
+                       PlotParam.Type='semilogx'; 
+                    case 4
+                    PlotParam.Type='loglog';
                 end
             end
         end

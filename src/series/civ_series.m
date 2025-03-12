@@ -255,6 +255,7 @@ if ~isempty(XmlFileName)
 end
 
 %% introduce input image transform
+transform_fct=[];%default, no transform
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
         addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
@@ -264,6 +265,7 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 maskoldname='';% initiate the mask name
+backgroundoldname='';
 FileType_A='';
 FileType_B='';
 CheckOverwrite=1;%default
@@ -383,6 +385,49 @@ for ifield=1:NbField
                 continue
             end
         end
+
+ % case of background image to subtract
+        if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
+            [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
+            j1=1;
+            if ~isempty(j1_series_Civ1)
+                j1=j1_series_Civ1(ifield);
+            end
+            if ~isempty(i2_series_Civ1)% case of volume,backgrounds act on different j levels
+                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
+            elseif isfield(par_civ1,'NbSlice')
+                i1_background=mod(i1-1,par_civ1.NbSlice)+1;
+                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
+                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
+                    par_civ1.NbSlice_j=par_civ1.NbSlice;
+                end
+            else
+                backgroundname=Param.ActionInput.Civ1.Background;
+            end
+            if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
+                par_civ1.Background=background; %use background already opened
+            else
+                if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
+                    try
+                        par_civ1.Background=imread(backgroundname);%update the background, an store it for future use
+                    catch ME
+                        if ~isempty(ME.message)
+                            errormsg=['error reading input image: ' ME.message];
+                            disp_uvmat('ERROR',errormsg,checkrun)
+                            return
+                        end
+                    end
+                else
+                    par_civ1.Background=[];
+                end
+                background=par_civ1.Background;
+                backgroundoldname=backgroundname;
+            end
+            par_civ1.ImageA=par_civ1.ImageA-par_civ1.Background;
+            par_civ1.ImageB=par_civ1.ImageB-par_civ1.Background;
+        end
+
+
         %% user defined image transform
         if ~isempty(transform_fct)
                par_civ1 =transform_fct(par_civ1,Param);
@@ -471,7 +516,7 @@ for ifield=1:NbField
                 maskoldname=maskname;
             end
         end
-        
+
         % case of input grid
         if par_civ1.CheckGrid &&~isempty(par_civ1.Grid)
             GridData=nc2struct(Param.ActionInput.Civ1.Grid);

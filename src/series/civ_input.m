@@ -1285,9 +1285,9 @@ if get(hObject,'Value')% if the checkbox is activated
         ind_A=1;% line index of the (first) image series
     end
     % browse for a mask
-    filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
-    if ~isempty(filemask)
-        [FilePath,FileName,FileExt]=fileparts(filemask);
+    filebackground= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
+    if ~isempty(filebackground)
+        [FilePath,FileName,FileExt]=fileparts(filebackground);
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
         if strcmp(NomType,'_1')
             NbSlice=i1_series(1,2,end);
@@ -1296,13 +1296,13 @@ if get(hObject,'Value')% if the checkbox is activated
             msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
             return
         end
-        set(hObject,'UserData',filemask);%store for future use
+        set(hObject,'UserData',filebackground);%store for future use
         testmask=1;
     end
 end
 if testmask
     set(handles.Mask,'Visible','on')
-    set(handles.Mask,'String',filemask)
+    set(handles.Mask,'String',filebackground)
     set(handles.CheckMask,'Value',1)
     if strcmp(NomType,'_1')
         set(handles.num_NbSlice,'Visible','on')
@@ -1963,3 +1963,58 @@ function edit108_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit108 as a double
 
 
+% --- Executes on button press in CheckBackground.
+function CheckBackground_Callback(hObject, eventdata, handles)
+hparent=get(hObject,'parent');
+hchildren=get(hparent,'children');
+handle_txtbox=findobj(hchildren,'tag','Background');% look for the mask name box in the same panel
+testmask=0;
+if get(hObject,'Value')% if the checkbox is activated
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+    if strcmp(InputTable{1,5},'.nc')
+        ind_A=2;%case of nc file as input (for civ3), image in second line
+    else
+        ind_A=1;% line index of the (first) image series
+    end
+    % browse for a mask
+    filebackground= uigetfile_uvmat('pick a background image file:',InputTable{ind_A,1},'image');
+    if ~isempty(filebackground)
+        [FilePath,FileName,FileExt]=fileparts(filebackground);
+        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
+        if strcmp(NomType,'_1')
+            NbSlice=i1_series(1,2,end);
+            set(handles.num_NbSlice,'String',num2str(NbSlice))
+        elseif ~strcmp(NomType,'*')
+            msgbox_uvmat('ERROR','multilevel background images must be labeled with a single index as _1,_2,...');
+            return
+        end
+        set(hObject,'UserData',filebackground);%store for future use
+        testmask=1;
+    end
+end
+if testmask
+    set(handles.Background,'Visible','on')
+    set(handles.Background,'String',filebackground)
+    set(handles.CheckBackground,'Value',1)
+    if strcmp(NomType,'_1')
+        set(handles.num_NbSlice,'Visible','on')
+    end
+else
+    set(hObject,'Value',0);
+    set(handle_txtbox,'Visible','off')
+    set(handles.num_NbSlice,'Visible','off')
+end
+set(handles.ConfigSource,'String','NEW')
+set(handles.ConfigSource,'BackgroundColor',[1 0 1])
+
+
+
+function Background_Callback(hObject, eventdata, handles)
+% hObject    handle to Background (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Background as text
+%        str2double(get(hObject,'String')) returns contents of Background as a double
