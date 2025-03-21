@@ -143,9 +143,10 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 %% coordinate transform or other user defined transform
 transform_fct='';%default
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-    addpath(Param.FieldTransform.TransformPath)
+            currentdir=pwd;
+    cd(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
-    rmpath(Param.FieldTransform.TransformPath)
+    cd (currentdir)
 end
 
 %% settings for the output file

@@ -78,7 +78,7 @@ switch FileExt
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}
-        [~,FileInfo,timestamps,errormsg]=read_rdvision(fileinput,[]);
+        [~,FileInfo]=read_rdvision(fileinput,[]);
     case '.im7'
         try
             Input=readimx(fileinput);
@@ -157,29 +157,13 @@ switch FileExt
                         nbfield=numel(fieldnames(FileInfo));
                         FileInfo=orderfields(FileInfo,[nbfield nbfield-1 nbfield-2 (1:nbfield-3)]); %reorder the fields of fileInfo for clarity
                     catch ME
-                        FileInfo.error=ME.message
+                        FileInfo.error=ME.message;
                     end
                 else
                     error_nc=0;
                     try %try netcdf file
                         [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
-                            %                             if isfield(Data,'absolut_time_T0') && isfield(Data,'hart') && ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                            %                                 FileInfo.FileType='civx';%old civ data from the Fortran program
-                            %                                 if isfield(Data,'patch2') && isequal(Data.patch2,1)
-                            %                                     FileInfo.CivStage=6;
-                            %                                 elseif isfield(Data,'fix2') && isequal(Data.fix2,1)
-                            %                                     FileInfo.CivStage=5;
-                            %                                 elseif  isfield(Data,'civ2')&& isequal(Data.civ2,1)
-                            %                                     FileInfo.CivStage=4;
-                            %                                 elseif isfield(Data,'patch')&&isequal(Data.patch,1)
-                            %                                     FileInfo.CivStage=3;
-                            %                                 elseif isfield(Data,'fix')&&isequal(Data.fix,1)
-                            %                                     FileInfo.CivStage=2;
-                            %                                 else
-                            %                                     FileInfo.CivStage=1;
-                            %                                 end
-                            %                             else
                             if isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
                                 FileInfo.FileType='civdata'; % test for civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;

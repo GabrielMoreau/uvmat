@@ -220,7 +220,7 @@ end
 
 %% EXPORT menu
 export_menu={'as field in workspace';'in new figure';'on existing axis';'make movie';'more...'};
-export_path=fullfile(path_uvmat,'export_fct');
+%export_path=fullfile(path_uvmat,'export_fct');
 
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
 dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
@@ -624,8 +624,8 @@ if strcmp(get(handles.Vectors,'Visible'),'on')
     if ~(strcmp(color_mode,'black')||strcmp(color_mode,'white'))
         hveccolor=axes('Position',[0.93 0.1 0.02 0.5]);
         ima=permute(get(handles.VecColBar,'CData'),[2 1 3]);
-        ymin=str2num(get(handles.num_MinVec,'String'));
-        ymax=str2num(get(handles.num_MaxVec,'String'));
+        ymin=str2double(get(handles.num_MinVec,'String'));
+        ymax=str2double(get(handles.num_MaxVec,'String'));
         set(hveccolor,'YLim',[ymin ymax])
         imagesc([0 1],[ymin ymax],ima)
         set(hveccolor,'YDir','normal')
@@ -861,7 +861,7 @@ open(aviobj)
 %% get info from uvmat and adjust it
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
-increment=str2num(get(hhuvmat.num_IndexIncrement,'String')); %get the field increment from uvmat
+increment=str2double(get(hhuvmat.num_IndexIncrement,'String')); %get the field increment from uvmat
 set(hhuvmat.STOP,'Visible','on')
 set(hhuvmat.speed,'Visible','on')
 set(hhuvmat.speed_txt,'Visible','on')
@@ -1408,7 +1408,7 @@ end
 %% read the content of the GUI set_slice
 hset_slice=get(hObject, 'parent');
 hZ=findobj(hset_slice,'Tag','num_Z_1');
-Z_plane=str2num(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
+Z_plane=str2double(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
 SliceData=read_GUI(hset_slice);
 Slice.NbSlice=SliceData.NbSlice;
 Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
@@ -2065,14 +2065,6 @@ series('ActionName_Callback',hObject,[],hhseries); %file input with xml reading 
 series('ActionInput_Callback',hObject,[],hhseries); %open the menu or options from INPUT in series
 end
 
-% %------------------------------------------------------------------------
-% % -- open the GUI civ.fig for PIV
-% function MenuCIVx_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-%  [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-%  FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-% civ(FileName);% interface de civ(not in the uvmat file)
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuHelp Callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2082,36 +2074,46 @@ function MenuHelp_Callback(hObject, eventdata, handles)
 web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
 
 
-
-
-
-
-
-
-
-
 %------------------------------------------------------------------------
 % --- Called by action in FileIndex edit box
 function FileIndex_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
+UvData=get(handles.uvmat,'UserData');
+check_index=false;
+if isfield(UvData,'XmlData')&& ~isempty(UvData.XmlData)
+    if isfield(UvData.XmlData{1},'FileSeries')% case of frame indexing documented by the xml file (PCO)
+        if strcmp(UvData.XmlData{1}.FileSeries.Convention,'PCO')
+            i1_mod=i1*UvData.XmlData{1}.FileSeries.NbFramePerFile+1;
+            if isfield(UvData.XmlData{1},'Time')
+                [NbField,NbField_j]=size(UvData.XmlData{1}.Time);
+                j1=mod(i1_mod,NbField_j-1)+1;
+                i1_mod=floor(i1_mod/(NbField_j -1))+1;
+            end
+            set(handles.i1,'String',num2str(i1_mod));%update the counters
+            set(handles.j1,'String',num2str(j1));%update the counters
+            check_index=true;
+        end
+    end
+end
+if ~check_index
 set(handles.i1,'String',num2str(i1));%update the counters
 set(handles.i2,'String',num2str(i2));
 set(handles.j1,'String',num2str(j1));
 set(handles.j2,'String',num2str(j2));
-
+end
 
 %------------------------------------------------------------------------
 % --- Called by action in NomType edit box
 function NomType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-i1=str2num(get(handles.i1,'String'));
-i2=str2num(get(handles.i2,'String'));
-j1=str2num(get(handles.j1,'String'));
-j2=str2num(get(handles.j2,'String'));
+i1=str2double(get(handles.i1,'String'));
+i2=str2double(get(handles.i2,'String'));
+j1=str2double(get(handles.j1,'String'));
+j2=str2double(get(handles.j2,'String'));
 NomType=get(hObject,'String');
 if strcmp(NomType,'level')
-    FileIndex=str2num(get(handles.i1,'String'));
+    FileIndex=str2double(get(handles.i1,'String'));
 else
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType,'String'),i1,i2,j1,j2);
 end
@@ -2123,13 +2125,13 @@ RootPath_Callback(hObject,eventdata,handles)
 % --- Called by action in NomType edit box
 function NomType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-i1=str2num(get(handles.i1,'String'));
-i2=str2num(get(handles.i2,'String'));
-j1=str2num(get(handles.j1,'String'));
-j2=str2num(get(handles.j2,'String'));
+i1=str2double(get(handles.i1,'String'));
+i2=str2double(get(handles.i2,'String'));
+j1=str2double(get(handles.j1,'String'));
+j2=str2double(get(handles.j2,'String'));
 NomType=get(hObject,'String');
 if strcmp(NomType,'level')
-    FileIndex=str2num(get(handles.i1,'String'));
+    FileIndex=str2double(get(handles.i1,'String'));
 else
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType_1,'String'),i1,i2,j1,j2);
 end
@@ -2147,7 +2149,7 @@ drawnow
 % get the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+%[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 errormsg='';
 if isempty(RootFile)
     fileinput=uigetfile_uvmat('pick an input file',fullfile(RootPath,SubDir));
@@ -2164,7 +2166,8 @@ if isempty(RootFile)
     end
 else
     % initiate the input file series and refresh the current field view:
-    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,1);
+    [FileInfo,VideoObject]=get_file_info(fullfile(RootPath,SubDir,[RootFile FileIndices FileExt]));
+    errormsg=update_rootinfo(handles,RootPath,SubDir,[RootFile FileIndices FileExt],FileInfo,VideoObject,1);
 end
 
 %% refresh the second series if relevant
@@ -2187,7 +2190,7 @@ if ~isempty(errormsg) && get(handles.SubField,'Value')
         end
     else
         % initiate the input file series and refresh the current field view:
-        errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,2);
+        errormsg=update_rootinfo(handles,RootPath,SubDir,FileName,FileInfo,MovieObject,2);
     end
 end
 if ~isempty(errormsg)
@@ -2199,12 +2202,42 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
 function errormsg=display_file_name(handles,fileinput,input_line)
 %------------------------------------------------------------------------
-%% look for the input file existence
+%% look for the input file existence and properties in the structure FileInfo
 errormsg='';%default
 if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     return
+end
+[FileInfo,MovieObject]=get_file_info(fileinput);
+FieldType=FileInfo.FieldType;
+
+%% case of isolated input files without series
+switch FieldType
+    case ''
+        msgbox_uvmat('ERROR','invalid input file type')
+        return
+    case 'txt'
+        edit(fileinput)
+        return
+    case 'figure'                           %display matlab figure
+        hfig=open(fileinput);
+        set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
+        set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
+        set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
+        return
+    case 'xml'                % edit xml files
+        t=xmltree(fileinput);
+        % the xml file marks a project or project link, open datatree_browser
+        if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
+            datatree_browser(fileinput)
+        else % other xml file, open the xml editor
+            editxml(fileinput);
+        end
+        return
+    case 'xls'% Excel file opended by editxml
+        editxml(fileinput);
+        return
 end
 
 %% define the relevant handles for the first field series (input_line=1) or the second file series (input_line=2)
@@ -2238,137 +2271,111 @@ set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])% paint REFRESH button to
 set(handles.uvmat,'Pointer','watch') % set the mouse pointer to 'watch'
 drawnow
 
+[RootPath,SubDir,RootFile,i1,i2,j1,j2,~,NomType]=fileparts_uvmat(fileinput);
+[~,FileName,FileExt]=fileparts(fileinput);
+
+
 %% detect root name, nomenclature and indices in the input file name:
-[FilePath,FileName,FileExt]=fileparts(fileinput);
+%[FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=...
-    find_file_series(FilePath,[FileName FileExt]);
 
-%% open the file or fill the GUI uvmat according to the detected file type
-FieldType=FileInfo.FieldType;
-switch FieldType
-    case ''
-        msgbox_uvmat('ERROR','invalid input file type')
-        return
-    case 'txt'
-        edit(fileinput)
-        return
-    case 'figure'                           %display matlab figure
-        hfig=open(fileinput);
-        set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
-        set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
-        set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
-        return
-    case 'xml'                % edit xml files
-        t=xmltree(fileinput);
-        % the xml file marks a project or project link, open datatree_browser
-        if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
-            datatree_browser(fileinput)
-        else % other xml file, open the xml editor
-            editxml(fileinput);
-        end
-        return
-    case 'xls'% Excel file opended by editxml
-        editxml(fileinput);
-        return
-    otherwise
-        set(handles_RootPath,'String',RootPath);
-        set(handles_SubDir,'String',['/' SubDir]);
-        set(handles_RootFile,'String',['/' RootFile]); %display the separator
-        if isempty(regexp(RootPath,'^http://', 'once'))
-            rootname=fullfile(RootPath,SubDir,RootFile);
-        else
-            rootname=[RootPath '/' SubDir '/' RootFile];
-        end
-        indices=fileinput(length(rootname)+1:end);
-        indices(end-length(FileExt)+1:end)=[]; %remove extension
-        set(handles_FileIndex,'String',indices);
-        set(handles_NomType,'String',NomType);
-        set(handles_FileExt,'String',FileExt);
-        if input_line==1
-            % fill file index counters if the first file series is opened
-            set(handles.i1,'String',num2str(i1));
-            set(handles.i2,'String',num2str(i2));
-            set(handles.j1,'String',num2stra(j1,NomType));
-            set(handles.j2,'String',num2stra(j2,NomType));
-            if isfield(FileInfo,'MaskFile')
-                if exist(FileInfo.MaskFile)
-                set(handles.CheckMask,'Value',1)
-                else
-                    set(handles.CheckMask,'Value',0)
-                end
-                 Mask.File=FileInfo.MaskFile;
-                 if isfield(FileInfo,'MaskNbSlice')
-                     Mask.NbSlice=FileInfo.MaskNbSlice;
-                 elseif isfield(FileInfo,'VolumeScan')
-                     Mask.VolumeScan=FileInfo.VolumeScan;
-                 end  
-                 set(handles.CheckMask,'UserData', Mask)
-            else
-                set(handles.CheckMask,'Value',0)
-                CheckMask_Callback(handles.CheckMask, [], handles) 
-            end                         
-        else %read the current field index to synchronise with the first series
-            i1_s=str2num(get(handles.i1,'String'));
-            i2_0=str2num(get(handles.i2,'String'));
-            if ~isempty(i2_0)
-                i2_s=i2_0;
-            else
-                i2_s=i2;
-            end
-            j1_0=stra2num(get(handles.j1,'String'));
-            if ~isempty(j1_0)
-                j1_s=j1_0;
-            else
-                j1_s=j1;
-            end
-            j2_0=stra2num(get(handles.j2,'String'));
-            if ~isempty(j2_0)
-                j2_s=j2_0;
-            else
-                j2_s=j2;
-            end
-        end
-        
-        % synchronise indices of the second  input file if it exists
-        if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
-            Input=read_GUI(handles.InputFile);
-            if ~isfield(Input,'RootPath_1')||strcmp(Input.RootPath_1,'"')
-                Input.RootPath_1=Input.RootPath;
-            end
-            if ~isfield(Input,'SubDir_1')||strcmp(Input.SubDir_1,'"')
-                Input.SubDir_1=Input.SubDir;
-            end
-            if ~isfield(Input,'RootFile_1')||strcmp(Input.RootFile_1,'"')
-                Input.RootFile_1=Input.RootFile;
-            end
-            if ~isfield(Input,'FileExt_1')||strcmp(Input.FileExt_1,'"')
-                Input.FileExt_1=Input.FileExt;
-            end
-            if ~isfield(Input,'NomType_1')||strcmp(Input.NomType_1,'"')
-                Input.NomType_1=Input.NomType;
-            end
-            %updtate the indices of the second field series to correspond to the newly opened one
-            FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
-            if exist(FileName_1,'file')
-                FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
-            else
-                FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
-%                 msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
-            end
-            set(handles.FileIndex_1,'String',FileIndex_1)
-        end
-        
-        %enable other menus
-        set(handles.MenuExport,'Enable','on')
-        set(handles.MenuExportFigure,'Enable','on')
-        set(handles.MenuExportMovie,'Enable','on')
-        set(handles.MenuTools,'Enable','on')
-        
-        % initiate input file series and inputfilerefresh the current field view:
-        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,MovieObject,input_line);
+set(handles_RootPath,'String',RootPath);
+set(handles_SubDir,'String',['/' SubDir]);
+set(handles_RootFile,'String',['/' RootFile]); %display the separator
+if isempty(regexp(RootPath,'^http://', 'once'))
+    rootname=fullfile(RootPath,SubDir,RootFile);
+else
+    rootname=[RootPath '/' SubDir '/' RootFile];
 end
+indices=fileinput(length(rootname)+1:end);
+indices(end-length(FileExt)+1:end)=[]; %remove extension
+set(handles_FileIndex,'String',indices);
+set(handles_NomType,'String',NomType);
+set(handles_FileExt,'String',FileExt);
+if input_line==1
+    % fill file index counters if the first file series is opened
+    set(handles.i1,'String',num2str(i1));
+    set(handles.i2,'String',num2str(i2));
+    set(handles.j1,'String',num2stra(j1,NomType));
+    set(handles.j2,'String',num2stra(j2,NomType));
+    if isfield(FileInfo,'MaskFile')
+        if exist(FileInfo.MaskFile)
+            set(handles.CheckMask,'Value',1)
+        else
+            set(handles.CheckMask,'Value',0)
+        end
+        Mask.File=FileInfo.MaskFile;
+        if isfield(FileInfo,'MaskNbSlice')
+            Mask.NbSlice=FileInfo.MaskNbSlice;
+        elseif isfield(FileInfo,'VolumeScan')
+            Mask.VolumeScan=FileInfo.VolumeScan;
+end
+set(handles.CheckMask,'UserData', Mask)
+    else
+        set(handles.CheckMask,'Value',0)
+        CheckMask_Callback(handles.CheckMask, [], handles)
+end
+else %read the current field index to synchronise with the first series
+    i1_s=str2double(get(handles.i1,'String'));
+    i2_0=str2double(get(handles.i2,'String'));
+    if ~isempty(i2_0)
+        i2_s=i2_0;
+    else
+        i2_s=i2;
+    end
+    j1_0=stra2num(get(handles.j1,'String'));
+    if ~isempty(j1_0)
+        j1_s=j1_0;
+    else
+        j1_s=j1;
+    end
+    j2_0=stra2num(get(handles.j2,'String'));
+    if ~isempty(j2_0)
+        j2_s=j2_0;
+    else
+        j2_s=j2;
+    end
+end
+
+% synchronise indices of the second  input file if it exists
+if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
+    Input=read_GUI(handles.InputFile);
+    if ~isfield(Input,'RootPath_1')||strcmp(Input.RootPath_1,'"')
+        Input.RootPath_1=Input.RootPath;
+    end
+    if ~isfield(Input,'SubDir_1')||strcmp(Input.SubDir_1,'"')
+        Input.SubDir_1=Input.SubDir;
+    end
+    if ~isfield(Input,'RootFile_1')||strcmp(Input.RootFile_1,'"')
+        Input.RootFile_1=Input.RootFile;
+    end
+    if ~isfield(Input,'FileExt_1')||strcmp(Input.FileExt_1,'"')
+        Input.FileExt_1=Input.FileExt;
+    end
+    if ~isfield(Input,'NomType_1')||strcmp(Input.NomType_1,'"')
+        Input.NomType_1=Input.NomType;
+    end
+    %updtate the indices of the second field series to correspond to the newly opened one
+    FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
+    if exist(FileName_1,'file')
+        FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
+    else
+        FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
+        %                 msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
+    end
+    set(handles.FileIndex_1,'String',FileIndex_1)
+end
+
+%enable other menus
+set(handles.MenuExport,'Enable','on')
+set(handles.MenuExportFigure,'Enable','on')
+set(handles.MenuExportMovie,'Enable','on')
+set(handles.MenuTools,'Enable','on')
+
+% initiate input file series and inputfilerefresh the current field view:
+update_rootinfo(handles,RootPath,SubDir,[FileName FileExt],FileInfo, MovieObject,input_line);
+
 
 %% update list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
@@ -2395,7 +2402,8 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then inputfilerefresh current plots
-function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,input_line)
+%function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,input_line)
+function errormsg=update_rootinfo(handles,RootPath,SubDir,FileName,FileInfo,VideoObject,input_line)
 %------------------------------------------------------------------------
 errormsg=''; %default error msg
 
@@ -2410,30 +2418,119 @@ elseif input_line==2
 end
 set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
 
+%% look for the xml file and read it
+XmlFileName=find_imadoc(RootPath,SubDir);
+[~,XmlName]=fileparts(XmlFileName);
+warntext='';%default warning message
+NbSlice=1;%default
+%CheckImaDoc=false;
+TimeUnit='';%default
+TimeName='';%default
+CheckIndexing=false;%default
+if isempty(XmlFileName)
+    set(handles.view_xml,'Visible','off')
+else
+    set(handles.view_xml,'Visible','on')
+    set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
+    set(handles.view_xml,'String','view xml')
+    drawnow
+    [XmlData,warntext]=imadoc2struct(XmlFileName);
+    if ~isempty(warntext)
+        msgbox_uvmat('WARNING',warntext)
+    end
+    if ~isempty(XmlData)
+        %CheckImaDoc=true;
+        if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
+            TimeUnit=XmlData.TimeUnit;
+        end
+        if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
+            TimeName='xml';%
+            if XmlData.Time(1,:)==XmlData.Time(2,:)% case starting with index 1
+                sizDti=size(XmlData.Time,1)-1;%size of the time vector explicitly defined in the xml file
+                ind_start=1;
+            else
+                sizDti=size(XmlData.Time,1);% case starting with index 0
+                ind_start=0;
+            end
+            if isfield(XmlData,'FileSeries')
+                if strcmp(XmlName,SubDir)% frame indexing documented from the xml file (case PCO)
+                    CheckIndexing=true;
+                else
+                    XmlData=rmfield(XmlData,'FileSeries');%desactivate file indexing option for derived file series
+                end
+            end
+        end
+    end
+    set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
+    set(handles.view_xml,'String','view xml')% indicate that a xml file has been detected
+    drawnow
+    if isfield(XmlData,'Slice') && isfield(XmlData.Slice,'CheckVolumeScan') && isequal(XmlData.Slice.CheckVolumeScan,1)
+        set (handles.slices,'String','volume')
+    end
+end
+
+%% get the file series
+MovieObject=[];
+if strcmp(TimeName,'xml') && strcmp(XmlName,SubDir)% get the image series info from the xml file
+    [nbfield,nbfield_j]=size(XmlData.Time);
+    nbfield=nbfield-1; %remove the possible index 0
+    nbfield_j=nbfield_j-1; %remove the possible index 0
+        i1_series=zeros(nbfield,nbfield_j,1);
+    i1_series(:,:,1)=(1:nbfield)'*ones(1,nbfield_j);
+    i2_series=i1_series;
+    if nbfield_j==1
+        j1_series=[];
+    else
+    j1_series(:,:,1)=ones(nbfield,1)*(1:nbfield_j);
+    end
+    j2_series=j1_series;
+else % scan the input folder to get the list of existing files
+    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=...
+        find_file_series(fullfile(RootPath,SubDir),FileName);
+    nbfield=max(max(max(i2_series)));% total number of fields (i index)
+    if isempty(nbfield)
+        nbfield=max(max(max(i1_series)));
+    end
+    nbfield_j=max(max(max(j2_series)));% number of fields along j index
+    if isempty(nbfield_j)
+        nbfield_j=max(max(max(j1_series)));
+    end
+    if input_line==1
+    set(handles.NomType,'String',NomType)
+    else
+         set(handles.NomType_1,'String',NomType)
+    end
+end
+if CheckIndexing
+    i1=str2double(get(handles.FileIndex,'String'));
+    if isnan(i1)
+        i1=1;
+    else
+    i1=(i1-XmlData.FileSeries.FirstFileIndex)*XmlData.FileSeries.NbFramePerFile+1;%frame index deduced from input file index
+    end
+    if strcmp(TimeName,'xml')% indices i and j
+                j1=mod(i1-1,nbfield_j)+1;
+                i1=floor((i1-1)/nbfield_j)+1;
+                set(handles.j1,'String',num2str(j1))
+    end
+    set(handles.i1,'String',num2str(i1))
+end
+
+
 %% record info in UserData of the figure uvmat
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
 %UvData.FileType{input_line}=FileInfo.FileType;
 UvData.FileInfo{input_line}=FileInfo;
-UvData.MovieObject{input_line}=VideoObject;
+UvData.MovieObject{input_line}=MovieObject;
 UvData.i1_series{input_line}=i1_series;
 UvData.i2_series{input_line}=i2_series;
 UvData.j1_series{input_line}=j1_series;
 UvData.j2_series{input_line}=j2_series;
-nbfield=max(max(max(i2_series)));% total number of fields (i index)
-if isempty(nbfield)
-    nbfield=max(max(max(i1_series)));
-end
-nbfield_j=max(max(max(j2_series)));% number of fields along j index
-if isempty(nbfield_j)
-    nbfield_j=max(max(max(j1_series)));
-end
+
 
 %% read timing and total frame number from the current file (e.g. movie files)
-TimeUnit='';%default
-TimeName='';%default
-XmlData.Time=[];%default
 ColorType='falsecolor'; %default
 if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video data)
     TimeUnit='s';
@@ -2468,57 +2565,6 @@ if input_line==1
 else
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
 end
-XmlFileName=find_imadoc(RootPath,SubDir);
-[tild,tild,DocExt]=fileparts(XmlFileName);
-warntext='';%default warning message
-NbSlice=1;%default
-ImaDoc_str='';
-if ~isempty(XmlFileName)
-    set(handles.view_xml,'Visible','on')
-    set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
-    set(handles.view_xml,'String','view .xml')
-    drawnow
-    [XmlDataRead,warntext]=imadoc2struct(XmlFileName);
-    if ~isempty(warntext)
-        msgbox_uvmat('WARNING',warntext)
-    end
-    if ~isempty(XmlDataRead)
-        ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
-        if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
-            TimeUnit=XmlDataRead.TimeUnit;
-        end
-        if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
-            XmlData.Time=XmlDataRead.Time;
-            if XmlDataRead.Time(1,:)==XmlDataRead.Time(2,:)% case starting with index 1
-                sizDti=size(XmlDataRead.Time,1)-1;%size of the time vector explicitly defined in the xml file
-                ind_start=1;
-            else
-                sizDti=size(XmlDataRead.Time,1);% case starting with index 0
-                ind_start=0;
-            end
-        end
-        set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
-        drawnow
-        if isfield(XmlDataRead, 'GeometryCalib') && ~isempty(XmlDataRead.GeometryCalib)
-            XmlData.GeometryCalib=XmlDataRead.GeometryCalib;      
-        end
-        XmlData.Slice=XmlData.GeometryCalib;%default
-        if isfield(XmlDataRead, 'Slice') && ~isempty(XmlDataRead.Slice)
-            XmlData.Slice=XmlDataRead.Slice;
-        end
-        if isfield(XmlData.Slice,'CheckVolumeScan') && isequal(XmlData.Slice.CheckVolumeScan,1)
-                set (handles.slices,'String','volume')
-            end
-        if isfield(XmlDataRead, 'LIFCalib')
-            XmlData.LIFCalib=XmlDataRead.LIFCalib;
-        end
-    end
-end
-if isempty(ImaDoc_str)
-    set(handles.view_xml,'Visible','off') % no .xml (or .civ) file detected
-else
-    set(handles.view_xml,'String',ImaDoc_str)% indicate that a xml file has been detected
-end
 
 %% Define timing
 % time not set by the input file: images or civ data: indicate that time is read from the xml file
@@ -2539,12 +2585,6 @@ else
 end
 
 %% store last index in handles.MaxIndex_i and .MaxIndex_j
-if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
-    %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
-    if isequal(size(XmlData.Time,1),1)
-        XmlData.Time=(XmlData.Time)';
-    end
-end
 last_i_cell=get(handles.MaxIndex_i,'String');
 if isempty(nbfield)
     last_i_cell{input_line}='';
@@ -2793,41 +2833,51 @@ update_ij(handles,4)
 function update_ij(handles,index_rank)
 
 NomType=get(handles.NomType,'String');
+UvData=get(handles.uvmat,'UserData');
 
 if strcmp(NomType,'level')
-    indices=get(handles.i1,'String');
+    index_string=get(handles.i1,'String');
 else
-    indices=get(handles.FileIndex,'String');
-    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(indices);% the indices for the second series taken from FileIndex
-    switch index_rank
-        case 1
-            indices=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
-        case 2
-            indices=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
-        case 3
-            indices=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
-        case 4
-            indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
+    index_string=get(handles.FileIndex,'String');
+    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'FileSeries')
+        i1=str2double(get(handles.i1,'String'));
+        j1=str2double(get(handles.j1,'String'));
+        NbField_j_cell=get(handles.MaxIndex_j,'String');
+        NbField_j=str2double(NbField_j_cell{1});
+        [RootFile,index_string,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
+        set(handles.RootFile,'String',RootFile)
+    else
+        [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex
+        switch index_rank
+            case 1
+                index_string=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
+            case 2
+                index_string=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
+            case 3
+                index_string=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
+            case 4
+                index_string=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
+        end
     end
 end
-set(handles.FileIndex,'String',indices)
+set(handles.FileIndex,'String',index_string)
 
 % update the second index if relevant
 if strcmp(get(handles.FileIndex_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
-    indices_1=get(handles.FileIndex_1,'String');
-    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(indices_1);% the indices for the second series taken from FileIndex_1
+    index_string_1=get(handles.FileIndex_1,'String');
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(index_string_1);% the index_string for the second series taken from FileIndex_1
     switch index_rank
         case 1
-            indices_1=fullfile_uvmat('','','','',NomType_1,stra2num(get(handles.i1,'String')),i2_1,j1_1,j2_1);
+            index_string_1=fullfile_uvmat('','','','',NomType_1,stra2num(get(handles.i1,'String')),i2_1,j1_1,j2_1);
         case 2
-            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,stra2num(get(handles.i2,'String')),j1_1,j2_1);
+            index_string_1=fullfile_uvmat('','','','',NomType_1,i1_1,stra2num(get(handles.i2,'String')),j1_1,j2_1);
         case 3
-            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,stra2num(get(handles.j1,'String')),j2_1);
+            index_string_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,stra2num(get(handles.j1,'String')),j2_1);
         case 4
-            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,j1_1,stra2num(get(handles.j2,'String')));
+            index_string_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,j1_1,stra2num(get(handles.j2,'String')));
     end
-    set(handles.FileIndex_1,'String',indices_1)
+    set(handles.FileIndex_1,'String',index_string_1)
     set(handles.FileIndex_1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
 end
 
@@ -2883,7 +2933,7 @@ else
    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 end
 option=get(handles.view_xml,'String');
-if isequal(option,'view .xml')
+if isequal(option,'view xml')
     FileXml=fullfile(RootPath,[SubDir '.xml']);
     if ~exist(FileXml,'file')% case of civ files , removes the extension for subdir
         FileXml=fullfile(RootPath,[regexprep(SubDir,'\..+$','') '.xml']);
@@ -2981,9 +3031,9 @@ MaskInfo=get(handles.CheckMask,'UserData');
 if isfield(MaskInfo,'File')
     if isfield(MaskInfo,'NbSlice')&& ~isempty(MaskInfo.NbSlice)
         if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScan
-            MaskIndex_i=str2num(get(handles.j1,'String'));
+            MaskIndex_i=str2double(get(handles.j1,'String'));
         else
-            MaskIndex_i=mod(str2num(get(handles.i1,'String'))-1,MaskInfo.NbSlice)+1;
+            MaskIndex_i=mod(str2double(get(handles.i1,'String'))-1,MaskInfo.NbSlice)+1;
         end
         MaskName=[MaskInfo.File '_' num2str(MaskIndex_i) '.png'];
     else
@@ -3173,11 +3223,6 @@ set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonbac
 function errormsg=runpm(hObject,eventdata,handles,increment)
 %------------------------------------------------------------------------
 errormsg='';%default
-%% check for movie pair status
-% movie_status=get(handles.movie_pair,'Value');
-% if movie_status
-%     STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
-% end
 
 %% read the current input file name(s) and field indices
 InputFile=read_GUI(handles.InputFile);
@@ -3185,26 +3230,27 @@ InputFile.RootFile=regexprep(InputFile.RootFile,'^[\\/]|[\\/]$','');%suppress po
 InputFile.SubDir=regexprep(InputFile.SubDir,'^[\\/]|[\\/]$','');%suppress possible / or \ separator at the beginning or the end of the string
 FileExt=InputFile.FileExt;
 NomType=InputFile.NomType;
-[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
-if isempty(i1)% no i index set by the input file name
-    i1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
-elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
-    j1=str2double(get(handles.j1,'String'));%case of indexed movie
+UvData=get(handles.uvmat,'UserData');
+if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')% case of indexing documented by the xml file
+    i1=str2double(get(handles.i1,'String'));
+    j1=str2double(get(handles.j1,'String'));%read the field indices (for movie, it is not given by the file name)
+    i2=[];j2=[];
+else
+    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
+    if isempty(i1)% no i index set by the input file name
+        i1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+    elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
+        j1=str2double(get(handles.j1,'String'));%case of indexed movie
+    end
 end
-% if movie_status% we read the second index from the edit box
-%     i2=str2num(get(handles.i2,'String'));%read the field indices (for movie, it is not given by the file name)
-%     if strcmp(get(handles.j2,'Visible'),'on')
-%     j2=str2num(get(handles.j2,'String'));%
-%     end
-% end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
     [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);
     [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);% the indices for the second series taken from FileIndex_1
     if isempty(i1_1)
-        i1_1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+        i1_1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
     elseif isempty(j1_1) && strcmp(get(handles.j1,'Visible'),'on')
-        j1_1=str2num(get(handles.j1,'String'));%case of indexed movie
+        j1_1=str2double(get(handles.j1,'String'));%case of indexed movie
     end
 else
     filename_1=[];
@@ -3233,10 +3279,9 @@ if isnumeric(increment)
             j2_1=j2_1+increment;
         end
     end
-    
+
     % the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
 else
-    UvData=get(handles.uvmat,'UserData');
     ref_i=i1;
     if ~isempty(i2)
         ref_i=floor((i1+i2)/2);% current reference index i
@@ -3248,28 +3293,21 @@ else
             ref_j=floor((j1+j2)/2);% current reference index j
         end
     end
-    if isnumeric(increment)
-        if get(handles.scan_i,'Value')==1% case of scanning along index i
-            ref_i=ref_i+increment;% increment the current reference index i
-        else % case of scanning along index j (burst numbers)
-            ref_j=ref_j+increment;% increment the current reference index j if scan_j option is used
-        end
-    else % free increment
-        if strcmp(increment,'+')% if runplus or movie is activated
-            step=1;
-        else
-            step=-1;
-        end
-        if get(handles.scan_i,'Value')==1% case of scanning along index i
+
+    if strcmp(increment,'+')% if runplus or movie is activated
+        step=1;
+    else
+        step=-1;
+    end
+    if get(handles.scan_i,'Value')==1% case of scanning along index i
+        ref_i=ref_i+step;
+        while ref_i>=0  && size(UvData.i1_series{1},3)>=ref_i+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
             ref_i=ref_i+step;
-            while ref_i>=0  && size(UvData.i1_series{1},3)>=ref_i+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
-                ref_i=ref_i+step;
-            end
-        else % case of scanning along index j (burst numbers)
+        end
+    else % case of scanning along index j (burst numbers)
+        ref_j=ref_j+step;
+        while ref_j>=0  && size(UvData.i1_series{1},2)>=ref_j+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
             ref_j=ref_j+step;
-            while ref_j>=0  && size(UvData.i1_series{1},2)>=ref_j+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
-                ref_j=ref_j+step;
-            end
         end
     end
     if ref_i<0
@@ -3303,7 +3341,7 @@ else
     if ~isempty(UvData.j2_series{1})
         j2=UvData.j2_series{1}(ref_indices(end));
     end
-    
+
     % case of a second file series
     if sub_value
         ref_i_1=i1_1;
@@ -3339,8 +3377,8 @@ else
             errormsg='minimum j index reached';
         elseif ref_i_1+1>size(UvData.i1_series{2},3)&&~isempty(InputFile.NomType_1)
             errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
-        %elseif ref_j_1+1>size(UvData.i1_series{2},2)&&~isempty(InputFile.NomType_1)
-         %   errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
+            %elseif ref_j_1+1>size(UvData.i1_series{2},2)&&~isempty(InputFile.NomType_1)
+            %   errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
         end
         if ~isempty(errormsg),return,end
         siz=size(UvData.i1_series{2});
@@ -3401,6 +3439,11 @@ if isempty(errormsg)
     end
     if strcmp(NomType,'level')
         indices=num2str(i1);
+    elseif isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
+        NbField_j_cell=get(handles.MaxIndex_j,'String');
+        NbField_j=str2double(NbField_j_cell{1});
+        [RootFile,indices,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
+        set(handles.RootFile,'String',RootFile)
     else
         indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
     end
@@ -3533,15 +3576,11 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at 
 end
 
 %% determine the main input file information for action
-if isempty(regexp(FileName,'^http://', 'once')) &&~exist(FileName,'file')
-    errormsg=['input file ' FileName ' does not exist'];
-    return
-end
-NomType=get(handles.NomType,'String');
-% NomType_1='';
-% if strcmp(get(handles.NomType_1,'Visible'),'on')
-%     NomType_1=get(handles.NomType_1,'String');
+% if isempty(regexp(FileName,'^http://', 'once')) &&~exist(FileName,'file')
+%     errormsg=['input file ' FileName ' does not exist'];
+%     return
 % end
+NomType=get(handles.NomType,'String');
 %update the z position index
 mode_slice=get(handles.slices,'String');
 if strcmp(mode_slice,'volume')
@@ -3563,7 +3602,7 @@ check_proj_tps=0;
 if  (strcmp(UvData.FileInfo{1}.FileType,'civdata')||strcmp(UvData.FileInfo{1}.FileType,'civx'))
     for iobj=1:numel(UvData.ProjObject)
         if isfield(UvData.ProjObject{iobj},'ProjMode')&& strcmp(UvData.ProjObject{iobj}.ProjMode,'interp_tps')
-            check_proj_tps=1;% tps projection proposed
+            check_proj_tps=1;% tps projection proposedUvData.XmlData
             break
         end
     end
@@ -3597,6 +3636,21 @@ if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldTyp
     if isfield(UvData,'MovieObject')
         ParamIn=UvData.MovieObject{1};
     end
+end
+%% case of special file series (PCO)
+if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
+    [RootName,~,Ext]=fileparts(FileName);
+    NbField_j_cell=get(handles.MaxIndex_j,'String');
+    NbField_j=str2double(NbField_j_cell{1});
+    if num_j1>NbField_j
+       errormsg=['index j exceeds upper bound ' num2str(NbField_j)];
+       return
+    elseif num_j1<1
+         errormsg='index j smaller that 1';
+        return
+    end
+    [FNameMulti,FileIndexString,frame_index]=index2filename(UvData.XmlData{1}.FileSeries,num_i1,num_j1,NbField_j);
+    FileName=fullfile(RootName,[FNameMulti FileIndexString Ext]);
 end
 switch UvData.FileInfo{1}.FieldType
     case {'civdata','civdata_3D','netcdf','mat'}
@@ -3884,7 +3938,7 @@ if isempty(abstime)
         abstime=Field{1}.(TimeName(5:end));%the time is a variale selected by get_file
         % TODO: look for time unit attribute
     elseif ~isempty(regexp(TimeName,'^dim:'))
-        abstime=str2num(get(handles.i1,'String'));
+        abstime=str2double(get(handles.i1,'String'));
         TimeUnit='index';
     end
     if isfield(Field{1},'Dt')
@@ -5110,13 +5164,6 @@ if check_refresh
     errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg);
-    else
-%         set(handles.i1,'BackgroundColor',[1 1 1])
-%         set(handles.i2,'BackgroundColor',[1 1 1])
-%         set(handles.j1,'BackgroundColor',[1 1 1])
-%         set(handles.j2,'BackgroundColor',[1 1 1])
-%         set(handles.FileIndex,'BackgroundColor',[1 1 1])
-%         set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
     end
     set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 end
@@ -5138,7 +5185,6 @@ end
 % --- Executes on button press in MENUVOLUME.
 function VOLUME_Callback(hObject, eventdata, handles)
 %-----------------------------------------------------------------------
-%errordlg('command VOL not implemented yet')
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)
 end
@@ -5149,9 +5195,6 @@ if isequal(get(handles.VOLUME,'Value'),1)
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
     set(handles.CheckEditObject,'Value',0)
-%     set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
-%     set(handles.cal,'Value',0)
-%     set(handles.cal,'BackgroundColor',[0 1 0])
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
     %initiate set_object GUI
@@ -5440,7 +5483,7 @@ set(handles.uvmat,'UserData',UvData)
 set(handles.TransformName,'backgroundColor',[1 1 1])% indicate desactivation  of the menu
 drawnow
 
-%% inputfilerefresh the current plot
+%% inputfile refresh the current plot
 if isempty(list_path{ichoice}) || nargin(transform_handle)<3
     set(handles.SubField,'Value',0)
     SubField_Callback(hObject, eventdata, handles)
@@ -5681,8 +5724,8 @@ REFRESH_Callback(hObject, eventdata, handles)
 function Slider1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
 slider1=get(handles.Slider1,'Value');
-min_val=str2num(get(handles.num_MinVec,'String'));
-max_val=str2num(get(handles.num_MaxVec,'String'));
+min_val=str2double(get(handles.num_MinVec,'String'));
+max_val=str2double(get(handles.num_MaxVec,'String'));
 col=min_val+(max_val-min_val)*slider1;
 set(handles.num_ColCode1,'String',num2str(col))
 if(get(handles.Slider2,'Value') < col)%move also the second slider at the same value if needed
@@ -5697,8 +5740,8 @@ update_plot(handles);
 %----------------------------------------------------------------
 function Slider2_Callback(hObject, eventdata, handles)
 slider2=get(handles.Slider2,'Value');
-min_val=str2num(get(handles.num_MinVec,'String'));
-max_val=str2num(get(handles.num_MaxVec,'String'));
+min_val=str2double(get(handles.num_MinVec,'String'));
+max_val=str2double(get(handles.num_MaxVec,'String'));
 col=min_val+(max_val-min_val)*slider2;
 set(handles.num_ColCode2,'String',num2str(col))
 if(get(handles.Slider1,'Value') > col)%move also the first slider at the same value if needed
@@ -5748,8 +5791,8 @@ function num_MaxVec_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixVecColor,'Value',1)
 CheckFixVecColor_Callback(hObject, eventdata, handles)
-min_val=str2num(get(handles.num_MinVec,'String'));
-max_val=str2num(get(handles.num_MaxVec,'String'));
+min_val=str2double(get(handles.num_MinVec,'String'));
+max_val=str2double(get(handles.num_MaxVec,'String'));
 slider1=get(handles.Slider1,'Value');
 slider2=get(handles.Slider2,'Value');
 colcode1=min_val+(max_val-min_val)*slider1;
@@ -5773,12 +5816,12 @@ height=ceil(pos_vert(4));
 list=get(handles.ColorCode,'String');
 ichoice=get(handles.ColorCode,'Value');
 colcode.ColorCode=list{ichoice};
-colcode.MinVec=str2num(get(handles.num_MinVec,'String'));
-colcode.MaxVec=str2num(get(handles.num_MaxVec,'String'));
+colcode.MinVec=str2double(get(handles.num_MinVec,'String'));
+colcode.MaxVec=str2double(get(handles.num_MaxVec,'String'));
 test3color=strcmp(colcode.ColorCode,'rgb') || strcmp(colcode.ColorCode,'bgr');
 if test3color
-    colcode.ColCode1=str2num(get(handles.num_ColCode1,'String'));
-    colcode.ColCode2=str2num(get(handles.num_ColCode2,'String'));
+    colcode.ColCode1=str2double(get(handles.num_ColCode1,'String'));
+    colcode.ColCode2=str2double(get(handles.num_ColCode2,'String'));
 end
 vec_C=colcode.MinVec+(colcode.MaxVec-colcode.MinVec)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);

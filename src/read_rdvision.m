@@ -62,6 +62,13 @@ if ~exist(filename_seq,'file')
 end
 s=ini2struct(filename_seq);
 FileInfo=s.sequenceSettings;
+FileInfo.Width=str2double(FileInfo.width);
+FileInfo.Height=str2double(FileInfo.height);
+if isequal(FileInfo.bytesperpixel,'2')
+    FileInfo.BitDepth=16;
+else
+    FileInfo.BitDepth=8;
+end
 if isfield(s.sequenceSettings,'numberoffiles')
     FileInfo.NumberOfFrames=str2double(s.sequenceSettings.numberoffiles);
     FileInfo.FrameRate=str2double(s.sequenceSettings.framepersecond);
@@ -118,7 +125,7 @@ if ~isempty(frame_idx)
         else %used when binrepertoire empty, strange feature of rdvision
             binrepertoire=regexprep(FileInfo.bindirectory,'\\$','');%tranform Windows notation to Linux
             binrepertoire=regexprep(binrepertoire,'\','/');
-            [tild,binrepertoire,DirExt]=fileparts(binrepertoire);
+            [~,binrepertoire,DirExt]=fileparts(binrepertoire);
             binrepertoire=[binrepertoire DirExt];     
         end 
       %  binrepertoire='2014-07-04T10.48.46'% case FJORD5a %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,7 +150,6 @@ if ~isempty(frame_idx)
     end  
     FileInfo.StartTime=regexprep(FileInfo.binrepertoire,'T',' ');
     FileInfo.EndTime=datestr(datenum(FileInfo.StartTime,'yyyy-mm-dd HH.MM.SS')+timestamps(end)/86400);
-    disp(FileInfo)
 end
 
 
@@ -237,13 +243,13 @@ while ~feof(f)                          % and read until it ends
     s = strtrim(fgetl(f));              % Remove any leading/trailing spaces
     if isempty(s)
         continue;
-    end;
+    end
     if (s(1)==';')                      % ';' start comment lines
         continue;
-    end;
+    end
     if (s(1)=='#')                      % '#' start comment lines
         continue;
-    end;
+    end
     if ( s(1)=='[' ) && (s(end)==']' )
         % We found section
         CurrMainField = genvarname(lower(s(2:end-1)));

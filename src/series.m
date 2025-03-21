@@ -552,6 +552,7 @@ function check_input_file_series(handles)
 InputTable=get(handles.InputTable,'Data');%read the table of input file series
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
+set(handles.Relabel,'BackgroundColor',[0 1 0])
 drawnow
 empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
@@ -875,6 +876,12 @@ end
 if isequal(MinIndex_j,-1)
     MinIndex_j=0;
 end
+if isfield(FileInfo,'Software')&&~isempty(FileInfo.Software) && ~isempty(regexp(FileInfo.Software,'^pco.camware', 'once'))
+    MinIndex_i=0;
+end
+if strcmp(FileInfo.FileType,'rdvision')
+    set(handles.OutputSubDir,'String','/im')
+end
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
@@ -1034,6 +1041,19 @@ if ~isempty(TimeName)
     if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
         TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
     end
+end
+
+%% case of possible index relabeling from xml info
+if isfield(XmlData,'FileSeries')&& strcmp(FileInfo.FileType,'multimage')
+    set(handles.Relabel,'Visible','on')
+    set(handles.Relabel,'Value',0)
+    SeriesData.FileSeries{iview}=XmlData.FileSeries;
+    TimeMin=Time(2,2);
+    TimeMax=Time(end,end);
+    TimeFirst=TimeMin;
+    TimeLast=TimeMax;
+elseif iview==1
+    set(handles.Relabel,'Visible','off')
 end
 
 %% update the time table
@@ -1406,6 +1426,9 @@ if isfield(SeriesData,'TransformInput')
 end
 if isfield(SeriesData,'ProjObject')
     Param.ProjObject=SeriesData.ProjObject;
+end
+if isfield(SeriesData,'FileSeries')
+    Param.FileSeries=SeriesData.FileSeries{1};
 end
 if ~isfield(SeriesData,'i1_series')
     errormsg='The input field series needs to be refreshed: press REFRESH';
@@ -3935,8 +3958,6 @@ else
 end
 
 
-
-
 function OutputPath_Callback(hObject, eventdata, handles)
 
 
@@ -3958,7 +3979,50 @@ else
 end
 
 
-
 % --- Executes on button press in DeleteMask.
 function DeleteMask_Callback(hObject, eventdata, handles)
 set(handles.MaskTable,'Data',{})
+
+
+% --- Executes on button press in Relabel.
+function Relabel_Callback(hObject, eventdata, handles)
+if get(handles.Relabel,'Value')
+    SeriesData=get(handles.series,'UserData');
+    if isfield(SeriesData,'FileSeries')&& ~isempty(SeriesData.FileSeries{1})
+        [nbfield,nbfield_j]=size(SeriesData.Time{1});
+        nbfield=nbfield-1; %remove the possible index 0
+        nbfield_j=nbfield_j-1; %remove the possible index 0
+        MaxIndex_i=get(handles.MaxIndex_i,'Data');
+        MaxIndex_j=get(handles.MaxIndex_j,'Data');
+        MaxIndex_i(1,:)=nbfield;
+        MaxIndex_j(1,:)=nbfield_j;
+                MinIndex_i(1,:)=1;
+        MinIndex_j(1,:)=1;
+        set(handles.MaxIndex_i,'Data',MaxIndex_i)
+        set(handles.MaxIndex_j,'Data',MaxIndex_j)
+         set(handles.MinIndex_i,'Data',MinIndex_i)
+        set(handles.MinIndex_j,'Data',MinIndex_j)
+        first_i=str2double(get(handles.num_first_i,'String'));
+        first_j=str2double(get(handles.num_first_j,'String'));
+        i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
+        if strcmp(SeriesData.TimeName,'xml')% indices i and j
+            j1=mod(i1-1,nbfield_j)+first_j;
+            i1=floor((i1-1)/nbfield_j)+1;
+            set(handles.num_first_j,'String',num2str(j1))
+        end
+        set(handles.num_first_i,'String',num2str(i1))
+%         last_i=str2double(get(handles.num_last_i,'String'));
+%         last_j=str2double(get(handles.num_last_j,'String'));
+%         i1=(last_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
+%         if strcmp(SeriesData.TimeName,'xml')% indices i and j
+%             j1=mod(i1-1,nbfield_j)+1;
+%             i1=floor((i1-1)/nbfield_j)+1;
+%         end
+        set(handles.num_last_i,'String',num2str(nbfield))
+         set(handles.num_last_j,'String',num2str(nbfield_j))
+    end
+else
+    check_input_file_series(handles)
+    ActionInput_Callback([],[], handles)
+end
+

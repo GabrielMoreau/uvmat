@@ -39,13 +39,7 @@ s=[];
 
 %% opening the xml file
 [tild,tild,FileExt]=fileparts(ImaDoc);
-%% case of .civ files (obsolete)
-if strcmp(FileExt,'.civ')
-    [errormsg,time,TimeUnit,mode,npx,npy,s.GeometryCalib]=read_imatext(ImaDoc);
-    return
-end
 
-%% case of xml files
 if nargin ==1
     [s,Heading,errormsg]=xml2struct(ImaDoc);% convert the whole xml file in a structure s
 elseif nargin ==2

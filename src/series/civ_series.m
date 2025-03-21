@@ -253,16 +253,15 @@ if ~isempty(XmlFileName)
         end
     end
 end
+CheckRelabel=isfield(Param,'FileSeries' );%=true for index relabeling (PCO)
 
 %% introduce input image transform
 transform_fct=[];%default, no transform
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-       % addpath(Param.FieldTransform.TransformPath)
         currentdir=pwd;
     cd(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     cd (currentdir)
-    %rmpath(Param.FieldTransform.TransformPath)
 end
 
 %%%%% MAIN LOOP %%%%%%
@@ -288,12 +287,16 @@ for ifield=1:NbField
         end
     end
     OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
-
+    if CheckRelabel
+         RootFileOut=index2filename(Param.FileSeries,1,1,MaxIndex_j);
+    else
+        RootFileOut=RootFile_A;
+    end
     if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     else
-        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     end
     ncfile_out=ncfile;% by default
@@ -313,9 +316,9 @@ for ifield=1:NbField
             j2_civ2=j2_series_Civ2(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
         else % displacement
-            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
+            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
         end
     end
     if ~CheckOverwrite && exist(ncfile_out,'file')
@@ -335,8 +338,12 @@ for ifield=1:NbField
         try
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 ImageName_A=Param.ActionInput.RefFile;
+            elseif CheckRelabel
+            [RootFile,FileIndexString,FrameIndex_A]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
+            ImageName_A=fullfile(RootPath_A,SubDir_A,[RootFile FileIndexString FileExt_A]);
             else
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
+                FrameIndex_A=FrameIndex_A_Civ1(ifield);
             end
             if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
                 FieldName_A=Param.InputFields.FieldName;
@@ -367,10 +374,16 @@ for ifield=1:NbField
                     continue
                 end
                 tsart_input=tic;
-                [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
+                [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
                 time_input=toc(tsart_input);
             end
+if CheckRelabel
+            [RootFile,FileIndexString,FrameIndex_B]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
+            ImageName_B=fullfile(RootPath_B,SubDir_B,[RootFile FileIndexString FileExt_B]);
+else
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
+            FrameIndex_B=FrameIndex_B_Civ1(ifield);
+end
             if isempty(FileType_B)% determine the image type for the first field
                 [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
                 FileType_B=FileInfo_B.FileType;
@@ -379,7 +392,7 @@ for ifield=1:NbField
                 disp([ImageName_B ' missing'])
                 continue
             end
-            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
+            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
             
         catch ME % display errors in reading input images
             if ~isempty(ME.message)
@@ -612,19 +625,31 @@ for ifield=1:NbField
         par_civ2.ImageB=[];
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
             ImageName_A_Civ2=Param.ActionInput.RefFile;
-        else
+        elseif CheckRelabel
+              [RootFile,FileIndexString,FrameIndex_A_2]=index2filename(Param.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
+            ImageName_A_Civ2=fullfile(RootPath_A,SubDir_A,[RootFile FileIndexString FileExt_A]);
+            else
             ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
+            FrameIndex_A_2=FrameIndex_A_Civ2(ifield);
         end
-        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
+        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A,FrameIndex_A_2)
             par_civ2.ImageA=par_civ1.ImageA;
         else
-            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
+            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_2);
         end
+        if CheckRelabel
+              [RootFile,FileIndexString,FrameIndex_B_2]=index2filename(Param.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
+            ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,[RootFile FileIndexString FileExt_B]);
+            else
+
+
         ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);
-        if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
+        FrameIndex_B_2=FrameIndex_B_Civ2(ifield);
+        end
+        if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_2,FrameIndex_B)
             par_civ2.ImageB=par_civ1.ImageB;
         else
-            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
+            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_2);
         end
         %  [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A_Civ2);
         npy_ima=size(par_civ2.ImageA,1);

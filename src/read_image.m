@@ -82,4 +82,6 @@ switch FileType
         [A,Header]=readIRCam(FileName,'Frames',num);
          A=(reshape(A,Header(1).Width,Header(1).Height))';
          A=flip(A,1);
+    case 'rdvision'
+         A=read_rdvision(FileName,num);
 end

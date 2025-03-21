@@ -162,26 +162,6 @@ timecell={};
 itime=0;
 NbSlice_calib={};
 
-%SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%  loop on the cameras ( #iview)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RootPath=Param.InputTable(:,1);
-% RootFile=Param.InputTable(:,3);
-% SubDir=Param.InputTable(:,2);
-% NomType=Param.InputTable(:,4);
-% FileExt=Param.InputTable(:,5);
-
-% [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
-% if size(time,1)>1
-%     diff_time=max(max(diff(time)));
-%     if diff_time>0
-%         disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
-%     end
-% end
-%
-%      nbfield2=size(time,1);
 checkpreserve=0;% if =1, will npreserve the original images, else it erases them at the end
 for iview=1:size(Param.InputTable,1)
     for iview_xml=1:size(Param.InputTable,1)% look for the xml files in the different data directories
@@ -199,15 +179,6 @@ for iview=1:size(Param.InputTable,1)
     newxml=regexprep(newxml,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
     newxml=[newxml '.xml'];
     
-    %copyfile_modif(filexml,newxml); %copy the xml file in the upper folder
-    
-    %[XmlData,errormsg]=imadoc2struct(newxml);
-%     nbfield2=size(XmlData.Time,2)-1;
-%     if nbfield2>1
-%         NomTypeNew='_1_1';
-%     else
-%         NomTypeNew='_1';
-%     end
     %% get the names of .seq and .sqb files
     switch Param.InputTable{iview,5}
         case {'.seq','.sqb'}
@@ -269,14 +240,9 @@ for iview=1:size(Param.InputTable,1)
     timestamp=zeros(1,numel(m.Data));
     for ii=1: numel(m.Data)
         timestamp(ii)=m.Data(ii).timestamp;
-%         j1=1;
-%         if ~isequal(nbfield2,1)
-%             j1=mod(ii-1,nbfield2)+1;
-%         end
-%         i1=floor((ii-1)/nbfield2)+1;
-        %diff_time(i1,j1)= timestamp(ii)-XmlData.Time(i1+1,j1+1);
     end
-    [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+    copyfile_modif(filexml,timestamp,newxml)
+   % [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
     [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
     if ~isempty(errormsg)
         disp(errormsg)
@@ -296,6 +262,7 @@ for iview=1:size(Param.InputTable,1)
     
     disp ('max time difference xml and timestamps (IN SEC.)')
     max(abs(difftime))
+
 end
     
     

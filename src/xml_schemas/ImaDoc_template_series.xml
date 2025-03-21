@@ -1,0 +1,10 @@
+<ImaDoc >
+  <Camera>
+    <TimeUnit>s</TimeUnit><!--unit for times, seconds (s) by default-->
+    <BurstTiming>
+      <Time unit="TimeUnit" > 0 </Time> <!--time of the first image, expressed in TimeUnit, = 0 by default-->
+      <Dti unit="TimeUnit" > 1 </Dti><!--time interval, expressed in TimeUnit-->
+      <NbDti>50</NbDti> <!--Nbe of intervals Dti (=nbre de frames-1)-->
+    </BurstTiming>
+  </Camera>
+</ImaDoc>

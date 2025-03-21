@@ -28,4 +28,10 @@
     </BurstTiming>
     <TimeOrigin>2010-06-17T16:44:28.93</TimeOrigin><!--date-temps absolu pour l'origine des temps definie pour l'experience-->
   </Camera>
+    <Oscillator><!--propriete du miroir oscillant, a discuter comment entrer ces donneee-->
+    <Frequency>3194.454905803945093</Frequency>
+    <Amplitude unit="volt">2547.234905803945093</Amplitude>
+    <Offset unit="volt">-3734.265094196054907</Offset>
+    <DegreePerVolt />
+  </Oscillator>
 </ImaDoc>
