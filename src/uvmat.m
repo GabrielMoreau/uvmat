@@ -460,7 +460,7 @@ set(handles.PlotAxes,'Units','normalized')
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 if isempty(regexp(RootPath,'^http://'))%usual files
-oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+    oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 else %Opendap
     oldfile=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
 end
@@ -483,7 +483,7 @@ end
 
 % --------------------------------------------------------------------
 function MenuBrowseOpendap_Callback(hObject, eventdata, handles)
-    oldfile=get(hObject,'Label');
+oldfile=get(hObject,'Label');
 fileinput=uigetfile_uvmat('pick an input file',oldfile);
 hh=dir(fileinput);
 if numel(hh)>1
@@ -709,7 +709,7 @@ figure_movie=findobj(allchild(0),'name','figure_movie');% find existing movie fi
 if ~isempty(figure_movie)
     delete(figure_movie)%delete existing figure_movie
 end
-figure_movie=figure;% create a new movie figure 
+figure_movie=figure;% create a new movie figure
 nbpix=[640 480];% resolution VGA
 set(figure_movie,'name','figure_movie','Position',[1 1 nbpix])
 newaxes=copyobj(handles.PlotAxes,figure_movie);%new plotting axes in the new figure
@@ -2427,6 +2427,7 @@ NbSlice=1;%default
 TimeUnit='';%default
 TimeName='';%default
 CheckIndexing=false;%default
+XmlData=[];
 if isempty(XmlFileName)
     set(handles.view_xml,'Visible','off')
 else
@@ -2559,7 +2560,7 @@ else
 end
 
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
-XmlData.GeometryCalib=[];%default
+%XmlData.GeometryCalib=[];%default
 if input_line==1
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 else

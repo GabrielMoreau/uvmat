@@ -1,5 +1,5 @@
-%'command_launch_matlab': creates the command strings for opening a new Matlab
-%session and running a programme in a Linux system('GLNX86','GLNXA64','MACI64')
+%'command_launch_matlab': creates the command strings for opening a new Matlab session 
+% and running a programme in a Linux system('GLNX86','GLNXA64','MACI64')
 %------------------------------------------------------------------------
 % function cmd=command_launch_matlab(filelog,path_uvmat,ActionPath,ActionName,inputxml,option)
 %
@@ -46,20 +46,5 @@ cmd=[cmd  'exit\n' 'END_MATLAB\n'];
     'echo "global time = " $(($time_end - $time_start)) >> ''' filelog '''\n'];
     end
 
-%% case cluster:
-% matlab_ver = ver('MATLAB');
-%                     matlab_version = matlab_ver.Version;
-%                     cmd=[...
-%                         '#!/bin/bash\n'...
-%                         'source /etc/profile\n'...
-%                         'module purge\n'...
-%                         'module load matlab/' matlab_version '\n'...% CHOICE OF CURRENT MATLAB VERSION
-%                         'matlab -nodisplay -nosplash -nojvm -singleCompThread -logfile ''' filelog{iprocess} ''' <<END_MATLAB\n'...% open a new Matlab session without display
-%                         'addpath(''' path_series ''');\n'...
-%                         'addpath(''' ActionPath ''');\n'...
-%                         '' ActionName  '(''' filexml{iprocess} ''');\n'...% launch the Matlab function selected by the GUI 'series'
-%                         'exit\n'...
-%                         'END_MATLAB\n'];
-%                 end
 
 

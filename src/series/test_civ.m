@@ -1,4 +1,5 @@
 %'test_civ': test the civ fct on a simple shear produced by defomation of the input image
+% use Matlab signal processing toolbox
 %------------------------------------------------------------------------
 % Method: 
     %open a netcdf file with civ results. 

@@ -1,5 +1,5 @@
 %--------------------------------------------------------------------------
-%  'civ': function  adapted from PIVlab http://pivlab.blogspot.com/
+%  'civ': key function  for image correlations (called by series/cvi_series.m)
 % function [xtable ytable utable vtable typevector] = civ (image1,image2,ibx,iby step, subpixfinder, mask, roi)
 %
 % OUTPUT:

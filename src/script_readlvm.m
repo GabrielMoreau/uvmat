@@ -1,8 +1,5 @@
 %% get the input file
-project='/fsnet/project/coriolis/2016/16CREST';
-% if ~exist(project,'dir')
-%     project='U:\project\coriolis\2015\15MINI_MEDDY\PROBES';%windows
-% end
+project='/fsnet/project/coriolis/2024/24PLUME';
 fileinput=uigetfile_uvmat('pick an input file',project);
 [Path,Name,Ext]=fileparts(fileinput);
 

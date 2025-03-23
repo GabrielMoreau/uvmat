@@ -300,7 +300,7 @@ else
     nbfield=floor(nbfield/NbSlice)*NbSlice;% truncate the total number of frames in case of incomplete series
     indselect=reshape(1:nbfield,NbSlice,[]);
     for j_slice=1:NbSlice
-    indselect(j_slice,:)=j_slice:step*NbSlice:nbfield;% select file indices of the slice
+    indselect(j_slice,:)=j_slice:NbSlice:nbfield;% select file indices of the slice
     end
 end
 

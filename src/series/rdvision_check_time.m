@@ -242,7 +242,7 @@ for iview=1:size(Param.InputTable,1)
         timestamp(ii)=m.Data(ii).timestamp;
     end
     copyfile_modif(filexml,timestamp,newxml)
-   % [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml); %copy the xml file in the upper folder
+ 
     [XmlData,errormsg]=imadoc2struct(newxml);% check reading of the new xml file
     if ~isempty(errormsg)
         disp(errormsg)
@@ -266,116 +266,7 @@ for iview=1:size(Param.InputTable,1)
 end
     
     
-    
-    % check the existence of the expected output image files (from the xml)
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%--------- reads a series of bin files
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [BinList,errormsg]=binread_rdv_series(PathDir,SeqData,SqbData,nbfield2,NomTypeNew)
-% BINREAD_RDV Permet de lire les fichiers bin g???n???r???s par Hiris ??? partir du
-% fichier seq associ???.
-%   [IMGS,TIMESTAMPS,NB_FRAMES] = BINREAD_RDV(FILENAME,FRAME_IDX) lit
-%   l'image d'indice FRAME_IDX de la s???quence FILENAME.
-%
-%   Entr???es
-%   -------
-%   FILENAME  : Nom du fichier s???quence (.seq).
-%   FRAME_IDX : Indice de l'image ??? lire. Si FRAME_IDX vaut -1 alors la
-%   s???quence est enti???rement lue. Si FRAME_IDX est un tableau d'indices
-%   alors toutes les images d'incides correspondant sont lues. Si FRAME_IDX
-%   est un tableau vide alors aucune image n'est lue mais le nombre
-%   d'images et tous les timestamps sont renvoy???s. Les indices commencent ???
-%   1 et se termines ??? NB_FRAMES.
-%
-%   Sorties
-%   -------
-%   IMGS        : Images de sortie.
-%   TIMESTAMPS  : Timestaps des images lues.
-%   NB_FRAMES   : Nombres d'images dans la s???quence.
-NbBinFile=0;
-BinSize=0;
-fid=0;
-errormsg='';
-BinList={};
-
-classname=sprintf('uint%d',SeqData.bytesperpixel*8);
-
-classname=['*' classname];
-BitDepth=8*SeqData.bytesperpixel;%needed to write images (8 or 16 bits)
-binrepertoire=fullfile(PathDir,SeqData.binrepertoire);
-FileDir=SeqData.sequencename;
-FileDir=regexprep(FileDir,'_Master_Dalsa_4M180$','');%suppress '_Master_Dalsa_4M180'
-OutputDir=fullfile(PathDir,FileDir);
-if ~exist(OutputDir,'dir')
-    %     errormsg=[OutputDir ' already exist, delete it first'];
-    %     return
-    % end
-    [s,errormsg]=mkdir(OutputDir);
-    
-    if s==0
-        disp(errormsg)
-        return%not able to create new image dir
-    end
-end
-bin_file_counter=0;
-for ii=1:SeqData.nb_frames
-    j1=[];
-    if ~isequal(nbfield2,1)
-        j1=mod(ii-1,nbfield2)+1;
-    end
-    i1=floor((ii-1)/nbfield2)+1;
-    OutputFile=fullfile_uvmat(PathDir,FileDir,'img','.png',NomTypeNew,i1,[],j1);% TODO: set NomTypeNew from SeqData.mode
-    fname=fullfile(binrepertoire,sprintf('%s%.5d.bin',SeqData.binfile,SqbData(ii).file_idx));
-    if exist(OutputFile,'file')% do not recreate existing image file
-        fid=0;
-    else
-        if fid==0 || ~strcmp(fname,fname_prev) % open the bin file if not in use
-            if fid~=0
-                fclose(fid);%close the previous bin file if relevant
-            end
-            [fid,msg]=fopen(fname,'rb');
-            if isequal(fid,-1)
-                errormsg=['error in opening ' fname ': ' msg];
-                return
-            else
-                disp([fname ' opened for reading'])
-                bin_file_counter=bin_file_counter+1;
-                BinList{bin_file_counter}=fname;
-            end
-            fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
-            NbBinFile=NbBinFile+1;%counter of binary files (for checking purpose)
-            BinSize(NbBinFile)=0;% strat counter for new bin file
-        else
-            fseek(fid,SqbData(ii).offset,-1);%look at the right starting place in the bin file
-        end
-        fname_prev=fname;
-        A=reshape(fread(fid,SeqData.width*SeqData.height,classname),SeqData.width,SeqData.height);%read the current image
-        A=A';
-        BinSize(NbBinFile)=BinSize(NbBinFile)+SeqData.width*SeqData.height*SeqData.bytesperpixel*8; %record bits read
-        try
-            imwrite(A,OutputFile,'BitDepth',BitDepth) % case of 16 bit images
-            disp([OutputFile ' written']);
-            % [s,errormsg] = fileattrib(OutputFile,'-w','a'); %set images to read only '-w' for all users ('a')
-            %         if ~s
-            % %             disp_uvmat('ERROR',errormsg,checkrun);
-            %             return
-            %         end
-        catch ME
-            errormsg=ME.message;
-            return
-        end
-    end
-end
-if fid~=0
-fclose(fid)
-end
-
-
-
-
+  
 function [nbfield2,msg]=copyfile_modif(filexml,timestamp,newxml)
 msg='';
 t=xmltree(filexml);

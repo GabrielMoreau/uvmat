@@ -146,7 +146,7 @@ while test_fin_fichier>0
     matrice_finale=zeros(A,length(nbvoie_reception),numero_tir_fin);%A=nbre of times (coord z)=2650, numero_tir_fin=time index
     time=(b/rsf+[0:A-1]/rsf); %b=250, rsf=10,
     freq1=0.5;freq2=1.5;
-    [BB AA]=butter(4,[freq1 freq2]/rsf*2);.sback
+    [BB AA]=butter(4,[freq1 freq2]/rsf*2);
 
     for ii=1:length(nbvoie_reception)%=64
         %eval(['fid=fopen(''E:\ManipLGITLecoeur\' directory '\' name '_' num2str(number) '_' num2str(nbvoie_reception(ii)) '.dat'',''r'');']);

@@ -27,19 +27,24 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [checkmsg,date_str,svn_info]=check_files
+function [checkmsg,date_str,svn_info,list_fct]=check_files
 checkmsg={};%default
 svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
     'activate';...% emulate the mouse selection of a GUI element, for demo
+    'angle2normal';...%rotation vector PlaneAngle (in degree) 
     'browse_data';...% function for scanning directories in a project/campaign
     'browse_data.fig';...% GUI corresponding to dataview
     'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
     'calc_field_tps';...% defines fields (velocity, vort, div...) and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
     'check_files';...
+    'civ';... % key function  for image correlations (called by series/cvi_series.m)
+    'cluster_command';...% creates the command string for launching jobs in the cluster system 'oar'. 
+    'command_launch_matlab';% creates the command strings for opening a new Matlab session
+    'command_load_python';% creates the command strings for loading Python
     'compile';...% compile a Matlab function, create a binary in a subdirectory /bin
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid

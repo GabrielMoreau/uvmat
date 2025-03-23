@@ -861,8 +861,8 @@ list_uid=children(t,root_uid);
 testsimple=0;
 filedat=[];
 if ~isempty(list_uid)
-    filedat=get(t,list_uid(1))
-    if isfield(filedat,'type') & isequal(filedat.type,'chardata') &isfield(filedat,'value')
+    filedat=get(t,list_uid(1));
+    if isfield(filedat,'type') && isequal(filedat.type,'chardata') && isfield(filedat,'value')
         testsimple=1;%simple element
     end
 end
@@ -875,13 +875,13 @@ for iattr=1:nbattrib
     attr= attributes(t,'get',root_uid,iattr);
     if isequal(attr.key,'source')% look for 'source' attribute
         if isequal(attr.val,'file')%if the source is 'file', look for the path and open it
-           if isfield(filedat,'type') & isequal(filedat.type,'chardata') &isfield(filedat,'value')
+           if isfield(filedat,'type') && isequal(filedat.type,'chardata') && isfield(filedat,'value')
                cur_file=filedat.value;
                uidparent=root_uid;%initialization
                while ~isequal(uidparent,1)%while the first level has not been reached
                     uidparent=parent(t,uidparent);
                     dirdat=get(t,uidparent);
-                    if isfield(dirdat,'type') & isequal(dirdat.type,'element') & isfield(dirdat,'name')
+                    if isfield(dirdat,'type') && isequal(dirdat.type,'element') && isfield(dirdat,'name')
                         nbattrib_up= attributes(t,'length',uidparent);
                         for iattr_up=1:nbattrib_up
                             attr= attributes(t,'get',uidparent,iattr_up);
@@ -892,9 +892,9 @@ for iattr=1:nbattrib
                     end
                end
                RootPath=fileparts(CurrentFile);%path to the current .xml file
-               cur_file=fullfile(RootPath,cur_file)
+               cur_file=fullfile(RootPath,cur_file);
                set(handles.CurrentAttributes,'UserData',cur_file)%will be searched by uvmat
-               [path,fil,ext]=fileparts(cur_file);
+               [~,~,ext]=fileparts(cur_file);
                if ~exist(cur_file,'file')
                    msgbox_uvmat('ERROR',['non-existent link file' cur_file]) % A FAIRE: propose to updtate the .xml file
                    return
@@ -908,7 +908,7 @@ for iattr=1:nbattrib
                    set(handles.CurrentFile,'String',cur_file)
                    CurrentFile_Callback(handles.CurrentFile, [], handles)
                else
-                   if isequal(get(heditxml,'Tag'),'browser'); %if editxml has been called as a browser
+                   if isequal(get(heditxml,'Tag'),'browser') %if editxml has been called as a browser
                        set(heditxml,'Tag','idle')% signal for uvmat browser
                    else
                        uvmat({cur_file}); %open the link fiel with uvmat
@@ -924,18 +924,18 @@ set(handles.CurrentAttributes,'String',attr_col)
 
 %list subtree
 if ~testsimple
-    list_element=[];
+    list_element=cell(length(list_uid));
     for iline=1:length(list_uid)
         element=get(t,list_uid(iline));
-        if isfield(element,'type')&isequal(element.type,'element')
+        if isfield(element,'type')&& isequal(element.type,'element')
              list_element{iline,2}=element.name;
              child_uid=children(t,list_uid(iline));
              subelem=get(t,child_uid);
-             if isfield(subelem,'type')& isfield(subelem,'value') & isequal(subelem.type,'chardata')
+             if isfield(subelem,'type')&& isfield(subelem,'value') && isequal(subelem.type,'chardata')
                 data_read=subelem.value;
                 list_element{iline,3}=['= ' data_read];
             end
-            if iscell(subelem)|(isfield(subelem,'type')&isequal(subelem.type,'element'))
+            if iscell(subelem)||(isfield(subelem,'type')&& isequal(subelem.type,'element'))
                 list_element{iline,1}='+ ';%sign for subtree existence
             else
                 list_element{iline,1}='  ';
@@ -964,9 +964,9 @@ end
 %updates the interface
 function update_ref_list(hh,xs_element,element,node,xs_subelem,subelem)
 %-----------------------------
-pref_col='';
+%pref_col='';
 key_col='';
-equal_sign='';
+%equal_sign='';
 val_col='';
 for iline=1:length(subelem)
     xsindex=subelem(iline).xsindex;
@@ -999,14 +999,13 @@ set(hh,'UserData',RefDataIn)
 function replicate_Callback(hObject, eventdata, handles)
 global xs  t
 
-export_list=get(handles.export_list,'String');
-export_val=get(handles.export_list,'UserData');
+%export_list=get(handles.export_list,'String');
+%export_val=get(handles.export_list,'UserData');
 heditxml=get(handles.replicate,'parent');
 Data=get(heditxml,'UserData');
 
 hdataview=findobj(allchild(0),'Name','dataview');
 if isempty(hdataview)
-    hdataview=dataview;
     return
 end
 hhdataview=guidata(hdataview);
@@ -1026,7 +1025,7 @@ Value=get(hhdataview.ListRecords,'Value');
 if ~isequal(Value,1)
     ListRecords=ListRecords(Value);
 end
-[ListDevices,ListRecords,ListXml,List]=dir_scan(CurrentPath,ListExperiments,ListDevices,ListRecords);
+[~,~,~,List]=dir_scan(CurrentPath,ListExperiments,ListDevices,ListRecords);
 ListXml=get(hhdataview.ListXml,'String');
 Value=get(hhdataview.ListXml,'Value');
 if isequal(Value,1)
@@ -1064,9 +1063,9 @@ for iexp=1:length(List.Experiment)
                                 uid_export(1)=1;
                                 % fill the root elements if absent
                                 for index=2:length(uidlist)
-                                    name_t=get(t,uidlist(index),'name')
-                                    findstr=[findstr '/' name_t]
-                                    uid=find(t_export,findstr)
+                                    name_t=get(t,uidlist(index),'name');
+                                    findstr=[findstr '/' name_t];
+                                    uid=find(t_export,findstr);
                                     if isempty(uid)
                                         [t_export,uid_export(index)]=add(t_export,uid_export(index-1),'element',name_t);
                                     else
@@ -1087,7 +1086,7 @@ for iexp=1:length(List.Experiment)
                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
                             for ilistxml=1:length(ListXml)
                                 if isequal(FileName,ListXml{ilistxml})
-                                    xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName)
+                                    xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
                                     break
                                 end
                             end

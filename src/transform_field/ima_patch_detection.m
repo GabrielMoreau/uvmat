@@ -1,5 +1,5 @@
-% 'ima_edge_detection': find edges 
-
+% 'ima_patch_detection': find patches 
+% requires the Matlab image processing toolbox
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields with a single input and parameters %%%%
 % OUTPUT: 

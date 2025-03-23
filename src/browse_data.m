@@ -241,7 +241,7 @@ if ~isempty(regexp(SourceDir,'^http'))|| exist(SourceDir,'dir')
     set(handles.ListExperiments,'Value',index)% initialise the menu selection with the folder defined by the input
     ListExperiments_Callback([],[], handles)
 else
-    msgbox_uvmat('ERROR',['The input ' Campaign ' is not a directory'])
+    msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a folder'])
 end
 
 %------------------------------------------------------------------------

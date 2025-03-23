@@ -2220,7 +2220,7 @@ for iexp=1:NbExp
             end
             msgbox_uvmat('CONFIRMATION',[num2str(currJobIndex-1) ' jobs launched on queue ' qstat_Queue '.'])
         case 'python'
-            command = command_launch_python(filexml{iprocess});
+            command = ['python -m fluidimage.run_from_xml ' filexml{iprocess}];
             fprintf(['command:\n' command '\n\n'])
             [status, result] = call_command_clean(command);
     end

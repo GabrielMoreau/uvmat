@@ -1,4 +1,5 @@
 % 'ima_edge_detection': find edges 
+% requires MATLAB Image Processing toolbox
 
 %------------------------------------------------------------------------
 %%%%  Use the general syntax for transform fields with a single input and parameters %%%%
