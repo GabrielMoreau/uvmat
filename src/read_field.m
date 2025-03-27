@@ -144,14 +144,14 @@ switch FileType
         end
         NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
+            [Field,~,~,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
-            if numel(frame_index)~=1
-                NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
-            end
+            [Field,~,~,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
+%             if numel(frame_index)~=1
+%                 NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
+%             end
         else
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
+            [Field,~,~,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         end
         if ~isempty(errormsg)
             return
@@ -240,8 +240,8 @@ switch FileType
         end
     case 'telopsIR'
          [A,Header]=readIRCam(FileName,'Frames',frame_index);
+         A=flip(A);
          A=(reshape(A,Header(1).Width,Header(1).Height))';
-         A=flip(A,1);
     case 'mmreader'
         if isa(ParamIn,'mmreader')
             A=read(ParamIn,frame_index);

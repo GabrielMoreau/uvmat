@@ -1377,11 +1377,8 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a
 %[Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
 [Path,ref.subdir,File,ref.num1,ref.num2,ref.num_a,ref.num_b,ref.ext,ref.nom_type]=fileparts_uvmat(fileinput);
 ref.filebase=fullfile(Path,File);
-% ref.num_a=stra2num(str_a);
-% ref.num_b=stra2num(str_b);
-% ref.num1=str2double(field_count);
-% ref.num2=str2double(str2);
-browse=[];%initialisation
+
+%browse=[];%initialisation
 if ~isequal(ref.ext,'.nc')
     msgbox_uvmat('ERROR','the reference file must be in netcdf format (*.nc)')
     return

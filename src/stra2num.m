@@ -29,11 +29,11 @@
 %=======================================================================
 
 function numres=stra2num(str)
-numres=[]; %default
-if double(str) >= 48 & double(str) <= 57 % = test for number strings
-    numres=str2double(str);
-elseif double(str) >= 65 & double(str) <= 90 % test on ascii code for capital letters
+numres=str2double(str); %default
+if isnan(numres)
+   if double(str) >= 65 & double(str) <= 90 % test on ascii code for capital letters
     numres=double(str)-64; %change capital letters to corresponding number in the alphabet
-elseif double(str) >= 97 & double(str) <= 122 % test on ascii code for small letters 
+  elseif double(str) >= 97 & double(str) <= 122 % test on ascii code for small letters 
     numres=double(str)-96; %change small letters to corresponding number in the alphabet
+   end
 end

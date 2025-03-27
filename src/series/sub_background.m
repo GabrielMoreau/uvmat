@@ -77,9 +77,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.NbSlice='on'; % edit box nbre of slices made active
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';%can use a transform function
-    ParamOut.ProjObject='off';%cannot use projection object(option 'off'/'on',
-    ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.FieldTransform = 'off';%can use a transform function (option 'off'/'on','off' by default)
+    ParamOut.ProjObject='off';%cannot use projection object(option 'off'/'on','off' by default)
+    ParamOut.Mask='off';%cannot use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.sback';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
 
@@ -249,23 +249,25 @@ CheckRelabel=isfield(Param,'FileSeries' );
 
 %% Input file info
 if CheckRelabel
-      [RootFileOut,FileIndexString]=index2filename(Param.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
-       FirstFileName=fullfile(RootPath,SubDir,[RootFileOut FileIndexString FileExt]);
+    [RootFileOut,frame_index]=index2filename(Param.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
+    FirstFileName=fullfile(RootPath,SubDir,RootFileOut);
 else
-FirstFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
-RootFileOut=RootFile;
+    FirstFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
+    RootFileOut=RootFile;
 end
 [FileInfo,MovieObject]=get_file_info(FirstFileName);
 FileType=FileInfo.FileType;
-if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
-    if isempty(regexp(NomType,'1$', 'once'))% no file indexing
-        frame_index=i_indices;% the index i denotes the frame number in a movie, no index j
+if ~CheckRelabel
+    if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
+        if isempty(regexp(NomType,'1$', 'once'))% no file indexing
+            frame_index=i_indices;% the index i denotes the frame number in a movie, no index j
+        else
+            frame_index=j_indices;% the index j denotes the frame number in a movie
+            MovieObject=[]; %not a single video object
+        end
     else
-        frame_index=j_indices;% the index j denotes the frame number in a movie
-        MovieObject=[]; %not a single video object
+        frame_index=ones(1,nbfield);
     end
-else
-    frame_index=ones(1,nbfield);
 end
 
 %% output file naming
@@ -287,20 +289,20 @@ if rank==0
 end
 
 %% prealocate memory for the sliding background
-Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory    
+Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory
 
 %% selection of frame indices
-if Param.ActionInput.CheckVolume 
+if Param.ActionInput.CheckVolume
     nbfield=floor(nbfield/NbSlice_j)*NbSlice_j;% truncate the total number of frames in case of incomplete series
     indselect=1:nbfield;
-     indselect=reshape(indselect,NbSlice_j,[]);
-      NbSlice=NbSlice_j;
+    indselect=reshape(indselect,NbSlice_j,[]);
+    NbSlice=NbSlice_j;
 else
-       NbSlice=NbSlice_i;
+    NbSlice=NbSlice_i;
     nbfield=floor(nbfield/NbSlice)*NbSlice;% truncate the total number of frames in case of incomplete series
     indselect=reshape(1:nbfield,NbSlice,[]);
     for j_slice=1:NbSlice
-    indselect(j_slice,:)=j_slice:NbSlice:nbfield;% select file indices of the slice
+        indselect(j_slice,:)=j_slice:NbSlice:nbfield;% select file indices of the slice
     end
 end
 
@@ -312,8 +314,8 @@ for j_slice=1:NbSlice
         ifile=indselect(j_slice,ifield);
         %filename=filecell{1,ifile};
         if CheckRelabel
-            [RootFile,FileIndexString,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
-            filename=fullfile(RootPath,SubDir,[RootFile FileIndexString FileExt]);
+            [filename,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
+             filename=fullfile(RootPath,SubDir,filename);
         else
             filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
             FrameIndex=frame_index(ifile);
@@ -367,8 +369,8 @@ for j_slice=1:NbSlice
             for iburst=1:step
                 ifile=indselect(j_slice,ifield+iburst+step*halfnbaver);
                 if CheckRelabel
-                    [RootFile,FileIndexString,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
-                    filename=fullfile(RootPath,SubDir,[RootFile FileIndexString FileExt]);
+                    [filename,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
+                    filename=fullfile(RootPath,SubDir,filename);
                 else
                     filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
                     FrameIndex=frame_index(ifile);

@@ -253,6 +253,8 @@ if ~isempty(XmlFileName)
         end
     end
 end
+
+%% File relabeling documented by the xml file (e.g. PCO)
 CheckRelabel=isfield(Param,'FileSeries' );%=true for index relabeling (PCO)
 
 %% introduce input image transform
@@ -339,8 +341,8 @@ for ifield=1:NbField
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 ImageName_A=Param.ActionInput.RefFile;
             elseif CheckRelabel
-            [RootFile,FileIndexString,FrameIndex_A]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
-            ImageName_A=fullfile(RootPath_A,SubDir_A,[RootFile FileIndexString FileExt_A]);
+            [RootFile,FrameIndex_A]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
+            ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
             else
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
                 FrameIndex_A=FrameIndex_A_Civ1(ifield);
@@ -354,11 +356,11 @@ for ifield=1:NbField
                     [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                     FileType_A=FileInfo_A.FileType;
                     if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom','telopsIR'}), 1))% case of video input
-                        Time=zeros(FileInfo_A.NumberOfFrames+1,2);                  
+                        Time=zeros(FileInfo_A.NumberOfFrames+1,2);
                         Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
-                           if ~isempty(j1_series_Civ1) && j1_series_Civ1~=1
-                               Time=Time';
-                           end
+                        if ~isempty(j1_series_Civ1) && j1_series_Civ1~=1
+                            Time=Time';
+                        end
                     end
                     if ~isempty(FileType_A) && isempty(Time)% Time = index i +0.001 index j by default
                         MaxIndex_i=max(i2_series_Civ1);
@@ -377,13 +379,13 @@ for ifield=1:NbField
                 [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
                 time_input=toc(tsart_input);
             end
-if CheckRelabel
-            [RootFile,FileIndexString,FrameIndex_B]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
-            ImageName_B=fullfile(RootPath_B,SubDir_B,[RootFile FileIndexString FileExt_B]);
-else
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-            FrameIndex_B=FrameIndex_B_Civ1(ifield);
-end
+            if CheckRelabel
+                [RootFile,FrameIndex_B]=index2filename(Param.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
+                ImageName_B=fullfile(RootPath_B,SubDir_B,RootFile);
+            else
+                ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
+                FrameIndex_B=FrameIndex_B_Civ1(ifield);
+            end
             if isempty(FileType_B)% determine the image type for the first field
                 [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
                 FileType_B=FileInfo_B.FileType;
@@ -393,7 +395,7 @@ end
                 continue
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
-            
+
         catch ME % display errors in reading input images
             if ~isempty(ME.message)
                 disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
@@ -626,9 +628,9 @@ end
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
             ImageName_A_Civ2=Param.ActionInput.RefFile;
         elseif CheckRelabel
-              [RootFile,FileIndexString,FrameIndex_A_2]=index2filename(Param.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
-            ImageName_A_Civ2=fullfile(RootPath_A,SubDir_A,[RootFile FileIndexString FileExt_A]);
-            else
+            [RootFile,FrameIndex_A_2]=index2filename(Param.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
+            ImageName_A_Civ2=fullfile(RootPath_A,SubDir_A,RootFile);
+        else
             ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
             FrameIndex_A_2=FrameIndex_A_Civ2(ifield);
         end
@@ -638,13 +640,11 @@ end
             [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_2);
         end
         if CheckRelabel
-              [RootFile,FileIndexString,FrameIndex_B_2]=index2filename(Param.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
-            ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,[RootFile FileIndexString FileExt_B]);
-            else
-
-
-        ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);
-        FrameIndex_B_2=FrameIndex_B_Civ2(ifield);
+            [RootFile,FrameIndex_B_2]=index2filename(Param.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
+            ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,RootFile);
+        else
+            ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);
+            FrameIndex_B_2=FrameIndex_B_Civ2(ifield);
         end
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_2,FrameIndex_B)
             par_civ2.ImageB=par_civ1.ImageB;

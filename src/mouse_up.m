@@ -70,6 +70,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     set(AxeData.CurrentObject,'Selected','off')
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object
     IndexObj=PlotData.IndexObj;
+    if IndexObj<=numel(UvData.ProjObject)
     ObjectData=UvData.ProjObject{IndexObj};
     check_multiple=0;
     
@@ -119,13 +120,14 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                 check_multiple=1;
         end
     end
-    
+
     %show object coordinates in the GUI set_object
     if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         set(hh_set_object.Coord,'Data',ObjectData.Coord);
         set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX,4));
         set(hh_set_object.num_RangeY_2,'String',num2str(ObjectData.RangeY,4));
     end
+
     
     %% stop drawing and plot the projected field if the object manipulation is finished
     if check_multiple==0  || isequal(get(hcurrentfig,'SelectionType'),'alt')
@@ -194,6 +196,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     %     UvData.ProjObject{IndexObj}=ObjectData;
     hother=findobj('Tag','deformpoint');%find all the deformpoints
     set(hother,'Color','b');%reset all the deformpoints in 'blue'
+    end
 end
 
 %% creation or update of a  zoom sub-plot

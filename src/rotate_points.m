@@ -119,13 +119,13 @@ if ~isequal(handles.output,'Cancel')
     x_shift=str2num(get(handles.Phi,'String'));
     y_shift=str2num(get(handles.x_0,'String'));
     z_shift=str2num(get(handles.y_0,'String'));
-    if ~isempty(x_shift)
+    if ~isnan(x_shift)
         varargout{1}(1)=x_shift;
     end
-    if ~isempty(y_shift)
+    if ~isnan(y_shift)
         varargout{1}(2)=y_shift;
     end
-    if ~isempty(z_shift)
+    if ~isnan(z_shift)
         varargout{1}(3)=z_shift;
     end
 end

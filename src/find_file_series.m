@@ -62,14 +62,14 @@ i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
 checkfileindexing=1;
-if isempty(regexp(FilePath,'^http://')) && ~exist(FilePath,'dir')
+if isempty(regexp(FilePath,'^http://', 'once')) && ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
 if checkfileindexing
     NomTypePref='';
     if isempty(NomType)||strcmp(NomType,'*')
         if exist(fullfileinput,'file')
-            [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
+            [~,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
         else
             RootFile='';
         end
@@ -158,13 +158,13 @@ if checkfileindexing
         for ifile=1:nbpair
             %             rr=regexp(dirpair(ifile).name,detect_string,'names');
             if ~isempty(rr{ifile})
-                i1=str2num(rr{ifile}.i1);
-                i2=str2num(regexprep(rr{ifile}.i2,'^-',''));
+                i1=str2double(rr{ifile}.i1);
+                i2=str2double(regexprep(rr{ifile}.i2,'^-',''));
                 j1=stra2num(regexprep(rr{ifile}.j1,'^_',''));
                 j2=stra2num(regexprep(rr{ifile}.j2,'^-',''));
                 ref_i=i1;
                 if isempty(i2_input)
-                    if ~isempty(i2)% invalid file name if i2 does not exist in the input file
+                    if ~isnan(i2)% invalid file name if i2 does not exist in the input file
                         break
                     end
                 else
@@ -172,16 +172,16 @@ if checkfileindexing
                 end
                 ref_j=1;
                 if isempty(j1_input)
-                    if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
+                    if  ~isnan(j1)% invalid file name if j1 does not exist in the input file
                         break
                     end
                 else %j1_input is not empty
-                    if isempty(j1)% the detected name does not fit with the input
+                    if isnan(j1)% the detected name does not fit with the input
                         break
                     else
                         ref_j=j1;
                         if isempty(j2_input)
-                            if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
+                            if  ~isnan(j2)% invalid file name if j2 does not exist in the input file
                                 break
                             end
                         else
@@ -190,7 +190,17 @@ if checkfileindexing
                     end
                 end
                 % update the detected index series
-                if ~isempty(ref_i)&&~isempty(ref_j)
+                if ~isnan(ref_i)&&~isnan(ref_j)
+                    if ref_i*ref_j>100000
+                        disp('warning: inapropriate file name indexing: too large indices for scanning')
+                        ref_i_list(ifile)=i1_input;
+                        if isempty(j1_input)
+                            ref_j_list(ifile)=1;
+                        else
+                        ref_j_list(ifile)=j1_input;
+                        end
+                        break
+                    end
                     ref_i_list(ifile)=ref_i;
                     ref_j_list(ifile)=ref_j;
                     nb_pairs=0;

@@ -4004,7 +4004,8 @@ if get(handles.Relabel,'Value')
         set(handles.MinIndex_j,'Data',MinIndex_j)
         first_i=str2double(get(handles.num_first_i,'String'));
         first_j=str2double(get(handles.num_first_j,'String'));
-        i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
+        %i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
+        i1=1;
         if strcmp(SeriesData.TimeName,'xml')% indices i and j
             j1=mod(i1-1,nbfield_j)+first_j;
             i1=floor((i1-1)/nbfield_j)+1;

@@ -1,4 +1,4 @@
-%'get_file_info': determine info about a file (image, multimage, civdata,...) . 
+%'get_file_info': determine info about a file (image, multimage, civdata,...) .
 %------------------------------------------------------------------------
 % [FileInfo,VideoObject]=get_file_info(fileinput)
 %
@@ -18,7 +18,7 @@
 %               ='image_DaVis': images from softwar DaVis (company LaVision)
 %               ='cine_phantom': images from fast camera Phantom
 %               ='bin': binary file without specific organisation
-%               ='netcdf': netcdf file 
+%               ='netcdf': netcdf file
 %               ='civdata': netcdf files provided by civ_series
 %               ='civx': netcdf files provided by the obsolete program civx (in fortran)
 %               ='pivdata_fluidimage': PIV data from software 'fluidimage'
@@ -68,7 +68,7 @@ if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
 else
     return %input file does not exist.
 end
-[tild,tild,FileExt]=fileparts(fileinput);%get the file extension FileExt
+[~,~,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
 switch FileExt
     case '.fig'
@@ -127,15 +127,48 @@ switch FileExt
         FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
         FileInfo.TimeName='video';
     case '.hcc'
-        %cd 'TelopsToolbox_20230707(r20340)'
-         installToolboxIRCAM
+        installToolboxIRCAM
         [~,InfoArray]=readIRCam(fileinput,'HeadersOnly',true);
-         FileInfo.FileType='telopsIR';
-         FileInfo.Height=InfoArray(1).Height;
-         FileInfo.Width=InfoArray(1).Width;
-         FileInfo.FrameRate=InfoArray(1).AcquisitionFrameRate;
-         FileInfo.NumberOfFrames=numel(InfoArray);
-         FileInfo.TimeName='video';
+        FileInfo.FileType='telopsIR';
+        FileInfo.Height=InfoArray(1).Height;
+        FileInfo.Width=InfoArray(1).Width;
+        FileInfo.FrameRate=InfoArray(1).AcquisitionFrameRate;
+        FileInfo.NumberOfFrames=numel(InfoArray);
+        FileInfo.TimeName='video';
+        Path=fileparts(fileinput);% look for the xml file to document theb file series
+        [RootPath,SubDir,DirExt]=fileparts(Path);
+        if ~isempty(DirExt)
+            disp(['ERROR: change the name of the folder containing the image files: no file extension ' DirExt])
+            FileInfo.FileType='error';
+            return
+        end
+        XmlFile=fullfile(RootPath,[SubDir '.xml']);
+        CheckWriteImaDoc=true;
+        if exist(XmlFile,'file')
+            [XmlData,~,errormsg]=xml2struct(XmlFile);
+            if ~isempty(errormsg)
+                disp(errormsg)
+                FileInfo.FileType='error';
+                return
+            elseif isfield(XmlData,'FileSeries')
+                CheckWriteImaDoc=false;
+            end
+        end
+        if CheckWriteImaDoc
+            DirContent=dir(Path);
+            NbFiles=0;
+            FileSeries.Convention='telopsIR';
+            for ilist=1:numel(DirContent)
+                FName=DirContent(ilist).name;
+                if ~isempty(regexp(FName,'.hcc$', 'once'))
+                    NbFiles=NbFiles+1;
+                    FileSeries.FileName{NbFiles,1}=FName;
+                end
+            end
+            FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
+            [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
+        end
+
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -159,6 +192,7 @@ switch FileExt
                     catch ME
                         FileInfo.error=ME.message;
                     end
+
                 else
                     error_nc=0;
                     try %try netcdf file
@@ -204,7 +238,7 @@ switch FileExt
                                     FileInfo.VarAttribute=Data.VarAttribute;
                                 end
                                 FileInfo.ListDimName=Data.ListDimName;
-%                                 FileInfo.NumberOfFrames=Data.DimValue;
+                                %                                 FileInfo.NumberOfFrames=Data.DimValue;
                             end
                         else
                             error_nc=1;
@@ -217,7 +251,6 @@ switch FileExt
                             if exist('mmreader.m','file')% Matlab 2009a
                                 INFO=mmfileinfo (fileinput);
                                 if  ~isempty(INFO.Video.Format)
-                                    
                                     VideoObject=mmreader(fileinput);
                                     FileInfo=get(VideoObject);
                                     FileInfo.FileType='mmreader';

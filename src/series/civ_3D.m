@@ -1151,7 +1151,7 @@ else
         end
     end
     if isempty(r)
-        display('wrong pair mode input option')
+        disp('wrong pair mode input option')
     else
         ind1=stra2num(r.num1);
         ind2=stra2num(r.num2);

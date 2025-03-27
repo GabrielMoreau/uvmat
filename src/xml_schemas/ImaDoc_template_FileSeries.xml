@@ -1,0 +1,10 @@
+<ImaDoc><!--example of documentation for images grouped in multi image files-->
+
+ <FileSeries> <!--conventions for PCO files: images grouped in multi image files-->
+	   <Convention>PCO</Convention>
+	   <FileName>im</FileName> <!--first file name in the series-->
+	   <FileName>im@0001.tif</FileName> <!--second file name in the series, the others follow by index increment-->
+	   <NbFramePerFile>281</NbFramePerFile>
+ </FileSeries>
+
+</ImaDoc>

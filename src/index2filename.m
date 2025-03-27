@@ -30,28 +30,41 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [RootFile,FileIndexString,FrameIndex]=index2filename(FileSeries,i1,j1,NbField_j)
-RootFile='';
-FileIndexString='';
+function [FileName,FrameIndex]=index2filename(FileSeries,i1,j1,NbField_j)
+FileName='';
+% FileIndexString='';
 FrameIndex=1;
-if exist('j1','var')
-    if isempty(j1)
-        j1=1;
+if isfield(FileSeries,'FileName')
+    if exist('j1','var')&&~isnan(NbField_j)
+        if isempty(j1)
+            j1=1;
+        end
+        i_vector=(i1-1)*NbField_j+j1;%frames labeld with two indices i and j
+    else
+        i_vector=i1;% frames labelled with a single concatenated index vector
     end
-    i_vector=(i1-1)*NbField_j+j1-1;%frames labeld with two indices i and j
-else
-    i_vector=i1;% frames labelled with a single concatenated index vector
+    if ischar(FileSeries.FileName)
+        FileSeries.FileName={FileSeries.FileName};
+    end
+    [~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
+    FileIndex=floor((i_vector-1)/FileSeries.NbFramePerFile)+1;
+    if FileIndex>numel(FileSeries.FileName)
+        FileIndex=FileIndex-numel(FileSeries.FileName)+i1;
+        FileName=fullfile_uvmat('','',RootFile,FileExt,NomType,FileIndex);
+    else
+        FileName=FileSeries.FileName{FileIndex};
+    end
+
+    % switch FileSeries.Convention
+    %     case 'PCO'
+    %         RootFile=FileSeries.RootName;
+    %         FileIndex=floor(i_vector/FileSeries.NbFramePerFile);
+    %         if FileIndex>0
+    %             RootFile=[RootFile '@'];
+    %            FileIndexString=num2str(FileIndex,'%04d');
+    %         end
+    FrameIndex=mod(i_vector-1,FileSeries.NbFramePerFile)+1;
 end
 
-switch FileSeries.Convention
-    case 'PCO'
-        RootFile=FileSeries.RootName;
-        FileIndex=floor(i_vector/FileSeries.NbFramePerFile);
-        if FileIndex>0
-            RootFile=[RootFile '@'];
-           FileIndexString=num2str(FileIndex,'%04d');
-        end
-        FrameIndex=mod(i_vector,FileSeries.NbFramePerFile)+1;
-end
 
 

@@ -1195,6 +1195,8 @@ x=Coord(:,1)-O_x;
 y=Coord(:,2)-O_y;
 Coord(:,1)=r1*x+r2*y;
 Coord(:,2)=r3*x+r4*y;
+Coord(:,1)=Coord(:,1)+O_x;
+Coord(:,2)=Coord(:,2)+O_y;
 set(handles.ListCoord,'Data',Coord)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
 
@@ -1281,6 +1283,7 @@ end
 [FileName, PathName, filterindex] = uigetfile( ...
     {'*.xml;*.mat', ' (*.xml,*.mat)';
     '*.xml',  '.xml files '; ...
+    '*.xml~*',  'backup .xml files '; ...
     '*.mat',  '.mat matlab files '}, ...
     'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name
@@ -1309,9 +1312,6 @@ end
 checkcoord=false;
 if isfield (s,'GeometryCalib')
     GeometryCalib=s.GeometryCalib;
-    %fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
-    %CoordCell={};
-    %Tabchar={};%default
     val_cal=1;%default
     if ~isempty(GeometryCalib)
         % choose the calibration option
