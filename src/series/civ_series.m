@@ -68,7 +68,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.NbSlice='off'; %nbre of slices ('off' by default)
     Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     Data.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    Data.FieldTransform = 'on';%can use a transform function
+    Data.FieldTransform = 'off';%can use a transform function
     Data.ProjObject='off';%can use projection object(option 'off'/'on',
     Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     Data.OutputDirExt='.civ';%set the output dir extension
@@ -257,14 +257,14 @@ end
 %% File relabeling documented by the xml file (e.g. PCO)
 CheckRelabel=isfield(Param,'FileSeries' );%=true for index relabeling (PCO)
 
-%% introduce input image transform
-transform_fct=[];%default, no transform
-if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-        currentdir=pwd;
-    cd(Param.FieldTransform.TransformPath)
-    transform_fct=str2func(Param.FieldTransform.TransformName);
-    cd (currentdir)
-end
+% %% introduce input image transform
+% transform_fct=[];%default, no transform
+% if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
+%         currentdir=pwd;
+%     cd(Param.FieldTransform.TransformPath)
+%     transform_fct=str2func(Param.FieldTransform.TransformName);
+%     cd (currentdir)
+% end
 
 %%%%% MAIN LOOP %%%%%%
 maskoldname='';% initiate the mask name
@@ -444,10 +444,10 @@ for ifield=1:NbField
             par_civ1.ImageB=par_civ1.ImageB-par_civ1.Background;
         end
 
-
-        %% user defined image transform
-        if ~isempty(transform_fct)
-               par_civ1 =transform_fct(par_civ1,Param);
+ % case of image luminosity rescaling 
+      if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
+               par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
+               par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
         end
         
         % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
@@ -671,11 +671,15 @@ for ifield=1:NbField
             par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
         end
         
-                %% user defined image transform
-        if ~isempty(transform_fct)
-               par_civ2 =transform_fct(par_civ2,Param);
+%                 %% user defined image transform
+%         if ~isempty(transform_fct)
+%                par_civ2 =transform_fct(par_civ2,Param);
+%         end
+         %% case of image luminosity rescaling 
+      if par_civ2.CheckRescale &&~isempty(par_civ2.Maxtanh)
+               par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
+               par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
         end
-        
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
         if iview_A==2 && isfield (par_civ2,'CheckCiv3') && strcmp(par_civ2.CheckCiv3,'iterate(civ3)') %get the guess from  patch2% Civ1 data read in a netcdf file

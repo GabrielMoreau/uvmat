@@ -175,8 +175,8 @@ for iview=1:nbview
                 message='no file found';
             end
         else
-            datnum=datnum(datnum);%keep the non zero values corresponding to existing files
-            filefound=filefound(datnum);
+            datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+            filefound=filefound(datnum~=0);
             [first,ind]=min(datnum);
             [last,indlast]=max(datnum);
             message={['oldest modification:  ' filefound{ind} ' : ' datestr(first)];...

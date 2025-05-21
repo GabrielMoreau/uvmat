@@ -1,35 +1,38 @@
-%'get_file_info': determine info about a file (image, multimage, civdata,...) .
+%'gext_file_info': determine info about a file (image, multimage, civdata,...) .
 %------------------------------------------------------------------------
 % [FileInfo,VideoObject]=get_file_info(fileinput)
 %
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
-%      .FileType: type of file, needed as input of read_field.m
-%               ='figure': Matlab figure
+%     .FileName: confirms the file name, ='' if the file is not detected  
+%     .FileType: type of file, needed as input of read_field.m
+%               ='': unknown format
+%               ='bin': binary file without specific organisation
+%               ='dat': text file for data
+%               ='figure': Matlab figure file, ext .fig
 %               ='mat': Matlab data file
+%               ='netcdf': generic netcdf file
 %               ='xml': xml file
 %               ='xls': Excel file
-%               ='dat': text file for data,
+%               ='civdata': netcdf files provided by civ_series
+%               ='pivdata_fluidimage': PIV data from software 'fluidimage'
+%   different image and movie formats:
 %               ='image': image format recognised by Matlab
 %               ='multimage': image format recognised by Matlab with  multiple frames
 %               ='video': video movie file
 %               ='mmreader': video from old versions of Matlab (<2009)
 %               ='rdvision': images in binary format from company rdvision
-%               ='image_DaVis': images from softwar DaVis (company LaVision)
+%               ='image_DaVis': images from softwar DaVis (company LaVision), requires specific conditions of Matlab version and computer system
 %               ='cine_phantom': images from fast camera Phantom
-%               ='bin': binary file without specific organisation
-%               ='netcdf': netcdf file
-%               ='civdata': netcdf files provided by civ_series
-%               ='civx': netcdf files provided by the obsolete program civx (in fortran)
-%               ='pivdata_fluidimage': PIV data from software 'fluidimage'
+%               ='telopsIR': Infrared images from  company Telops
 %      .FieldType='image' for all kinds of images and movies, =FileType  else
-%      .FileIndexing='on'/'off', for data files (when series of indexed files are  expected)
+%      .FileIndexing='on'/'off', = 'on' for series of indexed files or frames to scan
 %      .Height: image height in pixels
 %      .Width:  image width in pixels
 %      .BitDepth: nbre of bits per pixel  (8 of 16)
 %      .ColorType: 'greyscale' or 'color'
 %      .NumberOfFrames: defined for images or movies
-%      .FrameRate: nbre of frames per second, =[] for images
+%      .FrameRate: nbre of frames per second, =[] if not documented
 % VideoObject: in case of video
 %
 % INPUT:
@@ -56,30 +59,35 @@
 function [FileInfo,VideoObject]=get_file_info(fileinput)
 
 VideoObject=[];
-FileInfo.FileType='';% input file does not exist
+FileInfo.FileName='';% file doe not exist, defautlt
+FileInfo.FileType='';% input file type not detected
 FileInfo.FieldType=''; %default output
 if ~ischar(fileinput)
     return
 end
-% check the existence (not possible for OpenDAP data)
+
+%% check the existence (not possible for OpenDAP data)
 if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
-    FileInfo.FileType='txt'; %default
+%     FileInfo.FileType='txt'; %default
 else
     return %input file does not exist.
 end
 [~,~,FileExt]=fileparts(fileinput);%get the file extension FileExt
 
+%% look according to file extension
 switch FileExt
-    case '.fig'
+    case '.fig'% Matlab figure assumed
         FileInfo.FileType='figure';
-    case '.mat'
+    case '.mat'% Matlab data format
         FileInfo.FileType='mat';
+    case {'.txt','.log','.stdout','.stderr','.sh'}
+        FileInfo.FileType='txt';
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
-    case {'.seq','.sqb'}
+    case {'.seq','.sqb'}% data from rdvision
         [~,FileInfo]=read_rdvision(fileinput,[]);
-    case '.im7'
+    case '.im7'% data from LaVision (DaVis), requires specific conditions of Matlab version and computer system
         try
             Input=readimx(fileinput);
             Image=Input.Frames{1}.Components{1}.Planes{1};
@@ -97,10 +105,10 @@ switch FileExt
                 % end
             end
         catch ME
-            msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is possible only with Matlab version 2013 or earlier'})
+            msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is not possible with this Matlab version and system'})
             return
         end
-    case '.h5'
+    case '.h5'% format hdf5, used for specific case of PIV data from 'Fluidimage'
         hinfo=h5info(fileinput);
         FileInfo.CivStage=0;
         for igroup=1:numel(hinfo.Groups)
@@ -126,7 +134,7 @@ switch FileExt
         FileInfo.Width=BitmapInfoHeader.biWidth;
         FileInfo.BitDepth=BitmapInfoHeader.biBitCount;
         FileInfo.TimeName='video';
-    case '.hcc'
+    case '.hcc' % infrared camera Telops
         installToolboxIRCAM
         [~,InfoArray]=readIRCam(fileinput,'HeadersOnly',true);
         FileInfo.FileType='telopsIR';
@@ -272,16 +280,18 @@ switch FileExt
         end
 end
 
-if ismember (FileInfo.FileType,{'mat','image','image_DaVis','multimage','mmreader','cine_phantom','video','netcdf','civdata'})
-    FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
-else
-    FileInfo.FileIndexing='off';
-end
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
     case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom','telopsIR'}
         FileInfo.FieldType='image';
-    case {'civx','civdata','pivdata_fluidimage'}
+    case {'civdata','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';
 end
+
+if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','netcdf','civdata'})
+    FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
+else
+    FileInfo.FileIndexing='off';
+end
+
 

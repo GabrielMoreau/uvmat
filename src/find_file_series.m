@@ -191,8 +191,8 @@ if checkfileindexing
                 end
                 % update the detected index series
                 if ~isnan(ref_i)&&~isnan(ref_j)
-                    if ref_i*ref_j>100000
-                        disp('warning: inapropriate file name indexing: too large indices for scanning')
+                    if ref_i*ref_j>1000000
+                        disp('warning: inapropriate file name indexing: too large values for index scanning')
                         ref_i_list(ifile)=i1_input;
                         if isempty(j1_input)
                             ref_j_list(ifile)=1;
@@ -243,7 +243,7 @@ if checkfileindexing
             [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(ListFiles{ind_select(ifile_min)});% update the representation of indices (number of 0 before the number)
             NomType=regexprep(NomType,['^' NomTypePref],'');
             %% update the file type if the input file does not exist (pb of 0001)
-            if isempty(FileInfo.FileType)
+            if isempty(FileInfo.FileName)
                 [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
             end
         end

@@ -90,7 +90,7 @@ FileType='image';%fdefault
 FileInfo=[];
 if isfield(SeriesData,'FileInfo')
     FileType=SeriesData.FileInfo{1}.FileType;% info on the first input file series
-    FieldType=SeriesData.FileInfo{1}.FieldType;% info on the first input file series
+    %FieldType=SeriesData.FileInfo{1}.FieldType;% info on the first input file series
 else
     set(hhseries.REFRESH,'BackgroundColor',[1 0 1])% indicate that the file input in series needs to be refreshed 
 end
@@ -206,6 +206,7 @@ if numel(time)>=2 % if there are at least two time values to define dt
     MaxIndex_j=min(size(time,2),MaxIndex_j);
     set(handles.TimeSource,'String',Param.IndexRange.TimeSource);
 else
+    msgbox_uvmat('WARNING','timing not defined (check xml file), default values used')
     set(handles.TimeSource,'String',''); %xml file not used for timing
     TimeUnit='frame';
     time=ones(MaxIndex_j-MinIndex_j+1,1)*(MinIndex_i:MaxIndex_i);
@@ -376,7 +377,21 @@ end
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-
+if isfield(Param,'ActionInput')&& isfield(Param.ActionInput,'PairIndices')
+    if isfield(Param.ActionInput.PairIndices,'ListPairCiv1')
+        PairChoiceCiv1=find(strcmp(Param.ActionInput.PairIndices.ListPairCiv1,get(handles.ListPairCiv1,'String')));
+        if ~isempty(PairChoiceCiv1)
+            set(handles.ListPairCiv1,'Value',PairChoiceCiv1)
+        end
+    end
+    if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
+        PairChoiceCiv2=find(strcmp(Param.ActionInput.PairIndices.ListPairCiv2,get(handles.ListPairCiv2,'String')));
+        if ~isempty(PairChoiceCiv2)
+            set(handles.ListPairCiv2,'Value',PairChoiceCiv2)
+        end
+    end
+end
+  
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
 drawnow
@@ -809,12 +824,12 @@ function ListPairCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %reproduce by default the chosen pair in the checkciv2 menu
 set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ1 by default
-ListPairCiv2_Callback(hObject, eventdata, handles)
+%ListPairCiv2_Callback(hObject, eventdata, handles)
 
-%------------------------------------------------------------------------
-% --- Executes on selection change in ListPairCiv2.
-function ListPairCiv2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
+% %------------------------------------------------------------------------
+% % --- Executes on selection change in ListPairCiv2.
+% function ListPairCiv2_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)
@@ -1528,6 +1543,46 @@ else
 end
 set(handles.ConfigSource,'String','NEW')
 set(handles.OK,'BackgroundColor',[1 0 1])
+
+
+%------------------------------------------------------------------------
+% --- Executes on button press in CheckRescale.
+function CheckRescale_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+huipanel=get(hObject,'parent');
+obj(1)=findobj(huipanel,'Tag','num_Maxtanh');
+obj(2)=findobj(huipanel,'Tag','title_Maxtanh');
+if get(hObject,'Value')% if chck box has been selected
+    set(obj,'Visible','on')
+else
+    set(obj,'Visible','off')
+end
+set(handles.ConfigSource,'String','NEW')
+set(handles.OK,'BackgroundColor',[1 0 1])
+
+%------------------------------------------------------------------------
+% --- synchronise the image threshold for civ1 and civ2
+function num_MaxIma_Callback(hObject, eventdata, handles)
+MaxIma_string=get(hObject,'String');
+set(handles.num_MaxIma,'String',MaxIma_string);
+set(handles.num_MaxIma,'Visible','on');
+set(handles.title_Threshold,'Visible','on');
+set(handles.CheckThreshold,'Value',true);
+
+set(handles.ConfigSource,'String','NEW')
+set(handles.OK,'BackgroundColor',[1 0 1])
+
+%------------------------------------------------------------------------
+% --- synchronise the image rescaling threshold for civ1 and civ2
+function num_Maxtanh_Callback(hObject, eventdata, handles)
+Maxtanh_string=get(hObject,'String');
+set(handles.num_Maxtanh,'String',Maxtanh_string);
+set(handles.num_Maxtanh,'Visible','on');
+set(handles.title_Maxtanh,'Visible','on');
+set(handles.CheckRescale,'Value',true);
+
+set(handles.ConfigSource,'String','NEW')
+set(handles.OK,'BackgroundColor',[1 0 1])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%   TEST functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1949,15 +2004,6 @@ function num_SearchRange_3_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of num_SearchRange_3 as text
 %        str2double(get(hObject,'String')) returns contents of num_SearchRange_3 as a double
 
-
-
-function edit108_Callback(hObject, eventdata, handles)
-% hObject    handle to edit108 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit108 as text
-%        str2double(get(hObject,'String')) returns contents of edit108 as a double
 
 
 % --- Executes on button press in CheckBackground.

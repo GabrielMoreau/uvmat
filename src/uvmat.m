@@ -1945,43 +1945,110 @@ function MenuRelabelFrames_Callback(hObject, eventdata, handles)
 
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-CheckAbort=false;
-if strcmp(get(handles.MenuRelabelFrames,'checked'),'off')% if the option is selected
-    if strcmp(FileExt,'.tif') && ~isempty(regexp(RootFile,'^im', 'once'))% case of PCO images, document <FileSeries> in the xml file
-        FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-        FileInfo=get_file_info(FileName);
-        XmlFile=fullfile(RootPath,[SubDir '.xml']);
-        [XmlData,errormsg]=imadoc2struct(XmlFile);
-        if ~isempty(errormsg)
-            disp(['a file ' XmlFile ' is needed to document the timing'])
-            CheckAbort=true;
-        elseif ~isfield(XmlData,'FileSeries')% fill the FleSeries if does not exist
-            FileSeries.Convention='PCO';
-            FileSeries.FileName{1,1}='im.tif';
-            FileSeries.FileName{2,1}='im@0001.tif';
-            FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-            [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
-            if isempty(errormsg)
-                disp([xmlfile 'updated with FileSeries'])
-            else
-                disp(errormsg)
-                CheckAbort=true;
+CheckRelabel=false;
+% if the option is selected from previous 'off' state
+if strcmp(get(handles.MenuRelabelFrames,'checked'),'off')
+    if strcmp(FileExt,'.seq')
+        XmlFile=regexprep(FileName,'.seq$','.xml');
+    else
+    XmlFile=fullfile(RootPath,[SubDir '.xml']);
+    end
+    [XmlData,errormsg]=imadoc2struct(XmlFile);
+    if isempty(XmlData) || isempty(XmlData.Time)
+        msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
+        return
+    end
+    FileInfo=get_file_info(FileName);
+    switch FileInfo.FileType
+        case 'multimage'
+            if strcmp(FileExt,'.tif') && ~isempty(regexp(RootFile,'^im', 'once'))% case of PCO images, document <FileSeries> in the xml file
+                FileSeries.Convention='PCO';
+                FileSeries.FileName{1,1}='im.tif';
+                FileSeries.FileName{2,1}='im@0001.tif';
+                FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
+                [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
+                if isempty(errormsg)
+                    disp([xmlfile 'updated with FileSeries'])
+                    CheckRelabel=true;
+                else
+                    disp(errormsg)
+                end
             end
-        end
+        case 'rdvision'
+            check_time_rdvision(FileName,XmlData)
     end
-    if ~CheckAbort
-    set(handles.MenuRelabelFrames,'checked','on')
+    if CheckRelabel
+        set(handles.MenuRelabelFrames,'checked','on')
+        errormsg=update_series(handles,RootPath,SubDir,FileName,FileInfo,false,1);
     end
-else
+else % option set to 'off'
     set(handles.MenuRelabelFrames,'checked','off')%if the option was chcked, uncheck it
+    errormsg=update_series(handles,RootPath,SubDir,FileName,FileInfo,false,1);
 end
-if ~CheckAbort
-    errormsg=display_file_name(handles,FileName,1);
-    if ~isempty(errormsg)
-        disp(errormsg)
-    end
+if ~isempty(errormsg)
+    disp(errormsg)
 end
 
+% ---------------------------------------
+function check_time_rdvision(FileName,XmlData)
+s=ini2struct(FileName);
+    SeqData=s.sequenceSettings;
+    SeqData.width=str2double(SeqData.width);
+    SeqData.height=str2double(SeqData.height);
+    SeqData.bytesperpixel=str2double(SeqData.bytesperpixel);
+    SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
+    if isempty(SeqData.binrepertoire)%used when binrepertoire empty, strange feature of rdvision
+        SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
+        SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
+        [tild,binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
+        SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
+    end
+    
+    %% reading the .sqb file
+     SqbFile=regexprep(FileName,'.seq$','.sqb');
+    m = memmapfile(SqbFile,'Format', { 'uint32' [1 1] 'offset'; ...
+        'uint32' [1 1] 'garbage1';...
+        'double' [1 1] 'timestamp';...
+        'uint32' [1 1] 'file_idx';...
+        'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
+    
+    %%%%%%%BRICOLAGE in case of unreadable .sqb file: remplace lecture du fichier
+    %         ind=[111 114:211];%indices of bin files
+    %         w=1024;%w=width of images in pixels
+    %         h=1024;%h=height of images in pixels
+    %         bpp=2;% nbre of bytes per pixel
+    %         lengthimage=w*h*bpp;% lengthof an image record on the binary file
+    %         nbimages=32; %nbre of images of each camera in a bin file
+    %         for ii=1:32*numel(ind)
+    %             data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+    %             %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
+    %             data(ii).file_idx=ind(ceil(ii/32));
+    %             data(ii).timestamp=0.2*(ii-1);
+    %         end
+    %         m.Data=data;
+    %%%%%%%
+    timestamp=zeros(1,numel(m.Data));
+    for ii=1: numel(m.Data)
+        timestamp(ii)=m.Data(ii).timestamp;
+    end
+    difftime=XmlData.Time(2:end,2:end);
+    difftime=timestamp'-reshape(difftime,[],1);
+    disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+    if max(abs(difftime))>0.01
+       figure(1)
+       plot(timestamp,difftime)
+       xlabel('time(s)')
+       ylabel('timestamp-XmlData.Time(s)')
+    end
+    
+        %% checking consistency with the xml file
+    if ~isequal(SeqData.nb_frames,numel(timestamp))
+        disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
+        return
+    end    
+    
+    disp ('max time difference xml and timestamps (IN SEC.)')
+    max(abs(difftime))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuRun Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2176,31 +2243,30 @@ end
 FieldType=FileInfo.FieldType;
 
 %% case of isolated input files without series
-switch FieldType
-    case ''
-        msgbox_uvmat('ERROR','invalid input file type')
-        return
-    case 'txt'
-        edit(fileinput)
-        return
-    case 'figure'                           %display matlab figure
-        hfig=open(fileinput);
-        set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
-        set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
-        set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
-        return
-    case 'xml'                % edit xml files
-        t=xmltree(fileinput);
-        % the xml file marks a project or project link, open datatree_browser
-        if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
-            datatree_browser(fileinput)
-        else % other xml file, open the xml editor
+if strcmp(FileInfo.FileIndexing,'off')
+    switch FieldType
+        case 'txt'
+            edit(fileinput)
+        case 'figure'                           %display matlab figure
+            hfig=open(fileinput);
+            set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
+            set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
+            set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
+        case 'xml'                % edit xml files
+            t=xmltree(fileinput);
+            % the xml file marks a project or project link, open datatree_browser
+            if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
+                datatree_browser(fileinput)
+            else % other xml file, open the xml editor
+                editxml(fileinput);
+            end
+        case 'xls'% Excel file opended by editxml
             editxml(fileinput);
-        end
-        return
-    case 'xls'% Excel file opended by editxml
-        editxml(fileinput);
-        return
+        otherwise
+            msgbox_uvmat('ERROR',['inputfile type ' FileInfo.FileType ' not implemented in uvmat'])
+
+    end
+    return
 end
 
 %% define the relevant handles for the first field series (input_line=1) or the second file series (input_line=2)
@@ -2263,7 +2329,7 @@ if input_line==1
     set(handles.j1,'String',num2stra(j1,NomType));
     set(handles.j2,'String',num2stra(j2,NomType));
     if isfield(FileInfo,'MaskFile')
-        if exist(FileInfo.MaskFile)
+        if exist(FileInfo.MaskFile,'file')
             set(handles.CheckMask,'Value',1)
         else
             set(handles.CheckMask,'Value',0)
@@ -2336,7 +2402,7 @@ set(handles.MenuExportFigure,'Enable','on')
 set(handles.MenuExportMovie,'Enable','on')
 set(handles.MenuTools,'Enable','on')
 
-% initiate input file series and inputfilerefresh the current field view:
+%% analyse the input file series, then refresh the current field view:
 update_rootinfo(handles,RootPath,SubDir,[FileName FileExt],FileInfo, MovieObject,input_line);
 
 
@@ -2359,7 +2425,7 @@ else
 end
 
 set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% paint back button to red to indicate update is finished
-set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
+set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrowCheckIndexing
 
 
 %------------------------------------------------------------------------
@@ -2368,27 +2434,14 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 %function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,input_line)
 function errormsg=update_rootinfo(handles,RootPath,SubDir,FileName,FileInfo,VideoObject,input_line)
 %------------------------------------------------------------------------
-errormsg=''; %default error msg
 
-%% define the relevant handles depending on the input_line (1=first file series, 2= second file series)
-if ~exist('input_line','var')
-    input_line=1;
-end
-if input_line==1
-    handles_Fields=handles.FieldName;
-elseif input_line==2
-    handles_Fields=handles.FieldName_1;
-end
 set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
 
 %% look for the ImaDoc xml file and read it
 XmlFileName=find_imadoc(RootPath,SubDir);% search the appropriate ImaDoc xml file 
 [~,XmlName]=fileparts(XmlFileName);
-warntext='';%default warning message
-NbSlice=1;%default
-TimeUnit='';%default
-TimeName='';%default
-XmlData=[];
+
+CheckIndexing=false;% test for virtual indexing of frames different from the file name index, false by default
 if isempty(XmlFileName) %no ImaDoc xml file detected
     set(handles.view_xml,'Visible','off')
 else
@@ -2401,21 +2454,12 @@ else
         msgbox_uvmat('WARNING',warntext)
     end
     if ~isempty(XmlData)
-        if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
-            TimeUnit=XmlData.TimeUnit;
-        end
-        if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
-            TimeName='xml';%Time possibly documented by the xml file (but priority to the opened file if available)
-%             if XmlData.Time(1,:)==XmlData.Time(2,:)% case starting with index 1
-%                 sizDti=size(XmlData.Time,1)-1;%size of the time vector explicitly defined in the xml file
-%                 ind_start=1;
-%             else
-%                 sizDti=size(XmlData.Time,1);% case starting with index 0
-%                 ind_start=0;
-%             end
-            if isfield(XmlData,'FileSeries')&& ~strcmp(XmlName,SubDir)
+        if isfield(XmlData,'FileSeries')
+             if strcmp(XmlName,SubDir)% xml file directly at the level of the current data file (not up in the data tree)
+                 CheckIndexing=true;%  virtual indexing of frames different from the file name index
+             else % xml file not used to document index relabeling
                   XmlData=rmfield(XmlData,'FileSeries');%desactivate file indexing option for derived file series (e.g. images.png)
-            end
+             end
         end
     end
     set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
@@ -2425,12 +2469,25 @@ else
         set (handles.slices,'String','volume')
     end
 end
+if CheckIndexing
+set(handles.MenuRelabelFrames,'checked','on')% activate the relabel tool by default
+else
+    set(handles.MenuRelabelFrames,'checked','off')
+end
 XmlData.FileInfo=FileInfo;
+errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckIndexing,input_line);
+
+%--------------------------------------------------------
+function errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckIndexing,input_line)
+errormsg=''; %default error msg
+warntext='';%default warning message
+NbSlice=1;%default
+TimeUnit='';%default
+TimeName='';%default
 
 %% get the file series
 MovieObject=[];
-if strcmp(get(handles.MenuRelabelFrames,'checked'),'on') && isfield(XmlData,'FileSeries') && isfield(XmlData.FileSeries,'FileName')
-    CheckIndexing=true;
+if CheckIndexing
     NomType='*';
     i1_series=[];
     i2_series=[];
@@ -2438,30 +2495,11 @@ if strcmp(get(handles.MenuRelabelFrames,'checked'),'on') && isfield(XmlData,'Fil
     j2_series=[];
     nbfield=[];
     nbfield_j=[];
-
-    %     if iscell(XmlData.FileSeries.FileName)
-    %         [RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(XmlData.FileSeries.FileName{1});
-    %     else
-    %     [RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(XmlData.FileSeries.FileName);
-    %     end
-    if strcmp(TimeName,'xml') %&& CheckIndexing% get the image series info from the xml file
-        [nbfield,nbfield_j]=size(XmlData.Time);
-        nbfield=nbfield-1; %remove the possible index 0
-        nbfield_j=nbfield_j-1; %remove the possible index 0
-        i1_series=zeros(nbfield,nbfield_j,1);
-        i1_series(:,:,1)=(1:nbfield)'*ones(1,nbfield_j);
-        i2_series=i1_series;
-        if nbfield_j==1
-            j1_series=[];
-        else
-            j1_series(:,:,1)=ones(nbfield,1)*(1:nbfield_j);
-        end
-        j2_series=j1_series;
-    end
-    set(handles.i1,'String','1')
+    FileInfo=XmlData.FileInfo;
+    %     if iscell(XmlData.FileSeries.FileName)(handles.i1,'String','1')
+    set(handles.i1,'String','1')% the index does not correspond to file name index anymore
     set(handles.j1,'String','1')
 else % scan the input folder to get the list of existing files and NomType
-    CheckIndexing=false;
     [~,~,~,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject]=...
         find_file_series(fullfile(RootPath,SubDir),FileName);
     nbfield=max(max(max(i2_series)));% total number of fields (i index)
@@ -2474,6 +2512,8 @@ else % scan the input folder to get the list of existing files and NomType
     end
     if ~isempty(j1_series)&& ~strcmp(NomType,'*')% the j index is used to label the frame in multimage series
         set(handles.j1,'String','1')
+    elseif strcmp(FileInfo.FieldType,'image') && ~isequal(FileInfo.NumberOfFrames,1)
+        set(handles.i1,'String','1')
     end
 end
 if input_line==1
@@ -2502,7 +2542,6 @@ end
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
-%UvData.FileType{input_line}=FileInfo.FileType;
 UvData.FileInfo{input_line}=FileInfo;
 UvData.MovieObject{input_line}=MovieObject;
 UvData.i1_series{input_line}=i1_series;
@@ -2513,11 +2552,19 @@ UvData.j2_series{input_line}=j2_series;
 
 %% read timing and total frame number from the current file (e.g. movie files)
 ColorType='falsecolor'; %default
+if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
+            TimeUnit=XmlData.TimeUnit;
+end
+if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
+            TimeName='xml';%Time possibly documented by the xml file (but priority to the opened file if available)
+end
+
 if ~CheckIndexing && isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video data)
     TimeUnit='s';
     if isempty(j1_series) %frame index along i
         XmlData.Time=zeros(FileInfo.NumberOfFrames+1,2);
         XmlData.Time(:,2)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate)';
+        set(handles.i1,'String','1')% set the frame index to 1 to start the movie
     else
         XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
     end
@@ -2641,6 +2688,16 @@ set(handles.uvmat,'UserData',UvData)
 %display warning message
 if ~isequal(warntext,'')
     msgbox_uvmat('WARNING',warntext);
+end
+
+%% define the relevant handles depending on the input_line (1=first file series, 2= second file series)
+if ~exist('input_line','var')
+    input_line=1;
+end
+if input_line==1
+    handles_Fields=handles.FieldName;
+elseif input_line==2
+    handles_Fields=handles.FieldName_1;
 end
 
 %% set default options in menu 'FieldName'
@@ -3217,7 +3274,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')% case of
     j1=str2double(get(handles.j1,'String'));%read the field indices (for movie, it is not given by the file name)
     i2=[];j2=[];
 else
-    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
+    [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
     if isempty(i1)% no i index set by the input file name
         i1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
     elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
@@ -3227,7 +3284,7 @@ end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
     [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);
-    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);% the indices for the second series taken from FileIndex_1
+    [~,~,~,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);% the indices for the second series taken from FileIndex_1
     if isempty(i1_1)
         i1_1=str2double(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
     elseif isempty(j1_1) && strcmp(get(handles.j1,'Visible'),'on')
@@ -4756,6 +4813,7 @@ switch field
         XName='';
         YName='';
         ZName='';
+        if isfield(GetFieldData,'FieldOption')
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;
@@ -4809,7 +4867,8 @@ switch field
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
                    % set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% put file index in the root name
+                    set(handles.NomType,'String','')
                     set(handles.i1,'String','1')% set counter to 1 (now the time index in the input matrix)
                     MaxIndex_i=get(handles.MaxIndex_i,'String');
                     MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
@@ -4842,7 +4901,7 @@ switch field
             set(handles.uvmat,'UserData',UvData)
             REFRESH_Callback(hObject, eventdata, handles)
         end
-
+        end
     case 'image'
         %% look for image corresponding to civ data
         if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file

@@ -1,5 +1,6 @@
-DataFolder='.fsnet/project/coriolis/2024/24PLUME/VectorsEyemotion';
-fileinput={'Tore_a8b40_T22s_N047_A1cm.png.civ.mproj.tfilter_1'}
+DataFolder='.fsnet/project/coriolis/2024/24PLUME/1_DATA/EXP27/JAI';
+fileinput_1='/im.sback.civ2.mproj.tfilter/img_1-19991.nc';
+fileinput_2='/im.sback.civ2.mproj.tfilter/img_1-19991.nc';
 fileinput=uigetfile_uvmat('pick an input file',DataFolder);
 Data=nc2struct(fileinput);
 figure

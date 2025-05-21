@@ -26,7 +26,7 @@
 %  nc:  name of a NetCDF file (char string) or NetCDF object
 %  additional arguments:
 %       -no additional arguments: all the variables of the NetCDF file are read.
-%       - empty argument []: the field structure with the names of variables is read, without their values
+%       - empty argument []: the output field structure is limited to the names of variables, without their values
 %       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} )
 %         if ListVarName=[] or {}, no variable value is read (only global attributes and list of variables and dimensions)
 %         if ListVarName is absent, or = '*', ALL the variables of the NetCDF file are read.
@@ -35,8 +35,7 @@
 %       - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
 %       - the string 'TimeVarName', a string (the name of the variable considered as time), an integer or vector with integer values
 %            representing time indices to select for each variable, the cell of other input variable names.
-%       - the string 'TimeDimName', a string (the name of the dimension considered as time), an integer or vector with integer values
-%            representing time indices to select for each variable, the cell of other input variable names.
+
 
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -290,12 +289,16 @@ if  ~isempty(ListVarName)
                     Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself)
                 end
             end
+%            tstart = tic;
+          % disp(VarName)
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size); %read the variable data
+%              telapsed = toc(tstart)
             Data.(VarName)=squeeze(Data.(VarName));%remove singeton dimension
+
         else
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
         end
-        if xtype(var_index(ivar))==5
+        if xtype(var_index(ivar))==5% indicate single precision variable
             Data.(VarName)=double(Data.(VarName)); %transform to double for single pecision
         end
     end

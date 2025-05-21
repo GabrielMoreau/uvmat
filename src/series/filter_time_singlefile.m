@@ -1,5 +1,4 @@
-%'filter_time_single': apply a a sliding filter in a time series, put the time series in a single netcdf file (problematic...) 
-%------------------------------------------------------------------------
+%'filter_time_single': apply a a sliding filter to a time series and concatene the result in a single netcdf file
 % function ParamOut=filter_time(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,56 +147,82 @@ ncfile_out=fullfile_uvmat(OutputPath,OutputDir,Param.InputTable{1,3},'.nc',NomTy
 % NomTypeOut='_1';
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-disp('loop for filtering started')
-tstart = tic;
- telapsed(zeros,1,NbField)       
+disp('loop for filtering started')  
+ ncid=[];
 for index=1:NbField
     index
-    
-    Field= read_field(filecell{1,index},'netcdf',Param.InputFields);
-    
+   
+    [Field,~,errormsg]= read_field(filecell{1,index},'netcdf',Param.InputFields);
+    if ~isempty(errormsg)
+        disp(errormsg)
+        if ~isempty(ncid)
+        netcdf.close(ncid)
+        end
+        return
+    end
     %%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %first field, initialisation output data
         DataOut.ListGlobalAttribute= {'Conventions'};
         DataOut.Conventions='uvmat';
-        DataOut.ListVarName={'Time','coord_y','coord_x','Ufilter','Vfilter'};
-        DataOut.VarDimName={'Time','coord_y','coord_x',{'Time','coord_y','coord_x'},{'Time','coord_y','coord_x'}};
         npy=numel(Field.coord_y);
         npx=numel(Field.coord_x);
         ListDimName={'Time','coord_y','coord_x'};
         DimValue=[NbField npy npx];
-        VarDimIndex={1,2,3,[1 2 3],[1 2 3]};
+        ListFields=Param.InputFields.FieldName;
+        DataOut.ListVarName=[{'Time','coord_y','coord_x'} ListFields'];
+        %DataOut.VarDimName={'Time','coord_y','coord_x',{'Time','coord_y','coord_x'},{'Time','coord_y','coord_x'}};
+        DataOut.VarDimName={'Time','coord_y','coord_x'};
+        VarDimIndex={1,2,3};
+        for ifield=1:numel(ListFields)
+            DataOut.VarDimName{ifield+3}={'coord_y','coord_x','Time'};
+            Field_varid(ifield)=ifield+2;
+            VarDimIndex{ifield+3}=[2 3 1];
+        end
+
+%         VarDimIndex={1,2,3,[1 2 3],[1 2 3]};
+
         DataOut.coord_x=Field.coord_x;
         DataOut.coord_y=Field.coord_y;
         DataOut.Time=0;
-        DataOut.Ufilter=0;
-        DataOut.Vfilter=0;
+        for ifield=1:numel(ListFields)
+            DataOut.(ListFields{ifield})=0;
+        end
         [errormsg,ncid]=struct2nc(ncfile_out,DataOut,'keep_open',ListDimName,DimValue,VarDimIndex);
         netcdf.putVar(ncid,0,0,1,0)
         netcdf.putVar(ncid,1,0,npy,Field.coord_y)
         netcdf.putVar(ncid,2,0,npx,Field.coord_x)
-        Uvarid=3;
-        Vvarid=4;
+%         Uvarid=3;
+%         Vvarid=4;
         TimeBlock=zeros(Param.ActionInput.WindowLength,1);
-        Ublock=zeros(Param.ActionInput.WindowLength,npy,npx);
-        Vblock=zeros(Param.ActionInput.WindowLength,npy,npx);
+        Fieldblock=zeros(numel(ListFields),Param.ActionInput.WindowLength,npy,npx);
+        %Vblock=zeros(Param.ActionInput.WindowLength,npy,npx);
     end
+
     TimeBlock=circshift(TimeBlock,[-1 0 ]);
-    Ublock=circshift(Ublock,[-1 0 0]); %shift U by ishift along the first index
-    Vblock=circshift(Vblock,[-1 0 0]); %shift U by ishift along the first index
     TimeBlock(end)=Field.Time;
-    Ublock(end,:,:)=Field.U;
-    Vblock(end,:,:)=Field.V;
     sumindex=min(index,Param.ActionInput.WindowLength)-1;
     Timefilter=mean(TimeBlock(end-sumindex:end,:,:));%mid time
-    Ufilter=squeeze(mean(Ublock(end-sumindex:end,:,:),1,'omitnan'));
-    Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
+    Fieldblock=circshift(Fieldblock,[0 -1 0 0]); %shift U by ishift along the first index
+   % Vblock=circshift(Vblock,[-1 0 0]); %shift U by ishift along the first index
+    for ifield=1:numel(ListFields)
+    Fieldblock(ifield,end,:,:)=Field.(ListFields{ifield});
+    end
+    %Vblock(end,:,:)=Field.V;
+    Fieldfilter=squeeze(mean(Fieldblock(:,end-sumindex:end,:,:),2,'omitnan'));
+%     Ufilter=squeeze(mean(Ublock(end-sumindex:end,:,:),1,'omitnan'));
+%     Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
+%     Uerror=Ufilter-Ublock(end-floor(sumindex/2),:,:);
+%     Verror=Ufilter-Vblock(end-floor(sumindex/2),:,:);
     %updating output the netcdf file
+     tstart = tic;
     netcdf.putVar(ncid,0,(index-1),Timefilter)
-    netcdf.putVar(ncid,Uvarid,[(index-1) 0 0],[1 npy npx],Ufilter)
-    netcdf.putVar(ncid,Vvarid,[(index-1) 0 0],[1 npy npx],Vfilter)
+    for ifield=1:numel(ListFields)
+        netcdf.putVar(ncid,Field_varid(ifield),[ 0 0 (index-1)],[npy npx 1],squeeze(Fieldfilter(ifield,:,:)))
+    end
+%     netcdf.putVar(ncid,Uvarid,[ 0 0 (index-1)],[npy npx 1],Ufilter)
+%      netcdf.putVar(ncid,Vvarid,[0 0 (index-1)],[npy npx 1],Vfilter)
 
- telapsed(index) = toc(tstart);
+ telapsed = toc(tstart)% time for writting the field
     % writing the result file as netcdf file
     %     i1=i1_series{1}(index)-ceil(NpTime/2);
     %     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeOut,i1);
@@ -211,4 +236,5 @@ end
 netcdf.close(ncid)
 figure
 plot(telapsed)
+ylabel('time lapsed computation')
 'END'
