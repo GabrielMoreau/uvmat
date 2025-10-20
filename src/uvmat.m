@@ -12,7 +12,7 @@
 % ListVarName....)
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, ileSeriesrance
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -2877,12 +2877,12 @@ if strcmp(NomType,'level')
     index_string=get(handles.i1,'String');
 else
     index_string=get(handles.FileIndex,'String');
-    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'FileSeries')
+    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'FileSeries')% The frame indexing is determined through the xml file, section FileSeries
         i1=str2double(get(handles.i1,'String'));
         j1=str2double(get(handles.j1,'String'));
         NbField_j_cell=get(handles.MaxIndex_j,'String');
         NbField_j=str2double(NbField_j_cell{1});
-        [RootFile,index_string,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
+        [RootFile,index_string,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);% convert frame index i1 j1 to index in the files
         set(handles.RootFile,'String',RootFile)
     else
         [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex

@@ -34,7 +34,8 @@ WallTimeOneProcess=min(4*CPUTimeProcess+10,WallTimeTotal*60/2); % estimated max 
 % if NbCore==1
 %     corestring='cpu=1/core=4'; %increases the allowed memory in case of single core job
 % else
-    corestring=['{cluster=''calcul8''}/core=' num2str(max(NbCore,4))];
+   % corestring=['{cluster=''calcul6''}/core=' num2str(max(NbCore,4))];%  calcul6 faster
+   corestring=['core=' num2str(max(NbCore,4))];
 % end
 cmd=['oarsub -n UVmat_' ActionFullName ' '...
     '-t idempotent --checkpoint ' num2str(WallTimeOneProcess*60) ' '...

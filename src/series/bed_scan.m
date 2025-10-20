@@ -1,4 +1,6 @@
-%'bed_scan': get the bed shape from laser ipact
+%'bed_scan': get the bed shape from laser impact
+% firts line input files = active images
+% second line, reference images for the initial bed
 
 %------------------------------------------------------------------------
 % function GUI_input=bed_scan(Param)
@@ -84,7 +86,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     else
         FileInfo=get_file_info(filecell{1,1});
         FileType=FileInfo.FileType;
-        if isempty(find(strcmp(FileType,{'image','multimage','mmreader','video'})));% =1 for images
+        if isempty(find(strcmp(FileType,{'image','multimage','mmreader','video'})))% =1 for images
             msgbox_uvmat('ERROR',['bad input file type for ' mfilename ': an image is needed'])
         end
     end
@@ -107,11 +109,8 @@ else% interactive mode in Matlab
 end
 
 %% root input file names and nomenclature type (cell arrays with one element)
-RootPath=Param.InputTable{2,1};
-% RootFile=Param.InputTable(:,3);
-% SubDir=Param.InputTable(:,2);
-% NomType=Param.InputTable(:,4);
-% FileExt=Param.InputTable(:,5);
+RootPath=Param.InputTable{1,1};
+
 
 %% directory for output files
 DirOut=fullfile(RootPath,[Param.OutputSubDir Param.OutputDirExt]);
@@ -126,12 +125,65 @@ DirOut=fullfile(RootPath,[Param.OutputSubDir Param.OutputDirExt]);
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 
-%% frame index for movie or multimage file input  
+%% set of y positions  
+ycalib=[-51 -1 49];% calibration planes
+y_scan=-51+(100/400)*(i1_series{1}-1);% transverse position given by the translating system: first view at y=-51, view 400 at y=+49
+Mfiltre=ones(2,10)/20;%filter matrix for imnages
 
 %% calibration data and timing: read the ImaDoc files
-%not relevant for this function
+XmlData_A=xml2struct(fullfile(RootPath,'planeA.xml'));
+XmlData_B=xml2struct(fullfile(RootPath,'planeB.xml'));
+XmlData_C=xml2struct(fullfile(RootPath,'planeC.xml'));
+ycalib=[-51 -1 49];% the three y positions for calibration
+fx(1)=XmlData_A.GeometryCalib.fx_fy(1);
+fx(2)=XmlData_B.GeometryCalib.fx_fy(1);
+fx(3)=XmlData_C.GeometryCalib.fx_fy(1);
+fy(1)=XmlData_A.GeometryCalib.fx_fy(2);
+fy(2)=XmlData_B.GeometryCalib.fx_fy(2);
+fy(3)=XmlData_C.GeometryCalib.fx_fy(2);
+Tx(1)=XmlData_A.GeometryCalib.Tx_Ty_Tz(1);
+Tx(2)=XmlData_B.GeometryCalib.Tx_Ty_Tz(1);
+Tx(3)=XmlData_C.GeometryCalib.Tx_Ty_Tz(1);
+Ty(1)=XmlData_A.GeometryCalib.Tx_Ty_Tz(2);
+Ty(2)=XmlData_B.GeometryCalib.Tx_Ty_Tz(2);
+Ty(3)=XmlData_C.GeometryCalib.Tx_Ty_Tz(2);
+R11(1)=XmlData_A.GeometryCalib.R(1,1);
+R11(2)=XmlData_B.GeometryCalib.R(1,1);
+R11(3)=XmlData_C.GeometryCalib.R(1,1);
+R12(1)=XmlData_A.GeometryCalib.R(1,2);
+R12(2)=XmlData_B.GeometryCalib.R(1,2);
+R12(3)=XmlData_C.GeometryCalib.R(1,2);
+R21(1)=XmlData_A.GeometryCalib.R(2,1);
+R21(2)=XmlData_B.GeometryCalib.R(2,1);
+R21(3)=XmlData_C.GeometryCalib.R(2,1);
+R22(1)=XmlData_A.GeometryCalib.R(2,2);
+R22(2)=XmlData_B.GeometryCalib.R(2,2);
+R22(3)=XmlData_C.GeometryCalib.R(2,2);
+pfx=polyfit(ycalib,fx,1);%get the linear interpolation of each parameter of the three calibrations
+pfy=polyfit(ycalib,fy,1);
+pTx=polyfit(ycalib,Tx,1);
+pTy=polyfit(ycalib,Ty,1);
+p11=polyfit(ycalib,R11,1);
+p12=polyfit(ycalib,R12,1);
+p21=polyfit(ycalib,R21,1);
+p22=polyfit(ycalib,R22,1);
+%get the calibration parameters at each position y by interpolation of the 3 calibration parameters
+for img=1:nbfield_i
+    Calib(img).fx_fy(1)=pfx(1)*y_scan(img)+pfx(2);
+    Calib(img).fx_fy(2)=pfy(1)*y_scan(img)+pfy(2);
+    Calib(img).Tx_Ty_Tz(1)=pTx(1)*y_scan(img)+pTx(2);
+    Calib(img).Tx_Ty_Tz(2)=pTy(1)*y_scan(img)+pTy(2);
+    Calib(img).Tx_Ty_Tz(3)=1;
+    Calib(img).R=zeros(3,3);
+    Calib(img).R(3,3)=-1;
+    Calib(img).R(1,2)=p12(1)*y_scan(img)+p12(2);
+    Calib(img).R(1,1)=p11(1)*y_scan(img)+p11(2);
+    Calib(img).R(1,2)=p12(1)*y_scan(img)+p12(2);
+    Calib(img).R(2,1)=p21(1)*y_scan(img)+p21(2);
+    Calib(img).R(2,2)=p22(1)*y_scan(img)+p22(2);
+end
 
-%% check coincidence in time for several input file series
+%% check coincdence in time for several input file series
 %not relevant for this function
 
 %% coordinate transform or other user defined transform
@@ -140,101 +192,60 @@ nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
- %% Extension and indexing nomenclature for output file
-
-% name=('EXP18OS_bed_init/im/');
-% name2=('EXP18OS_end/im/');
-% path_proj=['/.fsnet/project/coriolis/2018/18ADDUCE/SEDIM_SCANSIDE/'];  
-
-%nimages=1800;
-
 %% Load the init bed scan
-
-y=90.05-0.05*i1_series{1};
-Mfiltre=ones(2,10)/20;%filter matrix for imnages
 tic
-% y=zeros(1,nimages);
-% X_new=zeros(4096,nimages);
-x=1:4096;
-% img=1;
-%filecell{1,img}= list of the images _init
-%filecell{2,img}= list of the images _end
-for img=1:nbfield_i
+nb_scan=10;
+nb_scan=10;
+for img=1:nb_scan
      img
-    image=flipud(imread(filecell{2,img}));
-    a=image(700:1900,:);
+    a=flipud(imread(filecell{1,img}));%image of the initial bed
+    if img==1
+        x=1:size(a,2);%image absissa in pixel coordinates
+    end
     % filtering
-    a=filter2(Mfiltre,a);
-    [imax,iy]=max(a);
-    Z=squeeze(iy);
-    iy(imax<50)=NaN;
-    Z_s(:,img)=smooth(Z,40,'rloess');
-%     y(img)=y0-(0.05.*step);
-%     y0=y(img);
-    X_new(:,img)=phys_scan(x,y(img));
+    a=filter2(Mfiltre,a);%smoothed image
+    [imax,iy]=max(a);% find the max along the first coordinate y, max values imax and the corresponding  y index iy along the first coordinate y
+    Z_s(img,:)=smooth(iy,40,'rloess');%smooth Z, the image index of max luminosity (dependning on x)
+    Yima=y_scan(img)*ones(size(x));%positions Y transformed into a vector
+    X_new(img,:)=phys_XYZ(Calib(img),x,Yima,1);
+    %X_new(:,img)=phys_scan(x,y(img));
 end
 
 toc
 
-nimages2=size(Z_s,2);
-%%
-y_y=1:size(a,1);
+[X,Y]=meshgrid(x,y_scan);
 
-% [Xx,Yy]=meshgrid(x,y_y);
-[X,Y]=meshgrid(x,y);
 
-% index=1;
-% [imax,iy]=max(a);
-% 
-% Z=squeeze(iy);
-
-%%  smooth bed init
-% for i=2:dim(2)
-% if iy(i)<300
-%     imax(i)=imax(i-1);
-% end
-% end
-
-% for i=1:nimages2
-% Z_s(:,i)=smooth(Z(:,i),50,'rloess');
-% % Z_s_new(:,i)=phys_scanz(x,Z_s(:,i)',y(i));
-% 
-% end
-
-%% Load the transit bed scan
-for img=1:nbfield_i
-    img
-     image=flipud(imread(filecell{1,img}));
-    b=image(700:1900,:);
-        % filtering
-    b=filter2(Mfiltre,b);
+%% Load the current bed scan
+for img=1:nb_scan
+   b=flipud(imread(filecell{2,img}));%image of the current bed
+    b=filter2(Mfiltre,b); % filtering
     [imaxb,iyb]=max(b);
-    Zb=squeeze(iyb);
-    iyb(imaxb<50)=NaN;
-    Z_sb(:,img)=smooth(Zb,20,'rloess');
+    Z_sb(img,:)=smooth(iyb,20,'rloess');
 end
 
-
 %% bed change
-dZ=Z_s-Z_sb;
-dZ_new=zeros(4096,nimages2);
-for img=1:nimages2  
-    dZ_new(:,img)=phys_scanz(dZ(:,img),y(img));
+dZ=Z_s-Z_sb;% displacement between current position and initial
+dZ_new=zeros(nb_scan,size(dZ,2));
+for img=1:nb_scan  
+    Yima=y_scan(img)*ones(1,size(dZ,2));
+    [~,dZ_new(img,:)]=phys_XYZ(Calib(img),dZ(img,:),Yima,1);
+   % dZ_new(:,img)=phys_scanz(dZ(:,img),y(img));
 end
 
 
 %% PLOTS
-coord_x=X_new(1,end):0.1:X_new(end,end);
-[Y_m,X_m]=meshgrid(y(1,:),coord_x);
-Y_new=Y';
-dZ_mesh=griddata(X_new,Y_new,dZ_new,X_m,Y_m);
+coord_x=X_new(end,1):0.1:X_new(end,end);
+[Y_m,X_m]=meshgrid(y_scan,coord_x);
+%Y_new=Y';
+dZ_mesh=griddata(X_new,Y,dZ_new,X_m,Y_m);
 
 if checkrun
     figure(1)
     hold on
     plot(x,Z_s+700)
-    xlim([0 4096])
-    ylim([0 3000])
+    % xlim([0 4096])
+    % ylim([0 3000])
     
     figure(2)
     hold on
@@ -259,7 +270,7 @@ if checkrun
     title('Dz')
 end
 
-save(fullfile(DirOut,'18OS_f.mat'),'dZ','dZ_new','X','Y','Z_s','Z_sb','y')
+%save(fullfile(DirOut,'18OS_f.mat'),'dZ','dZ_new','X','Y','Z_s','Z_sb','y')
 
 % save netcdf
 Data.ListVarName={'coord_x','coord_y','dZ'};
@@ -275,11 +286,14 @@ Data.coord_y=[y(1) y(end)];
 Data.dZ=dZ_mesh';
 struct2nc(fullfile(DirOut,'dZ.nc'),Data)
 
+%% gives the physical position x from the image position X and the physical position y of the laser plane
 function F=phys_scan(X,y)
+% linear fct of X whose coefficient depend on y in a quadratic way
 F=(9.4*10^(-7)*y.^2-3.09*10^(-4)*y+0.07).*X +(-0.001023*y.^2+0.469*y+186.9);
 
+%% gives the physical position z from the image position Z and the physical position y of the laser plane
 function Fz=phys_scanz(Z,y)
+% scale factor applied to Z depending on the physical position y of the laser plane
 Fz=(-1.4587*10^(-5)*y.^2 + 0.001072*y+0.0833).*Z; %+(-2.1*10^(-6)*x.^2+5.1*10^(-4)*x+0.0735).*Z;
 
  
-

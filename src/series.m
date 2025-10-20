@@ -608,18 +608,29 @@ end
 
 %% update MinIndex_i and MaxIndex_i if the input table content has been reduced in line nbre
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
+if ~isempty(MinIndex_i_table)
 set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
+end
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+if ~isempty(MinIndex_j_table)
 set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
+end
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
-
+if ~isempty(MaxIndex_i_table)
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
+end
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+if ~isempty(MaxIndex_j_table)
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
+end
 PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
+if ~isempty(PairString)
 set(handles.PairString,'Data',PairString(1:nbview,:));
+end
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
+if ~isempty(TimeTable)
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
+end
 
 %% set length of waitbar
 displ_time(handles)
@@ -976,6 +987,7 @@ TimeMax=[];
 %%  read image documentation file if found
 XmlData=[];
 check_calib=0;
+
 XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2});
 if ~isempty(XmlFileName)
     [XmlData,errormsg]=imadoc2struct(XmlFileName);
@@ -983,7 +995,7 @@ if ~isempty(XmlFileName)
         msgbox_uvmat('WARNING',['error in reading ' XmlFileName ': ' errormsg]);
     end
     % read time if available
-    if isfield(XmlData,'Time')
+    if isfield(XmlData,'Time') && strcmp(FileInfo.FieldType,'image')
         Time=XmlData.Time;
         TimeName='xml';
     end
