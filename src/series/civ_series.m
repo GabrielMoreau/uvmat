@@ -502,7 +502,7 @@ for ifield=1:NbField
             if ~isempty(j1_series_Civ1)
                 j1=j1_series_Civ1(ifield);
             end
-            if ~isempty(i2_series_Civ1)% case of volume,masks act on different j levels
+            if ~isempty(i2_series_Civ1)&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
             elseif isfield(par_civ1,'NbSlice')
                 i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
@@ -765,7 +765,7 @@ for ifield=1:NbField
         % introduce mask
         if par_civ2.CheckMask && ~isempty(par_civ2.Mask)
             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
-            if ~isempty(i2_series_Civ2) % we do PIV among indices i,  at given indices j (volume scan), mask depends on position j
+            if ~isempty(i2_series_Civ2) && ~isequal(i1_series_Civ2,i2_series_Civ2) % we do PIV among indices i,  at given indices j (volume scan), mask depends on position j
                 j1=1;
                 if ~isempty(j1_series_Civ2)
                     j1=j1_series_Civ1(ifield);

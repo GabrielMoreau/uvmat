@@ -40,11 +40,11 @@ s=[];
 %% opening the xml file
 [tild,tild,FileExt]=fileparts(ImaDoc);
 
-if nargin ==1
+if nargin ==1% no additional input variable beyond 'ImaDoc'
     [s,Heading,errormsg]=xml2struct(ImaDoc);% convert the whole xml file in a structure s
-elseif nargin ==2
+elseif nargin ==2 %one additional input variable beyond 'ImaDoc'specifying the subtree to read
     [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1});% convert the xml file in a structure s, keeping only the subtree defined in input
-else %TODO: deal with more than two subtrees?
+else % case of two subtrees, TODO: deal with more than two subtrees?
     [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
 end
 if ~isempty(errormsg)

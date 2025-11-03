@@ -38,7 +38,7 @@ try
     t=xmltree(filename);% read the file as an xmltree object t
 catch ME
     errormsg=ME.message;
-    if ~isempty(regexp(ME.message,'Undefined function'))||~isempty(regexp(ME.message,'Missing'))
+    if ~isempty(regexp(ME.message,'Undefined function','once'))||~isempty(regexp(ME.message,'Missing','once'))
         errormsg=[errormsg ': package xmltree not correctly installed, reload it from www.artefact.tk/software/matlab/xml'];
     end
     return
@@ -51,23 +51,23 @@ while isempty(RootTag)
         RootTag=get(t,iline,'name');
     end
 end
-if nargin>1
+if nargin>1 % additional input vartiable(s) beyond filename, select specified subtrees
     for isub=1:nargin-1
         uid_sub=find(t,['/' RootTag '/' varargin{isub}]);
         if isempty(uid_sub)
             s.(varargin{isub})=[];
         else
-        tsub=branch(t,uid_sub);
-        if ~isempty(get(tsub,1,'contents'))
-        ss=convert(tsub);
-        s.(varargin{isub})=convert_string(ss);
-        end
+            tsub=branch(t,uid_sub);
+            if ~isempty(get(tsub,1,'contents'))
+                ss=convert(tsub);
+                s.(varargin{isub})=convert_string(ss);
+            end
         end
     end
 else
     try
-    ss=convert(t);%transform the xmltree object into a Matlab structure.
-    s=convert_string(ss);
+        ss=convert(t);%transform the xmltree object into a Matlab structure.
+        s=convert_string(ss);% explore the sub-structures if needed
     catch ME
         errormsg=ME.message;
     end
@@ -85,9 +85,9 @@ switch info.class
         end
     case 'char' 
         % try to convert to number if the char does not correspond to a function (otherwise str2num calls this function as it uses 'eval')
-%         if exist(ss,'builtin')||exist(ss,'file')% ss corresponds to the name of a builtin Matlab function or a file
-%             out=ss; %reproduce the input string
-%         else
+        if exist(ss,'builtin')||exist(ss,'file')% ss corresponds to the name of a builtin Matlab function or a file
+            out=ss; %reproduce the input string
+        else
             out=str2num(ss);% convert to number or vector (str2num applied to a fct name executes this fct by 'eval', thus this possibility had to be ruled out above
             if isempty(out)
                 sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
@@ -101,7 +101,7 @@ switch info.class
                     out=ss; %reproduce the input string
                 end
             end
-%         end
+         end
     case 'cell'
         out={};%default
         check_numeric=zeros(size(ss));

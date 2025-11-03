@@ -24,7 +24,7 @@ cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with ha
 xx=double(get(hObject,'CurrentCharacter')); %get the keyboard character
 if ~isempty(xx)
     switch xx
-        case {29,28,30,31}    %arrows for displacement
+        case {29,28,30,31,8592,8593,8594,8595}  %arrows for displacement (linux or windows)
             hhh=get(hObject,'CurrentObject');
             AxeData=get(cur_axes,'UserData');
             if isfield(AxeData,'ZoomAxes')&&ishandle(AxeData.ZoomAxes)
@@ -36,14 +36,15 @@ if ~isempty(xx)
                 ylimit=get(cur_axes,'Ylim');
                 dx=(xlimit(2)-xlimit(1))/10;
                 dy=(ylimit(2)-ylimit(1))/10;
-                if isequal(xx,29)%move arrow right
-                    xlimit=xlimit+dx;
-                elseif isequal(xx,28)%move arrow left
-                    xlimit=xlimit-dx;
-                elseif isequal(xx,30)%move arrow up
-                    ylimit=ylimit+dy;
-                elseif isequal(xx,31)%move arrow down
-                    ylimit=ylimit-dy;
+                switch xx
+                    case{29,8594}%move arrow right
+                        xlimit=xlimit+dx;
+                    case{28,8592}%move arrow left
+                        xlimit=xlimit-dx;
+                    case {30,8593}%move arrow up
+                        ylimit=ylimit+dy;
+                    case{31,8595}%move arrow down%move arrow down
+                        ylimit=ylimit-dy;
                 end
                 set(cur_axes,'XLim',xlimit)
                 set(cur_axes,'YLim',ylimit)

@@ -195,7 +195,6 @@ end
 %% Load the init bed scan
 tic
 nb_scan=10;
-nb_scan=10;
 for img=1:nb_scan
      img
     a=flipud(imread(filecell{1,img}));%image of the initial bed

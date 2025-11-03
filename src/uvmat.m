@@ -12,7 +12,7 @@
 % ListVarName....)
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, ileSeriesrance
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -535,14 +535,17 @@ commandwindow; %brings the Matlab command window to the front
 % --- Executes on button press in Menu/Export/extract figure.
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-hfig=figure;
-hc=copyobj(handles.PlotAxes,hfig);
-set(hc,'Position',[0.1 0.1 0.8 0.8])
+hfig=figure;%create a new figure
+hc=copyobj(handles.PlotAxes,hfig);%copy the current axis content on the new fig
+set(hc,'Position',[0.1 0.1 0.8 0.8])% adjust the position of the axis on the figure
 title_menu=get(handles.FieldName,'String');
-title_string=title_menu{get(handles.FieldName,'Value')};
+title_string=title_menu{get(handles.FieldName,'Value')};% get the name of the plotted field
 title(title_string);
+set(hc,'FontSize',16); %set the sdize of titles and labels
+
+%% copy the colormap to the new fig if relevant
 h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
-if ~isempty(h)
+if ~isempty(h)% copy the colorbar to the new fig if relevant
     map=colormap(handles.PlotAxes);
     colormap(map);%transmit the current colormap to the new fig
     colorbar
@@ -2877,12 +2880,12 @@ if strcmp(NomType,'level')
     index_string=get(handles.i1,'String');
 else
     index_string=get(handles.FileIndex,'String');
-    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'FileSeries')% The frame indexing is determined through the xml file, section FileSeries
+    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'FileSeries')
         i1=str2double(get(handles.i1,'String'));
         j1=str2double(get(handles.j1,'String'));
         NbField_j_cell=get(handles.MaxIndex_j,'String');
         NbField_j=str2double(NbField_j_cell{1});
-        [RootFile,index_string,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);% convert frame index i1 j1 to index in the files
+        [RootFile,index_string,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
         set(handles.RootFile,'String',RootFile)
     else
         [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex

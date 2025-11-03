@@ -3421,7 +3421,12 @@ function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 %% use a browser to choose the xml file containing the processing config
 InputTable=get(handles.InputTable,'Data');
+oldfile='';
+if isempty(InputTable)
+    oldfile='';
+else
 oldfile=InputTable{1,1}; % current path in InputTable
+end
 if isempty(oldfile)
     % use a file name stored in prefdir
     dir_perso=prefdir;
