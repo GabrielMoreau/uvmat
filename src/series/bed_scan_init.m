@@ -60,21 +60,21 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=bed_scan(Param)
+function ParamOut=bed_scan_init (Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.NbViewMax=1;% max nbre of input file series (default , no limitation)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.NbSlice=1; %nbre of slices ('off' by default)
     ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'off';%can use a transform function
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.bed';%set the output dir extension
-    ParamOut.OutputFileMode='NbInput_i';% ='=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice   
+    ParamOut.OutputFileMode='NbSlice';% ='=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     return
 end
 
@@ -95,56 +95,40 @@ end
 
 %% root input file names and nomenclature type (cell arrays with one element)
 RootPath=Param.InputTable{1,1};
-SubDir=Param.InputTable{1,2};
-RootFile=Param.InputTable{1,3};
-NomType=Param.InputTable{1,4};
-FileExt=Param.InputTable{1,5};
-i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
-j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
-nbfield_i=numel(i_series);
-nbfield_j=numel(j_series);
+
 
 %% directory for output files
 DirOut=fullfile(RootPath,[Param.OutputSubDir Param.OutputDirExt]);
 
 %% get the set of input file names (cell array filecell), and file indices
-%[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 % filecell{iview,fileindex}: cell array representing the list of file names
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series,
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
-% nbfield_i=size(i1_series{1},2); %nb of fields for the i index
-% 
-% nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
-CheckVirtual=false;
-if isfield(Param,'FileSeries')% virtual file indexing used (e.g. multitif images)
-    CheckVirtual=true;
-end
+nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%fullfile(
 % EDIT FROM HERE
-%% load the initial scan
-[RootRoot,CamName]=fileparts(RootPath);
-RootRoot=fileparts(RootRoot);
-CalibFolder=fullfile(RootRoot,'EXP_INIT',CamName);
-File_init=fullfile(CalibFolder,'images.png.bed','Z_init.nc');
-Data_init=nc2struct(File_init);
+
 %% set of y positions
 
 nb_scan=400;% nbre of planes for a scan
-if nbfield_j<400
-    nb_scan=nbfield_j;
+if nbfield_i<400
+    nb_scan=nbfield_i;
 end
 %ycalib=[-51 -1 49];% calibration planes
 y_scan=-51+0.25*(1:nb_scan);% transverse position given by the translating system: first view at y=-51, view 400 at y=+49
 coord_x=0.25:0.25:450;%% coord x in phys coordinates for final projection
-
+%%%%%%%% A GENERALISER pour plusieurs scans
 Mfiltre=ones(2,10)/20;%filter matrix for imnages
 
 %% calibration data and timing: read the ImaDoc files
-
+[RootRoot,CamName]=fileparts(RootPath);
+RootRoot=fileparts(RootRoot);
+CalibFolder=fullfile(RootRoot,'EXP_INIT',CamName);
 XmlData_A=xml2struct(fullfile(CalibFolder,'planeA.xml'));
 XmlData_B=xml2struct(fullfile(CalibFolder,'planeB.xml'));
 XmlData_C=xml2struct(fullfile(CalibFolder,'planeC.xml'));
@@ -197,74 +181,67 @@ for img=1:nb_scan
     Calib(img).R(2,2)=p22(1)*y_scan(img)+p22(2);
 end
 
+%% check coincdence in time for several input file series
+%not relevant for this function
+
+%% coordinate transform or other user defined transform
+%not relevant for this function
 
 
 
 %% Load the init bed scan
 tic
-%filecell=reshape(filecell,nbfield_j,nbfield_i)
-% main loop
-for ifield=1:nbfield_i
-    for img=1:nbfield_j% loop on positions
-        if CheckVirtual
-            [FileName,FrameIndex]=index2filename(Param.FileSeries,i_series(ifield),j_series(img),nbfield_j);
-            InputFile=fullfile(RootPath,SubDir,FileName);
-        else
-            InputFile=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,FileIndex,ifield,[],img);
-            FrameIndex=1;
-        end
-        a=flipud(read_image(InputFile,'multimage',[],FrameIndex));
-        %a=flipud(imread(InputFile));%image of the initial bed  [X_b_new(img,:),Z_b_new(img,:)]=phys_XYZ(Calib(img),[],x,Z_sb(img,:))
-        if img==1
-            [nby,nbx]=size(a);
-            x_ima=1:nbx;%image absissa in pixel coordinates
-            X_phys=zeros(nb_scan,nbx);
-            Z_phys=zeros(nb_scan,nbx);
-        end
-        % filtering
-            a=filter2(Mfiltre,a);%smoothed image
-        amean=mean(a,2);
+
+%for img=1:nbfield_i
+for img=1:nb_scan%nbfield_i
+    img
+    a=flipud(imread(filecell{1,img+400}));%image of the initial bed  [X_b_new(img,:),Z_b_new(img,:)]=phys_XYZ(Calib(img),[],x,Z_sb(img,:))
+    if img==1
+        [nby,nbx]=size(a);
+        x_ima=1:nbx;%image absissa in pixel coordinates
+        % X_new=zeros(nb_scan,size(a,2));% initialise the x po400sitions in phys coordinates
+        % Z_s=zeros(nb_scan,size(a,2));% initialise the image index of max luminosity (dependning on x) for the reference scan
+
+        X_phys=zeros(nb_scan,nbx);
+        Z_phys=zeros(nb_scan,nbx);
+    end
+    % filtering
+    amean=mean(a,2);
      [~,ind_max]=max(amean);% get the max of the image averaged along x, to restrict the search region
     ind_range=max(1,ind_max-30):min(nby,ind_max+30);% search band to find the line
-    z_ima=get_max(a(ind_range,:))+ind_range(1)-1;% get the max in the search band and shift to express it in indices of the original image
+    a=filter2(Mfiltre,a);%smoothed image
+   % [~,iy]=max(a);% find the max along the first coordinate     Z_s_new=zeros(nb_scan,size(Z_s,2)); y, max values imax and the corresponding  y index iy along the first coordinate y
 
- %       [~,iy]=max(a);% find the max along the first coordinate     Z_s_new=zeros(nb_scan,size(Z_s,2)); y, max values imax and the corresponding  y index iy along the first coordinate y
-        z_ima=smooth(z_ima,20,'rloess');%smooth Z, the image index of max luminosity (dependning on x)
-        [X_phys(img,:),Z_phys(img,:)]=phys_XYZ(Calib(img),[],x_ima,z_ima');
-    end
-    disp(['last file of ' num2str(ifield)])
-     disp(FileName)
-     disp(FrameIndex)
-
-    %% interpolate on a regular grid
-    %coord_x=X_phys(end,1):0.1:X_phys(end,end);%% coord x in phys coordinates based in the last view plane (the last)
-    [X_m,Y_m]=meshgrid(coord_x,y_scan);
-    Y=y_scan'*ones(1,nbx);%initialisation of X, Y final topography map
-
-    Data.Z=griddata(X_phys,Y,Z_phys,X_m,Y_m);% dZ interpolated on the regular ph1ys grid X_m,Y_m
-    size(Data.Z)
-    size(Data_init.Z_init)
-    Data.dZ=Data.Z-Data_init.Z_init;
-
-    toc
-
-    % save netcdf
-    Data.ListVarName={'coord_x','y_scan','Z','dZ'};
-    Data.VarDimName={'coord_x','y_scan',{'y_scan','coord_x'},{'y_scan','coord_x'}};
-    Data.VarAttribute{1}.Role='coord_x';
-    Data.VarAttribute{1}.unit='cm';
-    Data.VarAttribute{2}.Role='coord_y';
-    Data.VarAttribute{2}.unit='cm';
-    Data.VarAttribute{3}.Role='scalar';
-    Data.VarAttribute{3}.unit='cm';
-        Data.VarAttribute{4}.Role='scalar';
-    Data.VarAttribute{4}.unit='cm';
-    Data.coord_x=coord_x;
-    Data.y_scan=y_scan;
-    struct2nc(fullfile(DirOut,['dZ_' num2str(ifield) '.nc']),Data)
+   z_ima=get_max(a(ind_range,:))+ind_range(1)-1;% get the max in the search band and shift to express it in indices of the original image
+   % z_ima=iy';
+    z_ima=smooth(z_ima,20,'rloess');%smooth Z, the image index of max luminosity (dependning on x)
+    [X_phys(img,:),Z_phys(img,:)]=phys_XYZ(Calib(mod(img-1,nb_scan)+1),[],x_ima,z_ima');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% interpolate on a regular grid
+%coord_x=X_phys(end,1):0.1:X_phys(end,end);%% coord x in phys coordinates based in the last view plane (the last)
+%y_scan_2=y_scan(1:400);
+[X_m,Y_m]=meshgrid(coord_x,y_scan);
+Y=y_scan'*ones(1,nbx);%initialisation of X, Y final topography map
+Data.Z_init=griddata(X_phys,Y,Z_phys,X_m,Y_m);% dZ interpolated on the regular ph1ys grid X_m,Y_m
+
+%Data.Z_init=0.5*(Data.Z_init(1:nb_scan,:)+Data.Z_init(nb_scan+1:2*nb_scan,:));
+toc
+
+% save netcdf
+Data.ListVarName={'coord_x','y_scan','Z_init'};
+Data.VarDimName={'coord_x','y_scan',{'y_scan','coord_x'}};
+Data.VarAttribute{1}.Role='coord_x';
+Data.VarAttribute{1}.unit='cm';
+Data.VarAttribute{2}.Role='coord_y';
+Data.VarAttribute{2}.unit='cm';
+Data.VarAttribute{3}.Role='scalar';
+Data.VarAttribute{3}.unit='cm';
+Data.coord_x=coord_x;
+Data.y_scan=y_scan;
+struct2nc(fullfile(DirOut,'Z_init.nc'),Data)
+
+%%%%%
 function iy=get_max(a)% get the max with sub picel resolution
 [a_max,iy]=max(a);
 [Nby,Nbx]=size(a);

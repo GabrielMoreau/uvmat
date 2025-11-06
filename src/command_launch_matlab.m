@@ -35,9 +35,14 @@ cmd=[...
     'time_start=$(date +%%s)\n'...
     'matlab -nodisplay -nosplash -nojvm ''' ThreadOption ''' -logfile ''' filelog ''' <<END_MATLAB\n'...%launch the new Matlab session  without display
     'addpath(''' path_uvmat ''');\n'...
-    'addpath(''' ActionPath ''');\n'];
+    'current_dir=pwd;\n'... % current working dir
+    'cd(''' ActionPath ''');\n'...
+'h_fun=str2func(''' ActionName ''');\n'...% create the function handle for the function ActionName
+'cd(current_dir);\n'];
+ %   'addpath(''' ActionPath ''');\n'];
 for iprocess=1:numel(inputxml)
-    cmd=[cmd '' ActionName  '(''' inputxml{iprocess} ''');\n'];
+%    cmd=[cmd '' ActionName  '(''' inputxml{iprocess} ''');\n'];
+cmd=[cmd ' h_fun  (''' inputxml{iprocess} ''');\n'];
 end
 cmd=[cmd  'exit\n' 'END_MATLAB\n'];
     if strcmp(option,'background')

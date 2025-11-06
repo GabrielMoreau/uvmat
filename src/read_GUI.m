@@ -42,7 +42,7 @@ for ichild=1:numel(hchild)
         tag=get(hchild(ichild),'tag');
         switch object_type
             case 'uipanel'
-                eval(['struct.' tag '=read_GUI(hchild(ichild));'])
+                struct.(tag)= read_GUI(hchild(ichild));
             case 'uicontrol'
                 object_style=get(hchild(ichild),'Style');
                 check_input=1;%default

@@ -133,7 +133,7 @@ end
 
 %% Read the parameter file series.xml, or created from series.xml.default if it does not exist
 SeriesData=[];
-[path_series,name,ext]=fileparts(which('series'));% path to the GUI series
+path_series=fileparts(which('series'));% path to the GUI series
 xmlfile=fullfile(path_series,'series.xml');
 if ~exist(xmlfile,'file')
     [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
@@ -156,8 +156,8 @@ end
 ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'}; % WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
-path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
-[path_series,name,ext]=fileparts(which('series')); % path to the GUI series
+%path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
+[path_series]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
 ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab fct .m or compiled version .sh
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
@@ -165,7 +165,7 @@ ActionPathList(:)={path_series_fct}; % set the default path to series fcts to al
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
 if isfield(SeriesData.ClusterParam, 'ExistenceTest')
     oarcommand=SeriesData.ClusterParam.ExistenceTest;
-    [s,w]=system(oarcommand); % look for cluster system presence
+    s=system(oarcommand); % look for cluster system presence
     if isequal(s,0)% cluster detected
         RunModeList=[RunModeList;{'cluster'}];
         set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
@@ -274,14 +274,14 @@ if isfield(Param,'InputFile')
 
     %% fill the list of input file series
     InputTable=[{Param.InputFile.RootPath},{Param.InputFile.SubDir},{Param.InputFile.RootFile},{Param.InputFile.NomType},{Param.InputFile.FileExt}];
-    if isempty(find(cellfun('isempty',InputTable)==0)) % if there is no input file, do not introduce input info
+    if isempty(find(cellfun('isempty',InputTable)==0,1)) % if there is no input file, do not introduce input info
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
         return
     end
-    TimeTable=[{Param.InputFile.TimeName},{[]},{[]},{[]},{[]}];
+   % TimeTable=[{Param.InputFile.TimeName},{[]},{[]},{[]},{[]}];
     if isfield(Param.InputFile,'RootPath_1')
         InputTable=[InputTable;[{Param.InputFile.RootPath_1},{Param.InputFile.SubDir_1},{Param.InputFile.RootFile_1},{Param.InputFile.NomType_1},{Param.InputFile.FileExt_1}]];
-        TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
+       % TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
 
@@ -290,7 +290,7 @@ if isfield(Param,'InputFile')
     [InputPath,Experiment,ExperimentExt]=fileparts(InputPath);
     set(handles.Device,'String',[Device DeviceExt])
     set(handles.Experiment,'String',[Experiment ExperimentExt])
-    if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)'))
+    if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)','once'))
     set(handles.OutputPathBrowse,'Value',1)% an output folder needs to be specified for OpenDAP data
     end
 
@@ -307,13 +307,21 @@ if isfield(Param,'InputFile')
 
     %% determine the selected reference field indices for pair display
 
-    [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
-    if isempty(i1)
-        i1=1;
+  %  [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
+  i1=1;j1=1;%default
+    if isfield(Param,'i1')
+        i1=Param.i1;
     end
-    if isempty(i2)
-        i2=i1;
+    if isfield(Param,'j1')
+        j1=Param.j1;
     end
+    if isfield(Param,'i2')
+        i2=Param.i2;
+    end
+    if isfield(Param,'j2')
+        j2=Param.j2;
+    end
+    
     ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
     % set(handles.num_ref_i,'String',num2str(ref_i));
     if isempty(j1)
@@ -608,29 +616,18 @@ end
 
 %% update MinIndex_i and MaxIndex_i if the input table content has been reduced in line nbre
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(MinIndex_i_table)
 set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
-end
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(MinIndex_j_table)
 set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
-end
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(MaxIndex_i_table)
+
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
-end
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(MaxIndex_j_table)
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
-end
 PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(PairString)
 set(handles.PairString,'Data',PairString(1:nbview,:));
-end
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(TimeTable)
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
-end
 
 %% set length of waitbar
 displ_time(handles)
@@ -860,7 +857,9 @@ else
 end
 
 %% display the min and max indices for the whole file series
-if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
+if isempty(i1_series)
+    MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
+elseif size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
     MinIndex_j=1; % index j set to 1 by default
     MaxIndex_j=1;
     MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
@@ -987,7 +986,6 @@ TimeMax=[];
 %%  read image documentation file if found
 XmlData=[];
 check_calib=0;
-
 XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2});
 if ~isempty(XmlFileName)
     [XmlData,errormsg]=imadoc2struct(XmlFileName);
@@ -995,7 +993,7 @@ if ~isempty(XmlFileName)
         msgbox_uvmat('WARNING',['error in reading ' XmlFileName ': ' errormsg]);
     end
     % read time if available
-    if isfield(XmlData,'Time') && strcmp(FileInfo.FieldType,'image')
+    if isfield(XmlData,'Time')
         Time=XmlData.Time;
         TimeName='xml';
     end
@@ -1309,12 +1307,18 @@ if ~isfield(SeriesData,'Time')
     return
 end
 PairString=get(handles.PairString,'Data');
-ref_i_1=str2num(get(handles.num_first_i,'String')); % first reference index
-ref_i_2=str2num(get(handles.num_last_i,'String')); % last reference index
-ref_j_1=[];ref_j_2=[];
+ref_i_1=str2double(get(handles.num_first_i,'String')); % first reference index
+if isnan(ref_i_1)
+ref_i_1=1;
+end
+ref_i_2=str2double(get(handles.num_last_i,'String')); % last reference index
+if isnan(ref_i_2)
+ref_i_2=1;
+end
+ref_j_1=NaN;ref_j_2=NaN;
 if strcmp(get(handles.num_first_j,'Visible'),'on')
-ref_j_1=str2num(get(handles.num_first_j,'String'));
-ref_j_2=str2num(get(handles.num_last_j,'String'));
+    ref_j_1=str2double(get(handles.num_first_j,'String'));
+    ref_j_2=str2double(get(handles.num_last_j,'String'));
 end
 [i1_1,i2_1,j1_1,j2_1] = get_file_index(ref_i_1,ref_j_1,PairString);
 [i1_2,i2_2,j1_2,j2_2] = get_file_index(ref_i_2,ref_j_2,PairString);
@@ -1428,7 +1432,7 @@ set(handles.RUN, 'Value',0)
 % dispatched in parallel into NbCore processors by the cluster managing system.
 
 function errormsg=launch_action(handles)
-errormsg=''; % default
+%errormsg=''; % default
 
 %% read the data on the GUI series
 Param=read_GUI_series(handles); % displayed parameters
@@ -1636,9 +1640,9 @@ for iexp=1:NbExp
             end
         end
     end
-    [xx,ExpName]=fileparts(Param.InputTable{1,1});
-    Param.IndexRange.first_i=str2num(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
-    Param.IndexRange.last_i=str2num(get(handles.num_last_i,'String'));
+    [~,ExpName]=fileparts(Param.InputTable{1,1});
+    Param.IndexRange.first_i=str2double(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
+    Param.IndexRange.last_i=str2double(get(handles.num_last_i,'String'));
 
     %% create the output data directory if needed, after checking its existence
     OutputDir='';
@@ -1654,17 +1658,17 @@ for iexp=1:NbExp
         PathExpDeviceOut=ListPath{iexp};
         else
             PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
-            PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'))
+            PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
         end
         if ~exist(PathExpOut,'dir')
-            [tild,msg1]=mkdir(PathExpOut);
+            [~,msg1]=mkdir(PathExpOut);
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' PathExpOut ': ' msg1]; % error message for directory creation
                 return
             end
         end
         if ~exist(PathExpDeviceOut,'dir')
-            [tild,msg1]=mkdir(PathExpDeviceOut);
+            [~,msg1]=mkdir(PathExpDeviceOut);
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' PathExpDeviceOut ': ' msg1]; % error message for directory creation
                 return
@@ -1709,7 +1713,7 @@ for iexp=1:NbExp
         Param.OutputRootFile=Param.InputTable{1,3}; % the first sorted RootFile taken for output
         OutputDir=fullfile(PathExpDeviceOut,[Param.OutputSubDir Param.OutputDirExt]); % full name (with path) of output directory
         if check_create    % create output directory if it does not exist
-            [tild,msg1]=mkdir(OutputDir);
+            [~,msg1]=mkdir(OutputDir);
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' OutputDir ': ' msg1]; % error message for directory creation
                 return
@@ -1783,7 +1787,7 @@ for iexp=1:NbExp
             ref_i=ref_i-1;
         else
             ref_j=first_j:incr_j:last_j;
-            [tild,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+            [~,ref_i]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
             ref_i=ref_i-1;
             ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
         end
@@ -1791,7 +1795,7 @@ for iexp=1:NbExp
     else
         ref_i=first_i:incr_i:last_i;
         if isempty(incr_j)% automatic finding of the existing j indices
-            [ref_j,tild]=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
+            ref_j=find(squeeze(SeriesData.i1_series{1}(1,:,:)));
             ref_j=ref_j-1;
             ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
         else
@@ -1808,7 +1812,7 @@ for iexp=1:NbExp
                 CPUTime=Param.Action.CPUTime; % Note: CpUTime for one iteration ref_i has to be multiplied by the number of j indices nbfield_j
             else
                 answer=msgbox_uvmat('INPUT_TXT','estimate the CPU time(in minutes) for each value of index i:' ,'');
-                CPUTime=str2num(answer);
+                CPUTime=str2double(answer);
                 set(handles.num_CPUTime,'String',answer)
                 Param.Action.CPUTime=CPUTime;
             end
@@ -2090,7 +2094,7 @@ for iexp=1:NbExp
                 delete('*')
                 cd(curdir)
             else
-                [tild,msg1]=mkdir(DIR_CLUSTER);
+                [~,msg1]=mkdir(DIR_CLUSTER);
                 if ~strcmp(msg1,'')
                     errormsg=['cannot create ' DIR_CLUSTER ': ' msg1]; % error message for directory creation
                     return
@@ -2185,7 +2189,7 @@ for iexp=1:NbExp
                 delete('*')
                 cd(curdir)
             else
-                [tild,msg1]=mkdir(DirSGE);
+                [~,msg1]=mkdir(DirSGE);
                 if ~strcmp(msg1,'')
                     errormsg=['cannot create ' DirSGE ': ' msg1]; % error message for directory creation
                     return
@@ -2210,7 +2214,7 @@ for iexp=1:NbExp
                     for ii=1:numel(imgsInJob)
                         cmd=[cmd ActionFullName ' /softs/matlab ' filexml{imgsInJob(ii)} '\n'];
                     end
-                    [fid, message] = fopen([DirSGE '/job' num2str(currJobIndex) '.sh'], 'w');
+                    fid = fopen([DirSGE '/job' num2str(currJobIndex) '.sh'], 'w');
                     fprintf(fid, cmd);
                     fclose(fid);
                     system(['chmod +x ' DirSGE '/job' num2str(currJobIndex) '.sh'])
@@ -2220,7 +2224,7 @@ for iexp=1:NbExp
                         '-o ' fullfile([DirSGE '/job' num2str(currJobIndex) '.out']) ' '...
                         fullfile([DirSGE '/job' num2str(currJobIndex) '.sh'])];
                     fprintf(sge_command); % display in command line
-                    [status, result] = system(sge_command);
+                    [~, result] = system(sge_command);
                     fprintf(result);
                     currJobIndex = currJobIndex + 1;
                     imgsInJob = [];
@@ -2234,10 +2238,10 @@ for iexp=1:NbExp
         case 'python'
             command = ['python -m fluidimage.run_from_xml ' filexml{iprocess}];
             fprintf(['command:\n' command '\n\n'])
-            [status, result] = call_command_clean(command);
+          %  [status, result] = call_command_clean(command);
     end
     if exist(OutputDir,'dir')
-        [SUCCESS,MESSAGE,MESSAGEID] = fileattrib (OutputDir);
+        [~,MESSAGE] = fileattrib (OutputDir);
         if MESSAGE.GroupWrite~=1
             [success,msg] = fileattrib(OutputDir,'+w','g','s'); % allow writing access for the group of users, recursively in the folder
             if success==0
@@ -2392,7 +2396,7 @@ update_waitbar(handles.Waitbar,0)
 
 %% Put the first line of the selected Action fct as tooltip help
 try
-    [fid,errormsg] =fopen([fullfile(ActionPath,ActionName) '.m']);
+    fid=fopen([fullfile(ActionPath,ActionName) '.m']);
     InputText=textscan(fid,'%s',1,'delimiter','\n');
     fclose(fid);
     set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
@@ -2876,7 +2880,7 @@ if isequal(field,'add_field...')
         set(handles.FieldName,'Value',1)
         set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
-           if ~isempty(regexp(FieldList{1},'^vec'))
+           if ~isempty(regexp(FieldList{1},'^vec', 'once'))
                 set(handles.FieldName,'Value',1)
            else
                 set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
@@ -3030,7 +3034,7 @@ if ~isempty(indiff)
         for imulti=1:length(ind_pairs)
             datepair(imulti)=datenum(dirpair(ind_pairs(imulti)).date); % dates of creation
         end
-        [datenew,indsort2]=sort(datepair); % sort the multiplet by creation date
+        [~,indsort2]=sort(datepair); % sort the multiplet by creation date
         ind_s=indsort2(1:end-1); %
         ind_remove=[ind_remove ind_pairs(ind_s)]; % remove these indices, leave the last one
     end
@@ -3057,8 +3061,8 @@ if isequal(mode,'series(Di)')
     num_i2_line=num_i2_line(indsel);
     num_j1=meshgrid(num_j,ones(size(num_i1_line)));
     num_j2=meshgrid(num_j,ones(size(num_i1_line)));
-    [xx,num_i1]=meshgrid(num_j,num_i1_line);
-    [xx,num_i2]=meshgrid(num_j,num_i2_line);
+    [~,num_i1]=meshgrid(num_j,num_i1_line);
+    [~,num_i2]=meshgrid(num_j,num_i2_line);
 elseif isequal (mode,'series(Dj)')||isequal (mode,'bursts')
     if isequal(mode,'bursts') %case of bursts (png_old or png_2D)
         num_j1=ind_shift(1)*ones(size(num_i));
@@ -3199,10 +3203,10 @@ if get(handles.CheckMask,'Value')
     NbView=size(Param.InputTable,1);
     MaskTable=cell(NbView,2);
     
-    RootPath=Param.InputTable{1,1};
+    %RootPath=Param.InputTable{1,1};
     first_j=[];% note that the function will propose to cover the whole range of indices
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    last_j=[];
+   %last_j=[];
     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
@@ -3213,7 +3217,7 @@ if get(handles.CheckMask,'Value')
         FirstFileName=fullfile_uvmat(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},...
             Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);
         
-        [FileInfo,VideoObject]=get_file_info(FirstFileName);
+       % [FileInfo,VideoObject]=get_file_info(FirstFileName);
         
         
 %         Data=nc2struct(FirstFileName);
@@ -3421,12 +3425,7 @@ function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 %% use a browser to choose the xml file containing the processing config
 InputTable=get(handles.InputTable,'Data');
-oldfile='';
-if isempty(InputTable)
-    oldfile='';
-else
 oldfile=InputTable{1,1}; % current path in InputTable
-end
 if isempty(oldfile)
     % use a file name stored in prefdir
     dir_perso=prefdir;

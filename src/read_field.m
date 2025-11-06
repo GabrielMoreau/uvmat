@@ -57,7 +57,7 @@ end
 ParamOut=ParamIn;%default
 errormsg='';
 if isempty(regexp(FileName,'^http://', 'once'))&& ~exist(FileName,'file')
-    errormsg=['input file ' FileName ' does not exist'];
+    errormsg='input file does not exist';
     return
 end
 A=[];

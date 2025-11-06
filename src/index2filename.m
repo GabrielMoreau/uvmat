@@ -1,14 +1,14 @@
-% get the file name and frame index from a set of multimage files (e.g. from PCO camera)
+% translate logical indices i1, j1, into file name and frame index in a set of multimage files (e.g. from PCO camera)
 %------------------------------------------------------------------------
-% [RootFile,FileIndexString,FrameIndex]=index2filename(FileSeries,i1,j1,NbField_j)
+% [RootFile,FrameIndex]=index2filename(FileSeries,i1,j1,NbField_j)
 %
 % OUTPUT:
-% RootFile, FileIndexString: name of the multimage file = [RootFile FileIndexString FileExt]
-% FrameIndex: index in the multimage file     
+% FileName: name of the multimage file = [RootFile FileIndexString FileExt]
+% FrameIndex: index in the multimage file FileName    
 %
 % INPUT:
-% FileSeries: structure read from the xml file, defining the the multifile organisation of images  
-% i1: global frame index i, or  single concatenated index vector (then no further input j1 and NbField_j
+% FileSeries: structure read from the xml file, defining the  multifile organisation of images  
+% i1: global frame index i, or  single concatenated index vector (then no  input j1 and NbField_j
 % j1: j index
 % NbField_j: nbre of j indices in the index matrix
 
@@ -54,15 +54,6 @@ if isfield(FileSeries,'FileName')
     else
         FileName=FileSeries.FileName{FileIndex};
     end
-
-    % switch FileSeries.Convention
-    %     case 'PCO'
-    %         RootFile=FileSeries.RootName;
-    %         FileIndex=floor(i_vector/FileSeries.NbFramePerFile);
-    %         if FileIndex>0
-    %             RootFile=[RootFile '@'];
-    %            FileIndexString=num2str(FileIndex,'%04d');
-    %         end
     FrameIndex=mod(i_vector-1,FileSeries.NbFramePerFile)+1;
 end
 

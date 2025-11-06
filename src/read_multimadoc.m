@@ -34,7 +34,7 @@
 function [XmlData,NbSlice_calib,Time,warnmsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series)
 warnmsg='';
 if ischar(RootPath)
-    RootPath={RootPath};SubDir={SubDir};RootFile={RootFile};FileExt={FileExt};
+    RootPath={RootPath};SubDir={SubDir};%RootFile={RootFile};FileExt={FileExt};
 end
 nbview=numel(RootPath);
 XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)

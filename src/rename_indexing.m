@@ -10,7 +10,7 @@ while ~isempty(detectname)
         if isempty(rr)
             NewName=[NewName '_1'];%add the index 1
         else
-            newindex=str2num(NewName(rr:end))+1; %increment the index by 1
+            newindex=str2double(NewName(rr:end))+1; %increment the index by 1
             NewName=[NewName(1:rr-1) num2str(newindex)];
         end
     end

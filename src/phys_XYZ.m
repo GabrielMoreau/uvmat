@@ -1,18 +1,18 @@
 %------------------------------------------------------------------------
 %'phys_XYZ':transforms image (px) to real world (phys) coordinates using geometric calibration parameters
-% function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
+% function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,Slice,X,Y,Zindex)
 %
 %OUTPUT:
 % Xphys,Yphys,Zphys: vector of phys coordinates corresponding to the input vector of image coordinates
 %INPUT:
 % Calib: Matlab structure containing the calibration parameters (pinhole camera model, see 
-% http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#GeometryCalib) and the
-%    parameters describing the illumination plane(s)
+% http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#GeometryCalib) 
 %    .Tx_Ty_Tz: translation (3 phys coordinates) defining the origine of the camera frame
 %    .R : rotation matrix from phys to camera frame
 %    .fx_fy: focal length along each direction of the image
+% Slice: Matlab structure containing the parameters describing the position and inclination of the illumination plane
 % X, Y: vectors of X and Y image coordinates
-% ZIndex: index defining the current illumination plane in a volume scan
+% ZIndex (if needed): index defining the current illumination plane in a volume scan,=1 by default
 
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -36,9 +36,19 @@ function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,Slice,X,Y,Zindex)
 %------------------------------------------------------------------------
 testangle=0;% =1 if the illumination plane is tilted with respect to the horizontal plane Xphys Yphys
 test_refraction=0;% =1 if the considered points are viewed through an horizontal interface (located at z=Calib.InterfaceCoord(3)') 
+if ~exist('X','var')||~exist('Y','var')
+    Xphys=[];
+    Yphys=[];%default
+    return
+end
 Zphys=0; %default output
+
 if isempty(Slice)
     Slice=Calib;%old convention < 2022
+elseif ~isfield(Slice,'SliceCoord')% bad input
+    Xphys=[];
+    Yphys=[];% bad input
+    return
 end
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Slice,'SliceCoord')&&size(Slice.SliceCoord,1)>=Zindex
     if isfield(Slice, 'SliceAngle') && size(Slice.SliceAngle,1)>=Zindex && ~isequal(Slice.SliceAngle(Zindex,:),[0 0 0])
@@ -58,11 +68,7 @@ else
     Z0=0;
     Z0virt=0;
 end
-if ~exist('X','var')||~exist('Y','var')
-    Xphys=[];
-    Yphys=[];%default
-    return
-end
+
 %coordinate transform
 if ~isfield(Calib,'fx_fy')
     Calib.fx_fy=[1 1];

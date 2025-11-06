@@ -1,3 +1,44 @@
+%'beam_forming': create images from multi-array acoustic signal (cf. project Philippe Roux)
+%------------------------------------------------------------------------
+% function ParamOut=beam_forming(Param)
+%------------------------------------------------------------------------
+%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%OUTPUT
+% ParamOut: sets options in the GUI series.fig needed for the function
+%
+%INPUT:
+% In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
+% In batch mode, Param is the name of the corresponding xml file containing the same information
+% when Param.Action.RUN=0 (as activated when the current Action is selected
+% in series), the function ouput paramOut set the activation of the needed GUI elements
+%
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
+% see the current structure Param)
+%    .InputTable: cell of input file names, (several lines for multiple input)
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%    .OutputSubDir: name of the subdirectory for data outputs
+%    .OutputDirExt: directory extension for data outputs
+%    .Action: .ActionName: name of the current activated function
+%             .ActionPath:   path of the current activated function
+%             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
+%             .RUN =0 for GUI input, =1 for function activation
+%             .RunMode='local','background', 'cluster': type of function  use
+%             
+%    .IndexRange: set the file or frame indices on which the action must be performed
+%    .FieldTransform: .TransformName: name of the selected transform function
+%                     .TransformPath:   path  of the selected transform function
+%    .InputFields: sub structure describing the input fields withfields
+%              .FieldName: name(s) of the field
+%              .VelType: velocity type
+%              .FieldName_1: name of the second field in case of two input series
+%              .VelType_1: velocity type of the second field in case of two input series
+%              .Coord_y: name of y coordinate variable
+%              .Coord_x: name of x coordinate variable
+%    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr

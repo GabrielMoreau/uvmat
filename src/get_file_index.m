@@ -45,14 +45,14 @@ if ~isempty(PairString)
     end
     switch r.mode
         case 'Di='  %  case 'series(Di)')
-            i1=ref_i-str2num(r.num1);
-            i2=ref_i+str2num(r.num2);
+            i1=ref_i-str2double(r.num1);
+            i2=ref_i+str2double(r.num2);
         case 'Dj='  %  case 'series(Dj)'
-            j1=ref_j-str2num(r.num1);
-            j2=ref_j+str2num(r.num2);
+            j1=ref_j-str2double(r.num1);
+            j2=ref_j+str2double(r.num2);
         case '-'  % case 'bursts'
-            j1=str2num(r.num1)*ones(size(ref_i));
-            j2=str2num(r.num2)*ones(size(ref_i));
+            j1=str2double(r.num1)*ones(size(ref_i));
+            j2=str2double(r.num2)*ones(size(ref_i));
     end
 end
 

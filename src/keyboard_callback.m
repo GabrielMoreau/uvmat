@@ -89,8 +89,8 @@ if ~isempty(xx)
                             if isfield(handleshaxes,'movie_pair')% stop movie pair in uvmat
                                 set(handleshaxes.movie_pair,'value',0);
                                 set(handleshaxes.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
-                                set(handleshaxes.i2,'String','')% the second i index display is suppressed
-                                set(handleshaxes.j2,'String','')% the second j index display is suppressed
+                                set(handleshaxes.num_i2,'String','')% the second i index display is suppressed
+                                set(handleshaxes.num_j2,'String','')% the second j index display is suppressed
                                 set(handleshaxes.Dt_txt,'String','')% the time interval indication is suppressed
                             end
                         elseif strcmp(get(gco,'Type'),'uicontrol')
