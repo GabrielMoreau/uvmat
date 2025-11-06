@@ -100,28 +100,18 @@ RootFile=Param.InputTable{1,3};
 NomType=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
 i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
-j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 nbfield_i=numel(i_series);
-nbfield_j=numel(j_series);
+nb_scan=400;% nbre of planes for a scan
 
 %% directory for output files
 DirOut=fullfile(RootPath,[Param.OutputSubDir Param.OutputDirExt]);
 
-%% get the set of input file names (cell array filecell), and file indices
-%[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
-%        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series,
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
-% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-%nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
-% nbfield_i=size(i1_series{1},2); %nb of fields for the i index
-% 
-% nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+%% get the set of input file names and frame indices
 CheckVirtual=false;
 if isfield(Param,'FileSeries')% virtual file indexing used (e.g. multitif images)
     CheckVirtual=true;
 end
+
 
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%fullfile(
 % EDIT FROM HERE
@@ -130,13 +120,27 @@ end
 RootRoot=fileparts(RootRoot);
 CalibFolder=fullfile(RootRoot,'EXP_INIT',CamName);
 File_init=fullfile(CalibFolder,'images.png.bed','Z_init.nc');
-Data_init=nc2struct(File_init);
+[Data_init,~,~,errormsg]=nc2struct(File_init);
+if isempty(errormsg)
+    disp([File_init ' loaded'])
+else
+    disp(errormsg)
+    return
+end
+%% get the time from the ImaDoc xml file
+XmlFileName=fullfile(RootPath,[SubDir '.xml']);
+[XmlData,warnmsg]=imadoc2struct(XmlFileName);
+if isempty(warnmsg)
+    Time=mean(XmlData.Time(i_series+1,2:nb_scan+1),2);% time averaged on the j index (laser scan)
+else
+    disp(warnmsg)
+    Time=zeros(size(i_series));% time not defined
+end
+
+
 %% set of y positions
 
-nb_scan=400;% nbre of planes for a scan
-if nbfield_j<400
-    nb_scan=nbfield_j;
-end
+
 %ycalib=[-51 -1 49];% calibration planes
 y_scan=-51+0.25*(1:nb_scan);% transverse position given by the translating system: first view at y=-51, view 400 at y=+49
 coord_x=0.25:0.25:450;%% coord x in phys coordinates for final projection
@@ -205,12 +209,13 @@ tic
 %filecell=reshape(filecell,nbfield_j,nbfield_i)
 % main loop
 for ifield=1:nbfield_i
-    for img=1:nbfield_j% loop on positions
+    ifield
+    for img=1:nb_scan % loop on y positions
         if CheckVirtual
-            [FileName,FrameIndex]=index2filename(Param.FileSeries,i_series(ifield),j_series(img),nbfield_j);
+            [FileName,FrameIndex]=index2filename(Param.FileSeries,i_series(ifield),img,nb_scan);
             InputFile=fullfile(RootPath,SubDir,FileName);
         else
-            InputFile=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,FileIndex,ifield,[],img);
+            InputFile=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,FileIndex,i_series(ifield),[],img);
             FrameIndex=1;
         end
         a=flipud(read_image(InputFile,'multimage',[],FrameIndex));
@@ -251,6 +256,8 @@ for ifield=1:nbfield_i
     % save netcdf
     Data.ListVarName={'coord_x','y_scan','Z','dZ'};
     Data.VarDimName={'coord_x','y_scan',{'y_scan','coord_x'},{'y_scan','coord_x'}};
+    Data.ListGlobalAttribute={'Time'};
+     Data.Time=Time(ifield);
     Data.VarAttribute{1}.Role='coord_x';
     Data.VarAttribute{1}.unit='cm';
     Data.VarAttribute{2}.Role='coord_y';
@@ -261,7 +268,7 @@ for ifield=1:nbfield_i
     Data.VarAttribute{4}.unit='cm';
     Data.coord_x=coord_x;
     Data.y_scan=y_scan;
-    struct2nc(fullfile(DirOut,['dZ_' num2str(ifield) '.nc']),Data)
+    struct2nc(fullfile(DirOut,['dZ_' num2str(i_series(ifield)) '.nc']),Data)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
