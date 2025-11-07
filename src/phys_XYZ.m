@@ -43,13 +43,13 @@ if ~exist('X','var')||~exist('Y','var')
 end
 Zphys=0; %default output
 
-if isempty(Slice)
-    Slice=Calib;%old convention < 2022
-elseif ~isfield(Slice,'SliceCoord')% bad input
-    Xphys=[];
-    Yphys=[];% bad input
-    return
-end
+% if isempty(Slice)
+%     Slice=Calib;%old convention < 2022
+% elseif ~isfield(Slice,'SliceCoord')% bad input
+%     Xphys=[];
+%     Yphys=[];% bad input
+%     return
+% end
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Slice,'SliceCoord')&&size(Slice.SliceCoord,1)>=Zindex
     if isfield(Slice, 'SliceAngle') && size(Slice.SliceAngle,1)>=Zindex && ~isequal(Slice.SliceAngle(Zindex,:),[0 0 0])
         testangle=1;
