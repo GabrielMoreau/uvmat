@@ -1216,7 +1216,7 @@ if (isfield(Slice,'SliceCoord') && size(Slice.SliceCoord,2)==3)
         app.UITable.Data(:,3)=Slice.SliceAngle(:,2);
         shift_x=diff(Slice.SliceAngle(:,1));
         shift_y=diff(Slice.SliceAngle(:,2));
-        if min(shift_x)<max(shift_x)||min(shift_y)<max(shift_y)
+        if size(Slice.SliceAngle,1)>1 &&( min(shift_x)<max(shift_x)||min(shift_y)<max(shift_y))
             app.unequalintervalsCheckBox.Value=1;
         end
     end
@@ -2999,61 +2999,60 @@ if isequal(get(handles.CheckMask,'Value'),1)
         fileinput=[RootPath '/' SubDir '/' RootFile FileIndex FileExt];%
     end
     FileInfo=get_file_info(fileinput);
-    if isfield(FileInfo,'MaskFile')&& exist(FileInfo.MaskFile,'file')
-        filemask=FileInfo.MaskFile;
+    if isfield(FileInfo,'MaskFile')%&& exist(FileInfo.MaskFile,'file')
+        Mask.MaskFile=FileInfo.MaskFile;
+        if isfield(FileInfo,'MaskNbSlice')
+            Mask.MaskNbSlice=FileInfo.MaskNbSlice;
+        end
     else
-        %     MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-        %     MaskPath=fullfile(RootPath,[MaskSubDir '.mask']);
-        %    mdetect=0;
-        %     if exist(MaskPath,'dir')
-        %         ListStruct=dir(MaskPath);%look for a mask file
-        %         ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-        %         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-        %         ListFiles=ListCells(1,:);%list of file and dri names
-        %         ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
-        %         if ~isempty(ListFiles)
-        %             for ifile=1:numel(ListFiles)
-        %                 [tild,tild,MaskExt]=fileparts(ListFiles{1});
-        %                 [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileInfo]=find_file_series(MaskPath,ListFiles{ifile},0);
-        %                 MaskFileType=MaskFileInfo.FileType;
-        %                 if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
-        %                     mdetect=1;
-        %                 end
-        %                 if ~strcmp(MaskFile{ifile},MaskFile{1})
-        %                     mdetect=0;% cancel detection test in case of multiple masks, use the brower for selection
-        %                     break
-        %                 end
-        %             end
-        %         end
-        %         RootPath=MaskPath;
-        %     end
-        filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+        filemask= uigetfile_uvmat('pick a mask image file:',fileinput,'image');
+        if ~isempty(filemask)
+            [FilePath,FileName,FileExt]=fileparts(filemask);
+            [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
+            if strcmp(NomType,'_1')
+                Mask.MaskFile=fullfile(RootPath,SubDir,RootFile);
+                Mask.MaskExt=FileExt;
+                Mask.MaskNbSlice=i1_series(1,2,end);
+            elseif ~strcmp(NomType,'*')
+                msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
+                set(handles.CheckMask,'Value',0)
+                return
+            end
+        end
     end
-    if ~isempty(filemask)
-        [MaskPath,FileName,FileExt]=fileparts(filemask);
-        Mask.File=filemask;
-        [~,~,~,i1_series,~,~,~,NomType]=find_file_series(MaskPath,[FileName FileExt]);
-        Mask.NbSlice=[];%default
-        Mask.VolumeScan=0;% TO UPDATE ***
-        if strcmp(NomType,'_1')
-            Mask.NbSlice=i1_series(1,2,end);
-            set(handles.num_NbSlice,'String',num2str(Mask.NbSlice))
-        elseif ~strcmp(NomType,'*')
-            msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
-            return
-        end
-        %set(hObject,'UserData',filemask);%store for future use
-        set(handles.CheckMask,'UserData',Mask);
-        errormsg=update_mask(handles);
-        if ~isempty(errormsg)
-            msgbox_uvmat(['ERROR','error in displaying mask, ' errormsg]);
-        end
+    %         i1=str2double(get(handles.num_i1,'String'));
+    %         filemask=FileInfo.MaskFile;
+    %         if isfield(FileInfo,'MaskNbSlice')
+    %         i1=str2double(get(handles.num_i1,'String'));
+    %         MaskIndex=mod(i1,FileInfo.MaskNbSlice)
+    %         filemask=[filemask '_' num2str(MaskIndex) FileInfo.MaskExt]
+    % %     else
+    % %         filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
+    %     end
+    %     if ~isempty(filemask)
+    %         [MaskPath,FileName,FileExt]=fileparts(filemask);
+    %         Mask.File=filemask;
+    %         [~,~,~,i1_series,~,~,~,NomType]=find_file_series(MaskPath,[FileName FileExt]);
+    %         Mask.NbSlice=[];%default
+    %         Mask.VolumeScan=0;% TO UPDATE ***
+    %         if strcmp(NomType,'_1')
+    %             Mask.NbSlice=i1_series(1,2,end);
+    %             set(handles.num_NbSlice,'String',num2str(Mask.NbSlice))
+    %         elseif ~strcmp(NomType,'*')
+    %             msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
+    %             return
+    %         end
+    %set(hObject,'UserData',filemask);%store for future use
+    set(handles.CheckMask,'UserData',Mask);
+    errormsg=update_mask(handles);
+    if ~isempty(errormsg)
+        msgbox_uvmat(['ERROR','error in displaying mask, ' errormsg]);
     end
 else % desactivate mask display
     MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
-       % delete(MaskData.maskhandle)
-       set(MaskData.maskhandle,'Visible','off')
+        % delete(MaskData.maskhandle)
+        set(MaskData.maskhandle,'Visible','off')
     end
     set(handles.CheckMask,'UserData',[])
     UvData=get(handles.uvmat,'UserData');
@@ -3072,23 +3071,26 @@ MaskName='';
 
 %% get the current mask name recorded in CheckMask/UserData, possibly indexed with file index
 MaskInfo=get(handles.CheckMask,'UserData');
-if isfield(MaskInfo,'File')
-    if isfield(MaskInfo,'NbSlice')&& ~isempty(MaskInfo.NbSlice)
+if isfield(MaskInfo,'MaskFile')
+    if isfield(MaskInfo,'MaskNbSlice')&& ~isempty(MaskInfo.MaskNbSlice)
         if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScan
             MaskIndex_i=str2double(get(handles.num_j1,'String'));
         else
-            MaskIndex_i=mod(str2double(get(handles.num_i1,'String'))-1,MaskInfo.NbSlice)+1;
+            MaskIndex_i=mod(str2double(get(handles.num_i1,'String'))-1,MaskInfo.MaskNbSlice)+1;
         end
-        MaskName=[MaskInfo.File '_' num2str(MaskIndex_i) '.png'];
+        MaskName=[MaskInfo.MaskFile '_' num2str(MaskIndex_i) '.png'];
     else
         MaskIndex_i=1;
-        MaskName=MaskInfo.File;
+        MaskName=MaskInfo.MaskFile;
     end
     
     %% update mask image if the mask is new
     UvData=get(handles.uvmat,'UserData');
-    if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
+     TransformMenu=get(handles.TransformName,'String')
+      TransformName=  TransformMenu{get(handles.TransformName,'Value')};
+    if ~ (isfield(UvData,'MaskName') && strcmp(UvData.MaskName,MaskName)&& isfield(UvData,'TransformName')&& strcmp(UvData.TransformName,TransformName))%check if the mask is new
         UvData.MaskName=MaskName; %update the recorded name on UvData
+        UvData.TransformName=TransformName; %update the recorded name on UvData
         set(handles.uvmat,'UserData',UvData);
         if ~exist(MaskName,'file')
             if isfield(MaskInfo,'maskhandle')&& ishandle(Mask.maskhandle)
@@ -4250,10 +4252,10 @@ else
         if numel(UvData.ProjObject)<iobj
             break
         end
-        [ObjectData,errormsg]=proj_field(UvData.Field,UvData.ProjObject{iobj});% project field on the object
-        if ~isempty(errormsg)
-            errormsg=['projection on ' UvData.ProjObject{iobj}.Type ': ' errormsg ];
-            return
+        [ObjectData,warnmsg]=proj_field(UvData.Field,UvData.ProjObject{iobj});% project field on the object
+        if ~isempty(warnmsg)
+            msgbox_uvmat('WARNING',['projection on ' UvData.ProjObject{iobj}.Type ': ' warnmsg ]);
+            continue
         end
         if testnewseries
             PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)

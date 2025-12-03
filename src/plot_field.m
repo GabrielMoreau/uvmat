@@ -875,7 +875,7 @@ if test_ima
     %set for grey scale setting
     ColorMap='default';%default colormap
     if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
-        ColorMap=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
+        ColorMap=PlotParam.Scalar.CheckBW;%PlotParam.Scalar.CheckBW is char string indicating the colormap type
     elseif ((siz==2) && (isa(A,'uint8')|| isa(A,'uint16')))% non color images represented in gray scale by default
         ColorMap='grayscale';
     end

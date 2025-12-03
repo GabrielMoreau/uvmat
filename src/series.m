@@ -308,7 +308,7 @@ if isfield(Param,'InputFile')
     %% determine the selected reference field indices for pair display
 
   %  [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
-  i1=1;j1=1;%default
+  i1=1;j1=1;i2=[];j2=[];%default
     if isfield(Param,'i1')
         i1=Param.i1;
     end
@@ -321,8 +321,10 @@ if isfield(Param,'InputFile')
     if isfield(Param,'j2')
         j2=Param.j2;
     end
-    
+    ref_i=i1;%default
+    if ~isempty(i2)
     ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
+    end
     % set(handles.num_ref_i,'String',num2str(ref_i));
     if isempty(j1)
         j1=1;
@@ -1056,7 +1058,7 @@ end
 %% case of possible index relabeling from xml info
 if isfield(XmlData,'FileSeries')&& strcmp(FileInfo.FileType,'multimage')
     set(handles.Relabel,'Visible','on')
-    set(handles.Relabel,'Value',0)
+    set(handles.Relabel,'Value',1)
     SeriesData.FileSeries{iview}=XmlData.FileSeries;
     TimeMin=Time(2,2);
     TimeMax=Time(end,end);

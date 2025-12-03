@@ -28,7 +28,7 @@
 %
 %     UVMAT is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
-%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theerrormsg
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
@@ -38,9 +38,14 @@ function [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp(Coord,Data
 VarVal={};
 ListVarName={};
 VarAttribute={};
-errormsg='';
 InputVarList={};
 if ischar(FieldName),FieldName={FieldName};end
+if isempty(FieldName{1})
+    errormsg='no input field name entered';
+    return
+else
+    errormsg='';
+end
 check_skipped=zeros(size(FieldName));% default, =1 to mark the variables which can be calculated
 check_interp=ones(size(FieldName));% default, =1 to mark the variables which can be interpolated (not ancillary)
 Operator=cell(size(FieldName));

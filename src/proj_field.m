@@ -1237,6 +1237,8 @@ nbcoord=0;%number of added coordinate variables brought by projection
 %nbvar=0;
 vector_x_proj=[];
 vector_y_proj=[];
+
+%% loop on field cells
 for icell=1:length(CellInfo)
     NbDim=NbDimArray(icell);
     if NbDim<2
@@ -1384,7 +1386,9 @@ for icell=1:length(CellInfo)
                     % interpolate and calculate field on the grid
            
                     [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
-                    
+                    if ~isempty(errormsg)
+                        return
+                    end
                     % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
                     if exist('scatteredInterpolant','file')%recent Matlab versions
                         F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
@@ -1398,12 +1402,16 @@ for icell=1:length(CellInfo)
                     Dist=Distx.*Distx+Disty.*Disty;
                     if ~isempty(thresh2)
                         for ivar=1:numel(VarVal)
-                            VarVal{ivar}(Dist>thresh2)=NaN;% % put to NaN interpolated positions further than 4 meshes from initial data
+                            VarVal{ivar}(Dist>thresh2)=NaN;% % put to NaN interpolated positions further than thresh2 from initial data
                         end
                     end
-                    if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
+                    if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)% subtract from  the previous vector components if requested by CheckSub=true
+                        if isfield(ProjData,FieldData.ListVarName{vector_x_proj})
                         ProjData.(FieldData.ListVarName{vector_x_proj})=ProjData.(FieldData.ListVarName{vector_x_proj})-VarVal{1};
+                        end
+                         if isfield(ProjData,FieldData.ListVarName{vector_y_proj})
                         ProjData.(FieldData.ListVarName{vector_y_proj})=ProjData.(FieldData.ListVarName{vector_y_proj})-VarVal{2};
+                         end
                         ListVarName={};% no new variable
                         VarAttribute={};
                     else

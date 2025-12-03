@@ -340,6 +340,7 @@ for ifield=1:NbField
         try
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 ImageName_A=Param.ActionInput.RefFile;
+                FrameIndex_A=1;
             elseif CheckRelabel
             [RootFile,FrameIndex_A]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
             ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
@@ -355,7 +356,7 @@ for ifield=1:NbField
                 if isempty(FileType_A)% open the image object if not already done in case of movie input
                     [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                     FileType_A=FileInfo_A.FileType;
-                    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom','telopsIR'}), 1))% case of video input
+                    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom','telopsIR'}), 1))% case of video inputFrameIndex_A
                         Time=zeros(FileInfo_A.NumberOfFrames+1,2);
                         Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
                         if ~isempty(j1_series_Civ1) && j1_series_Civ1~=1
@@ -528,6 +529,8 @@ for ifield=1:NbField
                     end
                 else
                     par_civ1.Mask=[];
+                    disp_uvmat('ERROR',[maskname ' does not exist'],checkrun);
+                    return
                 end
                 mask=par_civ1.Mask;
                 maskoldname=maskname;
@@ -784,7 +787,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ2.Mask=mask; %use mask already opened
             else
-                if exist(maskname,'file')
+                if exist(maskname,'file')|| ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))
                     try
                         par_civ2.Mask=imread(maskname);%update the mask, an store it for future use
                     catch ME
@@ -796,6 +799,8 @@ for ifield=1:NbField
                     end
                 else
                     par_civ2.Mask=[];
+                    disp_uvmat('ERROR',[maskname ' does not exist'],checkrun);
+                    return
                 end
                 mask=par_civ2.Mask;
                 maskoldname=maskname;

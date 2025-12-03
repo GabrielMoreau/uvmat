@@ -217,22 +217,22 @@ ivar_1=[];
 for icell=1:numel(CellInfo)
     if ~isempty(CellInfo{icell})
         % if two scalar are in the same cell
-        if isfield(CellInfo{icell},'VarIndex_scalar') && numel(CellInfo{icell}.VarIndex_scalar)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_scalar(2)}.CheckSub;
+        if isfield(CellInfo{icell},'VarIndex_scalar') && numel(CellInfo{icell}.VarIndex_scalar)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_scalar(2)}.CheckSub
             ivar=[ivar CellInfo{icell}.VarIndex_scalar(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_scalar(2)];
         end
         % if two vector u components are in the same cell
-        if isfield(CellInfo{icell},'VarIndex_vector_x') && numel(CellInfo{icell}.VarIndex_vector_x)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_x(2)}.CheckSub;
+        if isfield(CellInfo{icell},'VarIndex_vector_x') && numel(CellInfo{icell}.VarIndex_vector_x)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_x(2)}.CheckSub
             ivar=[ivar CellInfo{icell}.VarIndex_vector_x(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_x(2)];
         end
          % if two vector v components are in the same cell
-        if isfield(CellInfo{icell},'VarIndex_vector_y') && numel(CellInfo{icell}.VarIndex_vector_y)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
+        if isfield(CellInfo{icell},'VarIndex_vector_y') && numel(CellInfo{icell}.VarIndex_vector_y)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub
             ivar=[ivar CellInfo{icell}.VarIndex_vector_y(1)];
             ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_y(2)];
         end
         % merge the error flags if needed
-        if isfield(CellInfo{icell},'VarIndex_errorflag') && numel(CellInfo{icell}.VarIndex_errorflag)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
+        if isfield(CellInfo{icell},'VarIndex_errorflag') && numel(CellInfo{icell}.VarIndex_errorflag)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub
             ivar_flag=CellInfo{icell}.VarIndex_errorflag(1);
             ivar_flag_1=CellInfo{icell}.VarIndex_errorflag(2);
             VarName=SubData.ListVarName{ivar_flag};

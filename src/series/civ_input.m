@@ -90,7 +90,6 @@ FileType='image';%fdefault
 FileInfo=[];
 if isfield(SeriesData,'FileInfo')
     FileType=SeriesData.FileInfo{1}.FileType;% info on the first input file series
-    %FieldType=SeriesData.FileInfo{1}.FieldType;% info on the first input file series
 else
     set(hhseries.REFRESH,'BackgroundColor',[1 0 1])% indicate that the file input in series needs to be refreshed 
 end
@@ -280,15 +279,15 @@ if ~checkrefresh && isfield(Param,'ActionInput')&& strcmp(Param.ActionInput.Prog
     fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
 
     if isfield(Param.ActionInput,'Civ1')&& isfield(Param.ActionInput.Civ1,'SearchBoxSize')%transform from SearchBoxSize to SearchRange (old to new convention)
-               SearchRange=round((Param.ActionInput.Civ1.SearchBoxSize-Param.ActionInput.Civ1.CorrBoxSize)/2);
-                set(handles.num_SearchRange_1(1),'String',num2str(SearchRange(1)))
-                set(handles.num_SearchRange_2(1),'String',num2str(SearchRange(2)))
-            end
-            if isfield(Param.ActionInput,'Civ2')&& isfield(Param.ActionInput.Civ2,'SearchBoxSize')
-               SearchRange=round((Param.ActionInput.Civ2.SearchBoxSize-Param.ActionInput.Civ2.CorrBoxSize)/2);
-                set(handles.num_SearchRange_1(2),'String',num2str(SearchRange(1)))
-                set(handles.num_SearchRange_2(2),'String',num2str(SearchRange(2)))
-            end
+        SearchRange=round((Param.ActionInput.Civ1.SearchBoxSize-Param.ActionInput.Civ1.CorrBoxSize)/2);
+        set(handles.num_SearchRange_1(1),'String',num2str(SearchRange(1)))
+        set(handles.num_SearchRange_2(1),'String',num2str(SearchRange(2)))
+    end
+    if isfield(Param.ActionInput,'Civ2')&& isfield(Param.ActionInput.Civ2,'SearchBoxSize')
+        SearchRange=round((Param.ActionInput.Civ2.SearchBoxSize-Param.ActionInput.Civ2.CorrBoxSize)/2);
+        set(handles.num_SearchRange_1(2),'String',num2str(SearchRange(1)))
+        set(handles.num_SearchRange_2(2),'String',num2str(SearchRange(2)))
+    end
     hcheckgrid=findobj(handles.civ_input,'Tag','CheckGrid');
     for ilist=1:numel(hcheckgrid)
         if get(hcheckgrid(ilist),'Value')% if a grid is used, do not show Dx and Dy for an automatic grid
@@ -1612,45 +1611,45 @@ if get(handles.TestCiv1,'Value')
         j1=str2num(get(handles.ref_j,'String'));
     end
     j2=j1;
-    str_civ=Param.ActionInput.PairIndices.ListPairCiv1;
-    r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
-    if ~isempty(r)
-        if strcmp(r.ind,'i')
-            i1=i1-str2num(r.num1);
-            i2=i2 +str2num(r.num2);
-        elseif strcmp(r.ind,'j')
-            j1=j1-str2num(r.num1);
-            j2=j2 +str2num(r.num2);
-        end
-    else % mode='j1-j2';
-        r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
-        if isempty(r)
-            r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+    if isfield(Param.ActionInput,'PairIndices')
+        str_civ=Param.ActionInput.PairIndices.ListPairCiv1;
+        r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
+        if ~isempty(r)
+            if strcmp(r.ind,'i')
+                i1=i1-str2num(r.num1);
+                i2=i2 +str2num(r.num2);
+            elseif strcmp(r.ind,'j')
+                j1=j1-str2num(r.num1);
+                j2=j2 +str2num(r.num2);
+            end
+        else % mode='j1-j2';
+            r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
             if isempty(r)
-                r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+                r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+                if isempty(r)
+                    r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+                end
+            end
+            if isempty(r)
+                disp('wrong pair mode input option')
+            else
+                j1=stra2num(r.num1);
+                j2=stra2num(r.num2);
             end
         end
-        if isempty(r)
-            disp('wrong pair mode input option')
-        else
-            j1=stra2num(r.num1);
-            j2=stra2num(r.num2);
-        end
     end
-    
     par_civ1=Param.ActionInput.Civ1;
-      
+    RootPath_A=Param.InputTable{1,1};
+    SubDir_A=Param.InputTable{1,2};
+    RootFile_A=Param.InputTable{1,3};
+    NomType_A=Param.InputTable{1,4};
+    FileExt_A=Param.InputTable{1,5};
     if strcmp(Param.ActionInput.ListCompareMode,'displacement')
         ImageName_A=Param.ActionInput.RefFile;
     else
-        RootPath_A=Param.InputTable{1,1};
-        SubDir_A=Param.InputTable{1,2};
-        RootFile_A=Param.InputTable{1,3};
-        NomType_A=Param.InputTable{1,4};
-        FileExt_A=Param.InputTable{1,5};
         ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1,[],j1);
-        ImageName_B=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i2,[],j2);
     end
+    ImageName_B=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i2,[],j2);
     par_civ1.ImageA = read_image(ImageName_A);
     par_civ1.ImageB = read_image(ImageName_B);
     par_civ1.CorrSmooth=0;% will give only the grid of data points expected for PIV, computations will be activated by the fct mouse_motion.m
