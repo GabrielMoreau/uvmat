@@ -255,16 +255,7 @@ if ~isempty(XmlFileName)
 end
 
 %% File relabeling documented by the xml file (e.g. PCO)
-CheckRelabel=isfield(Param,'FileSeries' );%=true for index relabeling (PCO)
-
-% %% introduce input image transform
-% transform_fct=[];%default, no transform
-% if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-%         currentdir=pwd;
-%     cd(Param.FieldTransform.TransformPath)
-%     transform_fct=str2func(Param.FieldTransform.TransformName);
-%     cd (currentdir)
-% end
+CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO)
 
 %%%%% MAIN LOOP %%%%%%
 maskoldname='';% initiate the mask name
@@ -290,7 +281,7 @@ for ifield=1:NbField
     end
     OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
     if CheckRelabel
-         RootFileOut=index2filename(Param.FileSeries,1,1,MaxIndex_j);
+         RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
     else
         RootFileOut=RootFile_A;
     end
@@ -342,8 +333,8 @@ for ifield=1:NbField
                 ImageName_A=Param.ActionInput.RefFile;
                 FrameIndex_A=1;
             elseif CheckRelabel
-            [RootFile,FrameIndex_A]=index2filename(Param.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
-            ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
+                [RootFile,FrameIndex_A]=index2filename(XmlData.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
+                ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
             else
                 ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
                 FrameIndex_A=FrameIndex_A_Civ1(ifield);
@@ -381,7 +372,7 @@ for ifield=1:NbField
                 time_input=toc(tsart_input);
             end
             if CheckRelabel
-                [RootFile,FrameIndex_B]=index2filename(Param.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
+                [RootFile,FrameIndex_B]=index2filename(XmlData.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
                 ImageName_B=fullfile(RootPath_B,SubDir_B,RootFile);
             else
                 ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
@@ -631,7 +622,7 @@ for ifield=1:NbField
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
             ImageName_A_Civ2=Param.ActionInput.RefFile;
         elseif CheckRelabel
-            [RootFile,FrameIndex_A_2]=index2filename(Param.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
+            [RootFile,FrameIndex_A_2]=index2filename(XmlData.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
             ImageName_A_Civ2=fullfile(RootPath_A,SubDir_A,RootFile);
         else
             ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
@@ -643,7 +634,7 @@ for ifield=1:NbField
             [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_2);
         end
         if CheckRelabel
-            [RootFile,FrameIndex_B_2]=index2filename(Param.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
+            [RootFile,FrameIndex_B_2]=index2filename(XmlData.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
             ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,RootFile);
         else
             ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);

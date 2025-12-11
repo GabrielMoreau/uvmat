@@ -162,12 +162,20 @@ if isfield(SeriesData,'i1_series')&&numel(SeriesData.i1_series)>=iview_image
         MinIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
         MaxIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:),1,'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
     else
-        ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
-        ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
-        MinIndex_i=min(find(ref_i))-1;
-        MaxIndex_i=max(find(ref_i))-1;
-        MaxIndex_j=max(find(ref_j))-1;
-        MinIndex_j=min(find(ref_j))-1;
+        
+        if ndims(SeriesData.j1_series{iview_image})==3% usuual file series input
+            ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
+            ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
+            MinIndex_i=min(find(ref_i))-1;
+            MaxIndex_i=max(find(ref_i))-1;
+            MaxIndex_j=max(find(ref_j))-1;
+            MinIndex_j=min(find(ref_j))-1;
+        else %case with relabeling
+            MinIndex_i=1;
+            MaxIndex_i=numel(SeriesData.i1_series{iview_image});% case relabel
+            MinIndex_j=1;
+            MaxIndex_j=max(1,numel(SeriesData.j1_series{iview_image}));% =1 if j1_series empty
+        end
     end
 end
 
@@ -175,23 +183,23 @@ end
 %%  transfer the time from the GUI series, or use file index by default
 time=[];
 TimeUnit='frame'; %default
-CoordUnit='';%default
-pxcm_search=1;
+% CoordUnit='';%default
+% pxcm_search=1;
 if isfield(SeriesData,'Time') &&numel(SeriesData.Time')>=1 && ~isempty(SeriesData.Time{1})
     time=SeriesData.Time{1};
 end
 if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)
     TimeUnit=Param.IndexRange.TimeUnit;
 end 
-if isfield(SeriesData,'GeometryCalib')
-    tsai=SeriesData.GeometryCalib;
-    if isfield(tsai,'fx_fy')
-        pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
-    end
-    if isfield(tsai,'CoordUnit')
-        CoordUnit=tsai.CoordUnit;
-    end
-end
+% if isfield(SeriesData,'GeometryCalib')
+%     tsai=SeriesData.GeometryCalib;
+%     if isfield(tsai,'fx_fy')
+%         pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
+%     end
+%     if isfield(tsai,'CoordUnit')
+%         CoordUnit=tsai.CoordUnit;
+%     end
+% end
 
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
@@ -823,7 +831,6 @@ function ListPairCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %reproduce by default the chosen pair in the checkciv2 menu
 set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ1 by default
-%ListPairCiv2_Callback(hObject, eventdata, handles)
 
 % %------------------------------------------------------------------------
 % % --- Executes on selection change in ListPairCiv2.
@@ -977,7 +984,7 @@ switch mode_selected
             
         end
         if index_pair ~=0
-        [tild,indsort]=sort(dt);
+        [~,indsort]=sort(dt);
         displ_pair=displ_pair(indsort);
         displ_pair_dt=displ_pair_dt(indsort);
         end
