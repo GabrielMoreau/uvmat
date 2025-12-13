@@ -36,7 +36,7 @@ switch(nargin)
             tree = varargin{1};
         elseif ischar(varargin{1})
             % Input argument is an XML string
-            if (~exist(varargin{1},'file') && ...
+            if (exist(varargin{1},'file')~=2 && ...
                     ~isempty(xml_findstr(varargin{1},'<',1,1)))
                 tree.tree = xml_parser(varargin{1});
                 tree.filename = '';

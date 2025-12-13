@@ -225,7 +225,7 @@ export_menu={'as field in workspace';'in new figure';'on existing axis';'make mo
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
 dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
-if exist(profil_perso,'file')% if the file exists
+if exist(profil_perso,'file')==2% if the file exists
     h=load (profil_perso); % open the personal file
     if isfield(h,'MenuFile')% load the saved menu of previously opened files
         for ifile=1:min(length(h.MenuFile),5)
@@ -242,7 +242,7 @@ if exist(profil_perso,'file')% if the file exists
     end
     if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
         for ilist=1:length(h.transform_fct)
-            if exist(h.transform_fct{ilist},'file')
+            if exist(h.transform_fct{ilist},'file')==2
                 [path,file]=fileparts(h.transform_fct{ilist});
                 transform_menu=[transform_menu; {file}];
                 path_list=[path_list; {path}];
@@ -251,7 +251,7 @@ if exist(profil_perso,'file')% if the file exists
     end
     if isfield(h,'export_fct') && iscell(h.export_fct) % load the menu of export fct set by user
         for ilist=1:length(h.export_fct)
-            if exist(h.export_fct{ilist},'file')
+            if exist(h.export_fct{ilist},'file')==2
                 [path,file]=fileparts(h.export_fct{ilist});
                 export_menu=[export_menu; {file}];
             end
@@ -758,12 +758,12 @@ if ~exist(MovieDir,'dir')
         msgbox_uvmat('WARNING',{['unable to set group write access to ' MovieDir ':']; message});%error message for directory creation
     end
 end
-if exist(MovieName,'file')
+if exist(MovieName,'file')==2
     backup=MovieName;
     testexist=2;
     while testexist==2
         backup=[backup '~'];
-        testexist=exist(backup,'file');
+        testexist=exist(backup,'file')==2;
     end
     [success,message]=copyfile(MovieName,backup);%make backup of the existing file
     if isequal(success,1)
@@ -1942,52 +1942,99 @@ UvData=get(handles.uvmat,'UserData');
 set_grid(FileName,UvData.Field);% call the set_object interface
 
 %------------------------------------------------------------------------
-%-- introduce a section FileSeries in the xml file ImaDoc to virtually relabel frames 
+%-- introduce a section FileSeries in the xml file ImaDoc to virtually relabel frames
 % --------------------------------------------------------------------
 function MenuRelabelFrames_Callback(hObject, eventdata, handles)
 
+
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-CheckRelabel=false;
-% if the option is selected from previous 'off' state
-if strcmp(get(handles.MenuRelabelFrames,'checked'),'off')
-    if strcmp(FileExt,'.seq')
-        XmlFile=regexprep(FileName,'.seq$','.xml');
-    else
+% CheckRelabel=false;
+
+if strcmp(FileExt,'.seq')
+    XmlFile=regexprep(FileName,'.seq$','.xml');
+else
     XmlFile=fullfile(RootPath,[SubDir '.xml']);
-    end
-    [XmlData,errormsg]=imadoc2struct(XmlFile);
-    if isempty(XmlData) || isempty(XmlData.Time)
-        msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
-        return
-    end
-    FileInfo=get_file_info(FileName);
-    switch FileInfo.FileType
-        case 'multimage'
-            if strcmp(FileExt,'.tif') && ~isempty(regexp(RootFile,'^im', 'once'))% case of PCO images, document <FileSeries> in the xml file
-                FileSeries.Convention='PCO';
-                FileSeries.FileName{1,1}='im.tif';
-                FileSeries.FileName{2,1}='im@0001.tif';
-                FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-                [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
-                if isempty(errormsg)
-                    disp([xmlfile 'updated with FileSeries'])
-                    CheckRelabel=true;
-                else
-                    disp(errormsg)
-                end
-            end
-        case 'rdvision'
-            check_time_rdvision(FileName,XmlData)
-    end
-    if CheckRelabel
-        set(handles.MenuRelabelFrames,'checked','on')
-        errormsg=update_series(handles,RootPath,SubDir,FileName,FileInfo,false,1);
-    end
-else % option set to 'off'
-    set(handles.MenuRelabelFrames,'checked','off')%if the option was chcked, uncheck it
-    errormsg=update_series(handles,RootPath,SubDir,FileName,FileInfo,false,1);
 end
+[XmlData,errormsg]=imadoc2struct(XmlFile);
+if isempty(XmlData) || isempty(XmlData.Time)
+    msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
+    return
+end
+FileInfo=get_file_info(FileName);
+switch FileInfo.FileType
+    case 'multimage'
+        if strcmp(FileExt,'.tif') && ~isempty(regexp(RootFile,'^im', 'once'))% case of PCO images, document <FileSeries> in the xml file
+            ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
+            FileSeries.Convention='PCO';
+            FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
+%             BurstTiming.Dtj='';
+%             BurstTiming.NbDtj='';
+%             BurstTiming.Dti='';
+%             BurstTiming.NbDti='';
+        end
+    case 'rdvision'%TO CHECK******
+        check_time_rdvision(FileName,XmlData)
+end
+hbrowse=browse_data(fullfile(RootPath,SubDir))
+%STR = input('OK?')
+[BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
+Camera.BurstTiming=BurstTiming;
+FileSeries.FileName={'im.tif';'im@0001.tif'};
+FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; BurstTiming=rmfield(BurstTiming,'NbFramePerFile');
+
+% 
+% BrowseData=guidata(hbrowse);
+% SourceDir=get(BrowseData.SourceDir,'String');
+% ListExp=get(BrowseData.ListExperiments,'String');
+% ExpIndices=get(BrowseData.ListExperiments,'Value');
+% ListExp=ListExp(ExpIndices);
+% ListDevices=get(BrowseData.ListDevices,'String');
+% DeviceIndices=get(BrowseData.ListDevices,'Value');
+% ListDevices=ListDevices(DeviceIndices);
+% ListDataSeries=get(BrowseData.DataSeries,'String');
+% DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+% ListDataSeries=ListDataSeries(DataSeriesIndices);
+% NbExp=0; % counter of the number of experiments set by the GUI browse_data
+% for iexp=1:numel(ListExp)
+%     if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
+%         for idevice=1:numel(ListDevices)
+%             if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
+%                 for isubdir=1:numel(ListDataSeries)
+%                     if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
+%                         lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+%                             regexprep(ListDevices{idevice},'^\+/',''));
+%                         ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+%                         if exist(fullfile(lpath,ldir),'dir')
+%                             NbExp=NbExp+1;
+%                             ListPath{NbExp}=lpath;
+%                             ListSubdir{NbExp}=ldir;
+%                             ExpIndex{NbExp}=iexp;
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%     end
+% end
+[ListPath, ListSubdir]=read_browsdata (hbrowse);
+NbExp=numel(ListSubdir);
+for iexp=1:NbExp
+    [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera)
+    if ~strcmp(errormsg,'')
+        msgbox_uvmat('ERROR',errormsg);
+    else
+        update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
+        if checkupdate
+            disp([XmlFile ' updated with FileSeries'])
+        else
+            disp([XmlFile ' created with FileSeries'])
+        end
+    end
+end
+msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
+
 if ~isempty(errormsg)
     disp(errormsg)
 end
@@ -1995,63 +2042,63 @@ end
 % ---------------------------------------
 function check_time_rdvision(FileName,XmlData)
 s=ini2struct(FileName);
-    SeqData=s.sequenceSettings;
-    SeqData.width=str2double(SeqData.width);
-    SeqData.height=str2double(SeqData.height);
-    SeqData.bytesperpixel=str2double(SeqData.bytesperpixel);
-    SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
-    if isempty(SeqData.binrepertoire)%used when binrepertoire empty, strange feature of rdvision
-        SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
-        SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
-        [tild,binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
-        SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
-    end
-    
-    %% reading the .sqb file
-     SqbFile=regexprep(FileName,'.seq$','.sqb');
-    m = memmapfile(SqbFile,'Format', { 'uint32' [1 1] 'offset'; ...
-        'uint32' [1 1] 'garbage1';...
-        'double' [1 1] 'timestamp';...
-        'uint32' [1 1] 'file_idx';...
-        'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
-    
-    %%%%%%%BRICOLAGE in case of unreadable .sqb file: remplace lecture du fichier
-    %         ind=[111 114:211];%indices of bin files
-    %         w=1024;%w=width of images in pixels
-    %         h=1024;%h=height of images in pixels
-    %         bpp=2;% nbre of bytes per pixel
-    %         lengthimage=w*h*bpp;% lengthof an image record on the binary file
-    %         nbimages=32; %nbre of images of each camera in a bin file
-    %         for ii=1:32*numel(ind)
-    %             data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
-    %             %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
-    %             data(ii).file_idx=ind(ceil(ii/32));
-    %             data(ii).timestamp=0.2*(ii-1);
-    %         end
-    %         m.Data=data;
-    %%%%%%%
-    timestamp=zeros(1,numel(m.Data));
-    for ii=1: numel(m.Data)
-        timestamp(ii)=m.Data(ii).timestamp;
-    end
-    difftime=XmlData.Time(2:end,2:end);
-    difftime=timestamp'-reshape(difftime,[],1);
-    disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
-    if max(abs(difftime))>0.01
-       figure(1)
-       plot(timestamp,difftime)
-       xlabel('time(s)')
-       ylabel('timestamp-XmlData.Time(s)')
-    end
-    
-        %% checking consistency with the xml file
-    if ~isequal(SeqData.nb_frames,numel(timestamp))
-        disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
-        return
-    end    
-    
-    disp ('max time difference xml and timestamps (IN SEC.)')
-    max(abs(difftime))
+SeqData=s.sequenceSettings;
+SeqData.width=str2double(SeqData.width);
+SeqData.height=str2double(SeqData.height);
+SeqData.bytesperpixel=str2double(SeqData.bytesperpixel);
+SeqData.nb_frames=str2double(s.sequenceSettings.numberoffiles);
+if isempty(SeqData.binrepertoire)%used when binrepertoire empty, strange feature of rdvision
+    SeqData.binrepertoire=regexprep(s.sequenceSettings.bindirectory,'\\$','');%tranform Windows notation to Linux
+    SeqData.binrepertoire=regexprep(SeqData.binrepertoire,'\','/');
+    [tild,binrepertoire,DirExt]=fileparts(SeqData.binrepertoire);
+    SeqData.binrepertoire=[SeqData.binrepertoire DirExt];
+end
+
+%% reading the .sqb file
+SqbFile=regexprep(FileName,'.seq$','.sqb');
+m = memmapfile(SqbFile,'Format', { 'uint32' [1 1] 'offset'; ...
+    'uint32' [1 1] 'garbage1';...
+    'double' [1 1] 'timestamp';...
+    'uint32' [1 1] 'file_idx';...
+    'uint32' [1 1] 'garbage2' },'Repeat',SeqData.nb_frames);
+
+%%%%%%%BRICOLAGE in case of unreadable .sqb file: remplace lecture du fichier
+%         ind=[111 114:211];%indices of bin files
+%         w=1024;%w=width of images in pixels
+%         h=1024;%h=height of images in pixels
+%         bpp=2;% nbre of bytes per pixel
+%         lengthimage=w*h*bpp;% lengthof an image record on the binary file
+%         nbimages=32; %nbre of images of each camera in a bin file
+%         for ii=1:32*numel(ind)
+%             data(ii).offset=mod(ii-1,32)*2*lengthimage+lengthimage;%Dalsa_2
+%             %data(ii).offset=mod(ii-1,32)*2*lengthimage;%Dalsa_1
+%             data(ii).file_idx=ind(ceil(ii/32));
+%             data(ii).timestamp=0.2*(ii-1);
+%         end
+%         m.Data=data;
+%%%%%%%
+timestamp=zeros(1,numel(m.Data));
+for ii=1: numel(m.Data)
+    timestamp(ii)=m.Data(ii).timestamp;
+end
+difftime=XmlData.Time(2:end,2:end);
+difftime=timestamp'-reshape(difftime,[],1);
+disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+if max(abs(difftime))>0.01
+    figure(1)
+    plot(timestamp,difftime)
+    xlabel('time(s)')
+    ylabel('timestamp-XmlData.Time(s)')
+end
+
+%% checking consistency with the xml file
+if ~isequal(SeqData.nb_frames,numel(timestamp))
+    disp_uvmat('ERRROR',['inconsistent number of images ' num2str(SeqData.nb_frames) ' with respect to the xml file: ' num2str(numel(timestamp))] ,checkrun);
+    return
+end
+
+disp ('max time difference xml and timestamps (IN SEC.)')
+max(abs(difftime))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuRun Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2233,7 +2280,7 @@ function errormsg=display_file_name(handles,fileinput,input_line)
 %------------------------------------------------------------------------
 %% look for the input file existence and properties in the structure FileInfo
 errormsg='';%default
-if isempty(regexp(fileinput,'^http')) && ~exist(fileinput,'file')
+if isempty(regexp(fileinput,'^http', 'once')) && exist(fileinput,'file')~=2
     errormsg=['input file ' fileinput  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -2328,7 +2375,7 @@ if input_line==1
     set(handles.num_j1,'String',num2stra(j1,NomType));
     set(handles.num_j2,'String',num2stra(j2,NomType));
     if isfield(FileInfo,'MaskFile')
-        if exist(FileInfo.MaskFile,'file')
+        if exist(FileInfo.MaskFile,'file')==2
             set(handles.CheckMask,'Value',1)
         else
             set(handles.CheckMask,'Value',0)
@@ -2386,7 +2433,7 @@ if get(handles.SubField,'Value')==1% if the subfield button is activated, update
     end
     %updtate the indices of the second field series to correspond to the newly opened one
     FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
-    if exist(FileName_1,'file')
+    if exist(FileName_1,'file')==2
         FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
     else
         FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
@@ -2417,7 +2464,7 @@ for ifile=1:min(length(MenuFile),5)
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
+if exist(profil_perso,'file')==2
     save (profil_perso,'MenuFile','RootPath','-append'); %store the file names for future opening of uvmat
 else
     save (profil_perso,'MenuFile','RootPath','-V6'); %store the file names for future opening of uvmat
@@ -2980,7 +3027,7 @@ end
 option=get(handles.view_xml,'String');
 if isequal(option,'view xml')
     FileXml=fullfile(RootPath,[SubDir '.xml']);
-    if ~exist(FileXml,'file')% case of civ files , removes the extension for subdir
+    if ~exist(FileXml,'file')==2% case of civ files , removes the extension for subdir
         FileXml=fullfile(RootPath,[regexprep(SubDir,'\..+$','') '.xml']);
     end
     editxml(FileXml);
@@ -3092,13 +3139,13 @@ if isfield(MaskInfo,'MaskFile')
         UvData.MaskName=MaskName; %update the recorded name on UvData
         UvData.TransformName=TransformName; %update the recorded name on UvData
         set(handles.uvmat,'UserData',UvData);
-        if ~exist(MaskName,'file')
+        if exist(MaskName,'file')~=2
             if isfield(MaskInfo,'maskhandle')&& ishandle(Mask.maskhandle)
                 delete(MaskInfo.maskhandle)
             end
         else
             %read mask image
-            [MaskField,tild,errormsg] = read_field(MaskName,'image');
+            [MaskField,~,errormsg] = read_field(MaskName,'image');
             if ~isempty(errormsg)
                 return
             end
@@ -3785,7 +3832,7 @@ if ~isempty(FileName_1)
  
     frame_index_1=1;
     if ~isempty(FileName_1)
-        if ~exist(FileName_1,'file')
+        if exist(FileName_1,'file')~=2
             errormsg=['second file ' FileName_1 ' does not exist'];
             return
         end
@@ -4921,7 +4968,7 @@ switch field
             SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
             imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
         end
-        if ~exist(imagename,'file')
+        if exist(imagename,'file')~=2
             imagename=uigetfile_uvmat('Pick an image file',imagename,'image');
             if isempty(imagename)
                 return
@@ -5087,7 +5134,7 @@ switch field_1
             SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
             imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png','_1',i1,[],j1,[]);
         end
-        if ~exist(imagename,'file')
+        if exist(imagename,'file')~=2
             imagename=uigetfile_uvmat('Pick an image file',imagename,'image');
 
         end
@@ -5435,7 +5482,7 @@ if strcmp(transform_name,'more...')
         % save the new menu in the personal file 'uvmat_perso.mat'
         dir_perso=prefdir;%personal Matalb directory
         profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-        if exist(profil_perso,'file')
+        if exist(profil_perso,'file')==2
             nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
             if nb_builtin<numel(list_path)
                 for ilist=nb_builtin+1:numel(list_path)

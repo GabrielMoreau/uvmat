@@ -56,7 +56,7 @@ if ~exist('ParamIn','var')
 end
 ParamOut=ParamIn;%default
 errormsg='';
-if isempty(regexp(FileName,'^http://', 'once'))&& ~exist(FileName,'file')
+if isempty(regexp(FileName,'^http://', 'once'))&& exist(FileName,'file')~=2
     errormsg='input file does not exist';
     return
 end

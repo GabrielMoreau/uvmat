@@ -344,6 +344,8 @@ if isfield(Param,'InputFile')
     Param.i2_series=Param.HiddenData.i2_series{1};
     Param.j1_series=Param.HiddenData.j1_series{1};
     Param.j2_series=Param.HiddenData.j2_series{1};
+    Param.FileInfo=Param.HiddenData.FileInfo{1};
+    Param.Relabel=[];%default
     update_rootinfo(handles,Param,Param.HiddenData.MovieObject{1},1)% update the data for the first input line
     if isfield(Param,'FileName_1')% if there is a second input line from uvmat
         if isfield(Param.HiddenData,'XmlData') && numel(Param.HiddenData.XmlData)>=2
@@ -353,6 +355,7 @@ if isfield(Param,'InputFile')
         Param.i2_series=Param.HiddenData.i2_series{2};
         Param.j1_series=Param.HiddenData.j1_series{2};
         Param.j2_series=Param.HiddenData.j2_series{2};
+        Param.FileInfo=Param.HiddenData.FileInfo{2};
         update_rootinfo(handles,Param,Param.HiddenData.MovieObject{2},2)% update the data for the second input line
     end
 
@@ -398,7 +401,7 @@ if ~isempty(hh)
 end
 
 %delete the bowser if detected
-hh=findobj(allchild(0),'tag','browser');fileinput
+hh=findobj(allchild(0),'tag','browser');
 if ~isempty(hh)
     delete(hh)
 end
@@ -607,7 +610,7 @@ for iview=1:nbview
         XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2});
         if ~isempty(XmlFileName)
             XmlData=read_imadoc(XmlFileName);
-            if isfield(XmlData,'FileSeries')
+            if ~isempty(XmlData.FileSeries)
                 set(handles.Relabel,'Visible','on')
                 answer='Yes';
                 if ~CheckRelabel && ~CheckRelabelQuest% propose to relabel if not selected yet
@@ -1033,7 +1036,7 @@ else
     if isequal(MinIndex_j,-1)
         MinIndex_j=0;
     end
-    if isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
+    if isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
         MinIndex_i=0;
     end
 end
@@ -1123,7 +1126,7 @@ end
 %         set(handles.Relabel,'Visible','off')
 %     end
 
-if ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
+if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
     set(handles.OutputSubDir,'String','/im')
 end
 
@@ -4164,8 +4167,23 @@ set(handles.MaskTable,'Data',{})
 % --- Executes on button press in Relabel.
 function Relabel_Callback(hObject, eventdata, handles)
 CheckRelabel=get(hObject,'Value');
+if CheckRelabel
+    InputTable=get(handles.InputTable,'Data');%read the table of input file series
+    XmlFileName=find_imadoc(InputTable{1,1},InputTable{1,2});
+    if ~isempty(XmlFileName)
+        XmlData=read_imadoc(XmlFileName);
+        if isempty(XmlData.FileSeries)
+            browse_data(fullfile(InputTable{1,1},InputTable{1,2}))
+        else
+            hbrowse=findobj(allchild(0),'Tag','browse_data');
+            if ~isempty(hbrowse)
+                delete(hbrowse)
+            end
+        end
+    end
+end
 check_input_file_series(handles,CheckRelabel)
- ActionInput_Callback([],[], handles)
+ActionInput_Callback([],[], handles)
 % if get(handles.Relabel,'Value')
 %             NomType='*';
 %             i1=1;i2=[];j1=1;j2=[];

@@ -7,16 +7,16 @@
 % ParamIn: default values set by the structure ParamIn
 
 
-function [ParamOut,errormsg] = set_param_input(ListParam,DefaultValue,ParamIn,Comment)
+function [ParamOut,errormsg] = set_param_input(ListParam,DefaultValue,ParamIn,Title)
 ParamOut=[];
 errormsg=[];
 NbParam=numel(ListParam);
 if numel(DefaultValue)~=NbParam
-    errorsmsg='ERROR in set_param_input: the list of default values must have the same size as the list of parameters';
+    errormsg='ERROR in set_param_input: the list of default values must have the same size as the list of parameters';
     return
 end
-if ~exist('Comment','var')
-    Comment=cell(NbParam,1);
+if ~exist('Title','var')
+    Title='get the input parameters';
 end
 prompt=cell(NbParam,1);
 checknumeric=zeros(NbParam,1);
@@ -31,10 +31,9 @@ for ilist=1:numel(ListParam)
         prompt{ilist}=num2str(prompt{ilist});
     end
 end
-dlg_title = 'get the input parameters';
 options.Resize='on';
-answer = inputdlg(ListParam,dlg_title,NbParam,prompt,options);
-%answer = msgbox_uvmat('INPUT_TXT',ListParam);
+options.WindowStyle='normal';
+answer = inputdlg(ListParam,Title,1,prompt,options);
 if isempty(answer)
     return
 end
