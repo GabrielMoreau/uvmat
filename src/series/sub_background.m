@@ -245,11 +245,16 @@ halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding back
 
 
 %% File relabeling documented by the xml file
-CheckRelabel=isfield(Param,'FileSeries' );
+CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO);
 
 %% Input file info
 if CheckRelabel
-    [RootFileOut,frame_index]=index2filename(Param.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
+    XmlFileName=find_imadoc(RootPath,SubDir);
+    if ~isempty(XmlFileName)
+        XmlData=imadoc2struct(XmlFileName);%read the time from XmlFileName
+    end
+   % RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
+    [RootFileOut,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
     FirstFileName=fullfile(RootPath,SubDir,RootFileOut);
 else
     FirstFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
@@ -314,7 +319,7 @@ for j_slice=1:NbSlice
         ifile=indselect(j_slice,ifield);
         %filename=filecell{1,ifile};
         if CheckRelabel
-            [filename,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
+            [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
              filename=fullfile(RootPath,SubDir,filename);
         else
             filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
@@ -339,7 +344,7 @@ for j_slice=1:NbSlice
 
         %write result file
         if ~isequal(Param.ActionInput.SaturationValue,0)
-            C=levels(Acor,Param.ActionInput.SaturationValue);
+            he=levels(Acor,Param.ActionInput.SaturationValue);
             imwrite(C,newname,'BitDepth',16); % save the new image
         else
             if isequal(FileInfo.BitDepth,16)
@@ -369,7 +374,7 @@ for j_slice=1:NbSlice
             for iburst=1:step
                 ifile=indselect(j_slice,ifield+iburst+step*halfnbaver);
                 if CheckRelabel
-                    [filename,FrameIndex]=index2filename(Param.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
+                    [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
                     filename=fullfile(RootPath,SubDir,filename);
                 else
                     filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
