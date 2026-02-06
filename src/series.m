@@ -607,8 +607,8 @@ for iview=1:nbview
         Param.i1_series=[];
         RootFile='';
     else
-        XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2});
-        if ~isempty(XmlFileName)
+        [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
+        if ~isempty(XmlFileName) && Rank==0
             XmlData=read_imadoc(XmlFileName);
             if ~isempty(XmlData.FileSeries)
                 set(handles.Relabel,'Visible','on')
@@ -744,12 +744,12 @@ Param.FileInfo=FileInfo;
 %% Look for file relabeling option
 [FilePath,RootFile,FileExt]=fileparts(InputFile);
 [RootPath,SubDir]=fileparts(FilePath);
-XmlFileName=find_imadoc(RootPath,SubDir);
+[XmlFileName,Rank]=find_imadoc(RootPath,SubDir);
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
     XmlData=read_imadoc(XmlFileName);
-    if isfield(XmlData,'FileSeries')
+    if isfield(XmlData,'FileSeries') && Rank==0
         set(handles.Relabel,'Visible','on')
         answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');
         if strcmp(answer,'Yes')
@@ -822,7 +822,7 @@ if isfield(SeriesData,'i1_series')% remove the irrelevant data lines beyond ivie
     SeriesData.i2_series(iview+1:end)=[];
     SeriesData.j1_series(iview+1:end)=[];
     SeriesData.j2_series(iview+1:end)=[];
-    SeriesData.FileType(iview+1:end)=[];
+    %SeriesData.FileType(iview+1:end)=[];
     SeriesData.FileInfo(iview+1:end)=[];
     SeriesData.Time(iview+1:end)=[];
 end
@@ -1262,7 +1262,7 @@ CheckPair= ~isempty(i2_series)||~isempty(j2_series); % check whether index pairs
 PairString=get(handles.PairString,'Data');
 if CheckPair% if pairs need to be display for line iview
     [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series);
-    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),FileInfo);
+    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
     PairString{iview,1}=Menu{1};
 else
     PairString{iview,1}=''; % no pair for #iview

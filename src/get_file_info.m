@@ -152,30 +152,30 @@ switch FileExt
         end
         XmlFile=fullfile(RootPath,[SubDir '.xml']);
         CheckWriteImaDoc=true;
-        if exist(XmlFile,'file')
-            [XmlData,~,errormsg]=xml2struct(XmlFile);
-            if ~isempty(errormsg)
-                disp(errormsg)
-                FileInfo.FileType='error';
-                return
-            elseif isfield(XmlData,'FileSeries')
-                CheckWriteImaDoc=false;
-            end
-        end
-        if CheckWriteImaDoc
-            DirContent=dir(Path);
-            NbFiles=0;
-            FileSeries.Convention='telopsIR';
-            for ilist=1:numel(DirContent)
-                FName=DirContent(ilist).name;
-                if ~isempty(regexp(FName,'.hcc$', 'once'))
-                    NbFiles=NbFiles+1;
-                    FileSeries.FileName{NbFiles,1}=FName;
-                end
-            end
-            FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-            [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
-        end
+%         if exist(XmlFile,'file')
+%             [XmlData,~,errormsg]=xml2struct(XmlFile);
+%             if ~isempty(errormsg)
+%                 disp(errormsg)
+%                 FileInfo.FileType='error';
+%                 return
+%             elseif isfield(XmlData,'FileSeries')
+%                 CheckWriteImaDoc=false;
+%             end
+%         end
+%         if CheckWriteImaDoc
+%             DirContent=dir(Path);
+%             NbFiles=0;
+%             FileSeries.Convention='telopsIR';
+%             for ilist=1:numel(DirContent)
+%                 FName=DirContent(ilist).name;
+%                 if ~isempty(regexp(FName,'.hcc$', 'once'))
+%                     NbFiles=NbFiles+1;
+%                     FileSeries.FileName{NbFiles,1}=FName;
+%                 end
+%             end
+%             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
+%             [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
+%         end
 
     otherwise
         if ~isempty(FileExt)% exclude empty extension

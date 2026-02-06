@@ -1957,10 +1957,10 @@ else
     XmlFile=fullfile(RootPath,[SubDir '.xml']);
 end
 [XmlData,errormsg]=imadoc2struct(XmlFile);
-if isempty(XmlData) || isempty(XmlData.Time)
-    msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
-    return
-end
+% if isempty(XmlData) || isempty(XmlData.Time)
+%     msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
+%     return
+% end
 FileInfo=get_file_info(FileName);
 switch FileInfo.FileType
     case 'multimage'
@@ -2288,7 +2288,7 @@ end
 [FileInfo,MovieObject]=get_file_info(fileinput);
 FieldType=FileInfo.FieldType;
 
-%% case of isolated input files without series
+%% case of isolated input files without field indexing, direct display
 if strcmp(FileInfo.FileIndexing,'off')
     switch FieldType
         case 'txt'
@@ -2315,7 +2315,7 @@ if strcmp(FileInfo.FileIndexing,'off')
     return
 end
 
-%% define the relevant handles for the first field series (input_line=1) or the second file series (input_line=2)
+%% define the relevant handles on the uvmat GUI for the first field series (input_line=1) or the second file series (input_line=2)
 if ~exist('input_line','var')
     input_line=1;
 end
@@ -3733,7 +3733,7 @@ if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldTyp
         ParamIn=UvData.MovieObject{1};
     end
 end
-%% case of special file series (PCO)
+%% case of file relabeling (PCO, Telops...)
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
     [RootName,~,Ext]=fileparts(FileName);
     NbField_j_cell=get(handles.MaxIndex_j,'String');

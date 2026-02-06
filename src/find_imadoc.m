@@ -1,10 +1,12 @@
 % 'find_imadoc': find the ImaDoc xml file associated with a given input file
 % take into account the old conventions
 %-----------------------------------------------------------------------
-% function XmlFileName=find_imadoc(RootPath,SubDir)
+% function {[XmlFileName,Rank]=find_imadoc(RootPath,SubDir)
 %
 % OUTPUT:
-% XmlFileName: name of the xml file, ='' if none is found
+% XmlFileName: name of the xml file, if the SubDir has suffixes marked with
+%        '.', take the first one going backward, ='' isf no xml file is found
+% Rank: = nbre of suffixes in SubDir
 %
 % INPUT:
 % RootPath: path to the folder containing the image series,
@@ -28,8 +30,9 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function XmlFileName=find_imadoc(RootPath,SubDir)
+function [XmlFileName,Rank]=find_imadoc(RootPath,SubDir)
 XmlFileName=fullfile(RootPath,[SubDir '.xml']);
+Rank=0;
 if ~exist(XmlFileName,'file')
     dotchar=regexp(SubDir,'\.');%detect the dots in the folder name
     if ~isempty(dotchar)
@@ -37,7 +40,8 @@ if ~exist(XmlFileName,'file')
             SubDir=SubDir(1:dotchar(end-idot+1)-1);
             XmlFileName=fullfile(RootPath,[SubDir '.xml']);
             if exist(XmlFileName,'file')
-                break
+                Rank=idot;
+                break % take the root name after removing all the dot suffixes
             end
         end
     end
