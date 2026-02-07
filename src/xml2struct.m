@@ -85,7 +85,7 @@ switch info.class
         end
     case 'char' 
             out=str2double(strsplit(ss));% convert to number or vector (str2num applied to a fct name executes this fct by 'eval', thus this possibility had to be ruled out above
-            if isnan(out)
+            if find(isnan(out))
                 sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
                 if ~isempty(sep_ind)
                     sep_ind=[-2 sep_ind length(ss)+1];
@@ -101,10 +101,7 @@ switch info.class
         out=cell(numel(ss),1);%default
         check_numeric=zeros(size(ss));
         for ilist=1:numel(ss)
-            if  ~isnan(str2double(strsplit(ss{ilist})))
-                out{ilist,1}=str2double(strsplit(ss{ilist}));
-                check_numeric(ilist)=1;
-            else
+            if  find(isnan(str2double(strsplit(ss{ilist}))))
                 sep_ind=regexp(ss{ilist},'\s&\s');% check for separator ' & ' which indicates column separation in tables
                 if ~isempty(sep_ind)
                     sep_ind=[-2 sep_ind length(ss{ilist})+1];
@@ -114,6 +111,9 @@ switch info.class
                 else
                     out{ilist,1}=ss{ilist}; %reproduce the input string
                 end
+            else
+                out{ilist,1}=str2double(strsplit(ss{ilist}));
+                check_numeric(ilist)=1;
             end
         end
         if isequal(check_numeric,ones(size(ss)))

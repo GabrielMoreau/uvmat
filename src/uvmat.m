@@ -1796,133 +1796,133 @@ end
 
 
 %------------------------------------------------------------------------
-function MenuMask_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-ListObj=UvData.ProjObject;
-select=zeros(1,numel(ListObj));
-for iobj=1:numel(ListObj);
-    if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
-        select(iobj)=1;
-    end
-end
-val=find(select);
-if isempty(val)
-    msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
-    return
-else
-    set(handles.ListObject,'Value',val);
-    flag=1;
-    if ~isfield(UvData.Field,'A')
-        msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
-        return
-    end
-    npx=size(UvData.Field.A,2);
-    npy=size(UvData.Field.A,1);
-    xi=0.5:npx-0.5;
-    yi=0.5:npy-0.5;
-    [Xi,Yi]=meshgrid(xi,yi);
-    for iobj=1:length(UvData.ProjObject)
-        ObjectData=UvData.ProjObject{iobj};
-        if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-            flagobj=1;
-            testphys=0; %coordinates in pixels by default
-            if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
-                if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-                    Calib=UvData.XmlData{1}.GeometryCalib;
-                    testphys=1;
-                end
-            end
-            if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
-                if isequal(ObjectData.Type,'polygon')
-                    X=ObjectData.Coord(:,1);
-                    Y=ObjectData.Coord(:,2);
-                    if testphys
-                        pos=[X Y zeros(size(X))];
-                        if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
-                            if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
-                                om=norm(Calib.SliceAngle);%norm of rotation angle in radians
-                                OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
-                                cos_om=cos(pi*om/180);
-                                sin_om=sin(pi*om/180);
-                                pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                            end
-                            pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
-                            pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
-                            pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
-                        end
-                        [X,Y]=px_XYZ(Calib,Slice,pos(:,1),pos(:,2),pos(:,3));
-                    end
-                    flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                elseif isequal(ObjectData.Type,'ellipse')
-                    if testphys
-                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                    end
-                    RangeX=max(ObjectData.RangeX);
-                    RangeY=max(ObjectData.RangeY);
-                    X2Max=RangeX*RangeX;
-                    Y2Max=RangeY*RangeY;
-                    distX=(Xi-ObjectData.Coord(1,1));
-                    distY=(Yi-ObjectData.Coord(1,2));
-                    flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                elseif isequal(ObjectData.Type,'rectangle')
-                    if testphys
-                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                    end
-                    distX=abs(Xi-ObjectData.Coord(1,1));
-                    distY=abs(Yi-ObjectData.Coord(1,2));
-                    flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
-                end
-                if isequal(ObjectData.ProjMode,'mask_outside')
-                    flagobj=~flagobj;
-                end
-                flag=flag & flagobj;
+    function MenuMask_Callback(hObject, eventdata, handles)
+        %------------------------------------------------------------------------
+        UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+        ListObj=UvData.ProjObject;
+        select=zeros(1,numel(ListObj));
+        for iobj=1:numel(ListObj);
+            if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
+                select(iobj)=1;
             end
         end
-    end
-    %mask name
-    RootPath=get(handles.RootPath,'String');
-    SubDir=get(handles.SubDir,'String');
-    RootFile=get(handles.RootFile,'String');
-    if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
-        RootFile(1)=[];
-    end
-    list=get(handles.masklevel,'String');
-    masknumber=num2str(length(list));
-    maskindex=get(handles.masklevel,'Value');
-    mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
-    imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
-    imflag=flipdim(imflag,1);
-
-    %display the mask
-    hfigmask=figure;
-    set(hfigmask,'Name','mask image')
-    vec=linspace(0,1,256);%define a linear greyscale colormap
-    map=[vec' vec' vec'];
-    colormap(map)
-    image(imflag);
-    answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
-    if ~strcmp(answer,'Cancel')
-        mask_dir=fileparts(answer);
-        if ~exist(mask_dir,'dir')
-            [success,msg]=mkdir(mask_dir);
-            if success==0
-                msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
+        val=find(select);
+        if isempty(val)
+            msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
+            return
+        else
+            set(handles.ListObject,'Value',val);
+            flag=1;
+            if ~isfield(UvData.Field,'A')
+                msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
                 return
             end
-            [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-            if success==0
-                msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
+            npx=size(UvData.Field.A,2);
+            npy=size(UvData.Field.A,1);
+            xi=0.5:npx-0.5;
+            yi=0.5:npy-0.5;
+            [Xi,Yi]=meshgrid(xi,yi);
+            for iobj=1:length(UvData.ProjObject)
+                ObjectData=UvData.ProjObject{iobj};
+                if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
+                    flagobj=1;
+                    testphys=0; %coordinates in pixels by default
+                    if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
+                        if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+                            Calib=UvData.XmlData{1}.GeometryCalib;
+                            testphys=1;
+                        end
+                    end
+                    if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
+                        if isequal(ObjectData.Type,'polygon')
+                            X=ObjectData.Coord(:,1);
+                            Y=ObjectData.Coord(:,2);
+                            if testphys
+                                pos=[X Y zeros(size(X))];
+                                if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
+                                    if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
+                                        om=norm(Calib.SliceAngle);%norm of rotation angle in radians
+                                        OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
+                                        cos_om=cos(pi*om/180);
+                                        sin_om=sin(pi*om/180);
+                                        pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                                    end
+                                    pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
+                                    pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
+                                    pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
+                                end
+                                [X,Y]=px_XYZ(Calib,Slice,pos(:,1),pos(:,2),pos(:,3));
+                            end
+                            flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+                        elseif isequal(ObjectData.Type,'ellipse')
+                            if testphys
+                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                            end
+                            RangeX=max(ObjectData.RangeX);
+                            RangeY=max(ObjectData.RangeY);
+                            X2Max=RangeX*RangeX;
+                            Y2Max=RangeY*RangeY;
+                            distX=(Xi-ObjectData.Coord(1,1));
+                            distY=(Yi-ObjectData.Coord(1,2));
+                            flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+                        elseif isequal(ObjectData.Type,'rectangle')
+                            if testphys
+                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                            end
+                            distX=abs(Xi-ObjectData.Coord(1,1));
+                            distY=abs(Yi-ObjectData.Coord(1,2));
+                            flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
+                        end
+                        if isequal(ObjectData.ProjMode,'mask_outside')
+                            flagobj=~flagobj;
+                        end
+                        flag=flag & flagobj;
+                    end
+                end
             end
+            %mask name
+            RootPath=get(handles.RootPath,'String');
+            SubDir=get(handles.SubDir,'String');
+            RootFile=get(handles.RootFile,'String');
+            if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
+                RootFile(1)=[];
+            end
+            list=get(handles.masklevel,'String');
+            masknumber=num2str(length(list));
+            maskindex=get(handles.masklevel,'Value');
+            mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
+            imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
+            imflag=flipdim(imflag,1);
+            
+            %display the mask
+            hfigmask=figure;
+            set(hfigmask,'Name','mask image')
+            vec=linspace(0,1,256);%define a linear greyscale colormap
+            map=[vec' vec' vec'];
+            colormap(map)
+            image(imflag);
+            answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
+            if ~strcmp(answer,'Cancel')
+                mask_dir=fileparts(answer);
+                if ~exist(mask_dir,'dir')
+                    [success,msg]=mkdir(mask_dir);
+                    if success==0
+                        msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
+                        return
+                    end
+                    [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+                    if success==0
+                        msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
+                    end
+                end
+                try
+                    imwrite(imflag,answer,'BitDepth',8);
+                catch ME
+                    msgbox_uvmat('ERROR',ME.message)
+                end
+            end
+            set(handles.ListObject,'Value',1)
         end
-        try
-            imwrite(imflag,answer,'BitDepth',8);
-        catch ME
-            msgbox_uvmat('ERROR',ME.message)
-        end
-    end
-    set(handles.ListObject,'Value',1)
-end
 
 %------------------------------------------------------------------------
 %-- open the GUI set_grid.fig to create grid
@@ -1946,10 +1946,8 @@ set_grid(FileName,UvData.Field);% call the set_object interface
 % --------------------------------------------------------------------
 function MenuRelabelFrames_Callback(hObject, eventdata, handles)
 
-
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-% CheckRelabel=false;
 
 if strcmp(FileExt,'.seq')
     XmlFile=regexprep(FileName,'.seq$','.xml');
@@ -1957,10 +1955,7 @@ else
     XmlFile=fullfile(RootPath,[SubDir '.xml']);
 end
 [XmlData,errormsg]=imadoc2struct(XmlFile);
-% if isempty(XmlData) || isempty(XmlData.Time)
-%     msgbox_uvmat('ERROR',['the timing needs to be documented in the file ' XmlFile])
-%     return
-% end
+
 FileInfo=get_file_info(FileName);
 switch FileInfo.FileType
     case 'multimage'
@@ -1968,75 +1963,61 @@ switch FileInfo.FileType
             ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
             FileSeries.Convention='PCO';
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-%             BurstTiming.Dtj='';
-%             BurstTiming.NbDtj='';
-%             BurstTiming.Dti='';
-%             BurstTiming.NbDti='';
+            hbrowse=browse_data(fullfile(RootPath,SubDir))
+            [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+            FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
+            Camera.BurstTiming=BurstTiming;
+            FileSeries.FileName={'im.tif';'im@0001.tif'};
+            FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; BurstTiming=rmfield(BurstTiming,'NbFramePerFile');
+            [ListPath, ListSubdir]=read_browsdata (hbrowse);
+            NbExp=numel(ListSubdir);
+            for iexp=1:NbExp
+                [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);
+                if ~strcmp(errormsg,'')
+                    msgbox_uvmat('ERROR',errormsg);
+                else
+                    update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
+                end
+            end
+            msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
+            
         end
     case 'rdvision'%TO CHECK******
         check_time_rdvision(FileName,XmlData)
-end
-hbrowse=browse_data(fullfile(RootPath,SubDir))
-%STR = input('OK?')
-[BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
-FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
-Camera.BurstTiming=BurstTiming;
-FileSeries.FileName={'im.tif';'im@0001.tif'};
-FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; BurstTiming=rmfield(BurstTiming,'NbFramePerFile');
-
-% 
-% BrowseData=guidata(hbrowse);
-% SourceDir=get(BrowseData.SourceDir,'String');
-% ListExp=get(BrowseData.ListExperiments,'String');
-% ExpIndices=get(BrowseData.ListExperiments,'Value');
-% ListExp=ListExp(ExpIndices);
-% ListDevices=get(BrowseData.ListDevices,'String');
-% DeviceIndices=get(BrowseData.ListDevices,'Value');
-% ListDevices=ListDevices(DeviceIndices);
-% ListDataSeries=get(BrowseData.DataSeries,'String');
-% DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-% ListDataSeries=ListDataSeries(DataSeriesIndices);
-% NbExp=0; % counter of the number of experiments set by the GUI browse_data
-% for iexp=1:numel(ListExp)
-%     if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
-%         for idevice=1:numel(ListDevices)
-%             if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
-%                 for isubdir=1:numel(ListDataSeries)
-%                     if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
-%                         lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-%                             regexprep(ListDevices{idevice},'^\+/',''));
-%                         ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-%                         if exist(fullfile(lpath,ldir),'dir')
-%                             NbExp=NbExp+1;
-%                             ListPath{NbExp}=lpath;
-%                             ListSubdir{NbExp}=ldir;
-%                             ExpIndex{NbExp}=iexp;
-%                         end
-%                     end
-%                 end
-%             end
-%         end
-%     end
-% end
-[ListPath, ListSubdir]=read_browsdata (hbrowse);
-NbExp=numel(ListSubdir);
-for iexp=1:NbExp
-    [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera)
-    if ~strcmp(errormsg,'')
-        msgbox_uvmat('ERROR',errormsg);
-    else
-        update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
-        if checkupdate
-            disp([XmlFile ' updated with FileSeries'])
-        else
-            disp([XmlFile ' created with FileSeries'])
+    case 'telopsIR'
+        
+        DirContent=dir(fullfile(RootPath,SubDir));
+        NbFiles=0;
+        FileSeries.Convention='telopsIR';
+        for ilist=1:numel(DirContent)
+            FName=DirContent(ilist).name;
+            if ~isempty(regexp(FName,'.hcc$', 'once'))%select only the files .hcc
+                NbFiles=NbFiles+1;
+                FileSeries.FileName{NbFiles,1}=FName;
+            end
         end
-    end
+        FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
+        Camera.BurstTiming.Dti=1/FileInfo.FrameRate;
+        Camera.BurstTiming.NbDti=NbFiles*FileInfo.NumberOfFrames-1;
+        [checkupdate,XmlFile,errormsg]=update_imadoc(RootPath,SubDir,'Camera',Camera);
+        if ~strcmp(errormsg,'')
+            msgbox_uvmat('ERROR',errormsg);
+        else
+            [checkupdate,Xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
+            msgbox_uvmat('CONFIMATION',[XmlFile  ' updated with FileSeries']);
+        end 
+        MaxIndexcell{1}=num2str(NbFiles*FileInfo.NumberOfFrames);
+        set(handles.MaxIndex_i,'String',MaxIndexcell)
 end
-msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
 
 if ~isempty(errormsg)
     disp(errormsg)
+else
+    if checkupdate
+        disp([XmlFile ' updated with FileSeries'])
+    else
+        disp([XmlFile ' created with FileSeries'])
+    end
 end
 
 % ---------------------------------------
@@ -2471,7 +2452,7 @@ else
 end
 
 set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% paint back button to red to indicate update is finished
-set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrowCheckIndexing
+set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
 
 %------------------------------------------------------------------------
@@ -2486,7 +2467,7 @@ set(handles.FixVelType,'Value',0); %desactivate fixed veltype by default
 %% look for the ImaDoc xml file and read it
 XmlFileName=find_imadoc(RootPath,SubDir);% search the appropriate ImaDoc xml file 
 [~,XmlName]=fileparts(XmlFileName);
-CheckIndexing=false;% test for virtual indexing of frames different from the file name index, false by default
+CheckRelabel=false;% test for virtual indexing of frames different from the file name index, false by default
 if isempty(XmlFileName) %no ImaDoc xml file detected
     set(handles.view_xml,'Visible','off')
 else
@@ -2501,7 +2482,7 @@ else
     if ~isempty(XmlData)
         if isfield(XmlData,'FileSeries')
              if strcmp(XmlName,SubDir)% xml file directly at the level of the current data file (not up in the data tree)
-                 CheckIndexing=true;%  virtual indexing of frames different from the file name index
+                 CheckRelabel=true;%  virtual indexing of frames different from the file name index
              else % xml file not used to document index relabeling
                   XmlData=rmfield(XmlData,'FileSeries');%desactivate file indexing option for derived file series (e.g. images.png)
              end
@@ -2514,16 +2495,16 @@ else
         set (handles.slices,'String','volume')
     end
 end
-if CheckIndexing
+if CheckRelabel
     set(handles.MenuRelabelFrames,'checked','on')% activate the relabel tool by default
 else
     set(handles.MenuRelabelFrames,'checked','off')
 end
 XmlData.FileInfo=FileInfo;
-errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckIndexing,input_line);
+errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckRelabel,input_line);
 
 %--------------------------------------------------------
-function errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckIndexing,input_line)
+function errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckRelabel,input_line)
 errormsg=''; %default error msg
 warntext='';%default warning message
 NbSlice=1;%default
@@ -2533,7 +2514,7 @@ state_j='off'; % no visualisation of the j index by default
 
 %% get the file series
 MovieObject=[];
-if CheckIndexing
+if CheckRelabel
     NomType='*';
     i1_series=[];
     i2_series=[];
@@ -2589,7 +2570,7 @@ end
 if isfield(XmlData,'Time')&& ~isempty(XmlData.Time)
             TimeName='xml';%Time possibly documented by the xml file (but priority to the opened file if available)
 end
-if CheckIndexing
+if CheckRelabel
     i1=str2double(get(handles.FileIndex,'String'));
     if isnan(i1)
         i1=1;
@@ -2938,6 +2919,7 @@ else
         NbField_j=str2double(NbField_j_cell{1});
         RootFile=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
         index_string='';
+         [~,RootFile]=fileparts(RootFile);%suppress the file extension
         set(handles.RootFile,'String',RootFile)
     else
         [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex
@@ -3733,7 +3715,7 @@ if isfield(UvData.FileInfo{1},'FieldType') && strcmp(UvData.FileInfo{1}.FieldTyp
         ParamIn=UvData.MovieObject{1};
     end
 end
-%% case of file relabeling (PCO, Telops...)
+%% case of file relabeling (PCO, TelopsIR...)
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
     [RootName,~,Ext]=fileparts(FileName);
     NbField_j_cell=get(handles.MaxIndex_j,'String');
