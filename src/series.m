@@ -743,8 +743,8 @@ Param.FileInfo=FileInfo;
 
 %% Look for file relabeling option
 [FilePath,RootFile,FileExt]=fileparts(InputFile);
-[RootPath,SubDir]=fileparts(FilePath);
-[XmlFileName,Rank]=find_imadoc(RootPath,SubDir);
+[RootPath,SubDir,SubDirExt]=fileparts(FilePath);
+[XmlFileName,Rank]=find_imadoc(RootPath,[SubDir SubDirExt]);
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
@@ -2610,11 +2610,20 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-if ~isfield(SeriesData,'FileType')
-    SeriesData.FileType={'none'};
+% if ~isfield(SeriesData,'FileType')
+%     SeriesData.FileType={'none'};
+% end
+iview_civ=[];
+iview_netcdf=[];
+for iview=1:numel(SeriesData.FileInfo)
+    if strcmp(SeriesData.FileInfo{iview}.FileType,'civx')||strcmp(SeriesData.FileInfo{iview}.FileType,'civdata')
+      iview_civ=[iview_civ iview];
+      iview_netcdf=[iview_netcdf iview];% all nc files, icluding civ
+    elseif strcmp(SeriesData.FileInfo{iview}.FileType,'netcdf')
+      iview_netcdf=[iview_netcdf iview];
+    end
 end
-iview_civ=find( strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
-iview_netcdf=find(strcmp('netcdf',SeriesData.FileType)|strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)); % all nc files, icluding civ
+
 FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
@@ -2622,7 +2631,7 @@ if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 CheckPivData_1=0; % indicate whether FieldName_1 has been updated with civ data, 0 by default
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1
-    menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
+    menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileInfo{iview_civ(1)}.FileType);
     set(handles.VelType,'Value',1)% set first choice by default
     set(handles.VelType,'String',[{'*'};menu])
     set(handles.VelType,'Visible','on')
