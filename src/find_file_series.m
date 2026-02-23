@@ -1,13 +1,15 @@
 %'find_file_series': check the content of an input file and find the corresponding file series
 %--------------------------------------------------------------------------
-% function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput,checkxml)
+% function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %
 % OUTPUT:
 % RootPath: path to the dir containing the input file
 % SubDir: data dir containing the input file series
 % RootFile: root file detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
-% i1_series(pair,ref_j+1, ref_i+1),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
-%  (ref_i+1 is used to deal with the image index zero sometimes used)
+% i1_series(pair,ref_j+1, ref_i+1): set of indices i1 sorted by ref index ref_i, ref_j, and pair index in case of multiple pairs with the same ref.
+%     (ref_i+1 is used to deal with the image index zero sometimes used)
+% i2_series,j1_series,j2_series: same as i1_series but for the indices i2,j1,j2.
+%  
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
 % FileInfo: structure containing info on the input files (assumed identical on the whole series)
 % FileInfo.FileType: type of file, =
@@ -23,8 +25,6 @@
 %INPUT
 % FilePath: path to the directory to be scanned
 % fileinput: name (without path) of the input file sample
-% checkxml: =1(default) take into account xml file existence to possibly include indexes in RootFile
-%           =0: do not take into account xml file existence
 
 %=======================================================================
 % Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -44,7 +44,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput,checkxml)
+function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
 
 %% get input root name and info on the input file
@@ -74,31 +74,7 @@ if checkfileindexing
             RootFile='';
         end
     else
-        %% if checkxml=1, possibly include the first index in the root name, if there exists a corresponding xml file
-        if ~exist('checkxml','var')||checkxml
-            r=regexp(NomType,'^(?<tiretnum>_|\d+)','names');%look for a number or _1 at the beginning of NomType
-            if ~isempty(r) %if NomType begins by a number or _1
-                fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
-                if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
-                    rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
-                else% if a separator '_' is  detected
-                    rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
-                end
-                if ~isempty(rr)
-                    RootFile_i=[RootFile rr.i1];% new root file
-                    %look for an xml file correspoonding to the new root name
-                    if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || (strcmp(FileExt,'.nc') && exist(fullfile(RootPath,[RootFile_i '.xml']),'file'))
-                        RootFile=RootFile_i;
-                        NomTypePref=r.tiretnum;
-                        NomType=regexprep(NomType,['^'  NomTypePref],'');
-                        i1_input=j1_input;
-                        i2_input=j2_input;
-                        j1_input=[];
-                        j2_input=[];
-                    end
-                end
-            end
-        end
+     
         
         %% analyse the list of existing files when relevant
         sep1='';

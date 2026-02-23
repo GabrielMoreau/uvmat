@@ -649,15 +649,16 @@ for iview=1:nbview
         i1=str2double(get(handles.num_first_i,'String'));
         j1=str2double(get(handles.num_first_j,'String'));
         j2=[];%default
-        PairString=get(handles.PairString,'Data');
-        if numel(PairString)>=iview
-            r=regexp(PairString{iview},'(?<num1>\d+)-(?<num2>\d+)' ,'names');
-            if ~isempty(r)
-                j1=str2double(r.num1);
-                j2=str2double(r.num2);
-            end
-        end
-        InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
+%         PairString=get(handles.PairString,'Data');
+%         if numel(PairString)>=iview
+%             r=regexp(PairString{iview},'(?<num1>\d+)-(?<num2>\d+)' ,'names');
+%             if ~isempty(r)
+%                 j1=str2double(r.num1);
+%                 j2=str2double(r.num2);
+%             end
+%         end
+ InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
+        %InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
         [RootPath,~,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,~,Param.FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
@@ -813,7 +814,7 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.i2_series={};
     SeriesData.j1_series={};
     SeriesData.j2_series={};
-    SeriesData.FileType={};
+ %   SeriesData.FileType={};
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
@@ -1066,7 +1067,7 @@ if ~Param.Relabel
     end
 
     %% get index range in case of relabeling
-    if ~isempty(Param.XmlData.Time)
+    if isfield(Param,'XmlData') && ~isempty(Param.XmlData.Time)
         Time=Param.XmlData.Time;
         MinIndex_i=1;
         MaxIndex_i=size(Time,1)-1;
@@ -1074,7 +1075,14 @@ if ~Param.Relabel
         MaxIndex_j=size(Time,2)-1;
         TimeName='xml';
     else
-        [nbfield,nbfield_j]=size(XmlData.Time);
+        InputTable=get(handles.InputTable,'Data');
+        [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
+        if isempty(XmlFileName)
+            return
+        else
+            Param.XmlData=read_imadoc(XmlFileName);
+        end
+        [nbfield,nbfield_j]=size(Param.XmlData.Time);
         nbfield=nbfield-1; %remove the possible index 0
         nbfield_j=nbfield_j-1; %remove the possible index 0
         MaxIndex_i=get(handles.MaxIndex_i,'Data');
@@ -1088,43 +1096,13 @@ if ~Param.Relabel
         first_j=str2double(get(handles.num_first_j,'String'));
         %i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
         i1=1;
-        if strcmp(SeriesData.TimeName,'xml')% indices i and j
+        if isfield(SeriesData,'TimeName') && strcmp(SeriesData.TimeName,'xml')% indices i and j
             j1=mod(i1-1,nbfield_j)+first_j;
             i1=floor((i1-1)/nbfield_j)+1;
             set(handles.num_first_j,'String',num2str(j1))
         end
     end
 end
-%     set(handles.num_first_i,'String',num2str(i1))
-%     %         last_i=str2double(get(handles.num_last_i,'String'));
-%     %         last_j=str2double(get(handles.num_last_j,'String'));
-%     %         i1=(last_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
-%     %         if strcmp(SeriesData.TimeName,'xml')% indices i and j
-%     %             j1=mod(i1-1,nbfield_j)+1;
-%     %             i1=floor((i1-1)/nbfield_j)+1;
-%     %         end
-%     set(handles.num_last_i,'String',num2str(nbfield))
-%     set(handles.num_last_j,'String',num2str(nbfield_j))
-% % else
-
-
-
-
-%     %% case of possible index relabeling from xml info
-%     if isfield(XmlData,'FileSeries')&& strcmp(FileInfo.FileType,'multimage')
-%         answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');
-%         if strcmp(answer,'Yes')
-%             set(handles.Relabel,'Visible','on')
-%             set(handles.Relabel,'Value',1)
-%             SeriesData.FileSeries{iview}=XmlData.FileSeries;
-%             TimeMin=Time(2,2);
-%             TimeMax=Time(end,end);
-%             TimeFirst=TimeMin;
-%             TimeLast=TimeMax;
-%         end
-%     elseif iview==1
-%         set(handles.Relabel,'Visible','off')
-%     end
 
 if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
     set(handles.OutputSubDir,'String','/im')
@@ -1136,12 +1114,6 @@ if ~isempty(TimeName)
         msgbox_uvmat('WARNING',['incomplete time info in xml file']);
     end
     TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
-%     if size(Time)>=[first_i+1 first_j+1]
-%         TimeFirst=Time(first_i+1,first_j+1);
-%     end
-%     if size(Time)>=[last_i+1 last_j+1]
-%         TimeLast=Time(last_i+1,last_j+1);
-%     end
     if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
         TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
     end
@@ -1260,12 +1232,13 @@ hset_pair=findobj(allchild(0),'Tag','set_pairs');
 if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
 CheckPair= ~isempty(i2_series)||~isempty(j2_series); % check whether index pairs need to be defined
 PairString=get(handles.PairString,'Data');
+PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
     [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series);
     Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
-    PairString{iview,1}=Menu{1};
-else
-    PairString{iview,1}=''; % no pair for #iview
+    if numel(Menu)>=1
+        PairString{iview,1}=Menu{1};
+    end
 end
 set(handles.PairString,'Data',PairString)
 if isempty(find(cellfun('isempty',get(handles.PairString,'Data'))==0, 1))% if all lines of pairs are empty
@@ -1281,33 +1254,39 @@ end
 set(handles.FileStatus,'Units','pixels')
 Position=get(handles.FileStatus,'Position');
 set(handles.FileStatus,'Units','normalized')
-%xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
-j_max=cell(1,nbview);
+i_max=cell(1,nbview);
 MaxIndex_i=ones(1,nbview); % default
 MinIndex_i=ones(1,nbview); % default
+missing_indices=cell(1,nbview);
 for iline=1:nbview
-    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); % max on pair index
-    j_max{iline}=max(pair_max,[],1); % max on j index
-    if ~isempty(j_max{iline})
-        MaxIndex_i(iline)=find(j_max{iline}, 1, 'last' )-1; % max ref index i
-        MinIndex_i(iline)=find(j_max{iline}, 1 )-1; % min ref index i
+    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); % max i1 indices from i1_series (as obtained by fct uvmat/find_file_series.m)
+                                                            % needed in the case of mutiple pairs for the same index ref_i)
+    i_max{iline}=max(pair_max,[],1); % max on j index
+    if ~isempty(i_max{iline})&& ~isequal(pair_max,0)
+        MaxIndex_i(iline)=find(i_max{iline}, 1, 'last' )-1; % max ref index i
+        MinIndex_i(iline)=find(i_max{iline}, 1 )-1; % min ref index i
+         missing_indices{iline}= find(i_max{iline}(2:end)==0);          
     end
 end
 MinIndex_i=min(MinIndex_i);
 MaxIndex_i=max(MaxIndex_i);
 range_index=MaxIndex_i-MinIndex_i+1;
 range_y=max(1,floor(Position(4)/nbview));
-npx=floor(Position(3));
-file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
-CData=zeros(nbview*range_y,npx); % initiate the image representing the existing files
+npx=floor(Position(3));%length of the bar image FileStatus in pixels
+
+%file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
+CData=ones(nbview*range_y,npx); % initiate the image representing the existing files
+LineData=ones(1,npx);
 for iline=1:nbview
     ind_y=1+(iline-1)*range_y:iline*range_y;
-    LineData=zeros(size(file_indices));
-    file_select=file_indices(file_indices<=numel(j_max{iline}));
-    ind_select=file_indices<=numel(j_max{iline});
-    LineData(ind_select)=j_max{iline}(file_select)~=0;
-    CData(ind_y,:)=ones(size(ind_y'))*LineData;
+    missing_pixels=floor((missing_indices{iline}-MinIndex_i+1)*npx/range_index)+1;
+    LineData(missing_pixels)=0;
+%     LineData=zeros(size(file_indices));
+%     file_select=file_indices(file_indices<=numel(i_max{iline}));
+%     ind_select=file_indices<=numel(i_max{iline});
+%     LineData(ind_select)=i_max{iline}(file_select)~=0;
+    CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
@@ -1519,7 +1498,7 @@ pos_last=(ref_i_2-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
 if isempty(pos_first), pos_first=0; end
 if isempty(pos_last), pos_last=1; end
 Position=get(handles.Waitbar,'Position'); % position of the waitbar:= [ x,y, width, height]
-Position_status=get(handles.FileStatus,'Position');
+Position_status=get(handles.FileStatus,'Position');% position of the FileStatus bar:= [ x,y, width, height]
 Position(1)=Position_status(1)+Position_status(3)*pos_first;
 Position(3)=max(Position_status(3)*(pos_last-pos_first),0.001); % width must remain positive
 set(handles.Waitbar,'Position',Position)
@@ -2641,7 +2620,7 @@ if VelTypeRequest && numel(iview_civ)>=1
         set(handles.FieldName,'Value',1); % velocity vector choice by default
     end
     if  VelTypeRequest_1 && numel(iview_civ)>=2
-        menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
+        menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileInfo{iview_civ(2)}.FileType);
         set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
         set(handles.VelType_1,'Visible','on')
@@ -2995,8 +2974,11 @@ field=FieldListInit{field_index(1)};
 if isequal(field,'add_field...')
     FieldListInit(field_index(1))=[];
     SeriesData=get(handles.series,'UserData');
+    for iview=1:numel(SeriesData.FileInfo)
+    FileType{iview}=SeriesData.FileInfo{iview}.FileType;
+    end
     % input line for which the field choice is relevant
-    iview=find(ismember(SeriesData.FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
+    iview=find(ismember(FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
@@ -3151,7 +3133,7 @@ if strcmp(field,'add_field...')
         delete(hget_field)%delete opened versions of get_field
     end
     Param=read_GUI(handles.series);
-    InputTable=Param.InputTable(2,:);
+    %InputTable=Param.InputTable(2,:);
     % check the existence of the first file in the series
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
@@ -4193,53 +4175,5 @@ if CheckRelabel
 end
 check_input_file_series(handles,CheckRelabel)
 ActionInput_Callback([],[], handles)
-% if get(handles.Relabel,'Value')
-%             NomType='*';
-%             i1=1;i2=[];j1=1;j2=[];
-%             i1_series=1:size(XmlData.Time,1)-1;    
-%             i2_series=[];
-%             j1_series=1:size(XmlData.Time,2)-1;
-%             j2_series=[];
-% 
-% 
-% 
-%     SeriesData=get(handles.series,'UserData');
-%     if isfield(SeriesData,'FileSeries')&& ~isempty(SeriesData.FileSeries{1})
-%         [nbfield,nbfield_j]=size(SeriesData.Time{1});
-%         nbfield=nbfield-1; %remove the possible index 0
-%         nbfield_j=nbfield_j-1; %remove the possible index 0
-%         MaxIndex_i=get(handles.MaxIndex_i,'Data');
-%         MaxIndex_j=get(handles.MaxIndex_j,'Data');
-%         MaxIndex_i(1,:)=nbfield;
-%         MaxIndex_j(1,:)=nbfield_j;
-%                 MinIndex_i(1,:)=1;
-%         MinIndex_j(1,:)=1;
-%         set(handles.MaxIndex_i,'Data',MaxIndex_i)
-%         set(handles.MaxIndex_j,'Data',MaxIndex_j)
-%          set(handles.MinIndex_i,'Data',MinIndex_i)
-%         set(handles.MinIndex_j,'Data',MinIndex_j)
-%         first_i=str2double(get(handles.num_first_i,'String'));
-%         first_j=str2double(get(handles.num_first_j,'String'));
-%         %i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
-%         i1=1;
-%         if strcmp(SeriesData.TimeName,'xml')% indices i and j
-%             j1=mod(i1-1,nbfield_j)+first_j;
-%             i1=floor((i1-1)/nbfield_j)+1;
-%             set(handles.num_first_j,'String',num2str(j1))
-%         end
-%         set(handles.num_first_i,'String',num2str(i1))
-% %         last_i=str2double(get(handles.num_last_i,'String'));
-% %         last_j=str2double(get(handles.num_last_j,'String'));
-% %         i1=(last_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
-% %         if strcmp(SeriesData.TimeName,'xml')% indices i and j
-% %             j1=mod(i1-1,nbfield_j)+1;
-% %             i1=floor((i1-1)/nbfield_j)+1;
-% %         end
-%         set(handles.num_last_i,'String',num2str(nbfield))
-%          set(handles.num_last_j,'String',num2str(nbfield_j))
-%     end
-% else
-%     check_input_file_series(handles)
-%     ActionInput_Callback([],[], handles)
-% end
+
 

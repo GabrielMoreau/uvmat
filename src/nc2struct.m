@@ -283,7 +283,7 @@ if  ~isempty(ListVarName)
                     errormsg=['requested index ' num2str(TimeIndex) ' exceeds matrix dimension'];
                     return
                 end
-                ind_vec(index_time)=TimeIndex-1;% selected index(or indices) to read
+                ind_vec(index_time)=TimeIndex(1)-1;% selected index(or indices) to read
                 ind_size(index_time)=numel(TimeIndex);%length of the selected set of time indices
                 if numel(TimeIndex)==1 && ~strcmp(VarName,TimeVarName)
                     Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself)

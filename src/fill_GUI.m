@@ -32,7 +32,7 @@ function errormsg=fill_GUI(Param,GUI_handle)
 %------------------------------------------------------------------------
 errormsg='';
 if ~isstruct(Param)
-    errormsg='first input parmaeter of fill_GUI must be a structure';
+    errormsg='first input parameter of fill_GUI must be a structure';
     return
 end
 children=get(GUI_handle,'children');%handles of the children of the input GUI with handle 'GUI_handle'
@@ -90,7 +90,7 @@ for ifield=1:numel(fields)
             end
         end
         for ibox=1:numel(hh)
-        % finalise the update of GUI uicontrol filled by the input element
+            % finalise the update of GUI uicontrol filled by the input element
             if ~isempty(hh(ibox))&& ~check_done
                 set(hh(ibox),'Visible','on')% make the filled GUI element visible
                 if isfield(get(hh(ibox)),'Style')
@@ -103,7 +103,11 @@ for ifield=1:numel(fields)
                             input_string='';
                             if isnumeric(input_data)
                                 if numel(input_data)>0
-                                    input_string=num2str(input_data(ibox),4);
+                                    if floor(input_data(ibox))==input_data(ibox)
+                                        input_string=num2str(input_data(ibox)); % case of integers, write in full
+                                    else
+                                        input_string=num2str(input_data(ibox),4);%case of floating point:nbre_digit=4;
+                                    end
                                 end
                             elseif ischar(input_data)
                                 input_string=input_data;

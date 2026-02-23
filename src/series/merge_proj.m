@@ -222,7 +222,6 @@ if isempty(j1_series{1})
 else
     NomTypeOut='_1_1';
 end
-%NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 RootFileOut=RootFile{1};
 for iview=2:NbView
     if ~strcmp(RootFile{iview},RootFile{1})
@@ -264,13 +263,9 @@ for index=1:NbField
     j2=1;
     if ~isempty(j1_series{1})
         j1=j1_series{1}(index);
-        if ~isempty(j2_series{end})
-            j2=j2_series{end}(index);
-        else
-            j2=j1;
-        end
     end
-    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i1,i2,j1,j2);
+    i_out=floor((i1+i2)/2);
+    OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i_out,[],j1);
     if ~CheckOverwrite && exist(OutputFile,'file')
             disp(['existing output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists

@@ -67,6 +67,7 @@ cmode = netcdf.getConstant('NETCDF4');
 cmode = bitor(cmode, netcdf.getConstant('CLASSIC_MODEL'));
 cmode = bitor(cmode, netcdf.getConstant('CLOBBER'));
 nc = netcdf.create(flname, cmode);
+netcdf.setFill(nc,'NOFILL')
 
 %% write global constants
 if isfield(Data,'ListGlobalAttribute')

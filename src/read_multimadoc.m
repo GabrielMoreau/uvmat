@@ -78,7 +78,7 @@ end
 
 function time=get_time(timeimadoc,i1_series,i2_series,j1_series,j2_series)
  time=[];
- if ~ (isempty(i2_series)||size(timeimadoc,1) < i2_series(end) ||( ~isempty(j2_series) && size(timeimadoc,2) < j2_series(end)))% time array absent or too short in ImaDoc xml file'
+ if ~ (isempty(i2_series)||size(timeimadoc,1) < i2_series(end)+1 ||( ~isempty(j2_series) && size(timeimadoc,2) < j2_series(end)+1))% time array absent or too short in ImaDoc xml file'
      if isempty(j1_series)
          j1_series=1;
      end

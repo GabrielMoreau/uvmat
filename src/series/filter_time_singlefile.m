@@ -118,8 +118,8 @@ FileExt=Param.InputTable(:,5);
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+%        fileindex: file index within  the file series,
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%% NbView=1 : a single input series
 
@@ -140,23 +140,18 @@ PairString='';
 if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
 [i1,~,j1,~] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
 [i2,~,j2,~] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
-ncfile_out=fullfile_uvmat(OutputPath,OutputDir,Param.InputTable{1,3},'.nc',NomTypeNc,i1,i2,j1,j2);
-
-% OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
-% RootFileOut=RootFile{1};
-% NomTypeOut='_1';
+ncfile_out=fullfile_uvmat(OutputPath,OutputDir,Param.InputTable{1,3},'*.nc',NomTypeNc,i1,i2,j1,j2);
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-disp('loop for filtering started')  
- ncid=[];
+disp('loop for filtering started')
+ncid=[];
 for index=1:NbField
     index
-   
     [Field,~,errormsg]= read_field(filecell{1,index},'netcdf',Param.InputFields);
     if ~isempty(errormsg)
         disp(errormsg)
         if ~isempty(ncid)
-        netcdf.close(ncid)
+            netcdf.close(ncid)
         end
         return
     end
@@ -178,9 +173,6 @@ for index=1:NbField
             Field_varid(ifield)=ifield+2;
             VarDimIndex{ifield+3}=[2 3 1];
         end
-
-%         VarDimIndex={1,2,3,[1 2 3],[1 2 3]};
-
         DataOut.coord_x=Field.coord_x;
         DataOut.coord_y=Field.coord_y;
         DataOut.Time=0;
@@ -191,50 +183,23 @@ for index=1:NbField
         netcdf.putVar(ncid,0,0,1,0)
         netcdf.putVar(ncid,1,0,npy,Field.coord_y)
         netcdf.putVar(ncid,2,0,npx,Field.coord_x)
-%         Uvarid=3;
-%         Vvarid=4;
         TimeBlock=zeros(Param.ActionInput.WindowLength,1);
         Fieldblock=zeros(numel(ListFields),Param.ActionInput.WindowLength,npy,npx);
-        %Vblock=zeros(Param.ActionInput.WindowLength,npy,npx);
     end
-
+    
     TimeBlock=circshift(TimeBlock,[-1 0 ]);
     TimeBlock(end)=Field.Time;
     sumindex=min(index,Param.ActionInput.WindowLength)-1;
     Timefilter=mean(TimeBlock(end-sumindex:end,:,:));%mid time
     Fieldblock=circshift(Fieldblock,[0 -1 0 0]); %shift U by ishift along the first index
-   % Vblock=circshift(Vblock,[-1 0 0]); %shift U by ishift along the first index
     for ifield=1:numel(ListFields)
-    Fieldblock(ifield,end,:,:)=Field.(ListFields{ifield});
+        Fieldblock(ifield,end,:,:)=Field.(ListFields{ifield});
     end
-    %Vblock(end,:,:)=Field.V;
     Fieldfilter=squeeze(mean(Fieldblock(:,end-sumindex:end,:,:),2,'omitnan'));
-%     Ufilter=squeeze(mean(Ublock(end-sumindex:end,:,:),1,'omitnan'));
-%     Vfilter=squeeze(mean(Vblock(end-sumindex:end,:,:),1,'omitnan'));
-%     Uerror=Ufilter-Ublock(end-floor(sumindex/2),:,:);
-%     Verror=Ufilter-Vblock(end-floor(sumindex/2),:,:);
-    %updating output the netcdf file
-     tstart = tic;
-    netcdf.putVar(ncid,0,(index-1),Timefilter)
+    netcdf.putVar(ncid,0,(index-1),Timefilter)    % update the field in the nc file
     for ifield=1:numel(ListFields)
         netcdf.putVar(ncid,Field_varid(ifield),[ 0 0 (index-1)],[npy npx 1],squeeze(Fieldfilter(ifield,:,:)))
     end
-%     netcdf.putVar(ncid,Uvarid,[ 0 0 (index-1)],[npy npx 1],Ufilter)
-%      netcdf.putVar(ncid,Vvarid,[0 0 (index-1)],[npy npx 1],Vfilter)
-
- telapsed = toc(tstart)% time for writting the field
-    % writing the result file as netcdf file
-    %     i1=i1_series{1}(index)-ceil(NpTime/2);
-    %     OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeOut,i1);
-    %     errormsg=struct2nc(OutputFile, DataOut);
-    %     if isempty(errormsg)
-    %         disp([OutputFile ' written'])
-    %     else
-    %         disp(errormsg)
-    %     end
 end
-netcdf.close(ncid)
-figure
-plot(telapsed)
-ylabel('time lapsed computation')
+
 'END'

@@ -7,8 +7,8 @@
 %
 % INPUT:
 % num: input number (file index)
-% nom_type: nomencalture type (see fct name_generator)
-% index: 1 or 2 (first or secodn index in file naming)
+% nom_type: nomenclature type (see fct name_generator)
+% index: 1 or 2 (first or second index in file naming)
 % see also: stra2num, name_generator, name2display
 
 %=======================================================================
@@ -36,11 +36,7 @@ if ~exist('index','var')
 end
 switch index
     case 1
-%         if length(nom_type)>=4 && isequal(nom_type(1:2),'%0') && isequal(nom_type(4),'d') 
-%            str=num2str(num,nom_type(1:4)); 
-%         else
            str=num2str(num); 
-%         end
     case 2
         if ~isempty(nom_type) && (isequal(nom_type(end),'a')||isequal(nom_type(end),'b'))
             str=char(96+num);
