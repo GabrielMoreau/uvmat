@@ -80,7 +80,7 @@ end
 
 %% distingush different input file types
 switch FileType
-    case {'civdata','civdata_3D'}% new format for civ results
+    case {'civdata','civdata_3D'}% format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType,frame_index);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;

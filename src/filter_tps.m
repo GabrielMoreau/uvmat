@@ -169,6 +169,7 @@ for isub=1:NbSubDomain
         break %the whole domain has been already covered, no need for new subdomains
     end
 end
+NbCentre=uint16(NbCentre);
 
 %% remove empty subdomains
 ind_empty=find(check_empty);
@@ -187,10 +188,10 @@ V_smooth=V_smooth./nb_select;
 
 %eliminate the vectors with diff>threshold not yet eliminated
 if exist('Threshold','var')&&~isempty(Threshold)
-UDiff=U_smooth-U;% difference between interpolated U component and initial value
-VDiff=V_smooth-V;% difference between interpolated V component and initial value
-NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
-FF(NormDiff>Threshold)=true;%put FF value to 1 to identify the criterium of elimmination
+    UDiff=U_smooth-U;% difference between interpolated U component and initial value
+    VDiff=V_smooth-V;% difference between interpolated V component and initial value
+    NormDiff=UDiff.*UDiff+VDiff.*VDiff;% Square of difference norm
+    FF(NormDiff>Threshold)=true;%put FF value to 1 to identify the criterium of elimmination
 end
 
 U_smooth(FF)=U(FF);% set to the initial values the eliminated vectors (flagged as false)

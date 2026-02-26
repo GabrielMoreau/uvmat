@@ -166,11 +166,11 @@ if strcmp(htype,'axes')
                             %display the field values
                                 if isfield (CellInfo{icell},'XName')
                                     XName=CellInfo{icell}.XName;
-                                    text_displ_2=[XName '=' num2str(Field.(XName)(ivec),4)];
+                                    text_displ_2=[XName '=' num2str(Field.(XName)(ivec),5)];
                                 end
                                 if isfield (CellInfo{icell},'YName')
                                     YName=CellInfo{icell}.YName;
-                                    text_displ_2=[text_displ_2 ',' YName '=' num2str(Field.(YName)(ivec),4)];
+                                    text_displ_2=[text_displ_2 ',' YName '=' num2str(Field.(YName)(ivec),5)];
                                 end
                             for ivar=1:numel(CellInfo{icell}.VarIndex)
                                 VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};

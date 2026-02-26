@@ -3,9 +3,9 @@
 % function [xtable ytable utable vtable typevector] = civ (image1,image2,ibx,iby step, subpixfinder, mask, roi)
 %
 % OUTPUT:
-% xtable: set of x coordinates
-% ytable: set of y coordinates
-% utable: set of u displacements (along x)
+% xtable: set of x positions of the first image in integer image coordinates , the measurement position is xtable-0.5+utable/2
+% ytable: set of y coordinates of the first image in integer image coordinates (starting in the image bottom, image index= npy-ytable+1 , the measurement position is ytable-0.5+vtable/2
+% utable: set of u displacements (along x), in pixels
 % vtable: set of v displacements (along y)
 % ctable: max image correlation for each vector
 % typevector: set of flags, =1 for good, =0 for NaN vectors
@@ -43,13 +43,13 @@ end
 
 %% prepare measurement grid if not given as input
 if ~isfield(par_civ,'Grid')% grid points defining central positions of the sub-images in image A
-    nbinterv_x=floor((npx_ima-1)/par_civ.Dx);
+    nbinterv_x=floor((npx_ima-1)/par_civ.Dx);%expected number of intervals Dx
     gridlength_x=nbinterv_x*par_civ.Dx;
     minix=ceil((npx_ima-gridlength_x)/2);
-    nbinterv_y=floor((npy_ima-1)/par_civ.Dy);
+    nbinterv_y=floor((npy_ima-1)/par_civ.Dy);%expected number of intervals Dy
     gridlength_y=nbinterv_y*par_civ.Dy;
     miniy=ceil((npy_ima-gridlength_y)/2);
-    [GridX,GridY]=meshgrid(minix:par_civ.Dx:npx_ima-1,miniy:par_civ.Dy:npy_ima-1);
+    [GridX,GridY]=meshgrid(minix+0.5:par_civ.Dx:npx_ima-0.5,miniy+0.5:par_civ.Dy:npy_ima-0.5);% grid of initial positions in pixel coordinates (y upward)
     par_civ.Grid(:,1)=reshape(GridX,[],1);
     par_civ.Grid(:,2)=reshape(GridY,[],1);% increases with array index
 end
@@ -65,23 +65,23 @@ if size(par_civ.CorrBoxSize,1)==1
 end
 
 shiftx=par_civ.SearchBoxShift(:,1);%use the input shift estimate, rounded to the next integer value
-shifty=-par_civ.SearchBoxShift(:,2);% sign minus because image j index increases when y decreases
+shifty=par_civ.SearchBoxShift(:,2);% 
 if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
     shiftx=shiftx*ones(nbvec,1);
     shifty=shifty*ones(nbvec,1);
 end
 
 %% shift the grid by half the expected displacement to get the velocity closer to the initial grid
-par_civ.Grid(:,1)=par_civ.Grid(:,1)-shiftx/2;
-par_civ.Grid(:,2)=par_civ.Grid(:,2)+shifty/2;
+par_civ.Grid(:,1)=par_civ.Grid(:,1)-shiftx/2;% initial positions in image coordinates (y upward)
+par_civ.Grid(:,2)=par_civ.Grid(:,2)-shifty/2;
 
 %% Array initialisation and default output  if par_civ.CorrSmooth=0 (just the grid calculated, no civ computation)
-xtable=round(par_civ.Grid(:,1)+0.5)-0.5;
-ytable=round(npy_ima-par_civ.Grid(:,2)+0.5)-0.5;% y index corresponding to the position in image coordinates
+xtable=round(par_civ.Grid(:,1)+0.5);% tables of image indices corresponding to the input grid
+ytable=round(npy_ima-par_civ.Grid(:,2)+0.5);% y image indices corresponding to the position in image coordinates
 shiftx=round(shiftx);
 shifty=round(shifty);
-utable=shiftx;%zeros(nbvec,1);
-vtable=shifty;%zeros(nbvec,1);
+utable=shiftx;%zeros(nbvec,1);% expected displacements in pixel indices (y downward)
+vtable=-shifty;%zeros(nbvec,1);
 ctable=zeros(nbvec,1);
 FF=zeros(nbvec,1);
 result_conv=[];
@@ -127,8 +127,11 @@ end
 
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec=1:nbvec
-        iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
-        jref=round(npy_ima-par_civ.Grid(ivec,2)+0.5);%  j index  for the middle of the correlation box in the image A
+%         iref=round(par_civ.Grid(ivec,1));% xindex on the image A for the middle of the correlation box
+%         jref=round(npy_ima-par_civ.Grid(ivec,2));%  j index  for the middle of the correlation box in the image A
+         iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
+         jref=ytable(ivec);%  j index  for the middle of the correlation box in the image A
+
         FF(ivec)=0;
         ibx2=floor(CorrBoxSizeX(ivec)/2);
         iby2=floor(CorrBoxSizeY(ivec)/2);
@@ -137,7 +140,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
         subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
-        subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
+        subrange2_y=jref-shifty(ivec)-isy2:jref-shifty(ivec)+isy2;%y indices defining the second subimage
         image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
         image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
         check1_x=subrange1_x>=1 & subrange1_x<=npx_ima;% check which points in the subimage 1 are contained in the initial image 1
@@ -223,17 +226,17 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                             [vector,FF(ivec)] = quadr_fit(result_conv,x,y);
                         end
                         utable(ivec)=vector(1)*mesh+shiftx(ivec);
-                        vtable(ivec)=-(vector(2)*mesh+shifty(ivec));
-                        xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                        ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                        iref=round(xtable(ivec)+0.5);% nearest image index for the middle of the vector
-                        jref=round(ytable(ivec)+0.5);
+                        vtable(ivec)=-vector(2)*mesh+shifty(ivec);% vtable and shifty in image coordinates (opposite to pixel shift)
+                      %  xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                       % ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+%                         iref=round(xtable(ivec)+0.5);% nearest image index for the middle of the vector
+%                         jref=round(ytable(ivec)+0.5);
                         % eliminate vectors located in the mask
-                        if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
-                            utable(ivec)=0;
-                            vtable(ivec)=0;
-                            FF(ivec)=1;
-                        end
+%                         if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
+%                             utable(ivec)=0;
+%                             vtable(ivec)=0;
+%                             FF(ivec)=1;
+%                         end
                         ctable(ivec)=corrmax/sum_square;% correlation value
                     catch ME
                         FF(ivec)=1;

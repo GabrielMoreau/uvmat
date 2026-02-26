@@ -92,30 +92,36 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-[Data,tild,tild,errormsg]=nc2struct(FileName,'ListGlobalAttribute','Conventions','CivStage');% read the global attributes to get Data.CivStage
+[Data,~,~,errormsg]=nc2struct(FileName,'ListGlobalAttribute','Conventions','CivStage');% read the global attributes to get Data.CivStage
 if ~isempty(errormsg)
      errormsg=['read_civdata: ' errormsg];
     return
 end
+
 % set the list of variables to read and their role
-[varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
+CheckCompress=strcmp(Data.Conventions,'uvmat/civdata/compress');
+[varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage,CheckCompress);
 if isempty(varlist)
     errormsg=['read_civdata: unknow velocity type ' VelType];
     return
 else
     if strcmp(Data.Conventions,'uvmat/civdata_3D')
-        [Field,vardetect]=nc2struct(FileName,'TimeDimName','npz',frame_index,varlist);%read the variables in the netcdf file
-    else   
-    [Field,vardetect]=nc2struct(FileName,varlist);%read the variables in the netcdf file
+        [Field,vardetect,~,errormsg]=nc2struct(FileName,'TimeDimName','npz',frame_index,varlist);%read the variables in the netcdf file
+    else
+        [Field,vardetect,~,errormsg]=nc2struct(FileName,varlist);%read the variables in the netcdf file
     end
 end
-if isfield(Field,'Txt')
-    errormsg=Field.Txt;
+if ~isempty(errormsg)
+     errormsg=['read_civdata: ' errormsg];
     return
 end
 if vardetect(1)==0
      errormsg=[ 'requested field not available in ' FileName '/' VelType ': need to run patch'];
      return
+end
+if strcmp(Data.Conventions,'uvmat/civdata/compress')
+    Field.X=Field.X-0.5+Field.U/2;% shift to the convected position
+    Field.Y=Field.Y-0.5+Field.V/2;
 end
 switch VelTypeOut
     case {'civ1','filter1'}
@@ -191,7 +197,7 @@ Field.CoordUnit='pixel';
 % vel_type: character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice is done, civ2 considered better than civ1 )
 
-function [var,role,vel_type_out,errormsg]=varcivx_generator(ProjModeRequest,vel_type,CivStage) 
+function [var,role,vel_type_out,errormsg]=varcivx_generator(ProjModeRequest,vel_type,CivStage,CheckCompress) 
 
 %% default input values
 if ~exist('vel_type','var'),vel_type='';end
@@ -222,25 +228,36 @@ if isempty(vel_type)||strcmp(vel_type,'*')
     end
 end
 
-var={};
-switch vel_type
-    case{'civ1','civ2'}
-        varout={'X','Y','Z','U','V','W','C','FF'};
-        varin= {'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_FF'};
-         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag'};  
-    case{'filter1','filter2'}  
-        varout={'X','Y','Z','U','V','W','C','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbCentre','NbCentre','NbCentre'};
-        varin={'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_FF',...
-            'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbCentre','Civ1_NbCentres','Civ1_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary','ancillary','ancillary'};
-          %  rmq: NbCentres and NbSites obsolete replaced by NbCentre, kept for consistency with previous data
-end
-switch vel_type
-    case {'civ2','filter2'}
-        varin=regexprep(varin,'1','2');
-    % case {'civ3','filter3'} 
-    %     varin=regexprep(varin,'1','3');
+if CheckCompress
+    switch vel_type
+        case{'civ1','civ2'}
+            varout={'X','Y','Z','U','V','W','C','FF'};
+            varin= {'X','Y','Z','U','V','W','C','FF'};
+            role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag'};
+        case{'filter1','filter2'}
+            varout={'X','Y','Z','U','V','W','C','FF'};
+            varin={'X','Y','Z','U_smooth','V_smooth','W_smooth','C','FF'};
+            role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag'};
+            %  rmq: NbCentres and NbSites obsolete replaced by NbCentre, kept for consistency with previous data
+    end
+else
+    switch vel_type
+        case{'civ1','civ2'}
+            varout={'X','Y','Z','U','V','W','C','FF'};
+            varin= {'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_FF'};
+            role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag'};
+        case{'filter1','filter2'}
+            varout={'X','Y','Z','U','V','W','C','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbCentre','NbCentre','NbCentre'};
+            varin={'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_FF',...
+                'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbCentre','Civ1_NbCentres','Civ1_NbSites'};
+            role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','errorflag','coord_tps','vector_x_tps',...
+                'vector_y_tps','vector_z_tps','ancillary','ancillary','ancillary','ancillary'};
+            %  rmq: NbCentres and NbSites obsolete replaced by NbCentre, kept for consistency with previous data
+    end
+    switch vel_type
+        case {'civ2','filter2'}
+            varin=regexprep(varin,'1','2');
+    end
 end
 var=[varout;varin];
 if ~strcmp(ProjModeRequest,'interp_tps')

@@ -209,14 +209,14 @@ set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu for scalar
 checkseries=0;
 if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput% case of call by series
     set(handles.FieldOption,'value',1)
-    if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
+    if isfield(Field,'Conventions')&& ~isempty(regexp(Field.Conventions,'^uvmat/civdata', 'once'))
     set(handles.FieldOption,'String',{'scalar';'vectors';'civdata...'})
     else
        set(handles.FieldOption,'String',{'scalar';'vectors'}) 
     end
     checkseries=1;
     set(handles.scalar,'Max',2)
-elseif isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
+elseif isfield(Field,'Conventions')&& ~isempty(regexp(Field.Conventions,'^uvmat/civdata', 'once'))
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})% provides the possibility to come back to civdata
     set(handles.scalar,'Max',1)
 else

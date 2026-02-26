@@ -95,13 +95,11 @@ if ~isfield(Param,'ActionInput')
     disp_uvmat('ERROR','no parameter set for PIV',checkrun)
     return
 end
-%iview_A=0;%default values
-NbField=1;
-RUNHandle=[];
-% CheckInputFile=isfield(Param,'InputTable');%= 1 in test use for TestCiv (no nc file involved)
-% CheckOutputFile=isfield(Param,'OutputSubDir');%= 1 in test use for TestPatch (no nc file produced)
 
-%% input files and indexing 
+inv_scale_factor=100; % scale factor of displacements for uin16 records in netcdf files (dx expressed in pixels)
+%inv_scale_factor=[];% no scale factor, displacements written as single precision real
+
+%% input files and indexing
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -187,9 +185,11 @@ if isfield(Param,'InputTable')
         if strcmp(Param.ActionInput.ListCompareMode,'PIV')
             j2_series_Civ1=ones(size(i1_series_Civ1));
         end
+        Check_j_Civ1=false;
     else % movie for each burst or volume (index j)
         FrameIndex_A_Civ1=j1_series_Civ1;
         FrameIndex_B_Civ1=j2_series_Civ1;
+        Check_j_Civ1=true;
     end
     if isempty(PairCiv2)
         FrameIndex_A_Civ2=FrameIndex_A_Civ1;
@@ -202,9 +202,11 @@ if isfield(Param,'InputTable')
             if strcmp(Param.ActionInput.ListCompareMode,'PIV')
                 j2_series_Civ2=ones(size(i1_series_Civ2));
             end
+            Check_j_Civ2=false;
         else
             FrameIndex_A_Civ2=j1_series_Civ2;
             FrameIndex_B_Civ2=j2_series_Civ2;
+            Check_j_Civ2=true;
         end
     end
     if isempty(i1_series_Civ1)||(~isempty(PairCiv2) && isempty(i1_series_Civ2))
@@ -225,7 +227,7 @@ end
 %% prepare output Data
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 ListGlobalAttribute={'Conventions','Program','CivStage'};
-Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 if isfield(Param,'UvmatRevision')
     Data.Program=[Data.Program ', uvmat r' Param.UvmatRevision];
@@ -281,7 +283,7 @@ for ifield=1:NbField
     end
     OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
     if CheckRelabel
-         RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
+        RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
     else
         RootFileOut=RootFile_A;
     end
@@ -321,6 +323,7 @@ for ifield=1:NbField
     %     end
     ImageName_A='';ImageName_B='';%default
     VideoObject_A=[];VideoObject_B=[];
+    Civ_FF=[];%default
     
     %% Civ1
     % if Civ1 computation is requested
@@ -387,23 +390,19 @@ for ifield=1:NbField
                 continue
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
-
+            
         catch ME % display errors in reading input images
             if ~isempty(ME.message)
                 disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
                 continue
             end
         end
-
- % case of background image to subtract
+        
+        % case of background image to subtract
         if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
-            j1=1;
-            if ~isempty(j1_series_Civ1)
-                j1=j1_series_Civ1(ifield);
-            end
             if ~isempty(i2_series_Civ1)% case of volume,backgrounds act on different j levels
-                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
+                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
             elseif isfield(par_civ1,'NbSlice')
                 i1_background=mod(i1-1,par_civ1.NbSlice)+1;
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
@@ -435,11 +434,11 @@ for ifield=1:NbField
             par_civ1.ImageA=par_civ1.ImageA-par_civ1.Background;
             par_civ1.ImageB=par_civ1.ImageB-par_civ1.Background;
         end
-
- % case of image luminosity rescaling 
-      if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
-               par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
-               par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
+        
+        % case of image luminosity rescaling
+        if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
+            par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
+            par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
         end
         
         % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
@@ -456,12 +455,11 @@ for ifield=1:NbField
         if ~isempty(i2_series_Civ1)
             i2=i2_series_Civ1(ifield);
         end
-        j1=1;
-        if ~isempty(j1_series_Civ1)
-            j1=j1_series_Civ1(ifield);
-        end
+        
+        j1=j1_series_Civ1(ifield);
+        
         j2=j1;
-        if ~isempty(j2_series_Civ1)
+        if Check_j_Civ1
             j2=j2_series_Civ1(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
@@ -478,21 +476,22 @@ for ifield=1:NbField
         Data.CivStage=1;
         
         % set the list of variables
-        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
-        Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
-        Data.VarAttribute{1}.Role='coord_x';
-        Data.VarAttribute{2}.Role='coord_y';
-        Data.VarAttribute{3}.Role='vector_x';
-        Data.VarAttribute{4}.Role='vector_y';
-        Data.VarAttribute{5}.Role='ancillary';
-        Data.VarAttribute{6}.Role='errorflag';
+        %         Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
+        %         Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
+        %         Data.VarAttribute{1}.Role='coord_x';
+        %         Data.VarAttribute{2}.Role='coord_y';
+        %         Data.VarAttribute{3}.Role='vector_x';
+        %         Data.VarAttribute{4}.Role='vector_y';
+        %         Data.VarAttribute{5}.Role='ancillary';
+        %         Data.VarAttribute{6}.Role='errorflag';
         
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
-            j1=1;
-            if ~isempty(j1_series_Civ1)
+            if Check_j_Civ1
                 j1=j1_series_Civ1(ifield);
+            else
+                j1=[];
             end
             if ~isempty(i2_series_Civ1)&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
@@ -527,7 +526,7 @@ for ifield=1:NbField
                 maskoldname=maskname;
             end
         end
-
+        
         % case of input grid
         if par_civ1.CheckGrid &&~isempty(par_civ1.Grid)
             GridData=nc2struct(Param.ActionInput.Civ1.Grid);
@@ -536,7 +535,10 @@ for ifield=1:NbField
         end
         
         % caluclate velocity data
-        [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, result_conv, errormsg] = civ (par_civ1);
+        %   [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, result_conv, errormsg] = civ (par_civ1);
+        [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF, result_conv, errormsg] = civ (par_civ1);
+        Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
+        Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
@@ -561,7 +563,8 @@ for ifield=1:NbField
             Data.(Fix1_param{ilist})=Param.ActionInput.Fix1.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix1_param];
-        Data.Civ1_FF=uint8(detect_false(Param.ActionInput.Fix1,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V,Data.Civ1_FF));
+        % Data.Civ1_FF=uint8(detect_false(Param.ActionInput.Fix1,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V,Data.Civ1_FF));
+        Civ_FF=uint8(detect_false(Param.ActionInput.Fix1,Civ_C,Civ_U,Civ_V,Civ_FF));
         Data.CivStage=2;
     end
     %% Patch1
@@ -580,21 +583,22 @@ for ifield=1:NbField
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch1_param];
         
         % list the variables to record
-        nbvar=length(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
-            {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
-        Data.VarAttribute{nbvar+1}.Role='vector_x';
-        Data.VarAttribute{nbvar+2}.Role='vector_y';
-        Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        Data.VarAttribute{nbvar+6}.Role='vector_x';
-        Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ1_U_smooth=Data.Civ1_U; % zeros(size(Data.Civ1_X));
-        Data.Civ1_V_smooth=Data.Civ1_V; %zeros(size(Data.Civ1_X));
-        if isfield(Data,'Civ1_FF')
-            ind_good=find(Data.Civ1_FF==0);
+        %         nbvar=length(Data.ListVarName);
+        %         Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
+        %         Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
+        %             {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
+        %         Data.VarAttribute{nbvar+1}.Role='vector_x';
+        %         Data.VarAttribute{nbvar+2}.Role='vector_y';
+        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
+        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
+        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
+        %Data.Civ1_U_smooth=Data.Civ1_U; % zeros(size(Data.Civ1_X));
+        %Data.Civ1_V_smooth=Data.Civ1_V; %zeros(size(Data.Civ1_X));
+        %         if isfield(Data,'Civ1_FF')
+        if isempty(Civ_FF)
+            ind_good=1:numel(Civ_X);
         else
-            ind_good=1:numel(Data.Civ1_X);
+            ind_good=find(Civ_FF==0);
         end
         if isempty(ind_good)
             disp_uvmat('ERROR','all vectors of civ1 are bad, check input parameters' ,checkrun)
@@ -602,11 +606,13 @@ for ifield=1:NbField
         end
         
         % perform Patch calculation using the UVMAT fct 'filter_tps'
-        [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,~,Ures, Vres,~,FFres]=...
-            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
-        Data.Civ1_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
-        Data.Civ1_V_smooth(ind_good)=Vres;
-        Data.Civ1_FF(ind_good)=uint8(4*FFres);%set FF to value =4 for vectors eliminated by filter_tps
+        [SubRange,NbCentres,Coord_tps,U_tps,V_tps,~,Ures, Vres,~,FFres]=...
+            filter_tps([Civ_X_shifted(ind_good),Civ_Y_shifted(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
+        Civ_U_smooth=Civ_U;% false vectors kept unchanged
+        Civ_V_smooth=Civ_V;
+        Civ_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
+        Civ_V_smooth(ind_good)=Vres;
+        Civ_FF(ind_good)=uint8(4*FFres);%set FF to value =4 for vectors eliminated by filter_tps
         time_patch1=toc(tstart_patch1);
         disp('patch1 performed')
     end
@@ -665,14 +671,14 @@ for ifield=1:NbField
             par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
         end
         
-%                 %% user defined image transform
-%         if ~isempty(transform_fct)
-%                par_civ2 =transform_fct(par_civ2,Param);
-%         end
-         %% case of image luminosity rescaling 
-      if par_civ2.CheckRescale &&~isempty(par_civ2.Maxtanh)
-               par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
-               par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
+        %                 %% user defined image transform
+        %         if ~isempty(transform_fct)
+        %                par_civ2 =transform_fct(par_civ2,Param);
+        %         end
+        %% case of image luminosity rescaling
+        if par_civ2.CheckRescale &&~isempty(par_civ2.Maxtanh)
+            par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
+            par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
         end
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
@@ -687,35 +693,22 @@ for ifield=1:NbField
             Coord_tps=DataIn.Civ2_Coord_tps;
             U_tps=DataIn.Civ2_U_tps;
             V_tps=DataIn.Civ2_V_tps;
-            %CivStage=DataIn.CivStage;%store the current CivStage
             Civ1_Dt=DataIn.Civ2_Dt;
             Data=[];%reinitialise the result structure Data
             Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
             Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
             Data.Program='civ_series';
-           % Data.CivStage=CivStage+1;%update the current civStage after reinitialisation of Data
             Data.ListVarName={};
             Data.VarDimName={};
         else % get the guess from patch1
-            SubRange= Data.Civ1_SubRange;
-            NbCentres=Data.Civ1_NbCentres;
-            Coord_tps=Data.Civ1_Coord_tps;
-            U_tps=Data.Civ1_U_tps;
-            V_tps=Data.Civ1_V_tps;
+            %             SubRange= Data.Civ_SubRange;
+            %             NbCentres=Data.Civ_NbCentres;
+            %             Coord_tps=Data.Civ_Coord_tps;
+            %             U_tps=Data.Civ_U_tps;
+            %             V_tps=Data.Civ_V_tps;
             Civ1_Dt=Data.Civ1_Dt;
-%             Data.CivStage=4;
         end
-         Data.CivStage=4;
-        %             SubRange= par_civ2.Civ1_SubRange;
-        %             NbCentres=par_civ2.Civ1_NbCentres;
-        %             Coord_tps=par_civ2.Civ1_Coord_tps;
-        %             U_tps=par_civ2.Civ1_U_tps;
-        %             V_tps=par_civ2.Civ1_V_tps;
-        %             Civ1_Dt=par_civ2.Civ1_Dt;
-        %             Civ2_Dt=par_civ2.Civ1_Dt;
-        %             Data.ListVarName={};
-        %             Data.VarDimName={};
-        %         end
+        Data.CivStage=4;
         Shiftx=zeros(size(par_civ2.Grid,1),1);% initialise the shift expected from civ1 data
         Shifty=zeros(size(par_civ2.Grid,1),1);
         nbval=zeros(size(par_civ2.Grid,1),1);% nbre of interpolated values at each grid point (from the different patch subdomains)
@@ -760,9 +753,10 @@ for ifield=1:NbField
         if par_civ2.CheckMask && ~isempty(par_civ2.Mask)
             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
             if ~isempty(i2_series_Civ2) && ~isequal(i1_series_Civ2,i2_series_Civ2) % we do PIV among indices i,  at given indices j (volume scan), mask depends on position j
-                j1=1;
-                if ~isempty(j1_series_Civ2)
-                    j1=j1_series_Civ1(ifield);
+                if Check_j_Civ2
+                    j1=j1_series_Civ2(ifield);
+                else
+                    j1=[];
                 end
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
             elseif isfield(par_civ2,'NbSlice')
@@ -858,8 +852,9 @@ for ifield=1:NbField
         
         % calculate velocity data (y and v in image indices, reverse to y component)
         
-        [Data.Civ2_X,Data.Civ2_Y,Data.Civ2_U,Data.Civ2_V,Data.Civ2_C,Data.Civ2_FF,~, errormsg] = civ (par_civ2);
-        
+        [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);
+        Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
+        Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
         Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
@@ -881,21 +876,21 @@ for ifield=1:NbField
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
         
-        nbvar=numel(Data.ListVarName);
+        %        nbvar=numel(Data.ListVarName);
         % define the Civ2 variable (if Civ2 data are not replaced from previous calculation)
-        if isempty(find(strcmp('Civ2_X',Data.ListVarName),1))
-            Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_C','Civ2_FF'}];%  cell array containing the names of the fields to record
-            Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
-            Data.VarAttribute{nbvar+1}.Role='coord_x';
-            Data.VarAttribute{nbvar+2}.Role='coord_y';
-            Data.VarAttribute{nbvar+3}.Role='vector_x';
-            Data.VarAttribute{nbvar+4}.Role='vector_y';
-            Data.VarAttribute{nbvar+5}.Role='ancillary';
-            Data.VarAttribute{nbvar+6}.Role='errorflag';
-        end
+        %         if isempty(find(strcmp('Civ2_X',Data.ListVarName),1))
+        %             Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_C','Civ2_FF'}];%  cell array containing the names of the fields to record
+        %             Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
+        %             Data.VarAttribute{nbvar+1}.Role='coord_x';
+        %             Data.VarAttribute{nbvar+2}.Role='coord_y';
+        %             Data.VarAttribute{nbvar+3}.Role='vector_x';
+        %             Data.VarAttribute{nbvar+4}.Role='vector_y';
+        %             Data.VarAttribute{nbvar+5}.Role='ancillary';
+        %             Data.VarAttribute{nbvar+6}.Role='errorflag';
+        %         end
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);
-    elseif ~isfield(Data,'ListVarName') % we start there, using existing Civ2 data
+    elseif Param.ActionInput.CheckFix2 && isfield (Param.ActionInput,'Fix2') % we start there, using existing Civ2 data
         if exist('ncfile','var')
             CivFile=ncfile;
             [Data,~,~,errormsg]=nc2struct(CivFile);%read civ1 and detect_false1 data in the existing netcdf file
@@ -907,7 +902,7 @@ for ifield=1:NbField
     end
     
     %% Fix2
-    if Param.ActionInput.CheckFix2 && isfield (Param.ActionInput,'Fix2')% if Fix2 computation is requested
+    if (Param.ActionInput.CheckFix2 && isfield (Param.ActionInput,'Fix2'))||(Param.ActionInput.CheckPatch2 && isfield (Param.ActionInput,'Patch2'))%% if Fix2 computation is requested
         disp('detect_false2 started')
         list_param=fieldnames(Param.ActionInput.Fix2)';
         Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
@@ -916,7 +911,7 @@ for ifield=1:NbField
             Data.(Fix2_param{ilist})=Param.ActionInput.Fix2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix2_param];
-        Data.Civ2_FF=double(detect_false(Param.ActionInput.Fix2,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V,Data.Civ2_FF));
+        Civ_FF=uint8(detect_false(Param.ActionInput.Fix2,Civ_C,Civ_U,Civ_V,Civ_FF));
         Data.CivStage=Data.CivStage+1;
     end
     
@@ -934,39 +929,86 @@ for ifield=1:NbField
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch2_param];
         
-        nbvar=length(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
-            {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
+        %  nbvar=length(Data.ListVarName);
+        %         Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
+        %         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
+        %             {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
         
-        Data.VarAttribute{nbvar+1}.Role='vector_x';
-        Data.VarAttribute{nbvar+2}.Role='vector_y';
-        Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        Data.VarAttribute{nbvar+6}.Role='vector_x';
-        Data.VarAttribute{nbvar+7}.Role='vector_y';
-        Data.Civ2_U_smooth=Data.Civ2_U;
-        Data.Civ2_V_smooth=Data.Civ2_V;
-        if isfield(Data,'Civ2_FF')
-            ind_good=find(Data.Civ2_FF==0);
+        %         Data.VarAttribute{nbvar+1}.Role='vector_x';
+        %         Data.VarAttribute{nbvar+2}.Role='vector_y';
+        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
+        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
+        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
+        
+        if isempty(Civ_FF)
+            ind_good=1:numel(Civ_X);
         else
-            ind_good=1:numel(Data.Civ2_X);
+            ind_good=find(Civ_FF==0);
         end
         if isempty(ind_good)
             disp_uvmat('ERROR','all vectors of civ2 are bad, check input parameters' ,checkrun)
             return
         end
         
-        [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures,Vres,tild,FFres]=...
-            filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
-        Data.Civ2_U_smooth(ind_good)=Ures;
-        Data.Civ2_V_smooth(ind_good)=Vres;
-        Data.Civ2_FF(ind_good)=uint8(4*FFres);
+        [Civ_SubRange,Civ_NbCentres,Civ_Coord_tps,Civ_U_tps,Civ_V_tps,~,Ures,Vres,~,FFres]=...
+            filter_tps([Civ_X_shifted(ind_good) Civ_Y_shifted(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
+        Civ_U_smooth=Civ_U;% keep the false vectors unchanged
+        Civ_V_smooth=Civ_V;
+        Civ_U_smooth(ind_good)=Ures;
+        Civ_V_smooth(ind_good)=Vres;
+        Civ_FF(ind_good)=uint8(4*FFres);
         Data.CivStage=Data.CivStage+1;
         time_patch2=toc(tstart_patch2);
         disp('patch2 performed')
     end
     
     %% write result in a netcdf file
+    
+    Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
+    Data.VarDimName={'nb_vec','nb_vec','nb_vec','nb_vec','nb_vec','nb_vec'};
+    Data.VarAttribute{1}.Role='coord_x';
+    Data.VarAttribute{2}.Role='coord_y';
+    Data.VarAttribute{3}.Role='vector_x';
+    Data.VarAttribute{3}.scale_factor=1/inv_scale_factor;
+    Data.VarAttribute{4}.Role='vector_y';
+    Data.VarAttribute{4}.scale_factor=1/inv_scale_factor;
+    Data.VarAttribute{5}.Role='ancillary';
+    Data.VarAttribute{5}.scale_factor=1/inv_scale_factor;
+    Data.VarAttribute{6}.Role='errorflag';
+    Data.X=uint16(Civ_X);
+    Data.Y=uint16(Civ_Y);
+    Data.U=int16(inv_scale_factor*Civ_U);
+    Data.V=int16(inv_scale_factor*Civ_V);
+    Data.C=uint8(inv_scale_factor*Civ_C);
+    Data.FF=uint8(Civ_FF);
+    if (Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||Param.ActionInput.CheckPatch2
+        nbvar=6;
+        %     Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth','SubRange','NbCentres','Coord_tps','U_tps','V_tps'}];
+        %         Data.VarDimName=[Data.VarDimName {'nb_vec','nb_vec',{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+        %             {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+        Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
+        Data.VarDimName=[Data.VarDimName {'nb_vec','nb_vec'}];
+        Data.VarAttribute{nbvar+1}.Role='vector_x';
+        Data.VarAttribute{nbvar+1}.scale_factor=1/inv_scale_factor;
+        Data.VarAttribute{nbvar+2}.Role='vector_y';
+        Data.VarAttribute{nbvar+2}.scale_factor=1/inv_scale_factor;
+        Data.U_smooth=int16(inv_scale_factor*Civ_U_smooth);
+        Data.V_smooth=int16(inv_scale_factor*Civ_V_smooth);
+        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
+        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
+        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
+        %         Data.U_smooth=int16(inv_scale_factor*U_smooth);
+        %         Data.V_smooth=int16(inv_scale_factor*V_smooth);
+        %         Data.SubRange=SubRange;
+        %         Data.NbCentres=NbCentres;
+        %         Data.Coord_tps=Coord_tps;
+        %         Data.U_tps=U_tps;
+        %         Data.V_tps=V_tps;
+    end
+    %
+    %      if ~isempty(inv_scale_factor)
+    %              Data=compress_data(Data,inv_scale_factor);% compress the data using integers instead of (single precision)floating reals
+    %      end
     errormsg=struct2nc(ncfile_out,Data);
     if isempty(errormsg)
         disp([ncfile_out ' written'])
@@ -1073,5 +1115,26 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
     end
 end
 
-
-
+% % --- compress the data using integers instead of (single precision)floating reals
+% function DataOut=compress_data(DataIn,inv_scale_factor)
+% DataOut=DataIn; %default
+% DataOut.Conventions= 'uvmat/civdata/compress';
+% ListVarName=DataIn.ListVarName;
+% for ilist=1:numel(ListVarName)
+%     switch ListVarName{ilist}
+%         case {'Civ1_C','Civ2_C'}
+%             DataOut.(ListVarName{ilist})=uint8(inv_scale_factor*DataIn.(ListVarName{ilist}));
+%             DataOut.VarAttribute{ilist}.scale_factor=1/inv_scale_factor;
+%         case {'Civ1_U','Civ1_V','Civ2_U','Civ2_V','Civ1_U_smooth','Civ1_V_smooth','Civ2_U_smooth','Civ2_V_smooth'}
+%             DataOut.(ListVarName{ilist})=int16(inv_scale_factor*DataIn.(ListVarName{ilist}));
+%             DataOut.VarAttribute{ilist}.scale_factor=1/inv_scale_factor;
+%         case 'Civ1_X'
+%             DataOut.Civ1_X=uint16(DataIn.Civ1_X);
+%         case 'Civ1_Y'
+%             DataOut.Civ1_Y=uint16(DataIn.Civ1_Y);
+%        case 'Civ2_X'
+%             DataOut.Civ2_X=uint16(DataIn.Civ2_X);
+%         case 'Civ2_Y'
+%             DataOut.Civ2_Y=uint16(DataIn.Civ2_Y);
+%     end
+% end

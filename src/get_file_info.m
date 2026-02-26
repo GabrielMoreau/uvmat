@@ -150,8 +150,8 @@ switch FileExt
             FileInfo.FileType='error';
             return
         end
-        XmlFile=fullfile(RootPath,[SubDir '.xml']);
-        CheckWriteImaDoc=true;
+%         XmlFile=fullfile(RootPath,[SubDir '.xml']);
+%         CheckWriteImaDoc=true;
 %         if exist(XmlFile,'file')
 %             [XmlData,~,errormsg]=xml2struct(XmlFile);
 %             if ~isempty(errormsg)
@@ -206,7 +206,7 @@ switch FileExt
                     try %try netcdf file
                         [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
-                            if isfield(Data,'Conventions') && strcmp(Data.Conventions,'uvmat/civdata')
+                            if isfield(Data,'Conventions') && ~isempty(find(strcmp(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'}), 1))
                                 FileInfo.FileType='civdata'; % test for civ velocity fields
                                 FileInfo.CivStage=Data.CivStage;
                                 MaskFile='';

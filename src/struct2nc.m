@@ -113,12 +113,14 @@ for ivar=1:length(ListVarName)
         VarClass{ivar}=class(Data.(ListVarName{ivar}));
         VarType='';
         switch VarClass{ivar}
-            case {'single','double'}
+            case {'single','double','int32','uint32','int64','uint64'}
                 VarType='nc_float'; % store all floating reals as single
-            case {'int8','uint8','int16','uint16','int32','uint32','int64','uint64'}
-                VarType='nc_int';
+            case {'int16','uint16'}
+                  VarType='nc_short';
+            case {'int8','uint8'}
+                VarType='nc_byte';
             case 'logical'
-                VarType='nc_int';
+                VarType='nc_byte';
                 Data.(ListVarName{ivar})=uint8(Data.(ListVarName{ivar}));
         end
         if ~isempty(VarType)

@@ -1,4 +1,4 @@
-%'read_civxdata': reads civx data from netcdf files
+%'read_civxdata': reads civx data from netcdf files (OBSOLETE)
 %------------------------------------------------------------------
 %
 % function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)

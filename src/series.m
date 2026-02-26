@@ -1251,9 +1251,8 @@ end
 
 
 %% display the set of existing files as an image with black bands for gaps showing gaps in the series
-set(handles.FileStatus,'Units','pixels')
-Position=get(handles.FileStatus,'Position');
-set(handles.FileStatus,'Units','normalized')
+
+%set(handles.FileStatus,'Units','normalized')
 nbview=numel(SeriesData.i1_series);
 i_max=cell(1,nbview);
 MaxIndex_i=ones(1,nbview); % default
@@ -1266,31 +1265,37 @@ for iline=1:nbview
     if ~isempty(i_max{iline})&& ~isequal(pair_max,0)
         MaxIndex_i(iline)=find(i_max{iline}, 1, 'last' )-1; % max ref index i
         MinIndex_i(iline)=find(i_max{iline}, 1 )-1; % min ref index i
-         missing_indices{iline}= find(i_max{iline}(2:end)==0);          
+         exist_indices{iline}= find(i_max{iline}(2:end)~=0);
+         index_series=i_max{iline}( exist_indices{iline});
     end
 end
 MinIndex_i=min(MinIndex_i);
 MaxIndex_i=max(MaxIndex_i);
 range_index=MaxIndex_i-MinIndex_i+1;
+
+set(handles.FileStatus,'Units','pixels')
+Position=get(handles.FileStatus,'Position');
 range_y=max(1,floor(Position(4)/nbview));
 npx=floor(Position(3));%length of the bar image FileStatus in pixels
 
 %file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
 CData=ones(nbview*range_y,npx); % initiate the image representing the existing files
-LineData=ones(1,npx);
-for iline=1:nbview
-    ind_y=1+(iline-1)*range_y:iline*range_y;
-    missing_pixels=floor((missing_indices{iline}-MinIndex_i+1)*npx/range_index)+1;
-    LineData(missing_pixels)=0;
-%     LineData=zeros(size(file_indices));
-%     file_select=file_indices(file_indices<=numel(i_max{iline}));
-%     ind_select=file_indices<=numel(i_max{iline});
-%     LineData(ind_select)=i_max{iline}(file_select)~=0;
-    CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
+if MaxIndex_i>MinIndex_i
+    LineData=ones(1,npx);
+    for iline=1:nbview
+        ind_y=1+(iline-1)*range_y:iline*range_y;
+%         missing_pixels=floor((missing_indices{iline}-MinIndex_i+1)*npx/range_index)+1;
+%         LineData(missing_pixels)=0;
+        %     LineData=zeros(size(file_indices));
+        %     file_select=file_indices(file_indices<=numel(i_max{iline}));
+        %     ind_select=file_indices<=numel(i_max{iline});
+        %     LineData(ind_select)=i_max{iline}(file_select)~=0;
+        CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
+    end
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
-
+set(handles.FileStatus,'Units','normalized')
 %-----------------------------------------------------------guide -------------
 %------------------------------------------------------------------------
 %  III - FUNCTIONS ASSOCIATED TO THE FRAME IndexRange

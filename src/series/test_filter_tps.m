@@ -190,16 +190,7 @@ SubDomainSize=Param.ActionInput.SubDomainSize;
 MaxDiff=Param.ActionInput.MaxDiff;
 FieldSmooth=(Param.ActionInput.FieldSmooth)*[0.1 0.2 0.5 1 2 5 10];%scan the smoothing param from 1/10 to 10 current value
 NbSmooth=numel(FieldSmooth);
-% for irho=1:NbSmooth
-%     str=num2str(FieldSmooth(irho));
-%     str=regexprep(str,'\.','p');
-%     Ustr{irho}=['U_' str];
-%     Vstr{irho}=['V_' str];
-%     Xstr{irho}=['X_' str];
-%     Ystr{irho}=['Y_' str];
-%     Dimstr{irho}='NbVec';
-%     str_i{irho}=str;
-% end
+
 
 %% Prepare the structure of output netcdf file
 DataOut.ListGlobalAttribute={'Conventions','Program','CivStage','SubDomainSize','MaxDiff','CoordUnit','FieldSmooth'};

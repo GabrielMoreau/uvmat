@@ -1004,8 +1004,8 @@ if test_ima
                 if siz==3 && CheckFixScalar % true color images rescaled by MaxA
                     A=uint8(255*double(A)/double(MaxA));
                 end
-            otherwise
-                colormap(ColorMap);
+%             otherwise
+%                 colormap(ColorMap);
         end
   
         

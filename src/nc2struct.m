@@ -198,17 +198,7 @@ else   %select input variables, if requested by the input ListVarName
         end
     end
     ListVarName=ListVarName(:,logical(check_keep));
-    if size(ListVarName,1)>1 %multiple choice of variable ranked by order of priority
-        for iline=1:size(ListVarName,1)
-            search_index=find(strcmp(ListVarName{iline,1},ListVarNameNetcdf),1);%look for the first variable name in the list of NetCDF variables
-            if ~isempty(search_index)
-                break % go to the next line
-            end
-        end
-        ichoice=iline-1;%selected line number in the list of input names of variables
-    else
-        iline=1;
-    end
+    iline=size(ListVarName,1);    
     %ListVarName=ListVarName(iline,:);% select the appropriate option for input variable (lin ein the input name matrix)
     if CheckTimeVar
         TimeVarIndex=find(strcmp(TimeVarName,ListVarNameNetcdf),1); %look for the index of the time variable in the netcdf list
@@ -273,7 +263,6 @@ if  ~isempty(ListVarName)
     for ivar=1:length(var_index)
         VarName=Data.ListVarName{ivar};
         VarName=regexprep(VarName,'-','_'); %suppress '-' if it exists in the NetCDF variable name (leads to errors in matlab)
-        %             CheckSub=0;
         if input_index==4% if a dimension is selected as time
             ind_vec=zeros(1,numel(var_dim{ivar}));% vector with zeros corresponding to al the dimensions of the variable VarName
             ind_size=dim_value(var_dim{ivar});% vector giving the size (for each dimension) of the variable VarName
@@ -289,17 +278,16 @@ if  ~isempty(ListVarName)
                     Data.VarDimName{ivar}(index_time)=[];% for a single selected time remove the time in the list of dimensions (except for tTime itself)
                 end
             end
-%            tstart = tic;
-          % disp(VarName)
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size); %read the variable data
-%              telapsed = toc(tstart)
             Data.(VarName)=squeeze(Data.(VarName));%remove singeton dimension
-
         else
+                       disp(VarName)
+           xtype(var_index(ivar))
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
-        end
-        if xtype(var_index(ivar))==5% indicate single precision variable
-            Data.(VarName)=double(Data.(VarName)); %transform to double for single pecision
+        end       
+        Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
+        if isfield(Data,'VarAttribute') && numel(Data.VarAttribute)>=ivar && isfield(Data.VarAttribute{ivar},'scale_factor')
+            Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *Data.(VarName);
         end
     end
 end
