@@ -281,13 +281,16 @@ if  ~isempty(ListVarName)
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1,ind_vec,ind_size); %read the variable data
             Data.(VarName)=squeeze(Data.(VarName));%remove singeton dimension
         else
-                       disp(VarName)
-           xtype(var_index(ivar))
+%                        disp(VarName)
+%            xtype(var_index(ivar))
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
-        end       
-        Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
+        end   
+        if xtype(var_index(ivar))==5 %single precision
+             Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
+        end
+    %    Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
         if isfield(Data,'VarAttribute') && numel(Data.VarAttribute)>=ivar && isfield(Data.VarAttribute{ivar},'scale_factor')
-            Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *Data.(VarName);
+            Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
         end
     end
 end

@@ -297,7 +297,7 @@ if exist('input','var')
         UvData.Field.A=input;
         UvData.Field.coord_x=[0.5 size(input,2)-0.5];
         UvData.Field.coord_y=[size(input,1)-0.5 0.5];
-        testinputfield=1;
+        %testinputfield=1;
     end
 else
     %% check the path and date of modification of all functions in uvmat
@@ -4438,6 +4438,7 @@ if ~isfield(UvData.Field,FieldName)
     return
 end
 
+
 %% extract the fields to use
 % eliminate false data if relevant (false flag FF exists)
 check_false=0;
@@ -4487,14 +4488,15 @@ else
                 Histo.VarDimName={FieldName,{FieldName,'component'}}; %dimensions for the histogram
             end
         end
-        %unit
-        units=[]; %default
-        for ivar=1:numel(Field.ListVarName)
-            if strcmp(Field.ListVarName{ivar},FieldName)
-                if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
-                    units=Field.VarAttribute{ivar}.units;
-                    break
-                end
+        units='';     scale_factor=NaN; %default
+        %determine the bin size for histogram
+        FieldIndex=find(strcmp(FieldName,Field.ListVarName));
+        if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=FieldIndex
+            if isfield(Field.VarAttribute{FieldIndex},'units')
+                units=Field.VarAttribute{FieldIndex}.units;
+            end
+            if isfield(UvData.Field.VarAttribute{FieldIndex},'scale_factor')
+                scale_factor=UvData.Field.VarAttribute{FieldIndex}.scale_factor;
             end
         end
         Histo.VarAttribute{1}.Role='coord_x';
@@ -4502,17 +4504,24 @@ else
         if ~isempty(units)
             Histo.VarAttribute{1}.units=units;
         end
-        VarMesh=(Amax-Amin)/100;
-        ord=10^(floor(log10(VarMesh)));%order of magnitude
-        if VarMesh/ord >=5
-            VarMesh=5*ord;
-        elseif VarMesh/ord >=2
-            VarMesh=2*ord;
+        %determine the bin size for histogram
+        if isa(FieldHisto,'integer')
+            VarMesh=max(1,(Amax-Amin)/100);
+        elseif (Amax-Amin)/scale_factor<100
+            VarMesh=scale_factor;% take the integer mesh used to store the field
         else
-            VarMesh=ord;
+            VarMesh=(Amax-Amin)/100;
+            ord=10^(floor(log10(VarMesh)));%order of magnitude
+            if VarMesh/ord >=5
+                VarMesh=5*ord;
+            elseif VarMesh/ord >=2
+                VarMesh=2*ord;
+            else
+                VarMesh=ord;
+            end
+            Amin=VarMesh*(ceil(Amin/VarMesh));
+            Amax=VarMesh*(floor(Amax/VarMesh));
         end
-        Amin=VarMesh*(ceil(Amin/VarMesh));
-        Amax=VarMesh*(floor(Amax/VarMesh));
         Histo.(FieldName)=Amin:VarMesh:Amax; %absissa values for histo
         if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
             C=reshape(double(FieldHisto),1,[]);% reshape in a vector
@@ -4520,17 +4529,19 @@ else
         else
             for col=1:size(FieldHisto,3)
                 B=FieldHisto(:,:,col);
-                C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
+                C=reshape(B,1,nxy(1)*nxy(2));% reshape in a vector
+                
                 Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
+                % Histo.histo(:,col)=histogram(C);  %calculate histogram
                 switch get(handles.LogLinHisto,'Value')
                     case 1
                         PlotParam.Type='plot';
                     case 2
-                    PlotParam.Type='semilogy';
+                        PlotParam.Type='semilogy';
                     case 3
-                       PlotParam.Type='semilogx'; 
+                        PlotParam.Type='semilogx';
                     case 4
-                    PlotParam.Type='loglog';
+                        PlotParam.Type='loglog';
                 end
             end
         end
@@ -5179,10 +5190,13 @@ switch FileType
         elseif isequal(CivStage,6) %patch2
             imax=6;
         end
-    case {'civdata','civdata_3D','pivdata_fluidimage'}
+    case {'civdata','civdata_compress','civdata_3D','pivdata_fluidimage'}
         menu={'civ1';'filter1';'civ2';'filter2'};
         imax=[0 1 1 2 3 3 4 5 5 6];
         imax=imax(min(CivStage+1,10));
+        if strcmp(FileType,'civdata_compress')&& CivStage>=4
+            imin=3;
+        end
 end
 menu=menu(imin:imax);
 

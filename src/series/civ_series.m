@@ -973,19 +973,17 @@ for ifield=1:NbField
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{4}.scale_factor=1/inv_scale_factor;
     Data.VarAttribute{5}.Role='ancillary';
-    Data.VarAttribute{5}.scale_factor=1/inv_scale_factor;
+    Data.VarAttribute{5}.scale_factor=1/100;%scla factor for correlation
     Data.VarAttribute{6}.Role='errorflag';
     Data.X=uint16(Civ_X);
     Data.Y=uint16(Civ_Y);
     Data.U=int16(inv_scale_factor*Civ_U);
     Data.V=int16(inv_scale_factor*Civ_V);
-    Data.C=uint8(inv_scale_factor*Civ_C);
+    Data.C=uint8(100*Civ_C);
     Data.FF=uint8(Civ_FF);
+    % add smoothed field if ptch is done
     if (Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||Param.ActionInput.CheckPatch2
         nbvar=6;
-        %     Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth','SubRange','NbCentres','Coord_tps','U_tps','V_tps'}];
-        %         Data.VarDimName=[Data.VarDimName {'nb_vec','nb_vec',{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-        %             {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
         Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec','nb_vec'}];
         Data.VarAttribute{nbvar+1}.Role='vector_x';
@@ -994,21 +992,7 @@ for ifield=1:NbField
         Data.VarAttribute{nbvar+2}.scale_factor=1/inv_scale_factor;
         Data.U_smooth=int16(inv_scale_factor*Civ_U_smooth);
         Data.V_smooth=int16(inv_scale_factor*Civ_V_smooth);
-        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
-        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
-        %         Data.U_smooth=int16(inv_scale_factor*U_smooth);
-        %         Data.V_smooth=int16(inv_scale_factor*V_smooth);
-        %         Data.SubRange=SubRange;
-        %         Data.NbCentres=NbCentres;
-        %         Data.Coord_tps=Coord_tps;
-        %         Data.U_tps=U_tps;
-        %         Data.V_tps=V_tps;
     end
-    %
-    %      if ~isempty(inv_scale_factor)
-    %              Data=compress_data(Data,inv_scale_factor);% compress the data using integers instead of (single precision)floating reals
-    %      end
     errormsg=struct2nc(ncfile_out,Data);
     if isempty(errormsg)
         disp([ncfile_out ' written'])

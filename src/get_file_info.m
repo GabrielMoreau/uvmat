@@ -206,8 +206,12 @@ switch FileExt
                     try %try netcdf file
                         [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
-                            if isfield(Data,'Conventions') && ~isempty(find(strcmp(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'}), 1))
+                            if isfield(Data,'Conventions') && ismember(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'})
+                               if strcmp(Data.Conventions,'uvmat/civdata')
                                 FileInfo.FileType='civdata'; % test for civ velocity fields
+                               else
+                                   FileInfo.FileType='civdata_compress'; % test for civ velocity fields
+                               end
                                 FileInfo.CivStage=Data.CivStage;
                                 MaskFile='';
                                 if isfield(Data,'Civ2_Mask')
@@ -284,11 +288,11 @@ FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
     case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom','telopsIR'}
         FileInfo.FieldType='image';
-    case {'civdata','pivdata_fluidimage'}
+    case {'civdata','civdata_compress','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';
 end
 
-if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','netcdf','civdata'})
+if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','netcdf','civdata','civdata_compress'})
     FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 else
     FileInfo.FileIndexing='off';

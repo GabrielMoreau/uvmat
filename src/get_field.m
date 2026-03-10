@@ -114,7 +114,7 @@ for ilist=1:NbVar
         dim_index=strcmp(Field.VarDimName{ilist}{idim},Field.ListDimName);%index in the list of dimensions
         check_singleton(idim)=isequal(Field.DimValue(dim_index),1);%check_singleton=1 for singleton
     end
-    Field.Check0D(ilist)=(isequal(check_singleton,ones(1,NbDim)))||(~isequal(Field.VarType(ilist),4)&&~isequal(Field.VarType(ilist),5)&&~isequal(Field.VarType(ilist),6));% =1 if the variable reduces to a single value
+    Field.Check0D(ilist)=isequal(check_singleton,ones(1,NbDim));% =1 if the variable reduces to a single value
     if ~Field.Check0D(ilist)
     Field.Display.VarDimName{ilist}=Field.VarDimName{ilist}(~check_singleton);% eliminate singletons in the list of variable dimensions
     end
@@ -122,7 +122,7 @@ end
 if ~isfield(Field,'VarAttribute')
     Field.VarAttribute={};
 end
-if numel(Field.VarAttribute)<NbVar% complement VarAttribute by blanjs if neded
+if numel(Field.VarAttribute)<NbVar% complement VarAttribute by blanks if neded
     Field.VarAttribute(numel(Field.VarAttribute)+1:NbVar)=cell(1,NbVar-numel(Field.VarAttribute));
 end
 % Field.Display = list of variables and corresponding properties obtained after removal of variables with a single value and singleton dimensions
@@ -432,17 +432,17 @@ switch FieldOption
         set(handles.Y_title,'Visible','on')     
         if ~ischar(VarName)      
             %default scalar selection
-            test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
+            test_coord=false(size(Field.Display.VarDimName)); %=true when variable #ilist is eligible as structured coordinate
             for ilist=1:numel(Field.Display.VarDimName)
                 if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
                     Role=Field.Display.VarAttribute{ilist}.Role;
                     if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
-                        test_coord(ilist)=1;
+                        test_coord(ilist)=true;
                     end
                 end
                 dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
                 if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
-                    test_coord(ilist)=1;
+                    test_coord(ilist)=true;
                 end
             end
             scalar_index=find(~test_coord,1);%get the first variable not a coordinate
@@ -528,7 +528,7 @@ else
 end
 set(handles.Coord_y,'String',ListCoord)
 val_y=1;
-if strcmp(VarName,ListCoord{1})&& numel(ListCoord)>=2
+if ~isempty(ListCoord) && strcmp(VarName,ListCoord{1})&& numel(ListCoord)>=2
     val_y=2;
 end
 set(handles.Coord_y,'Value',val_y)

@@ -185,21 +185,12 @@ time=[];
 TimeUnit='frame'; %default
 % CoordUnit='';%default
 % pxcm_search=1;
-if isfield(SeriesData,'Time') &&numel(SeriesData.Time')>=1 && ~isempty(SeriesData.Time{1})
+if isfield(SeriesData,'Time') && numel(SeriesData.Time')>=1 && ~isempty(SeriesData.Time{1})
     time=SeriesData.Time{1};
 end
 if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)
     TimeUnit=Param.IndexRange.TimeUnit;
 end 
-% if isfield(SeriesData,'GeometryCalib')
-%     tsai=SeriesData.GeometryCalib;
-%     if isfield(tsai,'fx_fy')
-%         pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
-%     end
-%     if isfield(tsai,'CoordUnit')
-%         CoordUnit=tsai.CoordUnit;
-%     end
-% end
 
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
@@ -248,6 +239,11 @@ else  %case of netcdf file opening, start with the stage read in the file if the
     for index = 1:min(ind_opening,5)
         set(handles.(ListOptions{index}),'value',0)
         fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
+        if index<=3
+        set(handles.(ListOptions{index}),'Visible','off')
+        PanelTag=regexprep(ListOptions{index},'Check','')
+        set(handles.(PanelTag),'Visible','off')
+        end
     end
     if isempty(FileInfo)
         FileInfo.FileName='';
@@ -258,12 +254,9 @@ else  %case of netcdf file opening, start with the stage read in the file if the
             set(handles.(ListOptions{index}),'value',0)
             set(handles.(ListOptions{index}),'String',regexprep(ListOptions{index},'Check','redo '))
         end
-%         for index = ind_opening+1:6
-%             set(handles.(ListOptions{index}),'value',1)
-%         end
         set(handles.CheckCiv3,'Visible','off')% make visible the switch 'iterate/repet' for Civ2.
-        set(handles.CheckCiv3,'Value',0)% select'iterate/repet' by default
-    else
+        %set(handles.CheckCiv3,'Value',0)% select'iterate/repet' by default
+    else %civ3 proposed
         for index = 1:3
             set(handles.(ListOptions{index}),'value',0)
         end
@@ -272,6 +265,7 @@ else  %case of netcdf file opening, start with the stage read in the file if the
 %         end
         set(handles.CheckCiv3,'Visible','on')% make visible the switch 'iterate/repet' for Civ2.
         set(handles.CheckCiv3,'Value',1)% select'iterate/repet' by default
+        set(handles.CheckCiv3,'String',{'civ3'})% select'iterate/repet' by default
     end
     checkrefresh=1;
     %     end
@@ -630,11 +624,8 @@ end
 options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
 for ilist=1:length(options)
     if checkbox(ilist)
-%          set(handles.(options{ilist}),'Visible','on')
         set(handles.(options{ilist}),'Enable','on')
-%         set(handles.(['Check' options{ilist}]),'Strin
     else
-%         set(handles.(options{ilist}),'Visible','off')
         set(handles.(options{ilist}),'Enable','off')
     end
 end

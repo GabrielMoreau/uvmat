@@ -91,6 +91,27 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     end
+    VelocityRange=[];%default
+    VelGradientRange=[];%default
+    if isfield(Param,'ActionInput')
+        if isfield(Param.ActionInput,'VelocityRange') 
+           VelocityRange= Param.ActionInput.VelocityRange;
+        end
+        if isfield(Param.ActionInput,'VelGradientRange') 
+           VelGradientRange= Param.ActionInput.VelGradientRange;
+        end
+    end   
+    prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)';...
+        'range (max modulus) for vel derivatives (curl, div...) for 16 bit integer records (32 bit reals if empty)'};
+    dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
+    num_lines= 2;
+    def     = { num2str(VelocityRange),num2str(VelGradientRange)};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    if isempty(answer)
+        return
+    end
+    ParamOut.ActionInput.VelocityRange=str2num(answer{1});
+    ParamOut.ActionInput.VelGradientRange=str2num(answer{2});   
     return
 end
 
@@ -107,6 +128,14 @@ else
     hseries=findobj(allchild(0),'Tag','series');
     RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
     WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+end
+scale_factor_inv_uv=[];
+if isfield(Param.ActionInput,'VelocityRange') && ~isempty(Param.ActionInput.VelocityRange)
+    scale_factor_inv_uv=floor(32767/Param.ActionInput.VelocityRange);
+end
+scale_factor_inv_dudv=[];
+if isfield(Param.ActionInput,'VelGradientRange') && ~isempty(Param.ActionInput.VelGradientRange)
+    scale_factor_inv_dudv=floor(32767/Param.ActionInput.VelGradientRange);
 end
 
 %% define the directory for result file (with path=RootPath{1})
@@ -138,7 +167,9 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
-NcTypeOptions={'netcdf','civx','civdata','pivdata_fluidimage'};
+NcTypeOptions={'netcdf','civx','civdata','civdata_compress','pivdata_fluidimage'};
+frame_index=cell(NbView,1);FileInfo=cell(NbView,1);MovieObject=cell(NbView,1);ParamIn=cell(NbView,1);
+FileType=cell(NbView,1);CheckImage=zeros(NbView,1);CheckNc=zeros(NbView,1);
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
@@ -149,20 +180,20 @@ for iview=1:NbView
     if strcmp(FileType{iview},'civdata')&&  ~isfield(Param.InputFields,'VelType')
         FileType{iview}='netcdf';
     end
-    CheckImage{iview}=strcmp(FileInfo{iview}.FieldType,'image');% =1 for images
-    if CheckImage{iview}
+    CheckImage(iview)=strcmp(FileInfo{iview}.FieldType,'image');% =1 for images
+    if CheckImage(iview)
         ParamIn{iview}=MovieObject{iview};
     else
         ParamIn{iview}=Param.InputFields;
     end
-    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
+    CheckNc(iview)=ismember(FileType{iview},NcTypeOptions);% =1 for netcdf files
     if ~isempty(j1_series{iview})
         frame_index{iview}=j1_series{iview};
     else
         frame_index{iview}=i1_series{iview};
     end
 end
-if NbView >1 && max(cell2mat(CheckImage))>0 && ~isfield(Param,'ProjObject')
+if NbView >1 && max(CheckImage)>0 && ~isfield(Param,'ProjObject')
     disp_uvmat('ERROR','projection on a common grid is needed to concatene images: use a Projection Object of type ''plane'' with ProjMode=''interp_lin''',checkrun)
     return
 end
@@ -200,24 +231,20 @@ if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
         disp_uvmat('WARNING',['only the two first input file series will be combined by ' Param.FieldTransform.TransformName],checkrun)
     end
 end
-%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
- % EDIT FROM HERE
 
 %% check the validity of  input file types
-for iview=1:NbView
-    if ~isequal(CheckImage{iview},1)&&~isequal(CheckNc{iview},1)
-        disp_uvmat('ERROR','input set of input series: need  either netcdf either image series',checkrun)
+if ~(CheckImage | CheckNc)
+        disp_uvmat('ERROR',' netcdf or  image series needed as input',checkrun)
         return
-    end
 end
 
 %% output file type
-if min(cell2mat(CheckImage))==1 && (~Param.CheckObject || strcmp(Param.ProjObject.Type,'plane'))
+if min(CheckImage)==1 && (~Param.CheckObject || strcmp(Param.ProjObject.Type,'plane'))
     FileExtOut='.png'; %image output (input and proj result = image)
 else
     FileExtOut='.nc'; %netcdf output
 end
-if isempty(j1_series{1})
+if isempty(j1_series{1})||max(j1_series{1})==1
     NomTypeOut='_1';
 else
     NomTypeOut='_1_1';
@@ -231,11 +258,7 @@ for iview=2:NbView
 end
 
 
-%% Set field names and velocity types
-%use Param.InputFields for all views
-
 %% MAIN LOOP ON FIELDS
-%%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 tstart=tic; %used to record the computing time
@@ -260,7 +283,6 @@ for index=1:NbField
         i2=i1;
     end
     j1=1;
-    j2=1;
     if ~isempty(j1_series{1})
         j1=j1_series{1}(index);
     end
@@ -276,7 +298,7 @@ for index=1:NbField
     timeread=zeros(1,NbView);
     for iview=1:NbView
         %% reading input file(s)      
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},ParamIn{iview},frame_index{iview}(index));
+        [Data{iview},~,errormsg] = read_field(filecell{iview,index},FileType{iview},ParamIn{iview},frame_index{iview}(index));
         if isempty(errormsg)
             disp([filecell{iview,index} ' read OK'])
         else
@@ -306,11 +328,10 @@ for index=1:NbField
         end
         
         %% calculate tps coefficients if needed
-
-        check_proj_tps= strcmp(FileType{iview},'civdata') && isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)...
+        check_proj_tps= ismember(FileType{iview},{'civdata','civdata_compress'}) && isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)...
             && strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
         if check_proj_tps
-        Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
+            Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
         end
         
         %% projection on object (gridded plane)
@@ -325,7 +346,7 @@ for index=1:NbField
         %% mask
         if Param.CheckMask % introduce multilevel mask like for civ
             NbSlice=Param.MaskTable{iview,2};
-            [RootPath_mask,SubDir_mask,RootFile_mask,i1_mask,i2_mask,j1_mask,j2_mask,Ext_mask]=fileparts_uvmat(Param.MaskTable{iview,1});
+            [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.MaskTable{iview,1});
             i1_mask=mod(i1-1,NbSlice)+1;
             maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
             if ~exist(maskname,'file')
@@ -333,8 +354,8 @@ for index=1:NbField
             end
             [MaskData,~,errormsg] = read_field(maskname,'image');
             if ~isempty(NbSlice_calib)
-            MaskData.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-        end
+                MaskData.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
+            end
             if ~isempty(transform_fct) && nargin(transform_fct)>=2
                 MaskData=transform_fct(MaskData,XmlData{iview});
             end
@@ -350,8 +371,6 @@ for index=1:NbField
         [MergeData,errormsg]=merge_field(Data);%concatene all the input field series by fct merge_data
     else
         MergeData=transform_fct(Data{1},XmlData{1},Data{2}); %combine the two input file series
-    % else
-    %     MergeData=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});%combine the two input file series with calibration parameters
     end
     if ~isempty(errormsg)
         disp_uvmat('ERROR',errormsg,checkrun);
@@ -361,7 +380,7 @@ for index=1:NbField
     %% time of the merged field: take the average of the different views
     if ~isempty(time)
         timeread=time(index);   
-    elseif ~isempty(find(timeread))% time defined from ImaDoc
+    elseif ~isempty(find(timeread, 1))% time defined from ImaDoc
         timeread=mean(timeread(timeread~=0));% take average over times form the files (when defined)
     else
         timeread=index;% take time=file index 
@@ -371,10 +390,10 @@ for index=1:NbField
     %% recording the merged field
     if strcmp(FileExtOut,'.png')    %output as image
         if index==1
-            if strcmp(class(MergeData.A),'uint8')
-            BitDepth=8;
+            if isa(MergeData.A,'uint8')
+                BitDepth=8;
             else
-              BitDepth=16;  
+                BitDepth=16;
             end
             %write xml calibration file, using the first file
             siz=size(MergeData.A);
@@ -428,7 +447,7 @@ for index=1:NbField
             MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
             MergeData.Time=timeread;
         end
-        % position of projection plane 
+        % position of projection plane
         if isfield(Data{1},'ProjObjectCoord')&& isfield(Data{1},'ProjObjectAngle')
             ProjObjectCoord=Data{1}.ProjObjectCoord;
             ProjObjectAngle=Data{1}.ProjObjectAngle;
@@ -470,6 +489,30 @@ for index=1:NbField
                 MergeData.TimeUnit=TimeUnit;
             end
         end
+        if ~isempty(scale_factor_inv_uv)
+            index_U=find(strcmp(MergeData.ListVarName,'U'));
+            if ~isempty(index_U)
+                MergeData.VarAttribute{index_U}.scale_factor=1/scale_factor_inv_uv;
+                MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+            end
+            index_V=find(strcmp(MergeData.ListVarName,'V'));
+            if ~isempty(index_V)
+                MergeData.VarAttribute{index_V}.scale_factor=1/scale_factor_inv_uv;
+                MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+            end
+        end
+        if ~isempty(scale_factor_inv_dudv)
+            index_var=find(strcmp(MergeData.ListVarName,'curl'));
+            if ~isempty(index_var)
+                MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                MergeData.curl=int16(scale_factor_inv_uv*MergeData.curl);
+            end
+            index_var=find(strcmp(MergeData.ListVarName,'div'));
+            if ~isempty(index_var)
+                MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                MergeData.div=int16(scale_factor_inv_dudv*MergeData.div);
+            end
+        end
         error=struct2nc(OutputFile,MergeData);%save result file
         if isempty(error)
             disp(['output file ' OutputFile ' written'])
@@ -494,7 +537,7 @@ errormsg='';
 MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
 NbView=length(Data);
 if NbView==1% if there is only one field, just reproduce it in MergeData
-    return 
+    return
 end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions

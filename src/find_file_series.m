@@ -49,7 +49,7 @@ function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTy
 
 %% get input root name and info on the input file
 if isempty(regexp(FilePath,'^http://','once'))% case of usual file input
-fullfileinput=fullfile(FilePath,fileinput);% input file name with path
+  fullfileinput=fullfile(FilePath,fileinput);% input file name with path
 else
   fullfileinput=[FilePath '/' fileinput]; % case of web input
 end
@@ -215,12 +215,12 @@ if checkfileindexing
         ind_select=find(ref_ij>0);
         
         if ~isempty(ind_select)
-            [tild,ifile_min]=min(ref_ij(ind_select));
-            [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(ListFiles{ind_select(ifile_min)});% update the representation of indices (number of 0 before the number)
+            [~,ifile_min]=min(ref_ij(ind_select));
+            [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ind_select(ifile_min)});% update the representation of indices (number of 0 before the number)
             NomType=regexprep(NomType,['^' NomTypePref],'');
             %% update the file type if the input file does not exist (pb of 0001)
             if isempty(FileInfo.FileName)
-                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
+                [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ind_select(ifile_min)}));
             end
         end
         %         end
@@ -292,7 +292,7 @@ end
 %% sort pairs by decreasing index differences in case of multiple pairs at the same reference index
 if size(i2_series,3)>1 %pairs i1 -i2
     diff_index=abs(i2_series-i1_series);
-    [tild,ind_pair]=sort(diff_index,3,'descend');
+    [~,ind_pair]=sort(diff_index,3,'descend');
     for ref_i=1:size(i1_series,1)
         for ref_j=1:size(j1_series,2)
             i1_series(ref_i,ref_j,:)=i1_series(ref_i,ref_j,ind_pair(ref_i,ref_j,:));
@@ -304,7 +304,7 @@ if size(i2_series,3)>1 %pairs i1 -i2
     end
 elseif size(j2_series,3)>1 %pairs j1 -j2
     diff_index=abs(j2_series-j1_series);
-    [tild,ind_pair]=sort(diff_index,3,'descend');
+    [~,ind_pair]=sort(diff_index,3,'descend');
     for ref_i=1:size(i1_series,1)
         for ref_j=1:size(j1_series,2)
             i1_series(ref_i,ref_j,:)=i1_series(ref_i,ref_j,ind_pair(ref_i,ref_j,:));

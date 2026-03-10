@@ -608,9 +608,9 @@ for iview=1:nbview
         RootFile='';
     else
         [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
-        if ~isempty(XmlFileName) && Rank==0
+        if ~isempty(XmlFileName)
             XmlData=read_imadoc(XmlFileName);
-            if ~isempty(XmlData.FileSeries)
+            if  Rank==0 && ~isempty(XmlData.FileSeries)
                 set(handles.Relabel,'Visible','on')
                 answer='Yes';
                 if ~CheckRelabel && ~CheckRelabelQuest% propose to relabel if not selected yet
@@ -636,11 +636,11 @@ for iview=1:nbview
                         return
                     end
                     [Param.FileInfo,VideoObject]=get_file_info(FirstFile);
+                else
+                    set(handles.Relabel,'Value',0)
                 end
             end
             Param.XmlData=XmlData;
-        else
-            set(handles.Relabel,'Value',0)
         end
     end
     if ~Param.Relabel
@@ -1085,12 +1085,17 @@ if ~Param.Relabel
         [nbfield,nbfield_j]=size(Param.XmlData.Time);
         nbfield=nbfield-1; %remove the possible index 0
         nbfield_j=nbfield_j-1; %remove the possible index 0
-        MaxIndex_i=get(handles.MaxIndex_i,'Data');
-        MaxIndex_j=get(handles.MaxIndex_j,'Data');
-        MaxIndex_i(1,:)=nbfield;
-        MaxIndex_j(1,:)=nbfield_j;
-        MinIndex_i(1,:)=1;
-        MinIndex_j(1,:)=1;
+%         MaxIndex_i=get(handles.MaxIndex_i,'Data');
+%         MaxIndex_j=get(handles.MaxIndex_j,'Data');
+%         MaxIndex_i(1,:)=nbfield;
+%         MaxIndex_j(1,:)=nbfield_j;
+%         MinIndex_i(1,:)=1;
+%         MinIndex_j(1,:)=1;
+         MaxIndex_i=nbfield;
+         MaxIndex_j=nbfield_j;
+         MinIndex_i=1;
+         MinIndex_j=1;
+
 
         first_i=str2double(get(handles.num_first_i,'String'));
         first_j=str2double(get(handles.num_first_j,'String'));
@@ -2600,18 +2605,18 @@ end
 iview_civ=[];
 iview_netcdf=[];
 for iview=1:numel(SeriesData.FileInfo)
-    if strcmp(SeriesData.FileInfo{iview}.FileType,'civx')||strcmp(SeriesData.FileInfo{iview}.FileType,'civdata')
-      iview_civ=[iview_civ iview];
-      iview_netcdf=[iview_netcdf iview];% all nc files, icluding civ
-    elseif strcmp(SeriesData.FileInfo{iview}.FileType,'netcdf')
-      iview_netcdf=[iview_netcdf iview];
+    if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress','netcdf'})
+         iview_netcdf=[iview_netcdf iview];
+         if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress'})
+             iview_civ=[iview_civ iview];
+         end
     end
 end
 
 FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
-if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
+% if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 CheckPivData_1=0; % indicate whether FieldName_1 has been updated with civ data, 0 by default
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && numel(iview_civ)>=1
@@ -2976,14 +2981,14 @@ function FieldName_Callback(hObject, eventdata, handles)
 FieldListInit=get(handles.FieldName,'String');
 field_index=get(handles.FieldName,'Value');
 field=FieldListInit{field_index(1)};
-if isequal(field,'add_field...')
+if strcmp(field,'add_field...')
     FieldListInit(field_index(1))=[];
     SeriesData=get(handles.series,'UserData');
     for iview=1:numel(SeriesData.FileInfo)
     FileType{iview}=SeriesData.FileInfo{iview}.FileType;
     end
     % input line for which the field choice is relevant
-    iview=find(ismember(FileType,{'netcdf','civx','civdata'})); % all nc files, icluding civ
+    iview=find(ismember(FileType,{'netcdf','civx','civdata','civdata_compress'})); % all nc files, icluding civ
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)%delete opened versions of get_field
@@ -3860,40 +3865,44 @@ NbSlice=str2num(get(handles.num_NbSlice,'String'));
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus:
-function menu=set_veltype_display(Civ,FileType)
+function menu=set_veltype_display(CivStage,FileType)
 %------------------------------------------------------------------------
 if ~exist('FileType','var')
     FileType='civx';
 end
+imin=1;
 switch FileType
     case 'civx'
         menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
-        if isequal(Civ,0)
+        if isequal(CivStage,0)
             imax=0;
-        elseif isequal(Civ,1) || isequal(Civ,2)
+        elseif isequal(CivStage,1) || isequal(CivStage,2)
             imax=1;
-        elseif isequal(Civ,3)
+        elseif isequal(CivStage,3)
             imax=3;
-        elseif isequal(Civ,4) || isequal(Civ,5)
+        elseif isequal(CivStage,4) || isequal(CivStage,5)
             imax=4;
-        elseif isequal(Civ,6) %patch2
+        elseif isequal(CivStage,6) %patch2
             imax=6;
         end
-    case 'civdata'
+    case {'civdata','civdata_compress'}
         menu={'civ1';'filter1';'civ2';'filter2'};
-        if isequal(Civ,0)
+        if isequal(CivStage,0)
             imax=0;
-        elseif isequal(Civ,1) || isequal(Civ,2)
+        elseif isequal(CivStage,1) || isequal(CivStage,2)
             imax=1;
-        elseif isequal(Civ,3)
+        elseif isequal(CivStage,3)
             imax=2;
-        elseif isequal(Civ,4) || isequal(Civ,5)
+        elseif isequal(CivStage,4) || isequal(CivStage,5)
             imax=3;
-        else%if isequal(Civ,6) %patch2
+        else%if isequal(CivStage,6) %patch2
             imax=4;
         end
+        if strcmp(FileType,'civdata_compress') && CivStage>=4
+            imin=CivStage-3;
+        end
 end
-menu=menu(1:imax);
+menu=menu(imin:imax);
 
 
 % --- Executes on mouse motion over figure - except title and menu.
