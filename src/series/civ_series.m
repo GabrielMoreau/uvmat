@@ -327,6 +327,7 @@ for ifield=1:NbField
     %% Civ1
     % if Civ1 computation is requested
     if Param.ActionInput.CheckCiv1
+        tstart_civ1=tic;
         disp('civ1 started')
         par_civ1=Param.ActionInput.Civ1;% parameters for civ1
         %if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
@@ -542,6 +543,7 @@ for ifield=1:NbField
             disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
+        time_civ1=toc(tstart_civ1);
     end
     
     

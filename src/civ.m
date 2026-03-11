@@ -126,7 +126,7 @@ if CheckDeformation
 end
 
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
-    for ivec=1:nbvec
+    parfor ivec=1:nbvec
 %         iref=round(par_civ.Grid(ivec,1));% xindex on the image A for the middle of the correlation box
 %         jref=round(npy_ima-par_civ.Grid(ivec,2));%  j index  for the middle of the correlation box in the image A
          iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
