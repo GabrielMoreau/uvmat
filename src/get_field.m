@@ -626,16 +626,8 @@ end
 
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
 var_coord=find(test_coord);% % list of variable indices elligible as gridded coordinates
-% index_coord=[];
-% index_component=[];
-% for iscalar=1:numel(scalar_index)
-%     index_component=[index_component find(var_component==scalar_index(iscalar),1)];
-%     index_coord=[index_coord find(var_coord==scalar_index(iscalar),1)];
-% end
-% var_component(index_component)=[];
-% var_coord(index_coord)=[];
 ListCoord=Field.Display.ListVarName([var_coord var_component]);
-%coord_val=zeros(size(ListCoord));
+
 
 %% set default selection for grid coordinates
 % if numel(var_coord)>=2
@@ -902,13 +894,14 @@ function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function Coord_x_Callback(hObject, DimCell, handles)
 
-index=get(handles.Coord_x,'Value');
 string=get(handles.Coord_x,'String');
-VarName=string{index};
+VarName=string{get(handles.Coord_x,'Value')};
 if ~ischar(DimCell)% no dimension as input
     update_field(handles,VarName)% update the display of the variable 'VarName' and its dimensions in the general list of variables
 end
-if isequal(get(handles.FieldOption,'Value'),1)
+MenuFieldOption=get(handles.FieldOption,'String');
+FieldOption=MenuFieldOption{get(handles.FieldOption,'Value')};
+if strcmp(FieldOption,'1D_plot')
     set_coord_y_options(handles,VarName)
 end
 

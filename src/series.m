@@ -3066,10 +3066,11 @@ if strcmp(field,'add_field...')
                     TimeTable{LineIndex,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % last time
                     TimeTable{LineIndex,5}=get_time(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Max time
                 case 'variable'
-                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-                    set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
-                    set(handles.FileIndex,'String','')
+                    TimeName=['var:' GetFieldData.Time.TimeName];
+                   % set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+%                     set(handles.NomType,'String','*')
+%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
+%                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix_index'
                     TimeName=['dim:' GetFieldData.Time.TimeName];
@@ -3360,9 +3361,10 @@ set(handles.DeleteObject,'Visible','off')
 % --- Executed when CheckMask is activated
 %------------------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
-
+% SeriesData=get(handles.series,'UserData');
 
 if get(handles.CheckMask,'Value')
+    
     set(handles.DeleteMask,'Visible','on')
     Param=read_GUI_series(handles); % displayed parameters
     NbView=size(Param.InputTable,1);
@@ -3378,18 +3380,23 @@ if get(handles.CheckMask,'Value')
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     %checkmask=zeros(NbView,1);
     for iview=1:NbView
-        checkmask=0;
+        checkmask=false;
         FirstFileName=fullfile_uvmat(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},...
             Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);
         
-       % [FileInfo,VideoObject]=get_file_info(FirstFileName);
+        [FileInfo,VideoObject]=get_file_info(FirstFileName);
         
         
-%         Data=nc2struct(FirstFileName);
-        if isfield(Data,'Civ2_Mask')
-            if exist(Data.Civ2_Mask,'file')
-            MaskTable{iview,1}=Data.Civ2_Mask;
-            checkmask=1; 
+       %  Data=nc2struct(FirstFileName);
+        if isfield(FileInfo,'MaskFile') && isfield(FileInfo,'MaskExt')
+           if  isfield(FileInfo,'MaskNbSlice')&& exist([FileInfo.MaskFile '_1' FileInfo.MaskExt],'file')
+            MaskTable{iview,1}=[FileInfo.MaskFile '_1' FileInfo.MaskExt];
+            MaskTable{iview,2}=num2str(FileInfo.MaskNbSlice);
+            checkmask=true; 
+           elseif exist([FileInfo.MaskFile FileInfo.MaskExt],'file')
+                 MaskTable{iview,1}=[FileInfo.MaskFile FileInfo.MaskExt];
+                 MaskTable{iview,2}='';
+                  checkmask=true; 
             end
         end
         if ~checkmask
@@ -3409,8 +3416,8 @@ if get(handles.CheckMask,'Value')
         end
     end
     set(handles.MaskTable,'Data',MaskTable)
-    set(handles.CheckMask,'Value',0)
 end
+
 %       
 % if ~isempty(NewMask)
 %     if isempty(MaskList)

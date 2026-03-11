@@ -15,11 +15,12 @@
 % FileName: name of the input file
 % FileType: type of file, as determined by the function get_file_info.m
 % ParamIn: movie object or Matlab structure of input parameters
-%     .FieldName: name (char string) of the input field (for Civx data)
-%     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
-%     .ColorVar: variable used for vector color
+%     .VelType: (for civdata) char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
+%     .FieldName:(for general netcdf files) name (char string) or list of names (cell of char strings) of fields to read 
+%     .ColorVar:(for general netcdf files) variable possibly used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
 %     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'frame_index'
+%     .TimeVarName: name of the variable considered as 'time'
 % frame_index: frame number for movies or multidimensional netcdf files with dim >2
 %
 % see also read_image.m,read_civxdata.m,read_civdata.m,

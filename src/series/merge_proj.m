@@ -353,6 +353,10 @@ for index=1:NbField
                 maskname=Param.MaskTable{iview,1};
             end
             [MaskData,~,errormsg] = read_field(maskname,'image');
+            if ~isempty(errormsg)
+                disp(['error reading ' maskname ' :' errormsg])
+                return
+            end
             if ~isempty(NbSlice_calib)
                 MaskData.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
