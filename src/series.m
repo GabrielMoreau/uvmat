@@ -1067,7 +1067,7 @@ if ~Param.Relabel
     end
 
     %% get index range in case of relabeling
-    if isfield(Param,'XmlData') && ~isempty(Param.XmlData.Time)
+    if isfield(Param,'XmlData') && isfield(Param.XmlData,'Time')&& ~isempty(Param.XmlData.Time)
         Time=Param.XmlData.Time;
         MinIndex_i=1;
         MaxIndex_i=size(Time,1)-1;

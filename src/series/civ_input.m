@@ -394,7 +394,7 @@ if isfield(Param,'ActionInput')&& isfield(Param.ActionInput,'PairIndices')
 end
   
 %% set the GUI to modal: wait for OK to close
-set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
+%set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
 drawnow
 uiwait(handles.civ_input);% wait for OK action to end the function
 

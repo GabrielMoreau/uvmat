@@ -125,9 +125,9 @@ if ~isempty(hchild)
                         for icell=1:numel(CellInfo)%look for all physical fields
                             if NbDim(icell)==2 % select 2D field
                                 if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&&...
-                                        ~isempty(CellInfo{icell}.VarIndex_coord_x) && ~isempty(CellInfo{icell}.VarIndex_coord_y)%case of unstructured data
-                                    X=Field.(Field.ListVarName{CellInfo{icell}.VarIndex_coord_x});
-                                    Y=Field.(Field.ListVarName{CellInfo{icell}.VarIndex_coord_y});
+                                        ~isempty(CellInfo{icell}.XName) && ~isempty(CellInfo{icell}.YName)%case of unstructured data
+                                    X=Field.(CellInfo{icell}.XName);
+                                    Y=Field.(CellInfo{icell}.YName);
                                     flag_vec=(X<(xy(1,1)+Field.CoordMesh/4) & X>(xy(1,1)-Field.CoordMesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
                                         (Y<(xy(1,2)+Field.CoordMesh/4) & Y>(xy(1,2)-Field.CoordMesh/4));%f
                                     ivec=find(flag_vec,1);% search the (first) selected vector index ivec

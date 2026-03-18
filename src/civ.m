@@ -66,7 +66,7 @@ end
 
 shiftx=par_civ.SearchBoxShift(:,1);%use the input shift estimate, rounded to the next integer value
 shifty=par_civ.SearchBoxShift(:,2);% 
-if numel(shiftx)==1% case of a unique shift for the whole field( civ1)
+if isscalar(shiftx)% case of a unique shift for the whole field( civ1)
     shiftx=shiftx*ones(nbvec,1);
     shifty=shifty*ones(nbvec,1);
 end
@@ -105,10 +105,11 @@ check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 % 150>=mask >100: velocity not calculated, nor interpolated
 %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries)
 %  20>=mask: velocity=0
-checkmask=0;
+checkmask=false;
+check_undefined=zeros(npy_ima, npx_ima);
 MinA=min(min(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
-    checkmask=1;
+    checkmask=true;
     if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
         errormsg='mask must be an image with the same size as the images';
         return
@@ -124,7 +125,8 @@ if CheckDeformation
     mesh=0.25;%mesh in pixels for subpixel image interpolation (x 4 in each direction)
     par_civ.CorrSmooth=2;% use SUBPIX2DGAUSS (take into account more points near the max)
 end
-
+SearchRange_1=par_civ.SearchRange(1);
+SearchRange_2=par_civ.SearchRange(2);
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     parfor ivec=1:nbvec
 %         iref=round(par_civ.Grid(ivec,1));% xindex on the image A for the middle of the correlation box
@@ -135,8 +137,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         FF(ivec)=0;
         ibx2=floor(CorrBoxSizeX(ivec)/2);
         iby2=floor(CorrBoxSizeY(ivec)/2);
-        isx2=ibx2+ceil(par_civ.SearchRange(1));
-        isy2=iby2+ceil(par_civ.SearchRange(2));
+        isx2=ibx2+ceil(SearchRange_1);
+        isy2=iby2+ceil(SearchRange_2);
         subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
         subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage

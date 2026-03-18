@@ -2,10 +2,11 @@
 <Camera>
     <TimeUnit>s</TimeUnit><!--default =s (second) if not indicated-->
     <BurstTiming>
-      <Dtj unit="TimeUnit"> 0.1 0.3 0.2 </Dtj> <!--intervals in a  burst (here 4 images, just one interval for pairs), expressed in time units-->
+      
       <Time unit="TimeUnit" > 0 </Time> <!--time of the first image (defined for a trigger), = 0 by default-->
       <Dti unit="TimeUnit"> 15 </Dti><!--interval between bursts-->
       <NbDti>50</NbDti> <!-- total nbre of intervals Dti (nre of bursts-1)-->
+      <Dtj unit="TimeUnit"> 0.1 0.3 0.2 </Dtj> <!--intervals in a  burst (here 4 images, just one interval for pairs), expressed in time units-->
       </BurstTiming>
   </Camera>
 </ImaDoc>

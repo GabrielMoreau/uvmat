@@ -102,7 +102,7 @@ inv_scale_factor=100; % scale factor of displacements for uin16 records in netcd
 %% input files and indexing
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+% WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 MaxIndex_i=Param.IndexRange.MaxIndex_i;
 MinIndex_i=Param.IndexRange.MinIndex_i;
 MaxIndex_j=ones(size(MaxIndex_i));MinIndex_j=ones(size(MinIndex_i));
@@ -331,7 +331,7 @@ for ifield=1:NbField
         disp('civ1 started')
         par_civ1=Param.ActionInput.Civ1;% parameters for civ1
         %if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
-        try
+        % try
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 ImageName_A=Param.ActionInput.RefFile;
                 FrameIndex_A=1;
@@ -350,10 +350,10 @@ for ifield=1:NbField
                 if isempty(FileType_A)% open the image object if not already done in case of movie input
                     [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                     FileType_A=FileInfo_A.FileType;
-                    if isempty(Time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video','cine_phantom','telopsIR'}), 1))% case of video inputFrameIndex_A
+                    if isempty(Time) && ismember(FileType_A,{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
                         Time=zeros(FileInfo_A.NumberOfFrames+1,2);
                         Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
-                        if ~isempty(j1_series_Civ1) && j1_series_Civ1~=1
+                        if ~isempty(j1_series_Civ1) & j1_series_Civ1~=1
                             Time=Time';
                         end
                     end
@@ -391,12 +391,12 @@ for ifield=1:NbField
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
             
-        catch ME % display errors in reading input images
-            if ~isempty(ME.message)
-                disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
-                continue
-            end
-        end
+        % catch ME % display errors in reading input images
+        %     if ~isempty(ME.message)
+        %         disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
+        %         continue
+        %     end
+        % end
         
         % case of background image to subtract
         if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
@@ -1008,7 +1008,7 @@ for ifield=1:NbField
     disp(['time patch2 ' num2str(time_patch2,2) ' s'])
     if exist('time_input','var')
         disp(['time image reading ' num2str(time_input,2) ' s'])
-        disp(['time other ' num2str((time_total-time_input-time_civ1-time_patch1-time_civ2-time_patch2),2) ' s'])
+        disp(['time other ' num2str((time_total-time_civ1-time_patch1-time_civ2-time_patch2),2) ' s'])
     end
 end
 

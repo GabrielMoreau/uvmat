@@ -1,11 +1,10 @@
-%'export_mat': plot vector fields and save figures for project Coriolis/2019/TUBE
+%'decimate_arrows': plot 2D arrays of vector fields with color according to vector modulus, and save figures 
 %------------------------------------------------------------------------
 
 %INPUT:
-% handles: Matlab structure containing all the information displyed in the GUI uvmat
+% handles: Matlab structure containing all the information displayed in the GUI uvmat
 
-
-function export_mat(handles)
+function decimate_arrows(handles)
 %------------------------------------------------------------------------
 
 %% get input data
@@ -17,63 +16,67 @@ if ~requested
     return
 end
 RootPath=get(handles.RootPath,'String');
-SubDir=get(handles.SubDir,'String');
 RootFile=get(handles.RootFile,'String');
 FileIndex=get(handles.FileIndex,'String');
 
 %% Calibration:
 % plot parameters
 nBits = 64;
-scale = 0.15;
-decimation = 16;
+scale = 0.05;
+decimation = 8;
 % filtering procedure
 method = 'gaussian';
 window = 24;
 
 %% get colormap
-load('BuYlRd.mat')
-BuYlRd = BuYlRd(1:floor(size(BuYlRd)/nBits):end,:);
+load('BuYlRd.mat','BuYlRd')
+BuYlRd = BuYlRd(1:floor(size(BuYlRd,1)/nBits):end,:);
 
 %% reduce the number of arrows
-x = Data.coord_x(1:decimation:end,1:decimation:end);
-y = flipud(Data.coord_y(1:decimation:end,1:decimation:end));
+x = Data.coord_x(1:decimation:end);
+y = Data.coord_y(1:decimation:end);
 [X,Y] = meshgrid(x,y);
+X=reshape(X,1,[]);
+Y=reshape(Y,1,[]);
 % Filtering data to take away spurious subsampling issues (see Shannon Theorem)
-filtU = smoothdata(flipud(Data.U   ),method,window);
-filtV = smoothdata(flipud(Data.V   ),method,window);
-filtS = smoothdata(flipud(Data.norm),method,window);
+filtU = smoothdata(Data.U,method,window,'omitnan');
+filtV = smoothdata(Data.V,method,window,'omitnan');
 
-U = filtU(1:decimation:end,1:decimation:end);
-V = filtV(1:decimation:end,1:decimation:end);
-S = filtS(1:decimation:end,1:decimation:end);
-zmin = min(min(S));
-zmax = max(max(S));
+U = reshape(filtU(1:decimation:end,1:decimation:end),1,[]);
+V = reshape(filtV(1:decimation:end,1:decimation:end),1,[]);
+S = sqrt(U.*U+V.*V);
+zmin = min(S);
+zmax = max(S);
 bins = linspace(zmin,zmax,nBits);
+plot_scale=sqrt((x(2)-x(1))*(y(2))-y(1));% typical distance between arrows
+scale_factor=plot_scale/zmax; % set the maximum arrow length to the typical distance between arrows
+U=scale_factor*U;
+V=scale_factor*V;
 
 %% plot size and position in the figure
 width = 6.75;     % Width in inches 
 height = 6;    % Height in inches 
-alw = 0.75;    % AxesLineWidth 
 fsz = 12;      % Fontsize 
-lw = 1.25;      % LineWidth 
-msz = 8;       % MarkerSize 
+lw = 1.25;      % LineWidth  
 
 %% make the plot  
 figure(1)
+clf
 ax2 = axes('Visible','off','HandleVisibility','off');
 pos = get(1, 'Position');
 set(1, 'Position', [pos(1) pos(2) width*100, height*100]); %<- Set size
 set(ax2, 'FontSize', fsz, 'LineWidth', lw); %<- Set properties
 set(1, 'defaultTextInterpreter','latex');
 for i = 1:nBits-1
-    ii=find((S - bins(i+1) < 0).*(S - bins(i) > 0));
-    quiver(X(ii),Y(ii),U(ii),V(ii), scale,'Color',BuYlRd(i,:), 'LineWidth',1.2)
+    ii=find((S - bins(i+1) <= 0).*(S - bins(i) > 0));
+    quiver(X(ii),Y(ii),U(ii),V(ii),'off','Color',BuYlRd(i,:),'LineWidth',1.2,'MaxHeadSize',scale_factor*bins(i))
     hold on
 end
+%quiver(X,Y,U,V)
 cc=colorbar;
 set(cc,'TickLabelInterpreter','latex')
 cc.Label.String='cm/s';
-caxis([zmin zmax])
+clim([zmin zmax])
 axis equal
 xlim([Data.coord_x(1),Data.coord_x(end)])
 ylim([Data.coord_y(1),Data.coord_y(end)])

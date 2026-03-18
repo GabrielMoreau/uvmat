@@ -4,10 +4,10 @@
     <ExposureTime unit="TimeUnit">0.008</ExposureTime> <!--ancilllary info, not used in data processing-->
     <BurstTiming>
 	  <Time unit="TimeUnit" > 0 </Time>  <!--time of the first image, =0 by default-->
-      <Dtj unit="TimeUnit"> 0.01 </Dtj> <!-- elementaire time interval in a burst (volume) -->
-      <NbDtj> 49 </NbDtj>   <!--Nbe of intervals Dtj in a burst or volume (nre de frames-1) --> 
       <Dti unit="TimeUnit"> 0.8 </Dti>  <!-- time interval between two succesive bursts (volumes)-->
       <NbDti> 1 </NbDti> <!--Nbe of intervals Dti (nre of volumes -1)-->
+  <Dtj unit="TimeUnit"> 0.01 </Dtj> <!-- elementaire time interval in a burst (volume) -->
+      <NbDtj> 49 </NbDtj>   <!--Nbe of intervals Dtj in a burst or volume (nre de frames-1) --> 
       <Dtk unit="TimeUnit"> 10 </Dtk> <!-- time interval between two volume pairs , equivalent to <Dti>1 10</Dti> and <NbDti> 199 </NbDti> with no Dtk-->
       <NbDtk> 199 </NbDtk> <!-- nbre of volume pairs-->    
     </BurstTiming>

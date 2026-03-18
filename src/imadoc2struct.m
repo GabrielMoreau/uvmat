@@ -42,7 +42,7 @@ if nargin ==1% no additional input variable beyond 'ImaDoc'
 elseif nargin ==2 %one additional input variable beyond 'ImaDoc'specifying the subtree to read
     [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1});% convert the xml file in a structure s, keeping only the subtree defined in input
 else % case of two subtrees, TODO: deal with more than two subtrees?
-    [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
+    [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the two subtrees defined in input
 end
 if ~isempty(errormsg)
     errormsg=['error in reading ImaDoc xml file: ' errormsg];

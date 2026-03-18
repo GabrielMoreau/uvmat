@@ -21,14 +21,14 @@
     <ExposureTime unit="TimeUnit">0.010</ExposureTime>
     <BurstTiming>
 	  <Time unit="TimeUnit" >0</Time> <!--temps de la premiere image (par rapport à l'origine des temps definie pour l'experience (un trigger)-->
-      <Dtj unit="TimeUnit">1</Dtj> <!--interval élémentaire dans le burst (volume) -->
-      <NbDtj>49</NbDtj>   <!--Nbe d'intervals Dtj dans un burst (nre de frames-1) dans le volume--> 
       <Dti unit="frame">70 200</Dti><!--interval dans la paire de volumes interval entre paires-->
       <NbDti>50</NbDti> <!--Nbe d'intervals Dti (nre de paires de volumes -1)-->
+      <Dtj unit="TimeUnit">1</Dtj> <!--interval élémentaire dans le burst (volume) -->
+      <NbDtj>49</NbDtj>   <!--Nbe d'intervals Dtj dans un burst (nre de frames-1) dans le volume-->      
     </BurstTiming>
     <TimeOrigin>2010-06-17T16:44:28.93</TimeOrigin><!--date-temps absolu pour l'origine des temps definie pour l'experience-->
   </Camera>
-    <Oscillator><!--propriete du miroir oscillant, a discuter comment entrer ces donneee-->
+    <Oscillator><!--properties of oscillating mirrors-->
     <Frequency>3194.454905803945093</Frequency>
     <Amplitude unit="volt">2547.234905803945093</Amplitude>
     <Offset unit="volt">-3734.265094196054907</Offset>

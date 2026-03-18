@@ -260,20 +260,20 @@ switch FileExt
                     end
                     if error_nc
                         try
-                            if exist('mmreader.m','file')% Matlab 2009a
+                            % if exist('mmreader.m','file')% OBSOLETE Matlab 2009a
                                 INFO=mmfileinfo (fileinput);
                                 if  ~isempty(INFO.Video.Format)
-                                    VideoObject=mmreader(fileinput);
+                                    VideoObject=VideoReader(fileinput);
                                     FileInfo=get(VideoObject);
-                                    FileInfo.FileType='mmreader';
+                                    FileInfo.FileType='video';
                                 end
-                            end
+                            % end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';
                             FileInfo.TimeName='video';
                             FileInfo.FileName=fileinput;
                             nbfield=numel(fieldnames(FileInfo));
-                            FileInfo=orderfields(FileInfo,[nbfield nbfield-4 nbfield-3 nbfield-1 nbfield-2 (1:nbfield-5)]); %reorder the fields of fileInfo for clarity
+                            %FileInfo=orderfields(FileInfo,[nbfield nbfield-4 nbfield-3 nbfield-1 nbfield-2 (1:nbfield-5)]); %reorder the fields of fileInfo for clarity
                             if ~isfield(FileInfo,'NumberOfFrames')
                                 FileInfo.NumberOfFrames=floor(FileInfo.Duration*FileInfo.FrameRate);
                             end
@@ -286,7 +286,7 @@ end
 
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
-    case {'image','multimage','video','mmreader','rdvision','image_DaVis','cine_phantom','telopsIR'}
+    case {'image','multimage','video','rdvision','image_DaVis','cine_phantom','telopsIR'}
         FileInfo.FieldType='image';
     case {'civdata','civdata_compress','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';

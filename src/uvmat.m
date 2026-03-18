@@ -252,7 +252,7 @@ if exist(profil_perso,'file')==2% if the file exists
     if isfield(h,'export_fct') && iscell(h.export_fct) % load the menu of export fct set by user
         for ilist=1:length(h.export_fct)
             if exist(h.export_fct{ilist},'file')==2
-                [path,file]=fileparts(h.export_fct{ilist});
+                [~,file]=fileparts(h.export_fct{ilist});
                 export_menu=[export_menu; {file}];
             end
         end
@@ -264,12 +264,9 @@ set(handles.TransformName,'UserData',path_list)% store the corresponding list of
 set(handles.TransformPath,'String','')
 set(handles.TransformPath,'UserData',[])
 export_menu=[export_menu;{'more...'}];%append the option more.. to the menu
-%set(handles.TransformName,'String',transform_menu)% display the menu of transform fcts
 
 %% case of an input argument for uvmat
-%testinputfield=0;
 inputfile=[];
-%Field=[];
 if exist('input','var')
     if ishandle(handles.UVMAT_title)
         delete(handles.UVMAT_title)
@@ -355,27 +352,28 @@ if ~isempty(hh)
 end
 
 %------------------------------------------------------------------------
-%--- activated when resizing the GUI view_field
+%--- activated when resizing the GUI uvmat
  function ResizeFcn(gcbo,eventdata,handles)
 %------------------------------------------------------------------------
 set(handles.uvmat,'Units','pixels')
 size_fig=get(handles.uvmat,'Position');
-ColumnWidth=max(150,0.18*size_fig(3));
-ColumnWidth=min(ColumnWidth,250); % width of the right side display column, between 150 and 250, depending on the fig width
+ColumnWidth=max(150,0.18*size_fig(3)); %width of the right side display column equal to 0.18 *uvmat_GUI, in the range between 150 px and 250 px
+ColumnWidth=min(ColumnWidth,250);
 
 %% position of panel InputFile
 set(handles.InputFile,'Units','pixels')
-pos_InputFile=get(handles.InputFile,'Position');% [lower x lower y width height] for text_display
-pos_InputFile(1)=0;
-pos_InputFile(2)=size_fig(4)-pos_InputFile(4);             % set frame InputFile to the top of the fig
-pos_InputFile(3)=size_fig(3);
-set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] for text_display
+%pos_InputFile=get(handles.InputFile,'Position')% [lower x lower y width height] for text_display
+pos_InputFile(1)=0;            % set frame InputFile to the left of uvmat GUI
+pos_InputFile(2)=size_fig(4)-60;             % set frame InputFile to the top of uvmat GUI
+pos_InputFile(3)=size_fig(3);     %width of the GUI uvmat
+pos_InputFile(4)=60; %set the height of the panel to 60 px
+set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] 
 
 %% reset position of text_display and TableDisplay
 set(handles.text_display,'Units','pixels')
 set(handles.TableDisplay,'Units','pixels')
 pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
-    pos_1(3)=1.2*ColumnWidth;
+pos_1(3)=1.2*ColumnWidth;
 pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
 pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
 set(handles.text_display,'Position',pos_1)
@@ -395,42 +393,46 @@ set(handles.CheckTable,'Position',pos_CheckTable)
 
 %% reset position of Coordinates panel
 set(handles.Coordinates,'Units','pixels')
-pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
+%pos_2=get(handles.Coordinates,'Position')% [lower x lower y width height] for frame 'Coordinates'
+pos_2(1)=size_fig(3)-ColumnWidth;       % set 'Coordinates' to the right of the fig
+pos_2(2)=pos_1(2)-80;          % set 'Coordinates' to the lower edge of text display
 pos_2(3)=ColumnWidth;
-pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
-pos_2(2)=pos_1(2)-pos_2(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
+pos_2(4)=80;%keep height to 80 px
 set(handles.Coordinates,'Position',pos_2)
 
 %% reset position of Axes panel
 set(handles.Axes,'Units','pixels')
-pos_3=get(handles.Axes,'Position');% [lower x lower y width height] for frame 'Coordinates'
+%pos_3=get(handles.Axes,'Position')% [lower x lower y width height] for frame 'Coordinates'
+pos_3(1)=size_fig(3)-ColumnWidth;       % set 'Coordinates' to the right of the fig
+pos_3(2)=pos_2(2)-140;   
 pos_3(3)=ColumnWidth;
-pos_3(1)=size_fig(3)-pos_3(3);       % set 'Coordinates' to the right of the fig
-pos_3(2)=pos_2(2)-pos_3(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
+pos_3(4)=140;%keep height to 140 px
 set(handles.Axes,'Position',pos_3)
 
 %% reset position of  Scalar
 set(handles.Scalar,'Units','pixels')
-pos_4=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
-pos_4(3)=ColumnWidth;
-pos_4(1)=size_fig(3)-pos_4(3);         % set 'Scalar' to the right of the fig
+%pos_4=get(handles.Scalar,'Position') % [lower x lower y width height] for frame 'Scalar'
+pos_4(1)=size_fig(3)-ColumnWidth;         % set 'Scalar' to the right of the fig
 if strcmp(get(handles.Scalar,'Visible'),'on')
-    pos_4(2)=pos_3(2)-pos_4(4); % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+    pos_4(2)=pos_3(2)-140; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
 else
     pos_4(2)=pos_3(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
 end
+pos_4(3)=ColumnWidth;
+pos_4(4)=140;
 set(handles.Scalar,'Position',pos_4)
 
 %% reset position of  Vectors
 set(handles.Vectors,'Units','pixels')
-pos_5=get(handles.Vectors,'Position');
-pos_5(3)=ColumnWidth;
-pos_5(1)=size_fig(3)-pos_5(3);
+%pos_5=get(handles.Vectors,'Position')
+pos_5(1)=size_fig(3)-ColumnWidth;
 if strcmp(get(handles.Vectors,'visible'),'on')
-    pos_5(2)=pos_4(2)-pos_5(4);
+    pos_5(2)=pos_4(2)-240;
 else
     pos_5(2)=pos_4(2);
 end
+pos_5(3)=ColumnWidth;
+pos_5(4)=240;
 set(handles.Vectors,'Position',pos_5)
 
 %% reset position and scale of axis
@@ -458,6 +460,7 @@ set(handles.PlotAxes,'Units','normalized')
 % --- Executes on the menu Open/Browse...fill_GUI
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 if isempty(regexp(RootPath,'^http://'))%usual files
     oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
@@ -483,6 +486,7 @@ end
 
 % --------------------------------------------------------------------
 function MenuBrowseOpendap_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
 oldfile=get(hObject,'Label');
 fileinput=uigetfile_uvmat('pick an input file',oldfile);
 hh=dir(fileinput);
@@ -775,20 +779,6 @@ if exist(MovieName,'file')==2
 end
 
 %% create movie
-% duration = 2*FrameNumber/60;
-% [~,name,~] = fileparts(MovieName);
-% ffmpegcmd = ['ffmpeg -i ' ' ' MovieName ' ' '-filter:v "setpts=(',...
-%      num2str(fps/duration),')*PTS"' ' ' strcat(MovieDir,...
-%      strcat('/',name,'.mkv'))];
-% [ffmpeg_err,~] = system(ffmpegcmd);
-% if ffmpeg_err
-%     disp_uvmat('ERROR',['ERROR: Errors in conversion to mkv, close MATLAB and run "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 matlab" in terminal'],1 )
-%     return
-% end
-% msgbox_uvmat('CONFIRMATION',{['movie ' MovieName ' created '];['with ' num2str(FrameNumber) ' frames']})
-
-
-% 
 aviobj = VideoWriter(MovieName,'Motion JPEG AVI');
 open(aviobj)
 %% get info from uvmat and adjust it
@@ -825,26 +815,25 @@ delete(hObject)
 
 % --------------------------------------------------------------------
 function MenuExportCustom_Callback(hObject, eventdata, handles)
-export_fct_name=get(handles.MenuExportCustom,'label');
-if strcmp(export_fct_name,'user export fct.')
+%------------------------------------------------------------------------
+if strcmp(get(handles.MenuExportCustom,'label'),'user export fct.')
     MenuExportMore_Callback(hObject, eventdata, handles)
 else
     current_dir=pwd;%current working dir
     cd(fullfile(fileparts(which('uvmat')),'export_fct'))
-    export_handle=str2func(export_fct_name);
-    cd(current_dir)
+    export_handle=str2func(export_fct_name);% pick the relevant export fct in the folder UVMAT/export_fct
+    cd(current_dir) %come back to the current working dir
     export_handle(handles)
 end
         
 % --------------------------------------------------------------------
 function MenuExportMore_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 prev_path=fullfile(fileparts(which('uvmat')),'export_fct');
 transform_fct_chosen=uigetfile_uvmat('Pick the export function',prev_path,'.m');
 if ~isempty(transform_fct_chosen)
-    [PathName,transform_name]=fileparts(transform_fct_chosen);
+    [~,transform_name]=fileparts(transform_fct_chosen);
     set(handles.MenuExportCustom,'label',transform_name)
-    set(handles.MenuExportCustom,'checked','on')
     MenuExportCustom_Callback(hObject, eventdata, handles)
 end
 
@@ -952,9 +941,6 @@ function Menuvolume_Callback(hObject, eventdata, handles)
 data.Type='volume';
 data.ProjMode='interp_lin';%default
 data.ProjModeMenu={};
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% VOLUME_Callback(hObject,eventdata,handles)data.ProjModeMenu={};
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -2132,7 +2118,7 @@ end
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
+web('https://gricad-gitlab.univ-grenoble-alpes.fr/legi/soft/uvmat-doc/-/blob/master/help/README.md')
 
 
 %------------------------------------------------------------------------
@@ -2922,7 +2908,7 @@ else
          [~,RootFile]=fileparts(RootFile);%suppress the file extension
         set(handles.RootFile,'String',RootFile)
     else
-        [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex
+        [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(index_string);% the index_string for the second series taken from FileIndex
         switch index_rank
             case 1
                 index_string=fullfile_uvmat('','','','',NomType,stra2num(get(handles.num_i1,'String')),i2,j1,j2);
@@ -4072,7 +4058,7 @@ if isempty(dt)||isequal(dt,0)
     set(handles.Dt_txt,'String','')
 else
     if  isempty(TimeUnit)
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
+        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  ms'] )
     else
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' TimeUnit] )
     end
@@ -4708,8 +4694,8 @@ end
 
 %-----------------------------------------------------------------------
 % --- desactivate display used for a second file series
-%-----------------------------------------------------------------------
 function desable_subfield(handles)
+%-----------------------------------------------------------------------
 
 set(handles.RootPath_1,'String','')
 set(handles.RootFile_1,'String','')
@@ -4789,24 +4775,23 @@ NomType_1=get(handles.NomType_1,'String');
 if isequal(get(handles.NomType_1,'Visible'),'off') || isequal(NomType_1,'"')
     NomType_1=get(handles.NomType,'String');%read FileExt by default
 end
+
 %------------------------------------------------------------------------
 % --- Executes on menu selection FieldName
-
-    function FieldName_Callback(hObject, eventdata, handles)
+function FieldName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
 %% read data from uvmat
 UvData=get(handles.uvmat,'UserData');
 list_fields=get(handles.FieldName,'String');% list menu fields
 index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-if isempty(regexp(RootPath,'^http://'))
+if isempty(regexp(RootPath,'^http://', 'once'))
     FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 else
     FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
 end
-[tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
+[~,~,~,i1,~,j1,~,~,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
 
 switch field
     case 'get_field...'
@@ -4896,7 +4881,6 @@ switch field
                 FieldList={''};  
                 set(handles.uvmat,'ToolBar','figure')
                 set(handles.Coord_y,'Max',2)
-                %set(huvmat,
             case 'civdata...'%reinitiate input, return to automatic civ data readingget_field
                 UvData.FileInfo{1}.FieldType='netcdf';
             set(handles.uvmat,'UserData',UvData)
@@ -4923,7 +4907,6 @@ switch field
                     MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
                     set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
                     UvData.TimeUnit=GetFieldData.Time.TimeUnit;
-% %                     set(handles.uvmat,'UserData',UvData);
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix index'
@@ -5004,7 +4987,7 @@ end
 %% read the rootfile input display
 [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
 FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
-[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
+[~,~,~,i1,~,j1,~]=fileparts_uvmat(get(handles.FileIndex,'String'));
 switch field_1
     case 'get_field...'
          %% fill the axes and variables from selections in get_field
@@ -5105,9 +5088,6 @@ switch field_1
                     ParamIn.TimeDimName_1=GetFieldData.Time.TimeName;
             end
             set(handles.Coord_x,'String',XName)
-%             if ischar(YName)
-%                 YName={YName};
-%             end
             set(handles.Coord_y,'String',YName)
             set(handles.FieldName_1,'Value',1)
             set(handles.FieldName_1,'String',[FieldList; {'get_field...'}]);
@@ -5369,7 +5349,7 @@ if isfield(UvData,'ProjObject')
                     testphys=1;
                 end
             end
-            if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style')
+            if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Style')
                 if isequal(ObjectData.Type,'polygon')
                     X=ObjectData.Coord(:,1);
                     Y=ObjectData.Coord(:,2);
@@ -5434,9 +5414,9 @@ image(imflag);
 %  - FUNCTIONS FOR SETTING PLOTTING PARAMETERS
 
 %------------------------------------------------------------------------
+
 %------------------------------------------------------------------------
 % --- Executes on selection change in TransformName.
-
 function TransformName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.TransformName,'backgroundColor',[1 1 0])% indicate activation  of the menu
@@ -5511,12 +5491,14 @@ set(handles.TransformName,'UserData',list_path)
 if isempty(list_path{ichoice})% case of no selected fct
     set(handles.TransformName,'ToolTipString','transform_fct:choose a transform function')
 else
-    try
-        [fid,errormsg] =fopen([fullfile(list_path{ichoice},transform_name) '.m']);
-        InputText=textscan(fid,'%s',1,'delimiter','\n');
-        fclose(fid);
-        set(handles.TransformName,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
+    [fid,errormsg] =fopen([fullfile(list_path{ichoice},transform_name) '.m']);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+        return
     end
+    InputText=textscan(fid,'%s',1,'delimiter','\n');
+    fclose(fid);
+    set(handles.TransformName,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
 end
 
 %% adapt the GUI to the input/output conditions of the selected transform fct
@@ -5646,7 +5628,6 @@ update_plot(handles);
 function num_MaxA_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixScalar,'Value',1) %suppress auto mode
-% set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 MinA=str2double(get(handles.num_MinA,'String'));
 MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error
@@ -5698,10 +5679,6 @@ update_plot(handles);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Vector representation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % %-------------------------------------------------------------------
-% % function CheckHideWarning_Callback(hObject, eventdata, handles)
-% % %-------------------------------------------------------------------
-% % update_plot(handles);
 
 %-------------------------------------------------------------------
 function CheckShowFalse_Callback(hObject, eventdata, handles)
@@ -5945,7 +5922,7 @@ if isfield(UvData,'PlotAxes')
     AxeData=UvData.PlotAxes;% retrieve the current plotted data
 end
 PlotParam=read_GUI(handles.uvmat);
-[tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
+[~,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.uvmat);
 if isempty(errormsg)
     set(handles.REFRESH,'BackgroundColor',[1 0 0]);% operation finished, back to red color
@@ -6005,7 +5982,6 @@ end
 
 %  desactivate the edit object mode
 set(handles.CheckEditObject,'Value',0)
-% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7])
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListObject.
@@ -6143,16 +6119,12 @@ else % desactivate object edit mode
     end
 end
 
-
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckViewObject.
 function CheckViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 check_view=get(handles.CheckViewObject,'Value');
 hset_object=findobj(allchild(0),'tag','set_object');
-% if ~isempty(hset_object)
-%     delete(hset_object)% delete existing version of set_object
-% end
 if check_view %activate set_object
     IndexObj=get(handles.ListObject,'Value');
     list_object=get(handles.ListObject,'String');
@@ -6193,7 +6165,6 @@ else
     delete(hset_object)
 end
 
-
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckViewField.
 function CheckViewField_Callback(hObject, eventdata, handles)
@@ -6230,7 +6201,7 @@ if check_view
         hview_field=view_field;
     end
     hhview_field=guidata(hview_field);
-    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
+    [~,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
     errormsg=fill_GUI(PlotParam,hview_field);
     for list={'Scalar','Vectors'}
         if ~isfield(PlotParam,list{1})
@@ -6253,28 +6224,20 @@ else
     end
 end
 
-
 %------------------------------------------------------------------------
 % --- Executes on button press in DeleteObject.
-%------------------------------------------------------------------------
 function DeleteObject_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 IndexObj=get(handles.ListObject,'Value');%projection object selected for view_field
 IndexObj_1=get(handles.ListObject_1,'Value');%projection object selected for uvmat plot
 if IndexObj>1 && ~isequal(IndexObj,IndexObj_1) % do not delete the object used for the uvmat plot
     delete_object(IndexObj)
 end
 
-%'DeleteObject': delete a projection object, defined by its index in the Uvmat list or by its graphic handle
-%------------------------------------------------------------------------
-% function DeleteObject(hObject)
-%
-% INPUT:
-% hObject: object index (if integer) or handle of the graphic object. If
-%          hObject is a subobject, the parent object is detected and deleted.
-
+% --------------------------------------------------------------------
+% --- Delete a projection object, defined by its index in the Uvmat list or by its graphic handle
 function delete_object(IndexObj)
-
+%------------------------------------------------------------------------
 huvmat=findobj('tag','uvmat');%handles of the uvmat interface
 UvData=get(huvmat,'UserData');
 hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object list in the uvmat interface
@@ -6332,16 +6295,8 @@ else
     set(handles.TableDisplay,'Visible','off')
 end
 
-
-
-
-
+% --------------------------------------------------------------------
 % --- Executes on selection change in LogLinHisto.
+% --------------------------------------------------------------------
 function LogLinHisto_Callback(hObject, eventdata, handles)
-    HistoMenu_Callback(hObject, eventdata, handles)
-% hObject    handle to LogLinHisto (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns LogLinHisto contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from LogLinHisto
+HistoMenu_Callback(hObject, eventdata, handles)

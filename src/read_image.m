@@ -52,19 +52,19 @@ A=[];
 ObjectOut=VideoObject;%default
 switch FileType
     case 'video'
-        if strcmp(class(VideoObject),'VideoReader')
+        if isa(VideoObject,'VideoReader')
             A=read(VideoObject,num);
         else
             ObjectOut=VideoReader(FileName);
             A=read(ObjectOut,num);
         end
-    case 'mmreader'
-        if strcmp(class(VideoObject),'mmreader')
-            A=read(VideoObject,num);
-        else
-            ObjectOut=mmreader(FileName);
-            A=read(ObjectOut,num);
-        end
+    % case 'mmreader'
+    %     if strcmp(class(VideoObject),'mmreader')
+    %         A=read(VideoObject,num);
+    %     else
+    %         ObjectOut=mmreader(FileName);
+    %         A=read(ObjectOut,num);
+    %     end
     case 'cine_phantom'
         A = read_cine_phantom(FileName,num );
     case 'multimage'
@@ -73,7 +73,7 @@ switch FileType
         A=imread(FileName);
     case 'image_DaVis'
                 Input=readimx(FileName);
-                if numel(Input.Frames)==1
+                if isscalar(Input.Frames)
                     A=Input.Frames{1}.Components{1}.Planes{1}';
                 else
         A=Input.Frames{num}.Components{1}.Planes{1}';
