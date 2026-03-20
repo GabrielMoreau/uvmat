@@ -36,6 +36,9 @@ if strcmp(get(hCurrentFig,'Pointer'),'watch')
     return % no action if a calculation is running
 end
 hhCurrentFig=guidata(hCurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
+if isempty(hhCurrentFig)
+    return
+end
 CheckZoom=get(hhCurrentFig.CheckZoom,'Value');% check for zoom on mode
 CheckZoomFig=get(hhCurrentFig.CheckZoomFig,'Value');% check for zoom sub fig creation mode
 hPlotAxes=hhCurrentFig.PlotAxes';% handles of the main plot axes

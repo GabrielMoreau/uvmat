@@ -5,7 +5,7 @@
       <ExistenceTest>oarstat</ExistenceTest>                   <!-- command used to detect the availability of the cluster -->
       <NbCoreAdvised>16</NbCoreAdvised>                        <!-- proposed default number of parallel cores attributed for the computations -->
       <NbCoreMax>36</NbCoreMax>                                <!-- maximum number of cores allowed for the computations -->
-      <JobCPUTimeAdvised unit="minute">20</JobCPUTimeAdvised>  <!-- used to group the iterations into jobs of sufficient CPU time -->
+      <JobCPUTimeAdvised unit="minute">60</JobCPUTimeAdvised>  <!-- used to group the iterations into jobs of sufficient CPU time -->
       <JobNumberMax>500</JobNumberMax>                         <!-- maximum number of jobs allowed (will group the iterations to fit in) -->
       <WallTimeMax unit="hour">23</WallTimeMax>                <!-- maximum allowed time for a job -->
       <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd>           <!-- command to know the number of active and waiting job launches -->

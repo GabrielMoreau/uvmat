@@ -88,7 +88,7 @@ end
 NomTypeInput=Param.InputTable{1,4};
 FileType='image';%fdefault
 FileInfo=[];
-if isfield(SeriesData,'FileInfo')
+if isfield(SeriesData,'FileInfo') && ~isempty(SeriesData.FileInfo)
     FileType=SeriesData.FileInfo{1}.FileType;% info on the first input file series
 else
     set(hhseries.REFRESH,'BackgroundColor',[1 0 1])% indicate that the file input in series needs to be refreshed 

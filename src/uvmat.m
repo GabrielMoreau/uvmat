@@ -191,7 +191,7 @@ Height=Height*RescaleFactor;
 LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Position',[LeftX LowY Width Height])
-UvData.PosColorbar=[0.80 0.02 0.018 0.445];
+%UvData.PosColorbar=[0.80 0.02 0.018 0.445];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
 
@@ -220,7 +220,6 @@ end
 
 %% EXPORT menu
 export_menu={'as field in workspace';'in new figure';'on existing axis';'make movie';'more...'};
-%export_path=fullfile(path_uvmat,'export_fct');
 
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
 dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
@@ -263,7 +262,7 @@ set(handles.TransformName,'String',transform_menu)% display the menu of transfor
 set(handles.TransformName,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
 set(handles.TransformPath,'String','')
 set(handles.TransformPath,'UserData',[])
-export_menu=[export_menu;{'more...'}];%append the option more.. to the menu
+%export_menu=[export_menu;{'more...'}];%append the option more.. to the menu
 
 %% case of an input argument for uvmat
 inputfile=[];
@@ -294,12 +293,11 @@ if exist('input','var')
         UvData.Field.A=input;
         UvData.Field.coord_x=[0.5 size(input,2)-0.5];
         UvData.Field.coord_y=[size(input,1)-0.5 0.5];
-        %testinputfield=1;
     end
 else
     %% check the path and date of modification of all functions in uvmat
     path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
-    [infomsg,date_str,svn_info]=check_files;%check the path of the functions called by uvmat.m
+    [infomsg,date_str]=check_files;%check the path of the functions called by uvmat.m
     date_str=['last modification: ' date_str];
     if ishandle(handles.UVMAT_title)
         set(handles.UVMAT_title,'String',...
@@ -356,95 +354,107 @@ end
  function ResizeFcn(gcbo,eventdata,handles)
 %------------------------------------------------------------------------
 set(handles.uvmat,'Units','pixels')
-size_fig=get(handles.uvmat,'Position');
-ColumnWidth=max(150,0.18*size_fig(3)); %width of the right side display column equal to 0.18 *uvmat_GUI, in the range between 150 px and 250 px
+size_uvmat=get(handles.uvmat,'Position');
+ColumnWidth=max(150,0.18*size_uvmat(3)); %width of the right side display column equal to 0.18 *uvmat_GUI, in the range between 150 px and 250 px
 ColumnWidth=min(ColumnWidth,250);
+InputFilePanelHeight=80;
+TextDisplayPanelHeight=100;
+CheckTablePanelHeight=100;
+CoordinatesPanelHeight=100;
+ScalarPanelHeight=150;
+Interval=2;
 
-%% position of panel InputFile
+%% reset position of panel InputFile
 set(handles.InputFile,'Units','pixels')
 %pos_InputFile=get(handles.InputFile,'Position')% [lower x lower y width height] for text_display
-pos_InputFile(1)=0;            % set frame InputFile to the left of uvmat GUI
-pos_InputFile(2)=size_fig(4)-60;             % set frame InputFile to the top of uvmat GUI
-pos_InputFile(3)=size_fig(3);     %width of the GUI uvmat
-pos_InputFile(4)=60; %set the height of the panel to 60 px
+pos_InputFile(1)=Interval;            % set frame InputFile to the left of uvmat GUI
+pos_InputFile(2)=size_uvmat(4)-InputFilePanelHeight-Interval;             % set frame InputFile to the top of uvmat GUI
+pos_InputFile(3)=size_uvmat(3)-2*Interval;     %width of the GUI uvmat
+pos_InputFile(4)=InputFilePanelHeight; %set the height of the panel 
 set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] 
 
 %% reset position of text_display and TableDisplay
 set(handles.text_display,'Units','pixels')
 set(handles.TableDisplay,'Units','pixels')
-pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
-pos_1(3)=1.2*ColumnWidth;
-pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
-pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
+pos_1(1)=size_uvmat(3)-ColumnWidth-Interval;
+pos_1(2)=pos_InputFile(2)-TextDisplayPanelHeight-Interval;             % set text display to the top of the fig
+pos_1(3)=ColumnWidth;
+pos_1(4)=TextDisplayPanelHeight;          
 set(handles.text_display,'Position',pos_1)
 set(handles.TableDisplay,'Position',[pos_1(1) 10 pos_1(3) 5*pos_1(4)])
-% reset position of CheckTable
-set(handles.CheckTable,'Units','pixels')
-pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
-pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
-pos_CheckTable(2)=pos_InputFile(2)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
-set(handles.CheckTable,'Position',pos_CheckTable)
 
-%% reset position of CheckHold
-% pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
-% pos_CheckHold(1)=size_fig(3)-pos_CheckHold(3);       % set 'CheckHold' to the right of the fig
-% pos_CheckHold(2)=pos_1(2)-pos_CheckHold(4);          % set 'CheckHold' to the lower edge of text display
-% set(handles.CheckHold,'Position',pos_CheckHold)
+%% reset position of CheckTable 
+set(handles.CheckTable,'Units','pixels')
+pos_CheckTable(1)=size_uvmat(3)-ColumnWidth-Interval;       % set 'CheckHold' to the right of the fig
+pos_CheckTable(2)=pos_InputFile(2)-CheckTablePanelHeight-Interval;          % set 'CheckHold' to the lower edge of text display
+pos_CheckTable(3)=ColumnWidth; 
+pos_CheckTable(4)=CheckTablePanelHeight; 
+set(handles.CheckTable,'Position',pos_CheckTable)
 
 %% reset position of Coordinates panel
 set(handles.Coordinates,'Units','pixels')
-%pos_2=get(handles.Coordinates,'Position')% [lower x lower y width height] for frame 'Coordinates'
-pos_2(1)=size_fig(3)-ColumnWidth;       % set 'Coordinates' to the right of the fig
-pos_2(2)=pos_1(2)-80;          % set 'Coordinates' to the lower edge of text display
+pos_2(1)=size_uvmat(3)-ColumnWidth-Interval;       % set 'Coordinates' to the right of the fig
+pos_2(2)=pos_1(2)-CoordinatesPanelHeight-Interval;          % set 'Coordinates' to the lower edge of text display
 pos_2(3)=ColumnWidth;
-pos_2(4)=80;%keep height to 80 px
+pos_2(4)=CoordinatesPanelHeight;%keep height to 80 px
 set(handles.Coordinates,'Position',pos_2)
 
 %% reset position of Axes panel
 set(handles.Axes,'Units','pixels')
-%pos_3=get(handles.Axes,'Position')% [lower x lower y width height] for frame 'Coordinates'
-pos_3(1)=size_fig(3)-ColumnWidth;       % set 'Coordinates' to the right of the fig
-pos_3(2)=pos_2(2)-140;   
+pos_3(1)=size_uvmat(3)-ColumnWidth-Interval;       % set 'Coordinates' to the right of the fig
+pos_3(2)=pos_2(2)-140-Interval;   
 pos_3(3)=ColumnWidth;
 pos_3(4)=140;%keep height to 140 px
 set(handles.Axes,'Position',pos_3)
 
 %% reset position of  Scalar
 set(handles.Scalar,'Units','pixels')
-%pos_4=get(handles.Scalar,'Position') % [lower x lower y width height] for frame 'Scalar'
-pos_4(1)=size_fig(3)-ColumnWidth;         % set 'Scalar' to the right of the fig
+pos_4(1)=size_uvmat(3)-ColumnWidth-Interval;         % set 'Scalar' to the right of the fig
 if strcmp(get(handles.Scalar,'Visible'),'on')
-    pos_4(2)=pos_3(2)-140; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+    pos_4(2)=pos_3(2)-ScalarPanelHeight-Interval; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
 else
-    pos_4(2)=pos_3(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
+    pos_4(2)=pos_3(2)-Interval;% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
 end
 pos_4(3)=ColumnWidth;
-pos_4(4)=140;
+pos_4(4)=ScalarPanelHeight;
 set(handles.Scalar,'Position',pos_4)
 
 %% reset position of  Vectors
 set(handles.Vectors,'Units','pixels')
-%pos_5=get(handles.Vectors,'Position')
-pos_5(1)=size_fig(3)-ColumnWidth;
+pos_5(1)=size_uvmat(3)-ColumnWidth-Interval;
 if strcmp(get(handles.Vectors,'visible'),'on')
-    pos_5(2)=pos_4(2)-240;
+    pos_5(2)=pos_4(2)-240-Interval;
 else
-    pos_5(2)=pos_4(2);
+    pos_5(2)=pos_4(2)-Interval;
 end
 pos_5(3)=ColumnWidth;
 pos_5(4)=240;
 set(handles.Vectors,'Position',pos_5)
 
 %% reset position and scale of axis
-pos(1)=0.2*size_fig(3)+35;
+pos(1)=0.2*size_uvmat(3)+35;
 pos(2)=50;
-pos(3)=0.77*size_fig(3)-1.2*ColumnWidth;
-pos(4)=size_fig(4)-100;
+pos(3)=0.77*size_uvmat(3)-1.2*ColumnWidth;
+pos(4)=pos_InputFile(2)-50-Interval;
 set(handles.PlotAxes,'Units','pixels')
 set(handles.PlotAxes,'Position',pos)
-set(handles.PlotAxes,'Units','normalized')
+%set(handles.PlotAxes,'Units','normalized')
+UvData=get(handles.uvmat,'UserData');
+UvData.PosColorbar([1 3])=[pos(1)+pos(3)+10 10]/size_uvmat(3);
+UvData.PosColorbar([2 4])=[pos(2)+pos(3)/4 pos(3)/2]/size_uvmat(4);
+set(handles.uvmat,'UserData',UvData)
 
-
+%% reset position of Field Indices TODO
+% set(handles.FieldIndices,'Units','pixels')
+% pos_4(1)=size_uvmat(3)-ColumnWidth;         % set 'Scalar' to the right of the fig
+% if strcmp(get(handles.Scalar,'Visible'),'on')
+%     pos_4(2)=pos_3(2)-ScalarPanelHeight-Interval; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+% else
+%     pos_4(2)=pos_3(2)-Interval;% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
+% end
+% pos_4(3)=ColumnWidth;
+% pos_4(4)=ScalarPanelHeight;
+% set(handles.Scalar,'Position',pos_4)
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -2118,7 +2128,7 @@ end
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
-web('https://gricad-gitlab.univ-grenoble-alpes.fr/legi/soft/uvmat-doc/-/blob/master/help/README.md')
+web('https://legi.gricad-pages.univ-grenoble-alpes.fr/soft/uvmat-doc/help')
 
 
 %------------------------------------------------------------------------
@@ -3014,50 +3024,30 @@ if isequal(get(handles.CheckMask,'Value'),1)
         fileinput=[RootPath '/' SubDir '/' RootFile FileIndex FileExt];%
     end
     FileInfo=get_file_info(fileinput);
-    if isfield(FileInfo,'MaskFile')%&& exist(FileInfo.MaskFile,'file')
+    if isfield(FileInfo,'MaskFile') % if a Mask has been documented in the input file (civ data)
         Mask.MaskFile=FileInfo.MaskFile;
         if isfield(FileInfo,'MaskNbSlice')
             Mask.MaskNbSlice=FileInfo.MaskNbSlice;
         end
-    else
+    else % look for an apporpriate mask with the browser
         filemask= uigetfile_uvmat('pick a mask image file:',fileinput,'image');
         if ~isempty(filemask)
             [FilePath,FileName,FileExt]=fileparts(filemask);
-            [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
+            [RootPath,SubDir,RootFile,i1_series,~,~,~,NomType]=find_file_series(FilePath,[FileName FileExt]);
             if strcmp(NomType,'_1')
                 Mask.MaskFile=fullfile(RootPath,SubDir,RootFile);
                 Mask.MaskExt=FileExt;
                 Mask.MaskNbSlice=i1_series(1,2,end);
-            elseif ~strcmp(NomType,'*')
+            elseif strcmp(NomType,'*')
+                Mask.MaskFile=fullfile(RootPath,SubDir,RootFile);
+                Mask.MaskExt=FileExt;
+            else
                 msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
                 set(handles.CheckMask,'Value',0)
                 return
             end
         end
     end
-    %         i1=str2double(get(handles.num_i1,'String'));
-    %         filemask=FileInfo.MaskFile;
-    %         if isfield(FileInfo,'MaskNbSlice')
-    %         i1=str2double(get(handles.num_i1,'String'));
-    %         MaskIndex=mod(i1,FileInfo.MaskNbSlice)
-    %         filemask=[filemask '_' num2str(MaskIndex) FileInfo.MaskExt]
-    % %     else
-    % %         filemask= uigetfile_uvmat('pick a mask image file:',RootPath,'image');
-    %     end
-    %     if ~isempty(filemask)
-    %         [MaskPath,FileName,FileExt]=fileparts(filemask);
-    %         Mask.File=filemask;
-    %         [~,~,~,i1_series,~,~,~,NomType]=find_file_series(MaskPath,[FileName FileExt]);
-    %         Mask.NbSlice=[];%default
-    %         Mask.VolumeScan=0;% TO UPDATE ***
-    %         if strcmp(NomType,'_1')
-    %             Mask.NbSlice=i1_series(1,2,end);
-    %             set(handles.num_NbSlice,'String',num2str(Mask.NbSlice))
-    %         elseif ~strcmp(NomType,'*')
-    %             msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
-    %             return
-    %         end
-    %set(hObject,'UserData',filemask);%store for future use
     set(handles.CheckMask,'UserData',Mask);
     errormsg=update_mask(handles);
     if ~isempty(errormsg)
@@ -3082,13 +3072,13 @@ end
 function errormsg=update_mask(handles)
 %------------------------------------------------------------------------
 errormsg=[];%default
-MaskName='';
+%MaskName='';
 
 %% get the current mask name recorded in CheckMask/UserData, possibly indexed with file index
 MaskInfo=get(handles.CheckMask,'UserData');
 if isfield(MaskInfo,'MaskFile')
     if isfield(MaskInfo,'MaskNbSlice')&& ~isempty(MaskInfo.MaskNbSlice)
-        if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScan
+        if isfield(MaskInfo,'VolumeScan') &&  MaskInfo.VolumeScanTransformMenu
             MaskIndex_i=str2double(get(handles.num_j1,'String'));
         else
             MaskIndex_i=mod(str2double(get(handles.num_i1,'String'))-1,MaskInfo.MaskNbSlice)+1;
@@ -3096,20 +3086,21 @@ if isfield(MaskInfo,'MaskFile')
         MaskName=[MaskInfo.MaskFile '_' num2str(MaskIndex_i) '.png'];
     else
         MaskIndex_i=1;
-        MaskName=MaskInfo.MaskFile;
+    MaskName=[MaskInfo.MaskFile MaskInfo.MaskExt];
     end
     
     %% update mask image if the mask is new
     UvData=get(handles.uvmat,'UserData');
-     TransformMenu=get(handles.TransformName,'String')
+     TransformMenu=get(handles.TransformName,'String');
       TransformName=  TransformMenu{get(handles.TransformName,'Value')};
     if ~ (isfield(UvData,'MaskName') && strcmp(UvData.MaskName,MaskName)&& isfield(UvData,'TransformName')&& strcmp(UvData.TransformName,TransformName))%check if the mask is new
         UvData.MaskName=MaskName; %update the recorded name on UvData
         UvData.TransformName=TransformName; %update the recorded name on UvData
         set(handles.uvmat,'UserData',UvData);
-        if exist(MaskName,'file')~=2
+        if exist(MaskName,'file')~=2 % case file MaskName does not exist
             if isfield(MaskInfo,'maskhandle')&& ishandle(Mask.maskhandle)
                 delete(MaskInfo.maskhandle)
+                set(handles.CheckMask,'Value',0)
             end
         else
             %read mask image
@@ -3321,7 +3312,6 @@ end
 if ~isnumeric(increment)% undefined increment value
     set(handles.CheckFixPair,'Value',0)
 end
-%CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(num_i2)&& isempty(num_j2));
 
 % the pair num_i1-num_i2 or num_j1-num_j2 is imposed (check box CheckFixPair selected)
 if isnumeric(increment)
@@ -3426,7 +3416,7 @@ else
             ref_i_1=ref_i;
             ref_j_1=ref_j;
         end
-        if numel(UvData.i1_series)==1
+        if isscalar(UvData.i1_series)
             UvData.i1_series{2}=UvData.i1_series{1};
             UvData.j1_series{2}=UvData.j1_series{1};
             UvData.i2_series{2}=UvData.i2_series{1};
@@ -3502,7 +3492,7 @@ if isempty(errormsg)
     elseif strcmp(get(handles.MenuRelabelFrames,'Checked'),'on') && isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
         NbField_j_cell=get(handles.MaxIndex_j,'String');
         NbField_j=str2double(NbField_j_cell{1});
-        [RootFile,FrameIndex]=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
+        RootFile=index2filename(UvData.XmlData{1}.FileSeries,i1,j1,NbField_j);
         [~,RootFile]=fileparts(RootFile);%suppress the file extension
         set(handles.RootFile,'String',RootFile)
         indices='';
@@ -4132,7 +4122,7 @@ if strcmp(FieldName,'')
     coord_x_name=get(handles.Coord_x,'String');
     check_x_name=find(strcmp(coord_x_name,UvData.Field.ListVarName));
     UvData.Field.VarAttribute{check_x_name}.Role='coord_x';
-    [PlotType,PlotParamOut,haxes]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
+    [~,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     UvData.PlotAxes=UvData.Field; %store data for further plot modifications
     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
     for list={'Scalar','Vectors'}
@@ -4311,8 +4301,8 @@ else
                 view_field(ObjectData)
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap});
-                if ~isempty(regexp(PlotType,'^error'))%exit in case of plotting error
-                    if ~isempty(regexp(PlotType,'attempt to plot two vector fields'))
+                if ~isempty(regexp(PlotType,'^error', 'once'))%exit in case of plotting error
+                    if ~isempty(regexp(PlotType,'attempt to plot two vector fields', 'once'))
                         set(handles.CheckEditObject,'Value',1)
                         CheckEditObject_Callback([], [], handles)% propose to edit the main projection plane
                         hset_object=findobj(allchild(0),'Tag','set_object');%find the GUI set_object
@@ -5653,8 +5643,8 @@ update_plot(handles);
 
 %-------------------------------------------------------------------
 function num_Opacity_Callback(hObject, eventdata, handles)
-update_plot(handles);
 %-------------------------------------------------------------------
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function ListContour_Callback(hObject, eventdata, handles)
@@ -5708,9 +5698,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in CheckDecimate4 (nb_vec/4).
-%------------------------------------------------------------------------
 function CheckDecimate4_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 if isequal(get(handles.CheckDecimate4,'Value'),1)
     set(handles.CheckDecimate16,'Value',0)
 end

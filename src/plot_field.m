@@ -177,15 +177,31 @@ end
 errormsg='';
 AxeData=get(haxes,'UserData');
 
-%% 2D plots 
-if isempty(index_2D)
-    plot_plane([],[],haxes,[]);%removes images or vector plots in the absence of 2D field plot
+%% 2D plots
+if isempty(index_2D) %removes images or vector plots in the absence of 2D field plot
+    hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
+    if  ishandle(hima)
+        delete(hima)
+    end
+    hvec=findobj(haxes,'Tag','vel');% search existing vectors in the current axes
+    if ~isempty(hvec)
+        delete(hvec);
+    end
 else  %plot 2D field
-%     if ~exist('PosColorbar','var'),PosColorbar=[];end;
+    %     if ~exist('PosColorbar','var'),PosColorbar=[];end;
     [~,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut);
     AxeData.NbDim=2;
-    if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,~,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut);
+    if testzoomaxes && isempty(errormsg)% updater the plot on the attached axis
+        PlotParamZoom=PlotParamOut;
+        PlotParamZoom.Axes.CheckFixLimits=1;
+        XLim=get(zoomaxes,'XLim');
+        YLim=get(zoomaxes,'YLim');
+        PlotParamZoom.Axes.MinX=XLim(1);
+        PlotParamZoom.Axes.MaxX=XLim(2);
+        PlotParamZoom.Axes.MinY=YLim(1);
+        PlotParamZoom.Axes.MaxY=YLim(2);
+        PlotParamZoom.Axes.CheckZoomFig=0;
+        [zoomaxes,~,~,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamZoom);
         AxeData.ZoomAxes=zoomaxes;
     end
 end
@@ -274,14 +290,11 @@ end
 %-------------------------------------------------------------------
 % --- plot 0D fields: display data values without plot
 %------------------------------------------------------------------
-function errormsg=plot_text(FieldData,CellInfo,htext)
+function errormsg=plot_text(FieldData,CellInfo,~)
 
 errormsg='';
-txt_cell={};
-Data={};
 VarIndex=[];
-for icell=1:length(CellInfo)
-    
+for icell=1:length(CellInfo)    
     % select types of  variables to be projected
     ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
     check_proj=false(size(FieldData.ListVarName));
@@ -616,7 +629,7 @@ for icell=1:numel(CellInfo)
             pdf_val=pdf_val';
         end
         Val=pdf2stat(x,pdf_val);
-        Column=mat2cell(Val,ones(13,1),ones(1,size(Val,2)));
+        Column=num2cell(Val,ones(13,1),ones(1,size(Val,2)));
         if size(Val,2)==1%single component
             TitleBar={VarName};
         else
@@ -664,7 +677,6 @@ hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
 test_ima=0; %default: test for image or map plot
 test_vec=0; %default: test for vector plots
-test_black=0;
 test_false=0;
 test_C=0;
 XName='';
@@ -680,22 +692,13 @@ for icell=1:numel(CellInfo)
     ivar_X=CellInfo{icell}.CoordIndex(end); % defines (unique) index for the variable representing unstructured x coordinate (default =[])
     ivar_Y=CellInfo{icell}.CoordIndex(end-1); % defines (unique)index for the variable representing unstructured y coordinate (default =[])
     ivar_C=[];
-    if isfield(CellInfo{icell},'VarIndex_scalar')
-        ivar_C=[ivar_C CellInfo{icell}.VarIndex_scalar];
-    end
-    if isfield(CellInfo{icell},'VarIndex_image')
-        ivar_C=[ivar_C CellInfo{icell}.VarIndex_image];
-    end
-    if isfield(CellInfo{icell},'VarIndex_color')
-        ivar_C=[ivar_C CellInfo{icell}.VarIndex_color];
-    end
-    if isfield(CellInfo{icell},'VarIndex_ancillary')
-        ivar_C=[ivar_C CellInfo{icell}.VarIndex_ancillary];
-    end
-    if numel(ivar_C)>1
-        errormsg= 'error in plot_field: too many scalar inputs';
-        return
-    end
+    ListFields=fields(CellInfo{icell});
+    for ilist=1:numel(ListFields)
+        if ismember(ListFields{ilist},{'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_ancillary'})
+            ivar_C=CellInfo{icell}.(ListFields{ilist});
+            break % do not allow more than one scalar 
+        end
+    end 
     ivar_F=[];
     if isfield(CellInfo{icell},'VarIndex_warnflag')
         ivar_F=CellInfo{icell}.VarIndex_warnflag; %defines index (unique) for warning flag variable
@@ -733,7 +736,7 @@ for icell=1:numel(CellInfo)
                 [vec_X,vec_Y]=meshgrid(x,y);
             end
             if isfield(PlotParam.Vectors,'ColorScalar') && ~isempty(PlotParam.Vectors.ColorScalar)
-                [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([],Data,PlotParam.Vectors.ColorScalar);
+                [VarVal,~,~,errormsg]=calc_field_interp([],Data,PlotParam.Vectors.ColorScalar);
                 if ~isempty(VarVal)
                     vec_C=reshape(VarVal{1},1,numel(VarVal{1}));
                     test_C=1;
@@ -744,7 +747,7 @@ for icell=1:numel(CellInfo)
                 vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
                 if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
                     vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
-                    vec_FF(find(vec_F==-2))=1;%set alseFlag to 1(edge of the search box)
+                    vec_FF(vec_F==-2)=1;%set FalseFlag to 1(edge of the search box)
                 end
             end
         end
@@ -789,7 +792,7 @@ for icell=1:numel(CellInfo)
                 DCoord_y=diff(Coord_y);
                 DCoord_y_min=min(DCoord_y);
                 DCoord_y_max=max(DCoord_y);
-                if sign(DCoord_y_min)~=sign(DCoord_y_max);% =1 for increasing values, 0 otherwise
+                if sign(DCoord_y_min)~=sign(DCoord_y_max)% =1 for increasing values, 0 otherwise
                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' YName ];
                     return
                 end
@@ -876,7 +879,7 @@ if test_ima
     ColorMap='default';%default colormap
     if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
         ColorMap=PlotParam.Scalar.CheckBW;%PlotParam.Scalar.CheckBW is char string indicating the colormap type
-    elseif ((siz==2) && (isa(A,'uint8')|| isa(A,'uint16')))% non color images represented in gray scale by default
+    elseif siz==2 && (isa(A,'uint8')||isa(A,'uint16'))% non color images represented in gray scale by default
         ColorMap='grayscale';
     end
     PlotParamOut.Scalar.CheckBW=ColorMap;
@@ -961,14 +964,14 @@ if test_ima
         end
         % fill the space between contours if opacity is undefined or =1
         if isequal(Opacity,1)
-            [var,hcontour]=contour(haxes,x_cont,y_cont,A,cont_pos);% determine all contours
+            [~,hcontour]=contour(haxes,x_cont,y_cont,A,cont_pos);% determine all contours
             set(hcontour,'Fill','on')% fill the space between contours
             set(hcontour,'LineStyle','none')
             hold on
         end
-        [var_p,hcontour_p]=contour(haxes,x_cont,y_cont,A,cont_pos_plus,'k-');% draw the contours for positive values as solid lines
+        [~,~]=contour(haxes,x_cont,y_cont,A,cont_pos_plus,'k-');% draw the contours for positive values as solid lines
         hold on
-        [var_m,hcontour_m]=contour(haxes,x_cont,y_cont,A,cont_pos_min,'--');% draw the contours for negative values as dashed lines
+        [~,hcontour_m]=contour(haxes,x_cont,y_cont,A,cont_pos_min,'--');% draw the contours for negative values as dashed lines
         if isequal(Opacity,1)
             set(hcontour_m,'LineColor',[1 1 1])% draw negative contours in white (better visibility in dark background)
         end
@@ -976,7 +979,7 @@ if test_ima
         hold off
         
         %determine the color scale and map
-        caxis([abscontmin abscontmax])
+        clim([abscontmin abscontmax])
         if strcmp(ColorMap,'grayscale')
             vec=linspace(0,1,(abscontmax-abscontmin)/interval);%define a greyscale colormap with steps interval
             map=[vec' vec' vec'];
@@ -1004,8 +1007,8 @@ if test_ima
                 if siz==3 && CheckFixScalar % true color images rescaled by MaxA
                     A=uint8(255*double(A)/double(MaxA));
                 end
-%             otherwise
-%                 colormap(ColorMap);
+            otherwise
+                colormap(ColorMap);
         end
   
         
@@ -1087,7 +1090,8 @@ if test_ima
                 hcol=colorbar;%create new colorbar
             end
             if length(PosColorbar)==4
-                set(hcol,'Position',PosColorbar)
+                % set(hcol,'Units','pixel')
+                 set(hcol,'Position',PosColorbar)
             end
             %YTick=0;%default
             if MaxA>MinA
@@ -1125,10 +1129,10 @@ if test_ima
         end
     end
 else%no scalar plot
-    if ~isempty(hima) && ishandle(hima)
+    if  ishandle(hima)
         delete(hima)
     end
-    if ~isempty(PosColorbar) && ~isempty(hcol)&& ishandle(hcol)
+    if ~isempty(PosColorbar) && ~isempty(hcol) && ishandle(hcol)
         delete(hcol)
     end
     PlotParamOut=rmfield(PlotParamOut,'Scalar');
@@ -1216,15 +1220,6 @@ if test_vec
     
     % take flags into account: add flag colors to the list of colors
     nbcolor=size(colorlist,1);
-% % %     if test_black 
-% % %        nbcolor=nbcolor+1;
-% % %        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
-% % %        if ~isempty(ivar_FF_vec)
-% % %             col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
-% % %        else
-% % %             col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
-% % %        end
-% % %     end
     nbcolor=nbcolor+1;
     if ~isempty(ivar_FF_vec)
         if isfield(PlotParam.Vectors,'CheckShowFalse') && PlotParam.Vectors.CheckShowFalse==1
@@ -1348,12 +1343,6 @@ for icolor=1:nbcolor
     %determine arrow heads
     arrowplus=rot*[uc;vc];
     arrowmoins=rot'*[uc;vc];
-    % x1=xc+uc/2-arrowplus(1,:);
-    % x2=xc+uc/2;
-    % x3=xc+uc/2-arrowmoins(1,:);
-    % y1=yc+vc/2-arrowplus(2,:);
-    % y2=yc+vc/2;
-    % y3=yc+vc/2-arrowmoins(2,:);
     x1=xc+uc-arrowplus(1,:);
     x2=xc+uc;
     x3=xc+uc-arrowmoins(1,:);
@@ -1365,7 +1354,6 @@ for icolor=1:nbcolor
     matyar=[y1(:) y2(:) y3(:) xN(:)]';
     matyar=reshape(matyar,1,4*n(2));
     %draw the line or modify the existing ones
-%     tri=reshape(1:3*length(uc),3,[])';   
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
         if ~isn(1) %if the vectors are visible color not nan
@@ -1431,7 +1419,7 @@ if length(vec_Y)<2
 end
 diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
 index=find(diffy);% find the indices of vec_Y after wich a change of horizontal line occurs(diffy non zero)
-if isempty(index); msgbox_uvmat('ERROR','points aligned along abscissa in proj_grid.m'); return; end;%points aligned% A FAIRE: switch to line plot.
+if isempty(index); msgbox_uvmat('ERROR','points aligned along abscissa in proj_grid.m'); return; end%points aligned% A FAIRE: switch to line plot.
 diff2=diff(diffy(index));% diff2 = fluctuations of the detected vertical grid mesh dy 
 if max(abs(diff2))>0.001*abs(diffy(index(1))) % if max(diff2) is larger than 1/1000 of the first mesh dy
     % the data are not regularly spaced and must be interpolated  on a regular grid
@@ -1488,8 +1476,8 @@ else
         end
     end
     if test_interp==1%if we interpolate
-        xi=[rangx(1):(rangx(2)-rangx(1))/(npxy(2)-1):rangx(2)];
-        yi=[rangy(1):(rangy(2)-rangy(1))/(npxy(1)-1):rangy(2)];
+        xi=rangx(1):(rangx(2)-rangx(1))/(npxy(2)-1):rangx(2);
+        yi=rangy(1):(rangy(2)-rangy(1))/(npxy(1)-1):rangy(2);
         [XI,YI]=meshgrid(xi,yi);
         A = interp2(X,Y,B,XI,YI);
     else %no interpolation for a resolution higher than 256

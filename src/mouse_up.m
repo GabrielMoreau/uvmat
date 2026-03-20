@@ -150,7 +150,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                         hview_field=view_field(ProjData); %open the view_field GUI for plot
                     else
                         hhview_field=guidata(hview_field);
-                        [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
+                        [~,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
                         errormsg=fill_GUI(PlotParam,hview_field);
                     end
                     ViewFieldData=get(hview_field,'UserData');
@@ -167,7 +167,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     end
                 else
                     UvData.PlotAxes=ProjData;
-                    [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(huvmat));%update an existing field plot
+                    [~,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(huvmat));%update an existing field plot
                     errormsg=fill_GUI(PlotParam,huvmat);
                 end
             end
@@ -200,13 +200,13 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
 end
 
 %% creation or update of a  zoom sub-plot
-if CheckZoomFig && isequal(get(hcurrentfig,'SelectionType'),'normal')&&...%if left button has been pressed
+CheckZoomFigActivate=CheckZoomFig && strcmp(get(hcurrentfig,'SelectionType'),'normal')&&...%if left button has been pressed
      ~isempty(CurrentOrigin) && ~isequal(CurrentOrigin(1),xy(1,1)) && ~isequal(CurrentOrigin(2),xy(1,2))%if mouse moved in x and y since presed down
+if CheckZoomFigActivate 
     hparentfig=hcurrentfig;
     %open or update a new zoom figure if a rectangle has been drawn
     if ishandle(hcurrentaxes)
         if isfield(AxeData,'CurrentRectZoom') && ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
-            %PosRect=get(AxeData.CurrentRectZoom,'Position');
             if isfield(AxeData,'CurrentVec') && ~isempty(AxeData.CurrentVec) && ishandle(AxeData.CurrentVec)
                 delete(AxeData.CurrentVec)
             end
@@ -390,11 +390,14 @@ end
 % --- 'close_fig': function  activated when a zoom figure is closed
 %------------------------------------------------------------------------
 function close_fig(ggg,eventdata,hparent)
-
-hfig=get(get(hparent,'parent'),'parent');
-hbutton=findobj(hfig,'Tag','CheckZoomFig');
-if ~isempty(hbutton)
-    set(hbutton,'Value',0)% desactivate the zoom fig option
+if isvalid(hparent)
+    figparent=get(hparent,'parent');
+    if ~isempty(figparent)
+        hfig=get(figparent,'parent');
+        hbutton=findobj(hfig,'Tag','CheckZoomFig');
+        if ~isempty(hbutton)
+            set(hbutton,'Value',0)% desactivate the zoom fig option
+        end
+        delete(hparent)  % delete the rectangle showing the zoom graph in the parent fig
+    end
 end
-delete(hparent)  % delete the rectangle showing the zoom graph in the parent fig
-

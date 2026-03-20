@@ -391,19 +391,13 @@ for ifield=1:NbField
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
             
-        % catch ME % display errors in reading input images
-        %     if ~isempty(ME.message)
-        %         disp_uvmat('ERROR', ['error reading input image: ' ME.message],checkrun)
-        %         continue
-        %     end
-        % end
         
         % case of background image to subtract
         if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
-            if ~isempty(i2_series_Civ1)% case of volume,backgrounds act on different j levels
+            if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
-            elseif isfield(par_civ1,'NbSlice')
+            elseif isfield(par_civ1,'NbSlice')&& ~isequal(par_civ1.NbSlice,1)
                 i1_background=mod(i1-1,par_civ1.NbSlice)+1;
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
@@ -417,7 +411,7 @@ for ifield=1:NbField
             else
                 if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
                     try
-                        par_civ1.Background=imread(backgroundname);%update the background, an store it for future use
+                        par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use
                     catch ME
                         if ~isempty(ME.message)
                             errormsg=['error reading input image: ' ME.message];
@@ -431,8 +425,8 @@ for ifield=1:NbField
                 background=par_civ1.Background;
                 backgroundoldname=backgroundname;
             end
-            par_civ1.ImageA=par_civ1.ImageA-par_civ1.Background;
-            par_civ1.ImageB=par_civ1.ImageB-par_civ1.Background;
+            par_civ1.ImageA=uint16(par_civ1.ImageA)-par_civ1.Background;
+            par_civ1.ImageB=uint16(par_civ1.ImageB)-par_civ1.Background;
         end
         
         % case of image luminosity rescaling
@@ -495,7 +489,7 @@ for ifield=1:NbField
             end
             if ~isempty(i2_series_Civ1)&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-            elseif isfield(par_civ1,'NbSlice')
+            elseif isfield(par_civ1,'NbSlice')&& ~isequal(par_civ1.NbSlice,1)
                 i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
@@ -637,8 +631,10 @@ for ifield=1:NbField
         end
         if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A,FrameIndex_A_2)
             par_civ2.ImageA=par_civ1.ImageA;
+            CheckDuplicate_1to2A=true;
         else
             [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A_Civ2,FileType_A,VideoObject_A,FrameIndex_A_2);
+            CheckDuplicate_1to2A=false;
         end
         if CheckRelabel
             [RootFile,FrameIndex_B_2]=index2filename(XmlData.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
@@ -649,8 +645,10 @@ for ifield=1:NbField
         end
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_2,FrameIndex_B)
             par_civ2.ImageB=par_civ1.ImageB;
+            CheckDuplicate_1to2B=true;
         else
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_2);
+             CheckDuplicate_1to2B=false;
         end
         %  [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A_Civ2);
         npy_ima=size(par_civ2.ImageA,1);
@@ -672,14 +670,59 @@ for ifield=1:NbField
             par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
         end
         
-        %                 %% user defined image transform
-        %         if ~isempty(transform_fct)
-        %                par_civ2 =transform_fct(par_civ2,Param);
-        %         end
+        %% case of background image to subtract, if images civ2 different from civ1
+        if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && par_civ2.CheckBackground &&~isempty(par_civ2.Background)
+            [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ2.Background);
+            j1=1;
+            if ~isempty(j1_series_Civ2)
+                j1=j1_series_Civ2(ifield);
+            end
+            if ~isempty(i2_series_Civ2)% case of volume,backgrounds act on different j levels
+                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
+            elseif isfield(par_civ2,'NbSlice') && ~isequal(par_civ2.NbSlice,1)
+                i1_background=mod(i1-1,par_civ2.NbSlice)+1;
+                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
+                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
+                    par_civ2.NbSlice_j=par_civ2.NbSlice;
+                end
+            else
+                backgroundname=Param.ActionInput.Civ2.Background;
+            end
+            if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
+                par_civ2.Background=background; %use background already opened
+            else
+                if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
+                    try
+                        par_civ2.Background=uint16(imread(backgroundname));%update the background, an store it for future use
+                    catch ME
+                        if ~isempty(ME.message)
+                            errormsg=['error reading input image: ' ME.message];
+                            disp_uvmat('ERROR',errormsg,checkrun)
+                            return
+                        end
+                    end
+                else
+                    par_civ2.Background=[];
+                end
+                background=par_civ2.Background;
+                backgroundoldname=backgroundname;
+            end
+            if ~CheckDuplicate_1to2A
+            par_civ2.ImageA=uint16(par_civ2.ImageA)-par_civ2.Background;
+            end
+            if ~CheckDuplicate_1to2B
+            par_civ2.ImageB=uint16(par_civ2.ImageB)-par_civ2.Background;
+            end
+        end
+   
         %% case of image luminosity rescaling
-        if par_civ2.CheckRescale &&~isempty(par_civ2.Maxtanh)
-            par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
-            par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
+        if  par_civ2.CheckRescale && ~isempty(par_civ2.Maxtanh)
+            if ~CheckDuplicate_1to2A %if the image A is different from civ1
+                par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
+            end
+            if ~CheckDuplicate_1to2B % if the image B is different from civ1
+                par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
+            end
         end
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
@@ -760,7 +803,7 @@ for ifield=1:NbField
                     j1=[];
                 end
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-            elseif isfield(par_civ2,'NbSlice')
+            elseif isfield(par_civ2,'NbSlice')&& ~isequal(par_civ2.NbSlice,1)
                 i1=i1_series_Civ2(ifield);
                 i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
@@ -793,47 +836,7 @@ for ifield=1:NbField
             end
         end
         
-        % case of background image to subtract
-        if par_civ2.CheckBackground &&~isempty(par_civ2.Background)
-            [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
-            j1=1;
-            if ~isempty(j1_series_Civ1)
-                j1=j1_series_Civ1(ifield);
-            end
-            if ~isempty(i2_series_Civ1)% case of volume,backgrounds act on different j levels
-                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
-            elseif isfield(par_civ2,'NbSlice')
-                i1_background=mod(i1-1,par_civ2.NbSlice)+1;
-                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
-                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
-                    par_civ2.NbSlice_j=par_civ2.NbSlice;
-                end
-            else
-                backgroundname=Param.ActionInput.Civ1.Background;
-            end
-            if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
-                par_civ2.Background=background; %use background already opened
-            else
-                if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
-                    try
-                        par_civ2.Background=imread(backgroundname);%update the background, an store it for future use
-                    catch ME
-                        if ~isempty(ME.message)
-                            errormsg=['error reading input image: ' ME.message];
-                            disp_uvmat('ERROR',errormsg,checkrun)
-                            return
-                        end
-                    end
-                else
-                    par_civ2.Background=[];
-                end
-                background=par_civ2.Background;
-                backgroundoldname=backgroundname;
-            end
-            par_civ2.ImageA=par_civ2.ImageA-par_civ2.Background;
-            par_civ2.ImageB=par_civ2.ImageB-par_civ2.Background;
-        end
-        
+        %% get civ2 correlation parameters
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
             Civ1_Dt=1;
             Civ2_Dt=1;
@@ -851,8 +854,7 @@ for ifield=1:NbField
             par_civ2.DVDY(nbval>0)=DVDY(nbval>0)./nbval(nbval>0);
         end
         
-        % calculate velocity data (y and v in image indices, reverse to y component)
-        
+        % calculate velocity data      
         [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
@@ -877,18 +879,6 @@ for ifield=1:NbField
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
         
-        %        nbvar=numel(Data.ListVarName);
-        % define the Civ2 variable (if Civ2 data are not replaced from previous calculation)
-        %         if isempty(find(strcmp('Civ2_X',Data.ListVarName),1))
-        %             Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_C','Civ2_FF'}];%  cell array containing the names of the fields to record
-        %             Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
-        %             Data.VarAttribute{nbvar+1}.Role='coord_x';
-        %             Data.VarAttribute{nbvar+2}.Role='coord_y';
-        %             Data.VarAttribute{nbvar+3}.Role='vector_x';
-        %             Data.VarAttribute{nbvar+4}.Role='vector_y';
-        %             Data.VarAttribute{nbvar+5}.Role='ancillary';
-        %             Data.VarAttribute{nbvar+6}.Role='errorflag';
-        %         end
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);
     elseif Param.ActionInput.CheckFix2 && isfield (Param.ActionInput,'Fix2') % we start there, using existing Civ2 data
@@ -929,17 +919,6 @@ for ifield=1:NbField
             Data.(Patch2_param{ilist})=Param.ActionInput.Patch2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch2_param];
-        
-        %  nbvar=length(Data.ListVarName);
-        %         Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
-        %         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
-        %             {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
-        
-        %         Data.VarAttribute{nbvar+1}.Role='vector_x';
-        %         Data.VarAttribute{nbvar+2}.Role='vector_y';
-        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
-        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
         
         if isempty(Civ_FF)
             ind_good=1:numel(Civ_X);

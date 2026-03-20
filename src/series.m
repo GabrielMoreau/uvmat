@@ -164,8 +164,9 @@ ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
 if isfield(SeriesData.ClusterParam, 'ExistenceTest')
-    oarcommand=SeriesData.ClusterParam.ExistenceTest;
-    s=system(oarcommand); % look for cluster system presence
+    ClusterExistenceTest=SeriesData.ClusterParam.ExistenceTest;
+    disp('look for cluster command available')
+    s=system(ClusterExistenceTest); % look for cluster system presence
     if isequal(s,0)% cluster detected
         RunModeList=[RunModeList;{'cluster'}];
         set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
@@ -567,58 +568,73 @@ end
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 CheckRelabel=get(handles.Relabel,'Value');
-check_input_file_series(handles,CheckRelabel)
+errormsg=check_input_file_series(handles,CheckRelabel);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg);% no input files entered
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
+    return
+end
 
-%% enable field and veltype menus, in accordance with the current action
+%% enable field and veltype menus, in accordance with the current action function
 ActionInput_Callback([],[], handles)
 
 %------------------------------------------------------------------------
 % --- check the input file series.
-function check_input_file_series(handles,CheckRelabel)
+function errormsg=check_input_file_series(handles,CheckRelabel)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');%read the table of input file series
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
-set(handles.Relabel,'BackgroundColor',[0 1 0])
 drawnow
-empty_line=false(size(InputTable,1),1);
+errormsg='';%default
+
+%% removes possible  empty lines in the tables documenting the files index series
+check_empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
-    empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));%check the empty lines in the input table
+    check_empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));%check the empty lines in the input table
 end
-if ~isempty(find(empty_line,1))%removes the empty lines in the table
-    InputTable(empty_line,:)=[]; % remove empty lines
+empty_lines=find(check_empty_line);%line indices which are empty
+if numel(empty_lines)==size(InputTable,1)
+   errormsg='input files needed';% no input files
+    return
+end
+if ~isempty(empty_lines)
+    InputTable(empty_lines,:)=[]; % remove empty lines
     set(handles.InputTable,'Data',InputTable)
     ListTable={'MinIndex_i','MaxIndex_i','MinIndex_j','MaxIndex_j','PairString','TimeTable'};
     for ilist=1:numel(ListTable)
         Table=get(handles.(ListTable{ilist}),'Data');
-        Table(empty_line,:)=[]; % remove empty lines
+        Table(empty_lines,:)=[]; % remove empty lines
         set(handles.(ListTable{ilist}),'Data',Table);
     end
     set(handles.series,'UserData',[])%refresh the stored info
 end
-nbview=size(InputTable,1);
-CheckRelabelQuest=false;
+nbview=size(InputTable,1);% number of lines filled in the Input file table after this cleaning of empty lines
+
+%% get info on each line of the input table
+CheckRelabelQuest=true;% will ask for relabeling if relevant
 for iview=1:nbview
-    RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
-    Param.Relabel=false;
+    RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
+    Param.Relabel=false;% no relabeling by default
     MovieObject=[];
     Param.FileInfo=[];
     if ~exist(RootPath,'dir')
         Param.i1_series=[];
-        RootFile='';
+        RootFile='';% input folder does not exist, will ask by browser
     else
-        [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
+        [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});%look for ImaDoc file
         if ~isempty(XmlFileName)
-            XmlData=read_imadoc(XmlFileName);
-            if  Rank==0 && ~isempty(XmlData.FileSeries)
-                set(handles.Relabel,'Visible','on')
+            XmlData=read_imadoc(XmlFileName);%read the imadoc file through the local fct read_imadoc
+            if  Rank==0 && ~isempty(XmlData.FileSeries)% file relabeling proposed in the xml file
+                set(handles.Relabel,'Visible','on')% make the relabel check box visible
                 answer='Yes';
-                if ~CheckRelabel && ~CheckRelabelQuest% propose to relabel if not selected yet
+                if ~CheckRelabel && CheckRelabelQuest% propose to relabel if not selected yet
                     answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');
-                    CheckRelabelQuest=true;
+                    CheckRelabelQuest=false;% will validate the answer for all lines
                 end
-                if strcmp(answer,'Yes')
-                    set(handles.Relabel,'Value',1)
+                if strcmp(answer,'Yes')% relabel option activated
+                    set(handles.Relabel,'Value',1)% activate the relabel option
+                    CheckRelabel=true;
                     NomType='*';
                     i1=1;i2=[];j1=1;j2=[];
                     Param.i1_series=1:size(XmlData.Time,1)-1;
@@ -632,12 +648,12 @@ for iview=1:nbview
                     Param.Relabel=true;
                     FirstFile=fullfile(InputTable{iview,1},InputTable{iview,2},XmlData.FileSeries.FileName{1});
                     if ~exist(FirstFile,'file')
-                        msgbox_uvmat('ERROR',[FirstFile ' does not exist']);
+                        errormsg=[FirstFile ' set by the xml file does not exist'];
                         return
                     end
-                    [Param.FileInfo,VideoObject]=get_file_info(FirstFile);
+                    Param.FileInfo=get_file_info(FirstFile);
                 else
-                    set(handles.Relabel,'Value',0)
+                    set(handles.Relabel,'Value',0) % suppress the relabel option
                 end
             end
             Param.XmlData=XmlData;
@@ -646,56 +662,46 @@ for iview=1:nbview
     if ~Param.Relabel
         %scan the input folder
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
-        i1=str2double(get(handles.num_first_i,'String'));
-        j1=str2double(get(handles.num_first_j,'String'));
-        j2=[];%default
-%         PairString=get(handles.PairString,'Data');
-%         if numel(PairString)>=iview
-%             r=regexp(PairString{iview},'(?<num1>\d+)-(?<num2>\d+)' ,'names');
-%             if ~isempty(r)
-%                 j1=str2double(r.num1);
-%                 j2=str2double(r.num2);
-%             end
-%         end
- InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
-        %InputFile=fullfile_uvmat('','',InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1,[],j1,j2);
+        InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
         [RootPath,~,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,~,Param.FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
 
-    % if no file is found on line #ivew, open a browser
+    % if no file is found on line #iview, open a browser
     if ~Param.Relabel && isempty(RootFile)&& isempty(Param.i1_series)
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
         if isempty(fileinput)
-            set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
+            errormsg='no input file entered';
             return
         else
-            display_file_name(handles,fileinput,iview)% update the table of input file series, then call update_rootinfo
+            display_file_name(handles,fileinput,iview)% update the table of input file series #iview, then will call update_rootinfo
         end
     else
         update_rootinfo(handles,Param,MovieObject,iview)
     end
 end
 
-%% update MinIndex_i and MaxIndex_i if the input table content has been reduced in line nbre
+%% suppress possible remaining data beyond nbview lines in MinIndex_i, MaxIndex_i ,MinIndex_j, MaxIndex_j,PairString,TimeTable
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
-set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview,:));
-MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
-set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview,:));
-MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
+set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview)); % save only the nbviews values, remove possible values beyond
 
-set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview,:));
+MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview));
+
+MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the max indices in the table MinIndex
+set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview));
+
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
-set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview,:));
+set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview));
+
 PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
-set(handles.PairString,'Data',PairString(1:nbview,:));
+set(handles.PairString,'Data',PairString(1:nbview));
+
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
 
-
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
-
 
 
 %------------------------------------------------------------------------
@@ -749,7 +755,7 @@ Param.FileInfo=FileInfo;
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
-    XmlData=read_imadoc(XmlFileName);
+    XmlData=read_imadoc(XmlFileName);%read the imadoc file through the local fct read_imadoc
     if isfield(XmlData,'FileSeries') && Rank==0
         set(handles.Relabel,'Visible','on')
         answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');
@@ -924,13 +930,8 @@ if ~(isfield(SeriesData,'InputPath') && strcmp(SeriesData.InputPath,InputPath))
     end
     SeriesData.InputPath=InputPath;
 end
-
-
 set(handles.series,'UserData',SeriesData)
-
 set(handles.InputTable,'BackgroundColor',[1 1 1])
-
-
 
 %% initiate input file series and refresh the current field view:
 update_rootinfo(handles,Param,MovieObject,iview);
@@ -946,7 +947,7 @@ set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color
 %------------------------------------------------------------------------
 % --- get info from the xml file XmlFileName
 function XmlData=read_imadoc(XmlFileName)
-
+%------------------------------------------------------------------------
 [XmlData,errormsg]=imadoc2struct(XmlFileName);
 if ~isempty(errormsg)
     msgbox_uvmat('WARNING',['error in reading ' XmlFileName ': ' errormsg]);
@@ -1010,7 +1011,7 @@ if Param.Relabel
 else
     if isempty(i1_series)
         MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
-    elseif size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
+    elseif size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0 % file series with a single index i
         MinIndex_j=1; % index j set to 1 by default
         MaxIndex_j=1;
         MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
@@ -1025,7 +1026,7 @@ else
         diff_j_max=diff(ref_j);
         diff_i_max=diff(ref_i);
         if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
-            set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to dispaly by default
+            set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to display by default
         end
         if ~isempty(diff_j_max) && isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
             set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
@@ -1077,25 +1078,16 @@ if ~Param.Relabel
     else
         InputTable=get(handles.InputTable,'Data');
         [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
-        if isempty(XmlFileName)
-            return
-        else
+        if ~isempty(XmlFileName)
             Param.XmlData=read_imadoc(XmlFileName);
+            [nbfield,nbfield_j]=size(Param.XmlData.Time);
+            nbfield=nbfield-1; %remove the possible index 0
+            nbfield_j=nbfield_j-1; %remove the possible index 0
+            MaxIndex_i=nbfield;
+            MaxIndex_j=nbfield_j;
+            MinIndex_i=1;
+            MinIndex_j=1;
         end
-        [nbfield,nbfield_j]=size(Param.XmlData.Time);
-        nbfield=nbfield-1; %remove the possible index 0
-        nbfield_j=nbfield_j-1; %remove the possible index 0
-%         MaxIndex_i=get(handles.MaxIndex_i,'Data');
-%         MaxIndex_j=get(handles.MaxIndex_j,'Data');
-%         MaxIndex_i(1,:)=nbfield;
-%         MaxIndex_j(1,:)=nbfield_j;
-%         MinIndex_i(1,:)=1;
-%         MinIndex_j(1,:)=1;
-         MaxIndex_i=nbfield;
-         MaxIndex_j=nbfield_j;
-         MinIndex_i=1;
-         MinIndex_j=1;
-
 
         first_i=str2double(get(handles.num_first_i,'String'));
         first_j=str2double(get(handles.num_first_j,'String'));
@@ -1114,9 +1106,11 @@ if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInf
 end
 
 %% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
-if ~isempty(TimeName)
+if isempty(TimeName)
+    TimeMin=NaN;    TimeMax=NaN;  TimeFirst=NaN;    TimeLast=NaN;
+else
     if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
-        msgbox_uvmat('WARNING',['incomplete time info in xml file']);
+        msgbox_uvmat('WARNING','incomplete time info in xml file');
     end
     TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
     if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
@@ -1142,7 +1136,7 @@ set(handles.MinIndex_j,'Data',MinIndex_j_table)%display the max indices in the t
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table)%display the min indices in the table MinIndex
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table)%display the max indices in the table MaxIndex
 
-if isfield(Param.XmlData,'NbSlice') && ~isempty(Param.XmlData.NbSlice)
+if isfield(Param,'XmlData') && isfield(Param.XmlData,'NbSlice') && ~isempty(Param.XmlData.NbSlice)
     set(handles.num_NbSlice,'String',num2str(Param.XmlData.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
 end
@@ -1222,7 +1216,6 @@ SeriesData.i1_series{iview}=i1_series;
 SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
 SeriesData.j2_series{iview}=j2_series;
-%     SeriesData.FileType{iview}=FileInfo.FileType;
 SeriesData.FileInfo{iview}=Param.FileInfo;
 SeriesData.Time{iview}=Time;
 SeriesData.TimeName=TimeName;
@@ -1881,7 +1874,7 @@ for iexp=1:NbExp
         set(handles.OutputDirExt,'String',Param.OutputDirExt)
         drawnow
     end
-    if get(handles.Replicate,'Value')
+    if get(handles.Replicate,'Value')%resset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
         set(handles.OutputPath,'String',OutputPath)
          set(handles.Experiment,'String',ListExpOut{iexp})
@@ -2415,10 +2408,10 @@ set(handles.RUN, 'Value',0)
 
 %------------------------------------------------------------------------
 % --- read parameters from the GUI series
-%------------------------------------------------------------------------
 function Param=read_GUI_series(handles)
+%------------------------------------------------------------------------
 
-%% read raw parameters from the GUI series
+% read raw parameters from the GUI series
 Param=read_GUI(handles.series);
 
 %% clean the output structure by removing unused information
@@ -2558,8 +2551,10 @@ set(handles.ActionName,'BackgroundColor',[1 1 1])
 set(handles.ActionInput,'BackgroundColor',[1 0 1])% set ActionInput button to magenta color to indicate that input refr
 set(handles.num_CPUTime,'String','')
 
+%------------------------------------------------------------------------
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 set(handles.ActionInput,'BackgroundColor',[1 1 0])
 SeriesData=get(handles.series,'UserData'); % info on the input file series
@@ -3092,8 +3087,9 @@ if strcmp(field,'add_field...')
     end
 end
 
-
+%------------------------------------------------------------------------
 function [TimeValue,DtValue]=get_time(ref_i,ref_j,PairString,InputTable,FileInfo,TimeName,DtName)
+%------------------------------------------------------------------------
 [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
 FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
 %Data=nc2struct(FileName,[]);
@@ -3181,9 +3177,9 @@ if strcmp(field,'add_field...')
     end
 end
 
-
-%%%%%%%%%%%%%
+%------------------------------------------------------------------------
 function [ind_remove]=find_pairs(dirpair,ind_i,last_i)
+%------------------------------------------------------------------------
 indsel=ind_i;
 indiff=diff(ind_i); % test index increment to detect multiplets (several pairs with the same index ind_i) and holes in the series
 indiff=[1 indiff last_i-ind_i(end)+1]; % for testing gaps with the imposed bounds
@@ -3306,8 +3302,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in ViewObject.
-%------------------------------------------------------------------------
 function ViewObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 UserData=get(handles.series,'UserData');
 hset_object=findobj(allchild(0),'Tag','set_object');
@@ -3359,8 +3355,8 @@ set(handles.DeleteObject,'Visible','off')
 
 %------------------------------------------------------------------------
 % --- Executed when CheckMask is activated
-%------------------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 % SeriesData=get(handles.series,'UserData');
 
 if get(handles.CheckMask,'Value')
@@ -3483,9 +3479,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in MaskTable.
-%------------------------------------------------------------------------
 function MaskTable_CellSelectionCallback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 if numel(eventdata.Indices)>=1
 set(handles.ListMask,'Value',eventdata.Indices(1))
 end
@@ -3493,16 +3488,7 @@ end
 %-------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-
-
-% path_to_uvmat=which ('uvmat'); % check the path of uvmat
-% pathelp=fileparts(path_to_uvmat);
-% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-% if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-% else
-%     addpath (fullfile(pathelp,'uvmat_doc'))
-%     web([helpfile '#series'])
-% end
+web('https://legi.gricad-pages.univ-grenoble-alpes.fr/soft/uvmat-doc/help')
 
 %-------------------------------------------------------------------
 % --- Executes on selection change in TransformName.
@@ -3579,13 +3565,12 @@ end
 
 %------------------------------------------------------------------------
 % --- fct activated by the upper bar menu ExportConfig
-%------------------------------------------------------------------------
 function MenuDisplayConfig_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 global Param
 Param=read_GUI_series(handles);
 evalin('base','global Param')%make CurData global in the workspace
-display('current series config :')
+disp('current series config :')
 evalin('base','Param') %display CurData in the workspace
 commandwindow; % brings the Matlab command window to the front
 
@@ -3594,6 +3579,7 @@ commandwindow; % brings the Matlab command window to the front
 %     menu settings from an xml file (stored in /0_XML for each run)
 %------------------------------------------------------------------------
 function MenuImportConfig_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 %% use a browser to choose the xml file containing the processing config
 InputTable=get(handles.InputTable,'Data');
@@ -3667,11 +3653,11 @@ set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magent
 
 
 %------------------------------------------------------------------------
-% --- Executes when the GUI series is resized.
-%------------------------------------------------------------------------
+% --- Executes when the GUI series is resized.-
 function series_ResizeFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
-%% input table
+% input table
 set(handles.InputTable,'Unit','pixel')
 Pos=get(handles.InputTable,'Position');
 set(handles.InputTable,'Unit','normalized')
@@ -3712,17 +3698,10 @@ Pos=get(handles.PairString,'Position');
 set(handles.PairString,'Unit','normalized')
 set(handles.PairString,'ColumnWidth',{Pos(3)-5})
 
-%% MaskTable
-% % set(handles.MaskTable,'Unit','pixel')
-% % Pos=get(handles.MaskTable,'Position');
-% % set(handles.MaskTable,'Unit','normalized')
-% % set(handles.MaskTable,'ColumnWidth',{Pos(3)-5})
-
 %------------------------------------------------------------------------
-% --- Executes on button press in status.
-%------------------------------------------------------------------------
+% --- Executes on button press in status.-
 function status_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 if get(handles.status,'Value')
     set(handles.status,'BackgroundColor',[1 1 0])
     drawnow
@@ -3751,12 +3730,10 @@ else
     return
 end
 
-
 %------------------------------------------------------------------------
 % launched by selecting a file on the list
-%------------------------------------------------------------------------
 function view_file(hObject, eventdata)
-
+%------------------------------------------------------------------------
 list=get(hObject,'String');
 index=get(hObject,'Value');
 rootroot=get(hObject,'UserData');
@@ -3793,12 +3770,10 @@ elseif exist(FullSelectName,'file')%visualise the vel field if it exists
     set(gcbo,'Value',1)
 end
 
-
 %------------------------------------------------------------------------
 % launched by refreshing the status figure
-%------------------------------------------------------------------------
 function refresh_GUI(hfig)
-
+%------------------------------------------------------------------------
 htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
 hseries=findobj(allchild(0),'tag','series');
@@ -3857,9 +3832,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ActionExt.
-%------------------------------------------------------------------------
 function ActionExt_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 if strcmp(ActionExt,'fluidimage')
@@ -3911,15 +3885,10 @@ switch FileType
 end
 menu=menu(imin:imax);
 
-
-% --- Executes on mouse motion over figure - except title and menu.
-% function series_WindowButtonMotionFcn(hObject, eventdata, handles)
-% set(hObject,'Pointer','arrow');
-
-
+%------------------------------------------------------------------------
 % --- Executes on button press in SetPairs.
 function SetPairs_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 %% delete previous occurrence of 'set_pairs'
 hfig=findobj(allchild(0),'Tag','set_pairs');
 if ~isempty(hfig)
@@ -4005,10 +3974,12 @@ drawnow
 
 %------------------------------------------------------------------------
 function ListView_Callback(hObject,eventdata)
+%------------------------------------------------------------------------
 Mode_Callback(hObject,eventdata)
 
 %------------------------------------------------------------------------
 function Mode_Callback(hObject,eventdata)
+%------------------------------------------------------------------------
 %% get input info
 hseries=findobj(allchild(0),'tag','series'); % handles of the GUI series
 hhseries=guidata(hseries); % handles of the elements in the GUI series
@@ -4024,7 +3995,6 @@ j1_series=SeriesData.j1_series{iview};
 j2_series=SeriesData.j2_series{iview};
 
 %% enable j index visibility after the new choice
-
 if strcmp(mode,'series(Dj)')
    status_j='on'; % default
 else
@@ -4072,7 +4042,6 @@ PairString{iview,1}=string;
 % report the selected pair string to the table PairString
 set(hPairString,'Data',PairString)
 
-
 %------------------------------------------------------------------------
 function num_ref_i_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
@@ -4088,11 +4057,10 @@ function OK_Callback(hObject, eventdata)
 %------------------------------------------------------------------------
 delete(get(hObject,'parent'))
 
-
 %------------------------------------------------------------------------
 % --- Executes on button press in ClearLine.
-%------------------------------------------------------------------------
 function ClearLine_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 iline=str2double(get(handles.InputLine,'String'));
 if size(InputTable,1)>1
@@ -4101,10 +4069,10 @@ if size(InputTable,1)>1
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refr
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in MonitorCluster.
 function MonitorCluster_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 [rr,ss]=system('oarstat |grep N=UVmat');% check the list of jobs launched with uvmat
 if isempty(ss)
    disp( 'no job presently submitted with uvmat')
@@ -4113,8 +4081,9 @@ else
     disp(ss)
 end
 
-
+%------------------------------------------------------------------------
 function OutputSubDir_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.OutputSubDir,'BackgroundColor',[1 1 1])
 
 
@@ -4123,19 +4092,18 @@ function CheckOverwrite_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in TestCPUTime.
 function TestCPUTime_Callback(hObject, eventdata, handles)
-% hObject    handle to TestCPUTime (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in DiskQuota.
 function DiskQuota_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 SeriesData=get(handles.series,'UserData');
 system(SeriesData.DiskQuotaCmd)
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in Replicate.
 function Replicate_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 if get(handles.Replicate,'Value')
     InputTable=get(handles.InputTable,'Data');
     for ilist=1:size(InputTable,1)
@@ -4158,9 +4126,10 @@ function Experiment_Callback(hObject, eventdata, handles)
 
 function Device_Callback(hObject, eventdata, handles)
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in OutputPathBrowse.
 function OutputPathBrowse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 CheckValue=get(handles.OutputPathBrowse,'Value');
 if CheckValue
 OutputPath=uigetdir(get(handles.OutputPath,'String'));
@@ -4170,14 +4139,16 @@ else
     set(handles.OutputPath,'String',InputTable{1,1})
 end
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in DeleteMask.
 function DeleteMask_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.MaskTable,'Data',{})
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in Relabel.
 function Relabel_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 CheckRelabel=get(hObject,'Value');
 if CheckRelabel
     InputTable=get(handles.InputTable,'Data');%read the table of input file series
@@ -4194,7 +4165,7 @@ if CheckRelabel
         end
     end
 end
-check_input_file_series(handles,CheckRelabel)
-ActionInput_Callback([],[], handles)
+check_input_file_series(handles,CheckRelabel)% check the min and max relabeled indices, or original ones if CheckRelabel=false
+ActionInput_Callback([],[], handles)% %% enable menus (field, vel type,...), in accordance with the current action function
 
 
