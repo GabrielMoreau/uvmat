@@ -1,5 +1,4 @@
-
-%'nc2struct': transform a NetCDF file in a corresponding matlab structure
+%'nc2struct': reads a NetCDF file as a corresponding Matlab structure.
 % or directly read the a matlab data file .mat (calling the fct mat2struct.m)
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted

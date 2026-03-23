@@ -9,6 +9,6 @@
       <JobNumberMax>500</JobNumberMax>                         <!-- maximum number of jobs allowed (will group the iterations to fit in) -->
       <WallTimeMax unit="hour">23</WallTimeMax>                <!-- maximum allowed time for a job -->
       <JobStatCmd>oarstat |grep N=UVmat</JobStatCmd>           <!-- command to know the number of active and waiting job launches -->
-      <LaunchCmdFcn>cluster_command</LaunchCmdFcn>             <!-- name of the function used to create job launch commmand -->
+      <LaunchCmdFcn>cluster_command_LEGI</LaunchCmdFcn>             <!-- name of the function used to create job launch commmand -->
    </ClusterParam>
 </SeriesParam>

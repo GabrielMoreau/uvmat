@@ -1,4 +1,4 @@
-%'plot_field': plot any field with the structure defined in the uvmat package
+%'plot_field': plots a field (vectors, scalar or images, or usual x,y plot), depending on the input field object and plotting parameters defined in uvmat.
 %------------------------------------------------------------------------
 %
 %  This function is used by uvmat to plot fields. It automatically chooses the representation 

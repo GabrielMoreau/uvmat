@@ -1,5 +1,5 @@
 
-%'browse_data': function for scanning directories in a campaign
+%'browse_data': function for scanning data tree in a project 
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
 % associated with the GUI browse_data.fig

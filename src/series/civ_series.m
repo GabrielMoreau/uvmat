@@ -45,7 +45,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Data,errormsg,result_conv]= civ_series(Param)
+function [Data,errormsg]= civ_series(Param)
 errormsg='';
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
@@ -397,7 +397,7 @@ for ifield=1:NbField
             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
             if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
-            elseif isfield(par_civ1,'NbSlice')&& ~isequal(par_civ1.NbSlice,1)
+            elseif isfield(par_civ1,'NbSlice')
                 i1_background=mod(i1-1,par_civ1.NbSlice)+1;
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
@@ -489,7 +489,7 @@ for ifield=1:NbField
             end
             if ~isempty(i2_series_Civ1)&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-            elseif isfield(par_civ1,'NbSlice')&& ~isequal(par_civ1.NbSlice,1)
+            elseif isfield(par_civ1,'NbSlice')
                 i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
@@ -529,8 +529,11 @@ for ifield=1:NbField
         end
         
         % caluclate velocity data
-        %   [Data.Civ1_X,Data.Civ1_Y,Data.Civ1_U,Data.Civ1_V,Data.Civ1_C,Data.Civ1_FF, result_conv, errormsg] = civ (par_civ1);
-        [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF, result_conv, errormsg] = civ (par_civ1);
+        if strcmp(Param.RunMode,'cluster')
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
+        else
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,errormsg] = parciv (par_civ1);%use parfor loop 
+        end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         if ~isempty(errormsg)
@@ -679,7 +682,7 @@ for ifield=1:NbField
             end
             if ~isempty(i2_series_Civ2)% case of volume,backgrounds act on different j levels
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
-            elseif isfield(par_civ2,'NbSlice') && ~isequal(par_civ2.NbSlice,1)
+            elseif isfield(par_civ2,'NbSlice')
                 i1_background=mod(i1-1,par_civ2.NbSlice)+1;
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
@@ -803,7 +806,7 @@ for ifield=1:NbField
                     j1=[];
                 end
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-            elseif isfield(par_civ2,'NbSlice')&& ~isequal(par_civ2.NbSlice,1)
+            elseif isfield(par_civ2,'NbSlice')
                 i1=i1_series_Civ2(ifield);
                 i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
@@ -854,8 +857,12 @@ for ifield=1:NbField
             par_civ2.DVDY(nbval>0)=DVDY(nbval>0)./nbval(nbval>0);
         end
         
-        % calculate velocity data      
-        [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);
+        % calculate velocity data 
+        if strcmp(Param.RunMode,'cluster')
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);% single processor used in cluster
+        else
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,errormsg] = parciv (par_civ2);%use parfor loop
+        end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         list_param=(fieldnames(Param.ActionInput.Civ2))';

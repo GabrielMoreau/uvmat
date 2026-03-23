@@ -51,7 +51,7 @@
 %=======================================================================
 
 function ParamOut=civ2vel_3C(Param)
-disp('test')
+
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -348,7 +348,7 @@ for index=1:NbField
         U1=Data{1}.U;
         V1=Data{1}.V;
     end
-    Ua=griddata(X1,Y1,U1,Xa,Ya);
+    Ua=griddata(X1,Y1,U1,Xa,Ya);% interpolate PIV data positions to the common grid Xa,Ya
     Va=griddata(X1,Y1,V1,Xa,Ya);
     [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
     [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~

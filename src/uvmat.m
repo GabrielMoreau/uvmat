@@ -1,4 +1,4 @@
-%'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization
+%'uvmat': function associated with the master GUI 'uvmat.fig' for the visualisation of images and data fields
 %------------------------------------------------------------------------
 % function huvmat=uvmat(input)
 %
@@ -219,7 +219,7 @@ for ilist=2:UvData.OpenParam.NbBuiltin
 end
 
 %% EXPORT menu
-export_menu={'as field in workspace';'in new figure';'on existing axis';'make movie';'more...'};
+export_menu={'field in workspace';'field in new figure';'field on existing axis';'make movie';'create mirror data tree';'more...'};
 
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
 dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
@@ -362,6 +362,10 @@ TextDisplayPanelHeight=100;
 CheckTablePanelHeight=100;
 CoordinatesPanelHeight=100;
 ScalarPanelHeight=150;
+FieldIndicesHeight=220;
+NavigateHeight=120;
+TransformHeight=100;
+ObjectsHeight=150;
 Interval=2;
 
 %% reset position of panel InputFile
@@ -432,29 +436,61 @@ pos_5(4)=240;
 set(handles.Vectors,'Position',pos_5)
 
 %% reset position and scale of axis
-pos(1)=0.2*size_uvmat(3)+35;
-pos(2)=50;
-pos(3)=0.77*size_uvmat(3)-1.2*ColumnWidth;
+pos(1)=1.2*ColumnWidth+50;%axis x position
+pos(2)=50;%axis y position
+pos(3)=size_uvmat(3)-2.2*ColumnWidth-100;%axis width
 pos(4)=pos_InputFile(2)-50-Interval;
 set(handles.PlotAxes,'Units','pixels')
 set(handles.PlotAxes,'Position',pos)
 %set(handles.PlotAxes,'Units','normalized')
 UvData=get(handles.uvmat,'UserData');
-UvData.PosColorbar([1 3])=[pos(1)+pos(3)+10 10]/size_uvmat(3);
+UvData.PosColorbar([1 3])=[pos(1)+pos(3)+10 15]/size_uvmat(3);%x position and width of the colorbar
 UvData.PosColorbar([2 4])=[pos(2)+pos(3)/4 pos(3)/2]/size_uvmat(4);
 set(handles.uvmat,'UserData',UvData)
 
-%% reset position of Field Indices TODO
-% set(handles.FieldIndices,'Units','pixels')
-% pos_4(1)=size_uvmat(3)-ColumnWidth;         % set 'Scalar' to the right of the fig
-% if strcmp(get(handles.Scalar,'Visible'),'on')
-%     pos_4(2)=pos_3(2)-ScalarPanelHeight-Interval; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
-% else
-%     pos_4(2)=pos_3(2)-Interval;% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
-% end
-% pos_4(3)=ColumnWidth;
-% pos_4(4)=ScalarPanelHeight;
-% set(handles.Scalar,'Position',pos_4)
+%% reset position of Field Indices 
+set(handles.FieldIndices,'Units','pixels')
+pos_1(1)=Interval;         % set 'Scalar' to the right of the fig
+pos_1(2)=pos_InputFile(2)-FieldIndicesHeight-Interval;     
+pos_1(3)=1.2*ColumnWidth; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+pos_1(4)=FieldIndicesHeight;
+set(handles.FieldIndices,'Position',pos_1)
+
+%% reset position of Navigation 
+set(handles.Navigation,'Units','pixels')
+pos_2(1)=Interval;         % set 'Scalar' to the right of the fig
+pos_2(2)=pos_1(2)-NavigateHeight-Interval;     
+pos_2(3)=1.2*ColumnWidth; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+pos_2(4)=NavigateHeight;
+set(handles.Navigation,'Position',pos_2)
+
+%% reset position of Transform 
+set(handles.Transform,'Units','pixels')
+pos_3(1)=Interval;         % set 'Scalar' to the right of the fig
+pos_3(2)=pos_2(2)-TransformHeight-Interval;     
+pos_3(3)=1.2*ColumnWidth; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+pos_3(4)=TransformHeight;
+set(handles.Transform,'Position',pos_3)
+
+%% reset position of Objects 
+set(handles.Objects,'Units','pixels')
+pos_4(1)=Interval;         % set 'Scalar' to the right of the fig
+pos_4(2)=pos_3(2)-ObjectsHeight-Interval;     
+pos_4(3)=1.2*ColumnWidth; % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+pos_4(4)=ObjectsHeight;
+set(handles.Objects,'Position',pos_4)
+
+%% reset position of Histogram 
+set(handles.Histogram_txt,'Units','pixels')
+set(handles.HistoMenu,'Units','pixels')
+set(handles.LogLinHisto,'Units','pixels')
+set(handles.HistoAxes,'Units','pixels')
+set(handles.Histogram_txt,'FontSize',16)
+set(handles.Histogram_txt,'Position',[Interval pos_4(2)-20-Interval 0.5*ColumnWidth-Interval 20])
+set(handles.HistoMenu,'Position',[2*Interval+0.5*ColumnWidth pos_4(2)-20-Interval 0.35*ColumnWidth-Interval 20])
+set(handles.LogLinHisto,'Position',[3*Interval+0.85*ColumnWidth pos_4(2)-20-Interval 0.35*ColumnWidth-Interval 20])
+set(handles.HistoAxes,'Position',[40 pos_4(2)-220-Interval 1.2*ColumnWidth-40 180])
+
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -830,6 +866,7 @@ if strcmp(get(handles.MenuExportCustom,'label'),'user export fct.')
     MenuExportMore_Callback(hObject, eventdata, handles)
 else
     current_dir=pwd;%current working dir
+    export_fct_name=get(handles.MenuExportCustom,'label');
     cd(fullfile(fileparts(which('uvmat')),'export_fct'))
     export_handle=str2func(export_fct_name);% pick the relevant export fct in the folder UVMAT/export_fct
     cd(current_dir) %come back to the current working dir
@@ -852,6 +889,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % -----------------------------------------------------------------------
+% --- called by menu bar Projection object/points
 function Menupoints_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='points';
@@ -860,8 +898,7 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
-% --- Callback of the Menu command line
-%------------------------------------------------------------------------
+% --- % --- called by menu bar Projection object/line
 function Menuline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='line';
@@ -870,9 +907,9 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
-% --- Callback of the Menu command line_x
-%------------------------------------------------------------------------
+% --- called by menu bar Projection object/line_x
 function Menuline_x_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 data.Type='line_x';
 data.ProjMode='projection';%default
@@ -880,9 +917,9 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
-% --- Callback of the Menu command line_y
-% -----------------------------------------------------------------------
+% --- called by menu bar Projection object/line_y
 function Menuline_y_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 data.Type='line_y';
 data.ProjMode='projection';%default
@@ -898,6 +935,7 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
+% --- called by menu bar Projection object/
 function Menupolygon_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='polygon';
@@ -914,6 +952,7 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
+% --- called by menu bar Projection object/
 function Menuellipse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='ellipse';
@@ -922,7 +961,8 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
-function MenuMaskObject_Callback(hObject, eventdata, handles)
+% --- called by menu bar Projection object/
+function MenuMaskObject_Callback(hObject, eventdata, handles)% TO DELETE
 %------------------------------------------------------------------------
 data.Type='polygon';
 data.TypeMenu={'polygon'};
@@ -931,6 +971,7 @@ data.ProjModeMenu={'mask_inside';'mask_outside'};
 create_object(data,handles)
 
 %------------------------------------------------------------------------
+% --- called by menu bar Projection object/plane_xy: to project fields on a horizontal plane x,y
 function Menuplane_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='plane';
@@ -938,14 +979,17 @@ data.ProjMode='projection';%default
 data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- called by menu bar Projection object/plane_z: to project fields on a vertical plane
 function Menuplane_z_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 data.Type='plane_z';
 data.ProjMode='projection';%default
 data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
+% --- called by menu bar Projection object/volume (to check !!)
 function Menuvolume_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='volume';
@@ -988,7 +1032,6 @@ if isfield(UvData,'Field')
         data.CoordUnit=UvData.Field.CoordUnit;
     end
     if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
-        %data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
         data.DX=UvData.Field.CoordMesh;
         data.DY=UvData.Field.CoordMesh;
         switch data.Type
@@ -1066,6 +1109,7 @@ set(handles.ListObject_1_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
+% --- called by menu bar Projection object/browse...
 %------------------------------------------------------------------------
 %get the object file
 fileinput=uigetfile_uvmat('pick an xml object file:',get(handles.RootPath,'String'),'.xml');
@@ -1097,6 +1141,7 @@ end
 % MenuTools Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
+% --- called by menu bar Tools/ruler
 function MenuRuler_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if strcmp(get(handles.MenuRuler,'checked'),'on')
@@ -1111,6 +1156,7 @@ else
 end
 
 %------------------------------------------------------------------------
+% --- called by menu bar Tools/geometry calibration
 function MenuCalib_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% suppress the second field if exists
@@ -1139,10 +1185,10 @@ set(handles.view_xml,'BackgroundColor',[1 1 1])%indicate the end of reading of t
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
 
 
-% --------------------------------------------------------------------
-% --- set the slice plane ro the set of slice planes when volume scan is used
+% -----------------------------------------------------------------------
+% --- called by menu bar Tools/set slice calibrationset the slice plane ro the set of slice planes when volume scan is used
 function MenuSetSlice_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
 %% suppress the second input field if exists
 if get(handles.SubField,'Value')
     set(handles.SubField,'Value',0)
@@ -1479,7 +1525,8 @@ function set_slice_Cancel_Callback(hObject,eventdata)
 hset_slice=get(hObject,'parent');
 delete(hset_slice)
 
-%-----------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- called by menu bar Tools/LIF calibration
 function MenuLIFCalib_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% read UvData properties stored on the uvmat interface
@@ -1598,14 +1645,6 @@ if numel(LineData)<3
 end
 XmlData.LIFCalib.RefLineCoord=LineData{3}.Coord;
 
-%% rescale the image
-% [nby,nbx]=size(UvData.Field.A);
-% x=linspace(UvData.Field.Coord_x(1),UvData.Field.Coord_x(2),nbx)-nbx/2;
-% y=linspace(UvData.Field.Coord_y(1),UvData.Field.Coord_y(2),nby)-nby/2;
-% [X,Y]=meshgrid(x,y);
-%coeff_quad=0.15*4/(nbx*nbx);% image luminosity reduced by 10% at the edge
-%UvData.Field.A=double(UvData.Field.A).*(1+coeff_quad*(X.*X+Y.*Y));
-
 %% display the current image in polar axes with origin at the  illumination source
 currentdir=pwd;
 uvmatpath=fileparts(which('uvmat'));
@@ -1655,8 +1694,6 @@ end
 [npy,npx]=size(Anorm);
 AX=DataPol.radius;
 AY=DataPol.theta;
-% dX=(AX(2)-AX(1))/(npx-1);
-% dY=(AY(1)-AY(2))/(npy-1);%mesh of new pixels
 [R,Theta]=meshgrid(linspace(AX(1),AX(end),npx),linspace(AY(1),AY(end),npy));%matrix of radius and angles with the same size as DataPol
 A=R.*Anorm;
 A=(A<=0).*ones(npy,npx)+(A>0).*A; %replaces zeros by ones
@@ -1677,8 +1714,6 @@ end
 %% loop on lines iY (angle in polar coordiantes)
 gamma_coeff=NaN(1,npy);
 fitlength=NaN(1,npy);
-%[ThetaMask,RMask] = cart2pol(MaskData.Coord(:,1)-x0,MaskData.Coord(:,2)-y0);
-%ThetaMask=ThetaMask*180/pi
 for iY=1:npy% loop on the y index of the image in polar coordinate
     ALine=A(iY,:);%profile of image luminosity log (vs radial index)
     RLine=R(iY,:);%radius of the reference line (vs radial index)
@@ -1789,139 +1824,163 @@ elseif strcmp(answer,'Replicate')
     msgbox_uvmat('CONFIMATION',['LIF calibration replicated for ' num2str(NbExp) ' experiments']);
 end
 
-
-
 %------------------------------------------------------------------------
-    function MenuMask_Callback(hObject, eventdata, handles)
-        %------------------------------------------------------------------------
-        UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-        ListObj=UvData.ProjObject;
-        select=zeros(1,numel(ListObj));
-        for iobj=1:numel(ListObj);
-            if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
-                select(iobj)=1;
+% --- called by menu bar Tools/make mask: produces a mask image from existing projection objects with ProjMode='mask inside' or 'mask_outside
+function MenuMask_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+
+%% selects the appropriate projection objects
+select=false(1,numel(UvData.ProjObject));% selection flag on the list of projection objects, false by default
+for iobj=1:numel(UvData.ProjObject)
+    if ismember(UvData.ProjObject{iobj}.ProjMode,{'mask_inside','mask_outside','inside'}) &&...
+            isfield(UvData.ProjObject{iobj},'Coord') && isfield(UvData.ProjObject{iobj},'Type')% avoid empty or other wrong objects in the list
+        select(iobj)=true;% select only the objects with appropriate projection mode
+    end
+end
+val=find(select);% indices of the selected objects 
+if isempty(val)
+    msgbox_uvmat('ERROR','projection objects with ProjMode=mask_inside or mask_outside must be first created');
+    return
+else
+    ProjObject=UvData.ProjObject(val);%list of appropriate objects to use
+end
+set(handles.ListObject,'Value',val);% indicate the used object in the list
+
+%% initialise the flag image for mask
+if ~isfield(UvData.Field,'A')
+    msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
+    return
+end
+npx=size(UvData.Field.A,2);
+npy=size(UvData.Field.A,1);
+xi=0.5:npx-0.5;
+yi=0.5:npy-0.5;
+[Xi,Yi]=meshgrid(xi,yi);
+flag=true(npy,npx);
+
+%% scan the list of the selected projection objects
+for iobj=1:numel(ProjObject)
+    flagobj=true(npy,npx);
+    testphys=false; %coordinates in pixels by default
+    if isfield(ProjObject{iobj},'CoordUnit') && ~isequal(ProjObject{iobj}.CoordUnit,'pixel')
+        if isfield(UvData,'XmlData')
+            if isfield(UvData.XmlData{1},'GeometryCalib')
+                Calib=UvData.XmlData{1}.GeometryCalib;
+                testphys=true; %flag to transform object coordinates into pixels
+                Slice=[];% check for slices in 3D
+                if isfield(UvData.XmlData{1},'Slice')
+                    Slice=UvData.XmlData{1}.Slice;
+                end
             end
         end
-        val=find(select);
-        if isempty(val)
-            msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
+    end
+    X=ProjObject{iobj}.Coord(:,1);
+    Y=ProjObject{iobj}.Coord(:,2);
+    if testphys% transform the object into polygon, then to pixel coordinates        
+        if strcmp(ProjObject{iobj}.Type,'ellipse')% transform into polygon
+            perimeter=2*pi*ProjObject{iobj}.RangeX*ProjObject{iobj}.RangeY;
+            NbPoint=ceil(perimeter/UvData.Field.CoordMesh);% estimate the number of interpolation points according to estimated field mesh
+            Theta=2*pi*(1:NbPoint)/NbPoint; %set of  NbPoint angles        
+            X=X+ProjObject{iobj}.RangeX*cos(Theta);% correspondfing x positions
+            Y=Y+ProjObject{iobj}.RangeY*sin(Theta);% correspondfing y positions
+        elseif strcmp(ProjObject{iobj}.Type,'rectangle')%
+            RangeX=ProjObject{iobj}.RangeX;% half side of the rectangle
+            RangeY=ProjObject{iobj}.RangeY;% y axis of the ellipse
+            Xflag=[X-RangeX X+RangeX X+RangeX X-RangeX];% coordinates of the corners
+            Yflag=[Y-RangeY Y-RangeY Y+RangeY Y+RangeY];
+        else %polygon
+            Xflag=X';Yflag=Y';
+            Xflag=[Xflag X(1)];Yflag=[Yflag Y(1)];% close the polygon before interpolation
+        end
+        if ~strcmp(ProjObject{iobj}.Type,'ellipse')% interpolate between flag points
+            X=[]; Y=[];
+            for iflag=1:numel(Xflag)-1
+                SegmentLength=sqrt((Xflag(iflag+1)-Xflag(iflag))^2+(Yflag(iflag+1)-Yflag(iflag))^2);
+                NbPoint=ceil(SegmentLength/UvData.Field.CoordMesh);
+                X=[X Xflag(iflag)+((0:NbPoint-1)/NbPoint)*(Xflag(iflag+1)-Xflag(iflag))];% interpolate between 'flag points'
+                Y=[Y Yflag(iflag)+((0:NbPoint-1)/NbPoint)*(Yflag(iflag+1)-Yflag(iflag))];
+            end
+        end
+        ProjObject{iobj}.Type='polygon';
+        pos=[X' Y' zeros(numel(X),1)];% create the matrix for transform to pixel coordinates
+        % introduce the plane of cut in 3D case 
+        if isfield(Slice,'SliceCoord') && length(Slice.SliceCoord)>=3
+            if isfield(Slice,'SliceAngle')&&~isequal(Slice.SliceAngle,[0 0 0])
+                om=norm(Slice.SliceAngle);%norm of rotation angle in radians
+                OmAxis=Slice.SliceAngle/om; %unit vector marking the rotation axis
+                cos_om=cos(pi*om/180);
+                sin_om=sin(pi*om/180);
+                pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+            end
+            pos(:,1)=pos(:,1)+Slice.SliceCoord(1);
+            pos(:,2)=pos(:,2)+Slice.SliceCoord(2);
+            pos(:,3)=pos(:,3)+Slice.SliceCoord(3);
+        end
+        [X,Y]=px_XYZ(Calib,Slice,pos(:,1),pos(:,2),pos(:,3));% transform to pixel coordinates
+    end
+    if strcmp(ProjObject{iobj}.Type,'polygon')
+        flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+    elseif isequal(ProjObject{iobj}.Type,'ellipse')
+        RangeX=max(ProjObject{iobj}.RangeX);
+        RangeY=max(ProjObject{iobj}.RangeY);
+        X2Max=RangeX*RangeX;
+        Y2Max=RangeY*RangeY;
+        distX=(Xi-ProjObject{iobj}.Coord(1,1));
+        distY=(Yi-ProjObject{iobj}.Coord(1,2));
+        flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+    elseif isequal(ProjObject{iobj}.Type,'rectangle')
+        distX=abs(Xi-ProjObject{iobj}.Coord(1,1));
+        distY=abs(Yi-ProjObject{iobj}.Coord(1,2));
+        flagobj=distX>max(ProjObject{iobj}.RangeX) | distY>max(ProjObject{iobj}.RangeY);
+    end
+    if isequal(ProjObject{iobj}.ProjMode,'mask_outside')
+        flagobj=~flagobj;
+    end
+    flag=flag & flagobj;% concatene the mask flag
+end
+imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (PIV vectors not computed when imflag<200)
+imflag=flip(imflag,1);
+
+%% display the mask image for checking
+hfigmask=figure;
+set(hfigmask,'Name','mask image')
+vec=linspace(0,1,256);%define a linear greyscale colormap
+map=[vec' vec' vec'];
+colormap(map)
+image(imflag);
+
+%% propose a mask name
+RootPath=get(handles.RootPath,'String');
+SubDir=get(handles.SubDir,'String');
+maskindex=get(handles.masklevel,'Value');
+mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
+answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
+
+%% save the mask as requested
+if ~strcmp(answer,'Cancel')
+    mask_dir=fileparts(answer);
+    if ~exist(mask_dir,'dir')
+        [success,msg]=mkdir(mask_dir);
+        if success==0
+            msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
             return
-        else
-            set(handles.ListObject,'Value',val);
-            flag=1;
-            if ~isfield(UvData.Field,'A')
-                msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
-                return
-            end
-            npx=size(UvData.Field.A,2);
-            npy=size(UvData.Field.A,1);
-            xi=0.5:npx-0.5;
-            yi=0.5:npy-0.5;
-            [Xi,Yi]=meshgrid(xi,yi);
-            for iobj=1:length(UvData.ProjObject)
-                ObjectData=UvData.ProjObject{iobj};
-                if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-                    flagobj=1;
-                    testphys=0; %coordinates in pixels by default
-                    if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
-                        if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-                            Calib=UvData.XmlData{1}.GeometryCalib;
-                            testphys=1;
-                        end
-                    end
-                    if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
-                        if isequal(ObjectData.Type,'polygon')
-                            X=ObjectData.Coord(:,1);
-                            Y=ObjectData.Coord(:,2);
-                            if testphys
-                                pos=[X Y zeros(size(X))];
-                                if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
-                                    if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
-                                        om=norm(Calib.SliceAngle);%norm of rotation angle in radians
-                                        OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
-                                        cos_om=cos(pi*om/180);
-                                        sin_om=sin(pi*om/180);
-                                        pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                                    end
-                                    pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
-                                    pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
-                                    pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
-                                end
-                                [X,Y]=px_XYZ(Calib,Slice,pos(:,1),pos(:,2),pos(:,3));
-                            end
-                            flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                        elseif isequal(ObjectData.Type,'ellipse')
-                            if testphys
-                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                            end
-                            RangeX=max(ObjectData.RangeX);
-                            RangeY=max(ObjectData.RangeY);
-                            X2Max=RangeX*RangeX;
-                            Y2Max=RangeY*RangeY;
-                            distX=(Xi-ObjectData.Coord(1,1));
-                            distY=(Yi-ObjectData.Coord(1,2));
-                            flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                        elseif isequal(ObjectData.Type,'rectangle')
-                            if testphys
-                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                            end
-                            distX=abs(Xi-ObjectData.Coord(1,1));
-                            distY=abs(Yi-ObjectData.Coord(1,2));
-                            flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
-                        end
-                        if isequal(ObjectData.ProjMode,'mask_outside')
-                            flagobj=~flagobj;
-                        end
-                        flag=flag & flagobj;
-                    end
-                end
-            end
-            %mask name
-            RootPath=get(handles.RootPath,'String');
-            SubDir=get(handles.SubDir,'String');
-            RootFile=get(handles.RootFile,'String');
-            if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
-                RootFile(1)=[];
-            end
-            list=get(handles.masklevel,'String');
-            masknumber=num2str(length(list));
-            maskindex=get(handles.masklevel,'Value');
-            mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
-            imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
-            imflag=flipdim(imflag,1);
-            
-            %display the mask
-            hfigmask=figure;
-            set(hfigmask,'Name','mask image')
-            vec=linspace(0,1,256);%define a linear greyscale colormap
-            map=[vec' vec' vec'];
-            colormap(map)
-            image(imflag);
-            answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
-            if ~strcmp(answer,'Cancel')
-                mask_dir=fileparts(answer);
-                if ~exist(mask_dir,'dir')
-                    [success,msg]=mkdir(mask_dir);
-                    if success==0
-                        msgbox_uvmat('ERROR',['cannot create ' mask_dir ': ' msg]);%error message for directory creation
-                        return
-                    end
-                    [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
-                    if success==0
-                        msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
-                    end
-                end
-                try
-                    imwrite(imflag,answer,'BitDepth',8);
-                catch ME
-                    msgbox_uvmat('ERROR',ME.message)
-                end
-            end
-            set(handles.ListObject,'Value',1)
         end
+        [success,msg] = fileattrib(mask_dir,'+w','g','s');% allow writing access for the group of users, recursively in the folder
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' mask_dir ':']; msg});%error message for directory creation
+        end
+    end
+    try
+        imwrite(imflag,answer,'BitDepth',8);
+    catch ME
+        msgbox_uvmat('ERROR',ME.message)
+    end
+end
+set(handles.ListObject,'Value',1)
 
 %------------------------------------------------------------------------
-%-- open the GUI set_grid.fig to create grid
+%-- open the GUI set_grid.fig to create grid (TODO: check the relevance)
 function MenuGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %suppress the other options if grid is chosen
@@ -1933,15 +1992,12 @@ set(handles.ListObject,'Value',1)
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 UvData=get(handles.uvmat,'UserData');
-% CoordList=get(handles.TransformName,'String');
-% val=get(handles.TransformName,'Value');
 set_grid(FileName,UvData.Field);% call the set_object interface
 
 %------------------------------------------------------------------------
-%-- introduce a section FileSeries in the xml file ImaDoc to virtually relabel frames
-% --------------------------------------------------------------------
+%--- called by menu bar Tools/relabel series: introduce a section FileSeries in the xml file ImaDoc to virtually relabel frames
 function MenuRelabelFrames_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 
@@ -1980,8 +2036,7 @@ switch FileInfo.FileType
         end
     case 'rdvision'%TO CHECK******
         check_time_rdvision(FileName,XmlData)
-    case 'telopsIR'
-        
+    case 'telopsIR'      
         DirContent=dir(fullfile(RootPath,SubDir));
         NbFiles=0;
         FileSeries.Convention='telopsIR';
@@ -4248,7 +4303,7 @@ else
             end
         end
     end
-   
+
     set(handles.uvmat,'UserData',UvData)
     
     %% loop on the projection objects: one or two
@@ -4373,11 +4428,11 @@ else
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % display menus and plot histograms
-    test_v=0;
+    %test_v=0;
     if ~isempty(menu_histo)
         set(handles.HistoMenu,'Value',1)
         set(handles.HistoMenu,'String',menu_histo)
-        set(handles.Histogram,'Visible','on')
+        set(handles.Histogram_txt,'Visible','on')
         set(handles.HistoMenu,'Visible','on')
         set(handles.LogLinHisto,'Visible','on')
         set(handles.HistoAxes,'Visible','on')
@@ -6289,3 +6344,10 @@ end
 % --------------------------------------------------------------------
 function LogLinHisto_Callback(hObject, eventdata, handles)
 HistoMenu_Callback(hObject, eventdata, handles)
+
+
+% --------------------------------------------------------------------
+function MenuCreateMirror_Callback(hObject, eventdata, handles)
+% hObject    handle to MenuCreateMirror (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

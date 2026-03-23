@@ -42,7 +42,7 @@ list_fct={...
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
     'check_files';...
     'civ';... % key function  for image correlations (called by series/cvi_series.m)
-    'cluster_command';...% creates the command string for launching jobs in the cluster system 'oar'. 
+    'cluster_command_LEGI';...% creates the command string for launching jobs in the cluster system 'oar'. 
     'command_launch_matlab';% creates the command strings for opening a new Matlab session
     'command_load_python';% creates the command strings for loading Python
     'compile';...% compile a Matlab function, create a binary in a subdirectory /bin
@@ -80,12 +80,12 @@ list_fct={...
     'nomtype2pair';... creates nomenclature for index pairs knowing the image nomenclature, used by series fct
     'nc2struct';...% transform a netcdf file in a corresponding matlab structure
     'num2stra';...% transform number to the corresponding character string depending on the nomenclature
+    'parciv';... % same as civ.m, but for loop replaced by 'parfor' for parallel computing on local computer
     'phys_XYZ';...% transform coordiantes from pixels to phys
     'px_XYZ';...% transform coordiantes from phys to pixels
     'plot_field';...%displays a vector field and/or scalar or images
     'plot_object';...%draws a projection object (points, line, plane...)
     'proj_field';...%project a field on a projection object (plane, line,...)
-    'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
     'read_field';...% read the fields from files in different formats (netcdf files, images, video)
     'read_GUI';... %read a GUI and provide the data as a Matlab structure
@@ -103,6 +103,7 @@ list_fct={...
     'set_grid.fig';...% interface for set_grid
     'set_object.m';...%  edit a projection object
     'set_object.fig';...% interface for set_object
+    'set_slices.mlapp';% creates illumination slices in 3D context
     'set_subdomains';...% sort a set of points defined by scattered coordinates in subdomains, as needed for tps interpolation
     'stra2num';...% transform letters (a, b, A, B,) or numerical strings ('1','2'..) to the corresponding numbers
     'sub_field';...% combine the two input fields,
@@ -116,7 +117,6 @@ list_fct={...
     'translate_points.fig';...
     'uigetfile_uvmat';... browser, and display of directories, faster than the Matlab fct uigetfile
     'update_imadoc';...  %update the ImaDoc xml file
-    'update_waitbar';... update the waitbar display, used for ACTION functions in the GUI 'series'
     'uvmat';...% master function for file scanning and visualisation of 2D fields
     'uvmat.fig';...  %interface for uvmat
     'view_field.m';...% function for visualisation of projected fields'

@@ -1588,7 +1588,7 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 %     activated by mouse motion
 function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-drawnow
+drawnowci
 if get(handles.TestCiv1,'Value')
     set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
     set(handles.CheckFix1,'value',0)% desactivate next step

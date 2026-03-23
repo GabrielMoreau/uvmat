@@ -1,12 +1,13 @@
-%'px_XYZ': transform physical to image coordinates. 
+%'px_XYZ': transforms physical to image coordinates. 
 %------------------------------------------------------------------------
-%[X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)
+%[X,Y]=px_XYZ(Calib,Slice,Xphys,Yphys,Zphys)
 %------------------------------------------------------------------------           
 % OUTPUT:
 % [X,Y]: image coordinates(in pixels)
 %------------------------------------------------------------------------
 % INPUT:
 % Calib: structure containing calibration parameters
+% Slice: structure indicating the plane cut position
 % Xphys,Yphys,Zphys; vectors of physical coordinates for a set of points
 
 %=======================================================================
@@ -40,7 +41,7 @@ end
 
 %%%%%%%%%%%%%
 if isempty(Slice)
-    Slice=Calib;
+    Slice=Calib;% old convention (< 2022)
 end
 % general case
 if isfield(Calib,'R')
@@ -50,13 +51,10 @@ if isfield(Calib,'R')
         H=Slice.InterfaceCoord(3);
         if H>Zphys
             Zphys=H-(H-Zphys)/Slice.RefractionIndex; %corrected z (virtual object)Calib
-            
-          %  test_refraction=1;
         end
     end
     
     %camera coordinates
-    Zphys=Zphys;%flip z coordinates
     xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx_Ty_Tz(1);
     yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Tx_Ty_Tz(2);
     zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tx_Ty_Tz(3);
@@ -68,7 +66,7 @@ if isfield(Calib,'R')
     %radial quadratic correction factor
     if ~isfield(Calib,'kc')
         r2=1; %no quadratic distortion
-    elseif numel(Calib.kc)==1
+    elseif isscalar(Calib.kc)
         r2=1+Calib.kc*(Xu.*Xu+Yu.*Yu);
     else
         R2=Xu.*Xu+Yu.*Yu;

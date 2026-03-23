@@ -1,4 +1,4 @@
-%'keyboard_callback:' function activated when a key is pressed on the keyboard
+%'keyboard_callback:' function activated when a key is pressed on the keyboard when a figure has been selected by the mouse  (callback `KeyPressFcn` of Matlab).
 %-----------------------------------
 
 %=======================================================================

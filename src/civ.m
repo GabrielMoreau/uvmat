@@ -128,9 +128,7 @@ end
 SearchRange_1=par_civ.SearchRange(1);
 SearchRange_2=par_civ.SearchRange(2);
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
-    parfor ivec=1:nbvec
-%         iref=round(par_civ.Grid(ivec,1));% xindex on the image A for the middle of the correlation box
-%         jref=round(npy_ima-par_civ.Grid(ivec,2));%  j index  for the middle of the correlation box in the image A
+    for ivec=1:nbvec
          iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
          jref=ytable(ivec);%  j index  for the middle of the correlation box in the image A
 
@@ -229,16 +227,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                         end
                         utable(ivec)=vector(1)*mesh+shiftx(ivec);
                         vtable(ivec)=-vector(2)*mesh+shifty(ivec);% vtable and shifty in image coordinates (opposite to pixel shift)
-                      %  xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                       % ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-%                         iref=round(xtable(ivec)+0.5);% nearest image index for the middle of the vector
-%                         jref=round(ytable(ivec)+0.5);
-                        % eliminate vectors located in the mask
-%                         if  checkmask && (iref<1 || jref<1 ||iref>npx_ima || jref>npy_ima ||( par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100))
-%                             utable(ivec)=0;
-%                             vtable(ivec)=0;
-%                             FF(ivec)=1;
-%                         end
                         ctable(ivec)=corrmax/sum_square;% correlation value
                     catch ME
                         FF(ivec)=1;
@@ -353,9 +341,7 @@ else
     y_vec=0.25*(y_ind-y);
     [X,Y]=meshgrid(x_vec,y_vec);
     coord=[reshape(X,[],1) reshape(Y,[],1)];
-    result_conv=reshape(result_conv(y_ind,x_ind),[],1);
-    
-    
+    result_conv=reshape(result_conv(y_ind,x_ind),[],1);        
     % n=numel(X);
     % x=[X Y];
     % X=X-0.5;
