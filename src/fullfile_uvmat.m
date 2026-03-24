@@ -1,4 +1,4 @@
-%'fullfile_uvmat': creates a file name from a root name and indices. 
+%'fullfile_uvmat': creates a file name from path, root name and indices. 
 %------------------------------------------------------------------------
 % filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
 %------------------------------------------------------------------------           
@@ -63,7 +63,7 @@ end
 
 %% default input
 if iscell(NomType)
-NomType=NomType{1}
+NomType=NomType{1};
 end
 if ~exist('j2','var') 
     j2=[];
@@ -95,59 +95,57 @@ sep4='';
 j2_str='';
 
 %% look for NomType with pairs (separator '-' or terminasion ab or AB
-% if strcmp(NomType,'level')% organisation with a sub-folder for the files of each index i
-%     filename=fullfile(RootPath,SubDir,['level' num2str(j1)],[RootFile num2str(i1) FileExt]);
-% else
-    if ~isempty(regexp(NomType,'^_\d'))
-        sep1='_';
+if ~isempty(regexp(NomType,'^_\d', 'once'))
+    sep1='_';
+    NomType(1)=[];%remove '_' from the beginning of NomType
+end
+r=regexp(NomType,'^(?<num1>\d+)','names');%look for a number at the beginning of NomType
+if ~isempty(r)
+    i1_str=num2str(i1,['%0' num2str(length(r.num1)) 'd']);
+    NomType=regexprep(NomType,['^' r.num1],'');
+    r=regexp(NomType,'^-(?<num2>\d+)','names');%look for a pair i1-i2
+    if ~isempty(r)
+        if ~isempty(i2)
+            sep2='-';
+            i2_str=num2str(i2,['%0' num2str(length(r.num2)) 'd']);
+        end
+        NomType=regexprep(NomType,['^-' r.num2],'');
+    end
+    if ~isempty(regexp(NomType,'^_', 'once'))
+        sep3='_';
         NomType(1)=[];%remove '_' from the beginning of NomType
     end
-    r=regexp(NomType,'^(?<num1>\d+)','names');%look for a number at the beginning of NomType
-    if ~isempty(r)
-        i1_str=num2str(i1,['%0' num2str(length(r.num1)) 'd']);
-        NomType=regexprep(NomType,['^' r.num1],'');
-        r=regexp(NomType,'^-(?<num2>\d+)','names');%look for a pair i1-i2
-        if ~isempty(r)
-            if ~isempty(i2)
-                sep2='-';
-                i2_str=num2str(i2,['%0' num2str(length(r.num2)) 'd']);
-            end
-            NomType=regexprep(NomType,['^-' r.num2],'');
+    if ~isempty(regexp(NomType,'^[a|A]', 'once'))
+        j1_str=num2stra(j1,NomType);
+        if ~isempty(regexp(NomType,'[b|B]$', 'once'))&& ~isempty(j2)
+            j2_str=num2stra(j2,NomType);
         end
-        if ~isempty(regexp(NomType,'^_'));
-            sep3='_';
-            NomType(1)=[];%remove '_' from the beginning of NomType
-        end
-        if ~isempty(regexp(NomType,'^[a|A]'));
-            j1_str=num2stra(j1,NomType);
-            if ~isempty(regexp(NomType,'[b|B]$'))&& ~isempty(j2);
-                j2_str=num2stra(j2,NomType);
-            end
-        else
-            r=regexp(NomType,'^(?<num3>\d+)','names');
-            if ~isempty(r)
-                j1_str=num2str(j1,['%0' num2str(length(r.num3)) 'd']);
-                NomType=regexprep(NomType,['^' r.num3],'');
-            end
-            if ~isempty(j2)
-                r=regexp(NomType,'-(?<num4>\d+)','names');
-                if ~isempty(r)
-                    sep4='-';
-                    j2_str=num2str(j2,['%0' num2str(length(r.num4)) 'd']);
-                end
-            end
-        end
-    end
-    if isempty(regexp(RootPath,'^http://'))
-    filename=fullfile(RootPath,SubDir,RootFile);
     else
-        filename=[RootPath '/' SubDir '/' RootFile];
+        r=regexp(NomType,'^(?<num3>\d+)','names');
+        if ~isempty(r)
+            j1_str=num2str(j1,['%0' num2str(length(r.num3)) 'd']);
+            NomType=regexprep(NomType,['^' r.num3],'');
+        end
+        if ~isempty(j2)
+            r=regexp(NomType,'-(?<num4>\d+)','names');
+            if ~isempty(r)
+                sep4='-';
+                j2_str=num2str(j2,['%0' num2str(length(r.num4)) 'd']);
+            end
+        end
     end
-    filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];
-    filename=[regexprep(filename,'_$','') FileExt];%suppress possible '_' at the end of the string and add the extension
-% end
+end
+if isempty(regexp(RootPath,'^http://', 'once'))% local file, no OpenDap
+    filename=fullfile(RootPath,SubDir,RootFile);
+else
+    filename=[RootPath '/' SubDir '/' RootFile];
+end
+filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];
+filename=[regexprep(filename,'_$','') FileExt];%suppress possible '_' at the end of the string and add the extension
 
+%------------------------------------------------------------------------
 function test
+%------------------------------------------------------------------------
 fprintf([...
     '######################################################\n'...
     '               Test for fullfile_uvmat                  \n'...

@@ -1,16 +1,15 @@
 %'civ_series': PIV function activated by the general GUI series
 % --- call the sub-functions:
-%   civ: PIV function itself
-%   detect_false: put a flag to false vectors after detection by various criteria
-%   filter_tps: make interpolation-smoothing
+%  'parciv.m' PIV function itself, adpated to parallel processing (loop
+%  parfor instead of for)
+%  'civ.m': same as parciv, but with usual loop 'for', suitable for cluster
+%  dispatch (no parallel processing inside functions)
+%   filter_tps: make interpolation-smoothing by thin plate spline method
 %------------------------------------------------------------------------
-% function [Data,errormsg,result_conv]= civ_series(Param)
+% function [GUIParam,errormsg]= civ_series(Param)
 %
 %OUTPUT
-% Data=structure containing the PIV results and information on the processing parameters
-% errormsg=error message char string, decd ..fault=''
-% resul_conv: image inter-correlation function for the last grid point (used for tests)
-%
+% GUIParam=structure containing the input parameters sent to the GUI series in the interactive selection phase
 %INPUT:
 % Param: Matlab structure of input  parameters
 %     Param contains info of the GUI series using the fct read_GUI.
@@ -45,40 +44,37 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [Data,errormsg]= civ_series(Param)
+function [GUIParam,errormsg]= civ_series(Param)
 errormsg='';
-
+GUIParam=[];
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-    if 0==1 %never satisfied but trigger compilation with the appropriate transform functions ('eval' inactive for compilation)
-        ima_rescale
-    end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+   GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
     %App=civ_input_App
     %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
     % if isempty(App)
-    %     Data=Param;% if  civ_input has been cancelled, keep previous parameters
+    %    GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
     % end
-    Data.Program=mfilename;%gives the name of the current function
-    Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    Data.NbSlice='off'; %nbre of slices ('off' by default)
-    Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    Data.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    Data.FieldTransform = 'off';%can use a transform function
-    Data.ProjObject='off';%can use projection object(option 'off'/'on',
-    Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    Data.OutputDirExt='.civ';%set the output dir extension
-    Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
-    Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
-    Data.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    if isfield(Data,'ActionInput') && isfield(Data.ActionInput,'PairIndices') && isequal(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-        Data.IndexRange_j='off';%no j index display in series
+   GUIParam.Program=mfilename;%gives the name of the current function
+   GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+   GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+   GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
+   GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+   GUIParam.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+   GUIParam.FieldTransform = 'off';%can use a transform function
+   GUIParam.ProjObject='off';%can use projection object(option 'off'/'on',
+   GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+   GUIParam.OutputDirExt='.civ';%set the output dir extension
+   GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
+   GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
+   GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+       GUIParam.IndexRange_j='off';%no j index display in series
     else
-        Data.IndexRange_j='on';% j index display in series if relevant
+       GUIParam.IndexRange_j='on';% j index display in series if relevant
     end
     return
 end
@@ -315,11 +311,13 @@ for ifield=1:NbField
             ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
         end
     end
-    if ~CheckOverwrite && exist(ncfile_out,'file')
+    if ~CheckOverwrite 
+        [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
+        if isempty(errormsg)
         disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
         continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+        end
     end
-    %     end
     ImageName_A='';ImageName_B='';%default
     VideoObject_A=[];VideoObject_B=[];
     Civ_FF=[];%default
@@ -532,7 +530,7 @@ for ifield=1:NbField
         if strcmp(Param.RunMode,'cluster')
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
         else
-            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,errormsg] = parciv (par_civ1);%use parfor loop 
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop 
         end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
@@ -861,7 +859,7 @@ for ifield=1:NbField
         if strcmp(Param.RunMode,'cluster')
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);% single processor used in cluster
         else
-            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,errormsg] = parciv (par_civ2);%use parfor loop
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = parciv (par_civ2);%use parfor loop
         end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;

@@ -297,5 +297,6 @@ if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','net
 else
     FileInfo.FileIndexing='off';
 end
-
+P=1:numel(fieldnames(FileInfo));
+FileInfo=orderfields(FileInfo,[P(1) P(2) P(end-1) P(end) P(3:end-2)]);% reorder for clarity to put the main info in first
 

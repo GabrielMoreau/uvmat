@@ -435,11 +435,11 @@ if isempty(oldfile)
     end
 end
 %% launch the browser
-fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
+fileinput=uigetfile_uvmat('pick an input data file in the series',oldfile);
 hh=dir(fileinput);
 if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
-else
+else 
     if ~isempty(fileinput)
         display_file_name(handles,fileinput,'one')
     end
@@ -469,7 +469,7 @@ if exist(profil_perso,'file')
 end
 
 %% launch the browser
-fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
+fileinput=uigetfile_uvmat('pick a data file to append in the input table',oldfile);
 hh=dir(fileinput);
 if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
@@ -755,7 +755,7 @@ Param.FileInfo=FileInfo;
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
-    XmlData=read_imadoc(XmlFileName);%read the imadoc file through the local fct read_imadoc
+    XmlData=read_imadoct(XmlFileName);%read the imadoc file through the local fct read_imadoc
     if isfield(XmlData,'FileSeries') && Rank==0
         set(handles.Relabel,'Visible','on')
         answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');
@@ -1877,7 +1877,7 @@ for iexp=1:NbExp
     if get(handles.Replicate,'Value')%resset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
         set(handles.OutputPath,'String',OutputPath)
-         set(handles.Experiment,'String',ListExpOut{iexp})
+        set(handles.Experiment,'String',ListExpOut{iexp})
         set(handles.Device,'String',ListDeviceOut{iexp})
         Param.Experiment=ListExpOut{iexp};
         Param.Device=ListDeviceOut{iexp};
@@ -1981,21 +1981,28 @@ for iexp=1:NbExp
             else
                 NbProcess=Param.IndexRange.NbSlice; % the parameter NbSlice sets the nbre of run processes
             end
-            
+
             %         %proposed number of cores to reserve in the cluster
-             if isfield(SeriesData.ClusterParam,'NbCoreAdvised')
+            if isfield(SeriesData.ClusterParam,'NbCoreAdvised')
                 NbCoreAdvised=SeriesData.ClusterParam.NbCoreAdvised;
             else
                 disp('ClusterParam.NbCoreAdvised not documented in series.xml, set to 16 by default')
                 NbCoreAdvised=16;
-             end
-                if isfield(SeriesData.ClusterParam,'NbCoreMax')
+            end
+            if isfield(SeriesData.ClusterParam,'NbCoreMax')
                 NbCoreMax=min(NbProcess,SeriesData.ClusterParam.NbCoreMax);% reduces the number of cores if it exceeds the number of processes
             else
                 disp('ClusterParam.NbCoreMax not documented in series.xml, set to 36 by default')
                 NbCoreMax=min(NbProcess,36);
-                end
+            end
             if NbCoreMax~=1
+                %%%% TEST ELETTA
+                if NbCoreMax==0
+                    disp(NbProcess)
+                     disp(Param.IndexRange.NbSlice)
+                    disp(SeriesData.ClusterParam.NbCoreMax)                 
+                end
+                %%%%%%%%%%%
                 if strcmp(ActionExt,'.m')% case of Matlab function (uncompiled)
                     warning_string=', preferably use .sh option to save Matlab licences';
                 else

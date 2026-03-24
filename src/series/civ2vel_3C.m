@@ -1,9 +1,9 @@
-%'civ2vel_3C': combine velocity fields from two cameras to get three velocity components
+%'civ2vel_3C': combine the civ velocity fields from two cameras to get three velocity components
 %------------------------------------------------------------------------
-% function ParamOut=civ2vel_3C(Param)
+% function GUIParam=civ2vel_3C(Param)
 %
 %OUTPUT
-% ParamOut: sets options in the GUI series.fig needed for the function
+% GUIParam: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
@@ -50,27 +50,28 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=civ2vel_3C(Param)
+function GUIParam=civ2vel_3C(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
-    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';%use the phys  transform function without choice
-    %ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
-    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.vel3C';%set the output dir extension
-    ParamOut.OutputSubDirMode='two'; % the two first input lines are used to define the output subfolder
-    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    GUIParam.NbSlice='off'; %nbre of slices ('off' by default) !!VERIFIER
+    GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)!!VERIFIER
+    GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)!!VERIFIER
+    GUIParam.OutputDirExt='.vel3C';%set the output dir extension
+    GUIParam.OutputSubDirMode='two'; % the two first input lines are used to define the output subfolder
+    GUIParam.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     %check the input files
-    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     first_j=[];
     if size(Param.InputTable,1)<2
-        msgbox_uvmat('WARNING',['two or three input file series are needed'])
+        msgbox_uvmat('ERROR','two or three input file series are needed')
+        return
+    end
+    if  ~isfield(Param,'ProjObject')
+        msgbox_uvmat('ERROR','You  need a projection object of type plane')
+        return
     end
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     PairString='';
@@ -78,16 +79,20 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
     FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-    if ~exist(FirstFileName,'file')
-        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
-    elseif isequal(size(Param.InputTable,1),1) && ~isfield(Param,'ProjObject')
-        msgbox_uvmat('WARNING','You may need a projection object of type plane for merge_proj')
+    if exist(FirstFileName,'file')
+        FileInfo=get_file_info(FirstFileName);
+        if ~strcmp(FileInfo.FileType,'civdata')
+            msgbox_uvmat('ERROR','civ data are needed as input')
+            return
+        end
+    else
+        msgbox_uvmat('ERROR',['the first input file ' FirstFileName ' does not exist'])
+        return
     end
-    return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-ParamOut=[]; %default output
+GUIParam=[]; %default output
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)

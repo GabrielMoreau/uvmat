@@ -69,7 +69,7 @@ ichoice=[];%default
 if ischar(nc)
     testfile=1;
     if exist(nc,'file')
-        if ~isempty(regexp(nc,'.mat$'))
+        if ~isempty(regexp(nc,'.mat$', 'once'))
             Data=mat2struct(nc,varargin{1});
             return
         else
