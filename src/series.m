@@ -755,7 +755,7 @@ Param.FileInfo=FileInfo;
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
-    XmlData=read_imadoct(XmlFileName);%read the imadoc file through the local fct read_imadoc
+    XmlData=read_imadoc(XmlFileName);%read the imadoc file through the local fct read_imadoc
     if isfield(XmlData,'FileSeries') && Rank==0
         set(handles.Relabel,'Visible','on')
         answer=msgbox_uvmat('INPUT_Y-N','relabel the frame  indices according to the xml info?');

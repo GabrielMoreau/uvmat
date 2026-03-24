@@ -389,7 +389,42 @@ for ifield=1:NbField
             end
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
             
+        % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
+        % par_civ1.ImageHeight=size(par_civ1.ImageA,1);
+        list_param=(fieldnames(Param.ActionInput.Civ1))';
+        list_param(strcmp('TestCiv1',list_param))=[];% remove the parameter TestCiv1 from the list
+        Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
+        Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
+        %indicate the values of all the global attributes in the output data
+        Data.Civ1_ImageA=ImageName_A;
+        Data.Civ1_ImageB=ImageName_B;
+        i1=i1_series_Civ1(ifield);
+        i2=i1;
+        if ~isempty(i2_series_Civ1)
+            i2=i2_series_Civ1(ifield);
+        end
         
+        j1=j1_series_Civ1(ifield);
+        
+        j2=j1;
+        if Check_j_Civ1
+            j2=j2_series_Civ1(ifield);
+        end
+        if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+            Data.Civ1_Time=Time(i2+1,j2+1);% the Time is the Time of the second image
+            Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+        else
+            Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
+            Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
+        end
+        for ilist=1:length(list_param)
+            Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
+        end
+        Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
+        Data.CivStage=1;
+            
+            
+            
         % case of background image to subtract
         if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
@@ -433,39 +468,7 @@ for ifield=1:NbField
             par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
         end
         
-        % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
-        % par_civ1.ImageHeight=size(par_civ1.ImageA,1);
-        list_param=(fieldnames(Param.ActionInput.Civ1))';
-        list_param(strcmp('TestCiv1',list_param))=[];% remove the parameter TestCiv1 from the list
-        Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
-        Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
-        %indicate the values of all the global attributes in the output data
-        Data.Civ1_ImageA=ImageName_A;
-        Data.Civ1_ImageB=ImageName_B;
-        i1=i1_series_Civ1(ifield);
-        i2=i1;
-        if ~isempty(i2_series_Civ1)
-            i2=i2_series_Civ1(ifield);
-        end
         
-        j1=j1_series_Civ1(ifield);
-        
-        j2=j1;
-        if Check_j_Civ1
-            j2=j2_series_Civ1(ifield);
-        end
-        if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Data.Civ1_Time=Time(i2+1,j2+1);% the Time is the Time of the second image
-            Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
-        else
-            Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
-            Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
-        end
-        for ilist=1:length(list_param)
-            Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
-        end
-        Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
-        Data.CivStage=1;
         
         % set the list of variables
         %         Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
