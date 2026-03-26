@@ -11,7 +11,7 @@
 % Param: structure containing processing parameters, created when DataIn.Action.RUN=0 at the first use of the transform fct
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %

@@ -17,7 +17,7 @@
 %  ListRecords_in: list of records to scan (cell of names)
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %

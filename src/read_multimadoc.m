@@ -14,7 +14,7 @@
 % i1_series,i2_series,j1_series,j2_series: cell arrays of file index arrays, as given by the fct uvmat/get_file_series
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
