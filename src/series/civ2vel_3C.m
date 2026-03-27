@@ -33,7 +33,7 @@
 %              .Coord_x: name of x coordinate variable'
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -55,7 +55,7 @@ function GUIParam=civ2vel_3C(Param)
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     GUIParam.NbSlice='off'; %nbre of slices ('off' by default) !!VERIFIER
-    GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)!!VERIFIER
+    GUIParam.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)!!VERIFIER
     GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
     GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)!!VERIFIER
@@ -101,7 +101,6 @@ if ischar(Param)
 end
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 
 %% root input file(s) name, type and index series
@@ -168,16 +167,32 @@ U=zeros(size(XI,1),size(XI,2));
 V=zeros(size(XI,1),size(XI,2));
 W=zeros(size(XI,1),size(XI,2));
 
-%% MAIN LOOP ON FIELDS
+%% Parameters for input and output
 warning off
-
-CheckOverwrite=1;%default
+CheckOverwrite=true;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
+if ~CheckOverwrite % check the existence and validity of the existing output file
+    [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
+    if isempty(errormsg)
+        disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
+        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+    end
+end
+VelType='*';%latest field filter2 opened by default
+if isfield(Param.InputFields,'VelType')
+    VelType=Param.InputFields.VelType;%imposed civ or filter
+end
 
+%%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
 for index=1:NbField
     
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        return
+    end
+     
     %% generating the name of the merged field
     i1=i1_series{1}(index);
     if ~isempty(i2_series{end})
@@ -195,25 +210,21 @@ for index=1:NbField
             j2=j1;
         end
     end
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2);
-    
-    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-        disp('program stopped by user')
-        return
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2); 
+    if ~CheckOverwrite % check the existence and validity of the existing output file
+        [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
+        if isempty(errormsg)
+            disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+        end
     end
-    
-    if (~CheckOverwrite && exist(OutputFile,'file'))
-        disp('existing output file already exists, skip to next field')
-        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
-    end
-    
+       
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
     timeread=zeros(1,NbView);
     
     %get Xphys,Yphys,Zphys from 1 or 2 stereo folders. Positions are taken
     %at the middle between to time step
-    clear ZItemp
     ZItemp=zeros(size(XI,1),size(XI,2),2);
     CheckZ=0;
     
@@ -321,7 +332,7 @@ for index=1:NbField
     
     for iview=1:2
         %% reading input file(s)
-        [Data{iview},tild,errormsg]=read_civdata(filecell{iview,index},{'vec(U,V)'},'*');
+        [Data{iview},~,errormsg]=read_civdata(filecell{iview,index},{'vec(U,V)'},VelType);
         if ~isempty(errormsg)
             disp_uvmat('ERROR',['ERROR in civ2vel_3C/read_field/' errormsg],checkrun)
             return

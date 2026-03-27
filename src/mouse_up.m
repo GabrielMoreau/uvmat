@@ -6,7 +6,7 @@
 % where hObject is the handle of the figure
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -200,8 +200,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
 end
 
 %% creation or update of a  zoom sub-plot
-CheckZoomFigActivate=CheckZoomFig && strcmp(get(hcurrentfig,'SelectionType'),'normal')&&...%if left button has been pressed
-     ~isempty(CurrentOrigin) && ~isequal(CurrentOrigin(1),xy(1,1)) && ~isequal(CurrentOrigin(2),xy(1,2))%if mouse moved in x and y since presed down
+CheckZoomFigActivate=CheckZoomFig && strcmp(get(hcurrentfig,'SelectionType'),'normal') &&...%if left button has been pressed
+     ~isempty(CurrentOrigin) && ~isequal(CurrentOrigin(1),xy(1,1)) && ~isequal(CurrentOrigin(2),xy(1,2));%if mouse moved in x and y since presed down
 if CheckZoomFigActivate 
     hparentfig=hcurrentfig;
     %open or update a new zoom figure if a rectangle has been drawn

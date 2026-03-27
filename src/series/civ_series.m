@@ -27,7 +27,7 @@
 %                      .Patch2:
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -252,18 +252,19 @@ if ~isempty(XmlFileName)
     end
 end
 
-%% File relabeling documented by the xml file (e.g. PCO)
+%% Initialisation
 CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO)
-
-%%%%% MAIN LOOP %%%%%%
 maskoldname='';% initiate the mask name
 backgroundoldname='';
 FileType_A='';
 FileType_B='';
-CheckOverwrite=1;%default
-if isfield(Param,'CheckOverwrite')
+CheckOverwrite=true;%default
+if isfield(Param,'CheckOverwrite')%over write condition
     CheckOverwrite=Param.CheckOverwrite;
 end
+
+
+%%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
 for ifield=1:NbField
     tstart=tic;
     time_civ1=0;
@@ -291,7 +292,7 @@ for ifield=1:NbField
     end
     ncfile_out=ncfile;% by default
     
-    if isfield (Param.ActionInput,'Civ2')
+    if isfield (Param.ActionInput,'Civ2')% output ncfile then labeled by civ2 pair
         i1_civ2=i1_series_Civ2(ifield);
         i2_civ2=i1_civ2;
         if ~isempty(i2_series_Civ2)
@@ -301,7 +302,7 @@ for ifield=1:NbField
         if ~isempty(j1_series_Civ2)
             j1_civ2=j1_series_Civ2(ifield);
         end
-        j2_civ2=i1_civ2;
+        j2_civ2=j1_civ2;
         if ~isempty(j2_series_Civ2)
             j2_civ2=j2_series_Civ2(ifield);
         end
@@ -311,7 +312,7 @@ for ifield=1:NbField
             ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
         end
     end
-    if ~CheckOverwrite 
+    if ~CheckOverwrite % check the existence and validity of the existing output file
         [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
         if isempty(errormsg)
         disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
@@ -398,10 +399,10 @@ for ifield=1:NbField
         %indicate the values of all the global attributes in the output data
         Data.Civ1_ImageA=ImageName_A;
         Data.Civ1_ImageB=ImageName_B;
-        i1=i1_series_Civ1(ifield);
-        i2=i1;
+        i1_civ1=i1_series_Civ1(ifield);
+        i2_civ1=i1_civ1;
         if ~isempty(i2_series_Civ1)
-            i2=i2_series_Civ1(ifield);
+            i2_civ1=i2_series_Civ1(ifield);
         end
         
         j1=j1_series_Civ1(ifield);
@@ -411,11 +412,11 @@ for ifield=1:NbField
             j2=j2_series_Civ1(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Data.Civ1_Time=Time(i2+1,j2+1);% the Time is the Time of the second image
+            Data.Civ1_Time=Time(i2_civ1+1,j2+1);% the Time is the Time of the second image
             Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
         else
-            Data.Civ1_Time=(Time(i2+1,j2+1)+Time(i1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
-            Data.Civ1_Dt=Time(i2+1,j2+1)-Time(i1+1,j1+1);
+            Data.Civ1_Time=(Time(i2_civ1+1,j2+1)+Time(i1_civ1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
+            Data.Civ1_Dt=Time(i2_civ1+1,j2+1)-Time(i1_civ1+1,j1+1);
         end
         for ilist=1:length(list_param)
             Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
@@ -430,14 +431,14 @@ for ifield=1:NbField
             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
             if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
-            elseif isfield(par_civ1,'NbSlice')
-                i1_background=mod(i1-1,par_civ1.NbSlice)+1;
+            elseif isfield(par_civ1,'NbSlice')% multilevel case NbSlice background levels
+                i1_background=mod(i1_civ1-1,par_civ1.NbSlice)+1;
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
                     par_civ1.NbSlice_j=par_civ1.NbSlice;
                 end
             else
-                backgroundname=Param.ActionInput.Civ1.Background;
+                backgroundname=Param.ActionInput.Civ1.Background;% simple name with no indexing
             end
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
                 par_civ1.Background=background; %use background already opened
@@ -456,9 +457,9 @@ for ifield=1:NbField
                     par_civ1.Background=[];
                 end
                 background=par_civ1.Background;
-                backgroundoldname=backgroundname;
+                backgroundoldname=backgroundname;% preserve the name for next iteration (to avoid reading the background image again)
             end
-            par_civ1.ImageA=uint16(par_civ1.ImageA)-par_civ1.Background;
+            par_civ1.ImageA=uint16(par_civ1.ImageA)-par_civ1.Background;% it will be set to 0 if background > image
             par_civ1.ImageB=uint16(par_civ1.ImageB)-par_civ1.Background;
         end
         
@@ -488,10 +489,10 @@ for ifield=1:NbField
             else
                 j1=[];
             end
-            if ~isempty(i2_series_Civ1)&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
+            if strcmp(NomTypeNc,'_1-2_1')&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
             elseif isfield(par_civ1,'NbSlice')
-                i1_mask=mod(i1-1,par_civ1.NbSlice)+1;
+                i1_mask=mod(i1_civ1-1,par_civ1.NbSlice)+1;
                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
                     par_civ1.NbSlice_j=par_civ1.NbSlice;
@@ -621,7 +622,6 @@ for ifield=1:NbField
         disp('civ2 started')
         tstart_civ2=tic;
         par_civ2=Param.ActionInput.Civ2;
-        %         if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
         par_civ2.ImageA=[];
         par_civ2.ImageB=[];
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
@@ -681,7 +681,7 @@ for ifield=1:NbField
             if ~isempty(j1_series_Civ2)
                 j1=j1_series_Civ2(ifield);
             end
-            if ~isempty(i2_series_Civ2)% case of volume,backgrounds act on different j levels
+            if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
             elseif isfield(par_civ2,'NbSlice')
                 i1_background=mod(i1-1,par_civ2.NbSlice)+1;
@@ -1087,26 +1087,16 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
     end
 end
 
-% % --- compress the data using integers instead of (single precision)floating reals
-% function DataOut=compress_data(DataIn,inv_scale_factor)
-% DataOut=DataIn; %default
-% DataOut.Conventions= 'uvmat/civdata/compress';
-% ListVarName=DataIn.ListVarName;
-% for ilist=1:numel(ListVarName)
-%     switch ListVarName{ilist}
-%         case {'Civ1_C','Civ2_C'}
-%             DataOut.(ListVarName{ilist})=uint8(inv_scale_factor*DataIn.(ListVarName{ilist}));
-%             DataOut.VarAttribute{ilist}.scale_factor=1/inv_scale_factor;
-%         case {'Civ1_U','Civ1_V','Civ2_U','Civ2_V','Civ1_U_smooth','Civ1_V_smooth','Civ2_U_smooth','Civ2_V_smooth'}
-%             DataOut.(ListVarName{ilist})=int16(inv_scale_factor*DataIn.(ListVarName{ilist}));
-%             DataOut.VarAttribute{ilist}.scale_factor=1/inv_scale_factor;
-%         case 'Civ1_X'
-%             DataOut.Civ1_X=uint16(DataIn.Civ1_X);
-%         case 'Civ1_Y'
-%             DataOut.Civ1_Y=uint16(DataIn.Civ1_Y);
-%        case 'Civ2_X'
-%             DataOut.Civ2_X=uint16(DataIn.Civ2_X);
-%         case 'Civ2_Y'
-%             DataOut.Civ2_Y=uint16(DataIn.Civ2_Y);
-%     end
-% end
+function maskname=get_mask_name(MaskRootName,i_index,j_index,NbSlice,CheckVolumeScan)
+  [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(MaskRootName);
+if CheckVolumeScan %case of volume,masks act on different j levels
+                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
+            elseif ~isempty(NbSlice)
+                i1_mask=mod(i_index,NbSlice)+1;
+                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
+                    par_civ1.NbSlice_j=par_civ1.NbSlice;
+                end
+            else
+                maskname=MaskRootName;
+            end

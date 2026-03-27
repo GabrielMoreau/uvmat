@@ -12,7 +12,7 @@
 % ListVarName....)
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -301,7 +301,7 @@ else
     date_str=['last modification: ' date_str];
     if ishandle(handles.UVMAT_title)
         set(handles.UVMAT_title,'String',...
-            [{'Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
+            [{'Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
             {'GNU General Public License'};...
             {path_to_uvmat};...
             {date_str};...
@@ -355,6 +355,7 @@ end
 %------------------------------------------------------------------------
 set(handles.uvmat,'Units','pixels')
 size_uvmat=get(handles.uvmat,'Position');
+set(handles.uvmat,'Units','normalized')
 ColumnWidth=max(150,0.18*size_uvmat(3)); %width of the right side display column equal to 0.18 *uvmat_GUI, in the range between 150 px and 250 px
 ColumnWidth=min(ColumnWidth,250);
 InputFilePanelHeight=80;
@@ -362,7 +363,7 @@ TextDisplayPanelHeight=100;
 CheckTablePanelHeight=100;
 CoordinatesPanelHeight=100;
 ScalarPanelHeight=150;
-FieldIndicesHeight=220;
+FieldIndicesHeight=200;
 NavigateHeight=120;
 TransformHeight=100;
 ObjectsHeight=150;
@@ -481,16 +482,27 @@ pos_4(4)=ObjectsHeight;
 set(handles.Objects,'Position',pos_4)
 
 %% reset position of Histogram 
+top_pos_ref=pos_4(2)-20-Interval;%default
+% if size_uvmat(2)<0
+%     top_pos=top_pos_ref+20;
+%     HistoHeight=ObjectsHeight;
+%     set(handles.Objects,'Visible','off')
+% else
+    top_pos=top_pos_ref-185;
+    set(handles.Objects,'Visible','on')
+    HistoHeight=180;
+% end
 set(handles.Histogram_txt,'Units','pixels')
 set(handles.HistoMenu,'Units','pixels')
 set(handles.LogLinHisto,'Units','pixels')
 set(handles.HistoAxes,'Units','pixels')
-set(handles.Histogram_txt,'FontSize',16)
-set(handles.Histogram_txt,'Position',[Interval pos_4(2)-20-Interval 0.5*ColumnWidth-Interval 20])
-set(handles.HistoMenu,'Position',[2*Interval+0.5*ColumnWidth pos_4(2)-20-Interval 0.35*ColumnWidth-Interval 20])
-set(handles.LogLinHisto,'Position',[3*Interval+0.85*ColumnWidth pos_4(2)-20-Interval 0.35*ColumnWidth-Interval 20])
-set(handles.HistoAxes,'Position',[40 pos_4(2)-220-Interval 1.2*ColumnWidth-40 180])
-
+%set(handles.Histogram_txt,'FontSize',16)
+set(handles.HistoUpDown,'Units','pixels')
+set(handles.Histogram_txt,'Position',[Interval+15 top_pos_ref 0.5*ColumnWidth-Interval-15 20])
+set(handles.HistoMenu,'Position',[2*Interval+0.5*ColumnWidth top_pos_ref 0.35*ColumnWidth-Interval 20])
+set(handles.LogLinHisto,'Position',[3*Interval+0.85*ColumnWidth top_pos_ref 0.35*ColumnWidth-Interval 20])
+set(handles.HistoAxes,'Position',[40 top_pos 1.2*ColumnWidth-40 HistoHeight])
+set(handles.HistoUpDown,'Position',[Interval top_pos_ref 15 15])
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -586,12 +598,13 @@ commandwindow; %brings the Matlab command window to the front
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 hfig=figure;%create a new figure
+set(handles.PlotAxes,'Units','normalized')
 hc=copyobj(handles.PlotAxes,hfig);%copy the current axis content on the new fig
 set(hc,'Position',[0.1 0.1 0.8 0.8])% adjust the position of the axis on the figure
 title_menu=get(handles.FieldName,'String');
 title_string=title_menu{get(handles.FieldName,'Value')};% get the name of the plotted field
 title(title_string);
-set(hc,'FontSize',16); %set the sdize of titles and labels
+set(hc,'FontSize',16); %set the size of titles and labels
 
 %% copy the colormap to the new fig if relevant
 h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
@@ -1270,260 +1283,260 @@ else
 end
 
 %% create the GUI set_slice
-return
-'TEST'
-%%old version
-set(0,'Units','points')
-ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=350;% fig width in points (1/72 inch)
-Height=min(0.8*ScreenSize(4),300);
-Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
-Bottom=ScreenSize(4)-Height-40; %put fig at top right
-hfig=findobj(allchild(0),'Tag','set_slice');
-% if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
-% hfig=uifigure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
+% return
+% 'TEST'
+% %%old version
+% set(0,'Units','points')
+% ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+% Width=350;% fig width in points (1/72 inch)
+% Height=min(0.8*ScreenSize(4),300);
+% Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
+% Bottom=ScreenSize(4)-Height-40; %put fig at top right
+% hfig=findobj(allchild(0),'Tag','set_slice');
+% % if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
+% % hfig=uifigure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
+% % 
+% %return
+% hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
+% BackgroundColor=get(hfig,'Color');
+% hh=0.14; % box height (relative)
+% ii=0.01; % gap between uicontrols
 % 
-%return
-hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
-BackgroundColor=get(hfig,'Color');
-hh=0.14; % box height (relative)
-ii=0.01; % gap between uicontrols
-
-ww=(1-5*ii)/4; % box width (relative)
-% first raw of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','surface','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-%  raw 2 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-    'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
-    'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
-%  raw 3 of the GUI
-hcheckrefraction=uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
-    'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
-    'String','refraction','Value',CheckRefraction,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.7*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
-    'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
-    'String',num2str(RefractionIndex),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
-%  raw 4 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.0*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-    'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-2.8*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
-    'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
-uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-2.7*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
-    'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
-%  raw 5 of the GUI
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+1*ww 0.95-2*ii-3.9*hh ww hh],'BackgroundColor',BackgroundColor,...
-    'String','origin','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
-    'String',{'first';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
-    'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
-    'String',num2str(Slice.SliceCoord(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
-
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
-    'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
-    'String','tild y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-%  raw 6 of the GUI
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination (in degrees) around the x axis');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(end,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination (in degrees) around the x axis');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination (in degrees) around the y axis');%edit box
-uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
-    'String',num2str(SliceAngle(end,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination (in degrees) around the y axis');%edit box
-
-%  raw 7 of the GUI: pushbuttons
-wwp=(1-4*ii)/3; %width of the push buttons
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'tag','CheckReplicate','BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
-    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''CheckReplicate'': select to replicate the output of APPLY to a series of experiments');
-uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
-    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
-drawnow
-set_slice_CheckRefraction_Callback(hcheckrefraction,[])
+% ww=(1-5*ii)/4; % box width (relative)
+% % first raw of the GUI
+% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+%     'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+%     'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+%     'String','surface','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% %  raw 2 of the GUI
+% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+%     'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+% uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
+%     'String',num2str(Slice.SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
+%     'String',num2str(Slice.SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
+%     'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
+% %  raw 3 of the GUI
+% hcheckrefraction=uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
+%     'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
+%     'String','refraction','Value',CheckRefraction,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
+% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.7*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
+%     'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
+%     'String',num2str(RefractionIndex),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
+% %  raw 4 of the GUI
+% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.0*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+%     'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+% uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-2.8*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
+%     'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
+% uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-2.7*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
+%     'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
+% %  raw 5 of the GUI
+% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+1*ww 0.95-2*ii-3.9*hh ww hh],'BackgroundColor',BackgroundColor,...
+%     'String','origin','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
+%     'String',{'first';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
+%     'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% 
+% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
+%     'String',num2str(Slice.SliceCoord(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
+%     'String',num2str(Slice.SliceCoord(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
+% 
+% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
+%     'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
+%     'String','tild y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+% %  raw 6 of the GUI
+% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
+%     'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination (in degrees) around the x axis');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
+%     'String',num2str(SliceAngle(end,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination (in degrees) around the x axis');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
+%     'String',num2str(SliceAngle(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination (in degrees) around the y axis');%edit box
+% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
+%     'String',num2str(SliceAngle(end,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination (in degrees) around the y axis');%edit box
+% 
+% %  raw 7 of the GUI: pushbuttons
+% wwp=(1-4*ii)/3; %width of the push buttons
+% uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
+%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
+% uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'tag','CheckReplicate','BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
+%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''CheckReplicate'': select to replicate the output of APPLY to a series of experiments');
+% uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
+%     'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
+% drawnow
+% set_slice_CheckRefraction_Callback(hcheckrefraction,[])
 
 %------------------------------------------------------------------------
 % function called by selecting CheckRefraction in the GUI set_slices
-function set_slice_CheckRefraction_Callback(hObject,eventdata)
-%------------------------------------------------------------------------
-hset_slice=get(hObject,'parent');
-h_refraction(1)=findobj(hset_slice,'String','surface');
-h_refraction(2)=findobj(hset_slice,'Tag','num_H');
-h_refraction(3)=findobj(hset_slice,'String','index');
-h_refraction(4)=findobj(hset_slice,'Tag','num_RefractionIndex');
-if isequal(get(hObject,'Value'),1)
-    set(h_refraction,'Visible','on')
-else
-    set(h_refraction,'Visible','off')
-end
-
-%------------------------------------------------------------------------
-% function called by pressing APPLY in the GUI  set_slices
-function set_slice_APPLY_Callback(hObject,eventdata)
-%------------------------------------------------------------------------
-set(hObject,'BackgroundColor',[1 1 0]);% paint button in yellow to indicate action
-drawnow
-
-%% get the uvmat GUI data and read the current xml file
-huvmat=findobj(allchild(0),'Tag','uvmat');
-hhuvmat=guidata(huvmat);
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
-[RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
-XmlFile=find_imadoc(RootPath,SubDir);%find name of the relevant xml file
-if isempty(XmlFile)
-    msgbox_uvmat('ERROR','an xml file with calibration parameters must be first created, use Tools/geometric calibration');
-    return
-end
-[s,RootTag,errormsg]=xml2struct(XmlFile);
-
-%% read the content of the GUI set_slice
-hset_slice=get(hObject, 'parent');
-hZ=findobj(hset_slice,'Tag','num_Z_1');
-Z_plane=str2double(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
-SliceData=read_GUI(hset_slice);
-Slice.NbSlice=SliceData.NbSlice;
-Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
-if numel(Z_plane)<=2
-    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-else
-    set(hZ,'String',num2str(Z_plane))% restitute the display after reading by read_GUI
-end
-Slice.SliceCoord=Z_plane'*[0 0 1];
-Slice.SliceCoord(:,1)=SliceData.SliceCoord(1);
-Slice.SliceCoord(:,2)=SliceData.SliceCoord(2);
-Slice.SliceAngle=zeros(Slice.NbSlice,3);
-Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
-Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-Slice.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
-Slice.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
-Slice.SliceAngle(:,3)=0;
-if SliceData.CheckRefraction
-    Slice.InterfaceCoord=[0 0 SliceData.H];
-    Slice.RefractionIndex=SliceData.RefractionIndex;
-elseif isfield(Slice,'RefractionIndex')
-    Slice=rmfield(Slice,'RefractionIndex');
-    Slice=rmfield(Slice,'InterfaceCoord');
-end
-
-hreplicate=findobj(hset_slice,'Tag','CheckReplicate');
-if get(hreplicate,'Value')
-    %% open the GUI browse_data
-    hbrowse=findobj(allchild(0),'Tag','browse_data');
-    if ~isempty(hbrowse)% look for the GUI browse_data
-        BrowseData=guidata(hbrowse);
-        SourceDir=get(BrowseData.SourceDir,'String');
-        ListExp=get(BrowseData.ListExperiments,'String');
-        ExpIndices=get(BrowseData.ListExperiments,'Value');
-        ListExp=ListExp(ExpIndices);
-        ListDevices=get(BrowseData.ListDevices,'String');
-        DeviceIndices=get(BrowseData.ListDevices,'Value');
-        ListDevices=ListDevices(DeviceIndices);
-        ListDataSeries=get(BrowseData.DataSeries,'String');
-        DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-        ListDataSeries=ListDataSeries(DataSeriesIndices);
-        NbExp=0; % counter of the number of experiments set by the GUI browse_data
-        for iexp=1:numel(ListExp)
-            if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-                for idevice=1:numel(ListDevices)
-                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                        for isubdir=1:numel(ListDataSeries)
-                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                    regexprep(ListDevices{idevice},'^\+/',''));
-                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                                if exist(fullfile(lpath,ldir),'dir')
-                                    NbExp=NbExp+1;
-                                    ListPath{NbExp}=lpath;
-                                    ListSubdir{NbExp}=ldir;
-                                    ExpIndex{NbExp}=iexp;
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        for iexp=1:NbExp
-            % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-            % if exist(XmlName,'file')
-            %     check_update=1;
-            % else
-            %     check_update=0;
-            % end
-            [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice);% introduce the calibration data in the xml file
-            if ~strcmp(errormsg,'')
-                msgbox_uvmat('ERROR',errormsg);
-            else
-                if check_update
-                    disp([xmlfile ' updated with slice positions'])
-                else
-                    disp([xmlfile ' created with slice positions'])
-                end
-            end
-        end
-    end
-    msgbox_uvmat('CONFIMATION',['slices replicated for ' num2str(NbExp) ' experiments']);
-else
-    
-    %% store the result in the xml file used for calibration
-    [~,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'Slice',Slice);% introduce the calibration data in the xml file
-    if strcmp(errormsg,'')
-        msgbox_uvmat('CONFIRMATION',['slice positions saved in ' xmlfile]);
-    else
-        msgbox_uvmat('ERROR',errormsg);
-    end
-    
-    %% display image with new calibration in the currently opened uvmat interface
-    %set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-    uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-    set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
-end
-
-delete(hset_slice)
-
-%------------------------------------------------------------------------
-% function called by pressing REPLICATE in the GUI  set_slices
-function set_slice_REPLICATE_Callback(hObject,eventdata)
-%------------------------------------------------------------------------
-if get(hObject,'Value') %open the GUI browse_data
-    % look for the GUI uvmat and check for an image as input
-    huvmat=findobj(allchild(0),'Name','uvmat');
-    hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-    RootPath=get(hhuvmat.RootPath,'String');
-    SubDir=get(hhuvmat.SubDir,'String');
-    browse_data(fullfile(RootPath,SubDir))
-else
-    hbrowse=findobj(allchild(0),'Tag','browse_data');
-    if ~isempty(hbrowse)
-        delete(hbrowse)
-    end
-end
-
-
-%------------------------------------------------------------------------
-% function called by pressing Cancel in the GUI  set_slices
-function set_slice_Cancel_Callback(hObject,eventdata)
-%------------------------------------------------------------------------
-hset_slice=get(hObject,'parent');
-delete(hset_slice)
+% function set_slice_CheckRefraction_Callback(hObject,eventdata)
+% %------------------------------------------------------------------------
+% hset_slice=get(hObject,'parent');
+% h_refraction(1)=findobj(hset_slice,'String','surface');
+% h_refraction(2)=findobj(hset_slice,'Tag','num_H');
+% h_refraction(3)=findobj(hset_slice,'String','index');
+% h_refraction(4)=findobj(hset_slice,'Tag','num_RefractionIndex');
+% if isequal(get(hObject,'Value'),1)
+%     set(h_refraction,'Visible','on')
+% else
+%     set(h_refraction,'Visible','off')
+% end
+% 
+% %------------------------------------------------------------------------
+% % function called by pressing APPLY in the GUI  set_slices
+% function set_slice_APPLY_Callback(hObject,eventdata)
+% %------------------------------------------------------------------------
+% set(hObject,'BackgroundColor',[1 1 0]);% paint button in yellow to indicate action
+% drawnow
+% 
+% %% get the uvmat GUI data and read the current xml file
+% huvmat=findobj(allchild(0),'Tag','uvmat');
+% hhuvmat=guidata(huvmat);
+% [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
+% FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
+% [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
+% XmlFile=find_imadoc(RootPath,SubDir);%find name of the relevant xml file
+% if isempty(XmlFile)
+%     msgbox_uvmat('ERROR','an xml file with calibration parameters must be first created, use Tools/geometric calibration');
+%     return
+% end
+% [s,RootTag,errormsg]=xml2struct(XmlFile);
+% 
+% %% read the content of the GUI set_slice
+% hset_slice=get(hObject, 'parent');
+% hZ=findobj(hset_slice,'Tag','num_Z_1');
+% Z_plane=str2double(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
+% SliceData=read_GUI(hset_slice);
+% Slice.NbSlice=SliceData.NbSlice;
+% Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
+% if numel(Z_plane)<=2
+%     Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+% else
+%     set(hZ,'String',num2str(Z_plane))% restitute the display after reading by read_GUI
+% end
+% Slice.SliceCoord=Z_plane'*[0 0 1];
+% Slice.SliceCoord(:,1)=SliceData.SliceCoord(1);
+% Slice.SliceCoord(:,2)=SliceData.SliceCoord(2);
+% Slice.SliceAngle=zeros(Slice.NbSlice,3);
+% Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
+% Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
+% Slice.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
+% Slice.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
+% Slice.SliceAngle(:,3)=0;
+% if SliceData.CheckRefraction
+%     Slice.InterfaceCoord=[0 0 SliceData.H];
+%     Slice.RefractionIndex=SliceData.RefractionIndex;
+% elseif isfield(Slice,'RefractionIndex')
+%     Slice=rmfield(Slice,'RefractionIndex');
+%     Slice=rmfield(Slice,'InterfaceCoord');
+% end
+% 
+% hreplicate=findobj(hset_slice,'Tag','CheckReplicate');
+% if get(hreplicate,'Value')
+%     %% open the GUI browse_data
+%     hbrowse=findobj(allchild(0),'Tag','browse_data');
+%     if ~isempty(hbrowse)% look for the GUI browse_data
+%         BrowseData=guidata(hbrowse);
+%         SourceDir=get(BrowseData.SourceDir,'String');
+%         ListExp=get(BrowseData.ListExperiments,'String');
+%         ExpIndices=get(BrowseData.ListExperiments,'Value');
+%         ListExp=ListExp(ExpIndices);
+%         ListDevices=get(BrowseData.ListDevices,'String');
+%         DeviceIndices=get(BrowseData.ListDevices,'Value');
+%         ListDevices=ListDevices(DeviceIndices);
+%         ListDataSeries=get(BrowseData.DataSeries,'String');
+%         DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+%         ListDataSeries=ListDataSeries(DataSeriesIndices);
+%         NbExp=0; % counter of the number of experiments set by the GUI browse_data
+%         for iexp=1:numel(ListExp)
+%             if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+%                 for idevice=1:numel(ListDevices)
+%                     if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+%                         for isubdir=1:numel(ListDataSeries)
+%                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+%                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+%                                     regexprep(ListDevices{idevice},'^\+/',''));
+%                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+%                                 if exist(fullfile(lpath,ldir),'dir')
+%                                     NbExp=NbExp+1;
+%                                     ListPath{NbExp}=lpath;
+%                                     ListSubdir{NbExp}=ldir;
+%                                     ExpIndex{NbExp}=iexp;
+%                                 end
+%                             end
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%         for iexp=1:NbExp
+%             % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
+%             % if exist(XmlName,'file')
+%             %     check_update=1;
+%             % else
+%             %     check_update=0;
+%             % end
+%             [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice);% introduce the calibration data in the xml file
+%             if ~strcmp(errormsg,'')
+%                 msgbox_uvmat('ERROR',errormsg);
+%             else
+%                 if check_update
+%                     disp([xmlfile ' updated with slice positions'])
+%                 else
+%                     disp([xmlfile ' created with slice positions'])
+%                 end
+%             end
+%         end
+%     end
+%     msgbox_uvmat('CONFIMATION',['slices replicated for ' num2str(NbExp) ' experiments']);
+% else
+%     
+%     %% store the result in the xml file used for calibration
+%     [~,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'Slice',Slice);% introduce the calibration data in the xml file
+%     if strcmp(errormsg,'')
+%         msgbox_uvmat('CONFIRMATION',['slice positions saved in ' xmlfile]);
+%     else
+%         msgbox_uvmat('ERROR',errormsg);
+%     end
+%     
+%     %% display image with new calibration in the currently opened uvmat interface
+%     %set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+%     uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+%     set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
+% end
+% 
+% delete(hset_slice)
+% 
+% %------------------------------------------------------------------------
+% % function called by pressing REPLICATE in the GUI  set_slices
+% function set_slice_REPLICATE_Callback(hObject,eventdata)
+% %------------------------------------------------------------------------
+% if get(hObject,'Value') %open the GUI browse_data
+%     % look for the GUI uvmat and check for an image as input
+%     huvmat=findobj(allchild(0),'Name','uvmat');
+%     hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+%     RootPath=get(hhuvmat.RootPath,'String');
+%     SubDir=get(hhuvmat.SubDir,'String');
+%     browse_data(fullfile(RootPath,SubDir))
+% else
+%     hbrowse=findobj(allchild(0),'Tag','browse_data');
+%     if ~isempty(hbrowse)
+%         delete(hbrowse)
+%     end
+% end
+% 
+% 
+% %------------------------------------------------------------------------
+% % function called by pressing Cancel in the GUI  set_slices
+% function set_slice_Cancel_Callback(hObject,eventdata)
+% %------------------------------------------------------------------------
+% hset_slice=get(hObject,'parent');
+% delete(hset_slice)
 
 %------------------------------------------------------------------------
 % --- called by menu bar Tools/LIF calibration
@@ -3141,7 +3154,7 @@ if isfield(MaskInfo,'MaskFile')
         MaskName=[MaskInfo.MaskFile '_' num2str(MaskIndex_i) '.png'];
     else
         MaskIndex_i=1;
-    MaskName=[MaskInfo.MaskFile MaskInfo.MaskExt];
+    MaskName=MaskInfo.MaskFile ;
     end
     
     %% update mask image if the mask is new
@@ -4185,10 +4198,11 @@ if strcmp(FieldName,'')
             set(handles.(list{1}),'Visible','off')
         end
     end
-    set(handles.Histogram,'Visible','off')
+    set(handles.Histogram_txt,'Visible','off')
     set(handles.HistoMenu,'Visible','off')
     set(handles.LogLinHisto,'Visible','off')
     set(handles.HistoAxes,'Visible','off')
+    set(handles.HistoUpDown,'Visible','off')
     hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
     if ~isempty(hlegend)
         delete(hlegend)
@@ -4436,6 +4450,7 @@ else
         set(handles.HistoMenu,'Visible','on')
         set(handles.LogLinHisto,'Visible','on')
         set(handles.HistoAxes,'Visible','on')
+        set(handles.HistoUpDown,'Visible','on')
         HistoMenu_Callback(handles.HistoMenu, [], handles)% plot first histogram
     end
 end
@@ -4592,16 +4607,15 @@ end
 
 %------------------------------------------------------------------------
 % --- translate coordinate to matrix index
-%------------------------------------------------------------------------
 function [indx,indy]=pos2ind(x0,rangx0,nxy)
+%------------------------------------------------------------------------
 indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
 %------------------------------------------------------------------------
 % --- Executes on button press in 'CheckZoom'.
-%------------------------------------------------------------------------
 function CheckZoom_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
     if get(handles.CheckZoom,'Value')
         set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
         set(handles.CheckZoomFig,'Value',0)%desactivate zoom fig
@@ -4609,9 +4623,9 @@ function CheckZoom_Callback(hObject, eventdata, handles)
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in CheckZoomFig.
-%------------------------------------------------------------------------
+% --- Executes on button press in CheckZoomFig.-
 function CheckZoomFig_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------  
 
 if get(handles.CheckZoomFig,'Value')
     set(handles.CheckZoom,'value',0)
@@ -4641,13 +4655,12 @@ update_plot(handles);
 
 %------------------------------------------------------------------------
 %----Executes on button press in 'record': records the current flags of manual correction.
-%------------------------------------------------------------------------
 function record_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------   
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-[erread,message]=fileattrib(FileName);
-if ~isempty(message) && ~isequal(message.UserWrite,1)
+success=fileattrib(FileName);
+if ~success
      msgbox_uvmat('ERROR',['no writting access to ' FileName])
      return
 end
@@ -6348,6 +6361,26 @@ HistoMenu_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuCreateMirror_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuCreateMirror (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+   
+   hbrowse= browse_data(fullfile(RootPath,SubDir)) 
+   hh=guidata(hbrowse);
+   set(hh.CreateMirror,'Visible','on')
+%  hbrowse=findobj(allchild(0),'Tag','browse_data');
+%     if ~isempty(hbrowse)% look for the GUI browse_data
+%         BrowseData=guidata(hbrowse);
+%     end
+
+
+% --- Executes on button press in HistoUpDown.
+function HistoUpDown_Callback(hObject, eventdata, handles)
+    hfig=figure;%create a new figure
+hc=copyobj(handles.HistoAxes,hfig);%copy the current axis content on the new fig
+set(hc,'Units','normalized')
+set(hc,'Position',[0.1 0.1 0.8 0.8])% adjust the position of the axis on the figure
+AxeData.ZoomAxes=hc;
+set(handles.HistoAxes,'UserData',AxeData)
+
+% title_menu=get(handles.FieldName,'String');
+% title_string=title_menu{get(handles.FieldName,'Value')};% get the name of the plotted field
+% title(title_string);

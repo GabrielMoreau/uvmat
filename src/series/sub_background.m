@@ -17,13 +17,13 @@
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %OUTPUT
-% ParamOut: sets options in the GUI series.fig needed for the function
+% GUIParam: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
 % In batch mode, Param is the name of the corresponding xml file containing the same information
 % when Param.Action.RUN=0 (as activated when the current Action is selected
-% in series), the function ouput paramOut set the activation of the needed GUI elements
+% in series), the function ouput GUIParam set the activation of the needed GUI elements
 %
 % Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
 % see the current structure Param)
@@ -51,7 +51,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -68,20 +68,20 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=sub_background (Param)
+function GUIParam=sub_background (Param)
 
 %%%%%%%%%%%%%%%%%    INPUT PREPARATION MODE (no RUN)    %%%%%%%%%%%%%%%%%
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; % edit box nbre of slices made active
-    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';%can use a transform function (option 'off'/'on','off' by default)
-    ParamOut.ProjObject='off';%cannot use projection object(option 'off'/'on','off' by default)
-    ParamOut.Mask='off';%cannot use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.sback';%set the output dir extension
-    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    GUIParam.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    GUIParam.NbSlice='on'; % edit box nbre of slices made active
+    GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.FieldTransform = 'off';%can use a transform function (option 'off'/'on','off' by default)
+    GUIParam.ProjObject='off';%cannot use projection object(option 'off'/'on','off' by default)
+    GUIParam.Mask='off';%cannot use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.OutputDirExt='.sback';%set the output dir extension
+    GUIParam.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
 
     %% check the validity of  input file types
     if isfield(Param,'SeriesData')&& isfield(Param.SeriesData,'FileInfo')
@@ -118,7 +118,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %% setting of  parameters specific to sub_background
     CheckVolume='No';
     nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts 
-    SaturationValue=0;
+%     SaturationValue=0;
      if nbfield_i~=1 && NbField_j<=nbaver_init
         nbaver=floor(nbaver_init/NbField_j); % number of bursts used for the sliding background,
         if isequal(mod(nbaver,2),0)% if nbaver is even
@@ -137,17 +137,17 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         if isfield(Param.ActionInput,'BrightnessRankThreshold')
           BrightnessRankThreshold=Param.ActionInput.BrightnessRankThreshold;
         end
-        if isfield(Param.ActionInput,'SaturationValue') 
-            SaturationValue=Param.ActionInput.SaturationValue;
-        end
+%         if isfield(Param.ActionInput,'SaturationValue') 
+%             SaturationValue=Param.ActionInput.SaturationValue;
+%         end
     end   
     prompt = {'volume scan mode (Yes/No)';...
         'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles';...
         'image saturation level for rescaling( reduce the influence of particles brighter than this value), =0 for no rescaling' };
     dlg_title = 'get (slice by slice) a sliding background and substract to each image';
-    num_lines= 4;
-    def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold);num2str(SaturationValue)};
+    num_lines= 3;
+    def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold)};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
     if isempty(answer)
         return
@@ -161,32 +161,30 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end
     if strcmp(answer{1},'Yes')
         step=2;%the sliding background is shifted by the length of one burst, assumed =2 for volume 
-        ParamOut.NbSlice=1; %nbre of slices displayed 
+        GUIParam.NbSlice=1; %nbre of slices displayed 
     else
         step=NbField_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
-    ParamOut.ActionInput.SlidingSequenceLength=adjust_slidinglength(str2double(answer{2}),step);
-    ParamOut.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
-    ParamOut.ActionInput.BrightnessRankThreshold=str2double(answer{3});
-%     ParamOut.ActionInput.CheckSubmedian=strcmp(answer{4},'Yes');
-    ParamOut.ActionInput.SaturationValue=str2double(answer{4});
+    GUIParam.ActionInput.SlidingSequenceLength=adjust_slidinglength(str2double(answer{2}),step);
+    GUIParam.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
+    GUIParam.ActionInput.BrightnessRankThreshold=str2double(answer{3});
+%     GUIParam.ActionInput.CheckSubmedian=strcmp(answer{4},'Yes');
+    %GUIParam.ActionInput.SaturationValue=str2double(answer{4});
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
 %     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
-%     ParamOut.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
+%     GUIParam.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
     return
 end
 %%%%%%%%%%%%%%%%%    STOP HERE FOR PAMETER INPUT MODE   %%%%%%%%%%%%%%%%% 
-
+GUIParam=[];
 %% read input parameters from an xml file if input is a file name (batch mode)
-% checkrun=1;
+
 RUNHandle=[];
-% WaitbarHandle=[];
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
 else
- hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-% WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+    hseries=findobj(allchild(0),'Tag','series');
+    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 end
 
 %% input preparation
@@ -199,8 +197,6 @@ RootFile=Param.InputTable{1,3};
 SubDir=Param.InputTable{1,2};
 NomType=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
-%[filecell,i1_series,i2_series,j1_series]=get_file_series(Param);%series of file names organised as a single array
-
 
 %% file index parameters
 % NbSlice_i: nbre of slices for i index in multi-level mode: equal to 1 for a single level
@@ -343,10 +339,10 @@ for j_slice=1:NbSlice
         newname=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i_indices(ifile),[],j_indices(ifile));
 
         %write result file
-        if ~isequal(Param.ActionInput.SaturationValue,0)
-            he=levels(Acor,Param.ActionInput.SaturationValue);
-            imwrite(C,newname,'BitDepth',16); % save the new image
-        else
+%         if ~isequal(Param.ActionInput.SaturationValue,0)
+%             he=levels(Acor,Param.ActionInput.SaturationValue);
+%             imwrite(C,newname,'BitDepth',16); % save the new image
+%         else
             if isequal(FileInfo.BitDepth,16)
                 C=uint16(Acor);
                 imwrite(C,newname,'BitDepth',16); % save the new image
@@ -354,7 +350,7 @@ for j_slice=1:NbSlice
                 C=uint8(Acor);
                 imwrite(C,newname,'BitDepth',8); % save the new image
             end
-        end
+%         end
         disp([newname ' written'])
     end
 
@@ -395,10 +391,10 @@ for j_slice=1:NbSlice
                 ifile=indselect(j_slice,ifield+iburst);
                 newname=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i_indices(ifile),[],j_indices(ifile));
                 %write result file
-                if ~isequal(Param.ActionInput.SaturationValue,0)
-                    C=levels(Acor,Param.ActionInput.SaturationValue);
-                    imwrite(C,newname,'BitDepth',16); % save the new image
-                else
+%                 if ~isequal(Param.ActionInput.SaturationValue,0)
+%                     C=levels(Acor,Param.ActionInput.SaturationValue);
+%                     imwrite(C,newname,'BitDepth',16); % save the new image
+%                 else
                     if isequal(FileInfo.BitDepth,16)
                         C=uint16(Acor);
                         imwrite(C,newname,'BitDepth',16); % save the new image
@@ -406,7 +402,7 @@ for j_slice=1:NbSlice
                         C=uint8(Acor);
                         imwrite(C,newname,'BitDepth',8); % save the new image
                     end
-                end
+%                 end
                 disp([newname ' written'])
             end
         end
@@ -420,10 +416,10 @@ for j_slice=1:NbSlice
         ifile=indselect(j_slice,ifield);
         newname=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,i_indices(ifile),[],j_indices(ifile));
         %write result file
-        if ~isequal(Param.ActionInput.SaturationValue,0)
-            C=levels(Acor,Param.ActionInput.SaturationValue);
-            imwrite(C,newname,'BitDepth',16); % save the new image
-        else
+%         if ~isequal(Param.ActionInput.SaturationValue,0)
+%             C=levels(Acor,Param.ActionInput.SaturationValue);
+%             imwrite(C,newname,'BitDepth',16); % save the new image
+%         else
             if isequal(FileInfo.BitDepth,16)
                 C=uint16(Acor);
                 imwrite(C,newname,'BitDepth',16); % save the new image
@@ -431,7 +427,7 @@ for j_slice=1:NbSlice
                 C=uint8(Acor);
                 imwrite(C,newname,'BitDepth',8); % save the new image
             end
-        end
+%         end
         disp([newname ' written'])
     end
 end

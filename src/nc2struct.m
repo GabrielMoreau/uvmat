@@ -37,7 +37,7 @@
 
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -284,12 +284,12 @@ if  ~isempty(ListVarName)
 %            xtype(var_index(ivar))
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
         end   
-        if xtype(var_index(ivar))==5 %single precision
-             Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
-        end
-    %    Data.(VarName)=double(Data.(VarName)); %transform all variables to double  pecision
+        %rescale according to scale factor
         if isfield(Data,'VarAttribute') && numel(Data.VarAttribute)>=ivar && isfield(Data.VarAttribute{ivar},'scale_factor')
             Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
+        end
+        if xtype(var_index(ivar))==5 %single precision
+             Data.(VarName)=double(Data.(VarName)); %transform all single precision variables to double  pecision
         end
     end
 end

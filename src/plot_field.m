@@ -81,7 +81,7 @@
 %                expressed in figure relative unit (ex [0.821 0.471 0.019 0.445])
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -226,8 +226,9 @@ else %plot 1D field (usual graph y vs x)
         end
     end
     if testzoomaxes
-        [zoomaxes,PlotParamOut.Axes]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
-        AxeData.ZoomAxes=zoomaxes;
+        %[zoomaxes,PlotParamOut.Axes]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
+        PlotParamOut=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
+        %AxeData.ZoomAxes=PlotParamOut.Axis;%
     end
     PlotType='line';
 end
@@ -281,7 +282,7 @@ if ~isempty(index_2D)|| ~isempty(index_1D)
     FigData=get(hfig,'UserData');
     if strcmp(get(hfig,'tag'),'view_field')||strcmp(get(hfig,'tag'),'uvmat')
         if ~isempty(get(haxes,'tag'))
-        FigData.(get(haxes,'tag'))=Data;
+            FigData.(get(haxes,'tag'))=Data;
         end
         set(hfig,'UserData',FigData)
     end
@@ -388,7 +389,7 @@ end
 function PlotParamOut=plot_profile(Data,CellInfo,haxes,PlotParam,CheckHold)
 
 %% initialization
-if ~(exist('PlotParam','var')&&~isempty(PlotParam.Axes))
+if ~(exist('PlotParam','var')&& isfield(PlotParam,'Axes') && ~isempty(PlotParam.Axes))
     Coordinates=[];
     PlotParamOut.Axes=Coordinates;
 else
@@ -1144,8 +1145,8 @@ if test_vec
     if size(vec_U,1)==numel(vec_Y) && size(vec_U,2)==numel(vec_X) % x, y  coordinate variables
         [vec_X,vec_Y]=meshgrid(vec_X,vec_Y);
     end   
-    vec_X=reshape(vec_X,1,numel(vec_X));%reshape in matlab vectors
-    vec_Y=reshape(vec_Y,1,numel(vec_Y));
+    vec_X=double(reshape(vec_X,1,numel(vec_X)));%reshape in matlab vectors
+    vec_Y=double(reshape(vec_Y,1,numel(vec_Y)));
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
      MinMaxX=max(vec_X)-min(vec_X);
@@ -1314,7 +1315,6 @@ function quiresetn(haxes,x,y,u,v,scale,colorlist,col_vec)
 theta=0.5 ;%angle arrow
 alpha=0.3 ;%length arrow
 rot=alpha*[cos(theta) -sin(theta); sin(theta) cos(theta)]';
-
 %find the existing lines
 h=findobj(haxes,'Tag','vel');% search existing lines in the current axes
 sizh=size(h);
