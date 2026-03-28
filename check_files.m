@@ -27,11 +27,26 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [checkmsg,date_str,svn_info,list_fct]=check_files
+function [checkmsg,date_str,list_fct]=check_files
 checkmsg={};%default
 svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
+
+dir_uvmat=which('uvmat');% full name of uvmat.m, including its detected path
+pathuvmat=fileparts(dir_uvmat);% path to the folder containing uvmat.m
+
+%% add the uvmat path to list of matlab path if needed (will maintain the path to uvmat even after a change of working directory)
+if isempty(regexp(path,[pathuvmat '(:|\>)'],'once'))
+    addpath(pathuvmat);
+end
+
+%% check the existence of the subdir xmltree for reading writing xml files
+if ~exist(fullfile(pathuvmat,'@xmltree'),'dir')
+    checkmsg{1}='ERROR installation: toolbox xmltree missing';
+end
+
+%% list of fcts needed for UVMAT
 list_fct={...
     'activate';...% emulate the mouse selection of a GUI element, for demo
     'angle2normal';...%rotation vector PlaneAngle (in degree) 
@@ -123,87 +138,86 @@ list_fct={...
     'view_field.fig';...%GUI for view_field
     'xml2struct';...% read an xml file as a Matlab structure, converts numeric character strings into numbers
     };
-dir_fct=which('uvmat');% path to uvmat
-pathuvmat=fileparts(dir_fct);
-
-%% add the uvmat path to matlab if needed
-if isempty(regexp(path,[pathuvmat '(:|\>)'],'once'))
-    addpath(pathuvmat);
-end
 
 
-%% loop on the list of functions in the uvmat package
-icount=0;
-if ~exist(fullfile(pathuvmat,'@xmltree'),'dir')
-    icount=icount+1;
-    checkmsg{icount}='ERROR installation: toolbox xmltree missing';
-end
-datnum=zeros(1,length(list_fct));
-for i=1:length(list_fct)
-    dir_fct=which(list_fct{i});% path to fct
-    if isempty(dir_fct)
-        icount=icount+1;
-        checkmsg{icount}=[list_fct{i} ' not found'];% test for function not found
+%% check the existence, path and latest modification of the functions needed  for the uvmat package
+datnum=zeros(numel(list_fct),1);%initiate date of fct files
+check_warning=false(numel(list_fct),1);%initiate flag for warning
+checkmsg_fct=cell(numel(list_fct),1);% initiate warning messages for functions
+for ilist=1:numel(list_fct)
+    fullname_fct=which(list_fct{ilist});% full name of fct, including its current path in matlab
+    if isempty(fullname_fct)
+        check_warning(ilist)=true; % warning found
+        checkmsg_fct{ilist}=[list_fct{ilist} ' not found'];% warning msg for function not found
     else
-        pth=fileparts(dir_fct);
-        if ~isequal(pathuvmat,pth) && ~isequal(fullfile(pathuvmat,'private'),pth)
-            icount=icount+1;
-            checkmsg{icount}=[dir_fct ' overrides the package UVMAT'];% bad path for the function
+        pth=fileparts(fullname_fct);% matlab path found for the listed fct
+        if ~strcmp(pathuvmat,pth) && ~strcmp(fullfile(pathuvmat,'private'),pth)
+            check_warning(ilist)=true; % warning found
+            checkmsg_fct{ilist}=[fullname_fct ' overrides UVMAT'];% path for the function differs from uvmat
         end
-        datfile=dir(dir_fct);
+        datfile=dir(fullname_fct);
         if isfield(datfile,'datenum')
-            datnum(i)= datfile.datenum;
+            datnum(ilist)= datfile.datenum;
         end
     end
 end
-date_str=datestr(max(datnum));
+checkmsg_fct=checkmsg_fct(check_warning);
+checkmsg=[checkmsg;checkmsg_fct];
+date_str=datestr(max(datnum));% date of the latest modification
+
+
+%% check status of GIT
+current_dir=pwd;
+cd(pathuvmat)
+[status,git_msg]=system('git rev-list --count HEAD');% gives the revision number available 
+if status==0 % GIT detected
+    checkmsg =[checkmsg ;
+             {['Repository now at revision ' git_msg ]}];
+    [~,svn_info_status]=system('git status');
+    t=regexp(svn_info_status,'modified:\s+(?<modif_files>\w+.\w+)','names');% look for modified files
+    list_modified=squeeze(struct2cell(t));
+    if ~isempty(list_modified)
+        list_modified=['files modified with respect to the GIT source:';list_modified];% add the title
+    end
+    checkmsg =[checkmsg ;list_modified];
+    % svn_info.cur_rev=[]; %TODO: how to get the current revision version of the package ?
+else % no svn line command available
+    checkmsg=[checkmsg ;{'GIT sources not available'}];
+end
+cd(current_dir)
 
 %% check svn status
-[status,result]=system('svn --help');
-if status==0 % if a svn line command is available
-    svn_info.rep_rev=0;svn_info.cur_rev=0;
-    [tild,result]=system(['svn info ' dir_fct]); %get info fromn the svn server
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
-    if ~isempty(t)
-        svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
-    end
-    %[tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
-    [tild,result]=system(['svn info ''HEAD'' '  pathuvmat]);
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
-    if ~isempty(t)
-        svn_info.rep_rev=str2double(t.rev); % version nbre available on the svn repository
-    end
-    [tild,result]=system(['svn status '  pathuvmat]);% '&' prevents the program to stop when the system asks password
-    svn_info.status=result;
-    checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];%display version nbre of the current uvmat package
-    if svn_info.rep_rev>svn_info.cur_rev %if the repository has a more advanced version than the uvmat package, warning msge
-        checkmsg =[checkmsg ...
-            {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
-    end
-    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');% detect the files modified compared to the repository
-    if ~isempty(modifications)
-        for ilist=1:numel(modifications)
-            [tild,FileName,FileExt]=fileparts(modifications{ilist});
-            checkmsg=[checkmsg {[FileName FileExt ' modified']}];
-        end
-    end
-else % no svn line command available
-    checkmsg=[checkmsg {'SVN not available'}];
-end
-checkmsg=checkmsg';
-
-%% check dates of compilation
-% currentdir=pwd;
-% cd(pathuvmat)
-% list_compile=dir('*.sh');
-% for ilist=1:numel(list_compile)
-%     mfile=regexprep(list_compile(ilist).name,'.sh$','.m');
-%     if exist(mfile,'file')
-%         datfile=dir(mfile);
-%         if ~isempty(datfile) && isfield(datfile,'datenum') && datfile.datenum>list_compile(ilist).datenum
-%             checkmsg=[checkmsg;{[list_compile(ilist).name ' needs to be updated by compile_functions']}];
-%         end
+%[status,result]=system('svn --help');
+% if status==0 % if a svn line command is available
+%     svn_info.rep_rev=0;svn_info.cur_rev=0;
+%     [tild,result]=system(['svn info ' dir_fct]); %get info fromn the svn server
+%     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
+%     if ~isempty(t)
+%         svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
 %     end
+%     %[tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
+%     [tild,result]=system(['svn info ''HEAD'' '  pathuvmat]);
+%     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
+%     if ~isempty(t)
+%         svn_info.rep_rev=str2double(t.rev); % version nbre available on the svn repository
+%     end
+%     [tild,result]=system(['svn status '  pathuvmat]);% '&' prevents the program to stop when the system asks password
+%     svn_info.status=result;
+%     checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];%display version nbre of the current uvmat package
+%     if svn_info.rep_rev>svn_info.cur_rev %if the repository has a more advanced version than the uvmat package, warning msge
+%         checkmsg =[checkmsg ...
+%             {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
+%     end
+%     modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');% detect the files modified compared to the repository
+%     if ~isempty(modifications)
+%         for ilist=1:numel(modifications)
+%             [tild,FileName,FileExt]=fileparts(modifications{ilist});
+%             checkmsg=[checkmsg {[FileName FileExt ' modified']}];
+%         end
+% %     end
+% else % no svn line command available
+%     checkmsg=[checkmsg {'SVN not available'}];
 % end
-% cd(currentdir)
+%checkmsg=checkmsg';
+
 

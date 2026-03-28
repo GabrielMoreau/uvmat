@@ -281,7 +281,7 @@ if exist('input','var')
             UvData.FieldsString=input.FieldsString;
         end
     elseif ischar(input)% file name introduced as input
-           inputfile=input;
+        inputfile=input;
     elseif isnumeric(input)%simple matrix introduced as input
         sizinput=size(input);
         if sizinput(1)<=1 || sizinput(2)<=1
@@ -299,13 +299,16 @@ else
     path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
     [infomsg,date_str]=check_files;%check the path of the functions called by uvmat.m
     date_str=['last modification: ' date_str];
+    display_string=[{'Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
+        {'GNU General Public License'};
+        {''};...% line break for visual clarity
+        {path_to_uvmat};...% path of uvmat detected by Matlab
+        {date_str};...% date of latest modification in the package (excluding sub-folders)
+        {''};...% line break for visual clarity
+        infomsg];% message from GIT
+    disp(display_string)
     if ishandle(handles.UVMAT_title)
-        set(handles.UVMAT_title,'String',...
-            [{'Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
-            {'GNU General Public License'};...
-            {path_to_uvmat};...
-            {date_str};...
-            infomsg]);
+        set(handles.UVMAT_title,'String',display_string)
     end
 end
 set(handles.uvmat,'UserData',UvData)

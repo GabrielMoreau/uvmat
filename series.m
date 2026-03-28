@@ -1600,13 +1600,14 @@ if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequ
     errormsg='input field name(s) not defined, select add_field...';
     return
 end
-[status,result]=system(['svn info ' Param.Action.ActionPath]);
-if status==0
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
-    if ~isempty(t)
-        Param.UvmatRevision=t.rev; %version nbre of the current package
-    end
-end
+%[status,result]=system(['svn info ' Param.Action.ActionPath]);%TODO: %mettre a jour avec GIT
+
+% if status==0
+%     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
+%     if ~isempty(t)
+%         Param.UvmatRevision=t.rev; %version nbre of the current package
+%     end
+% end
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local'; % default (needed for first opening of the GUI series)

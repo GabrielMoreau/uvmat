@@ -117,13 +117,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     
     %% setting of  parameters specific to sub_background
     CheckVolume='No';
-    nbaver_init=23; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts 
-    %SaturationValue=0;
+    nbaver_init=20; %default number of images used for the sliding background: to be adjusted later to include an integer number of bursts 
      if nbfield_i~=1 && NbField_j<=nbaver_init
         nbaver=floor(nbaver_init/NbField_j); % number of bursts used for the sliding background,
-        if isequal(mod(nbaver,2),0)% if nbaver is even
-            nbaver=nbaver+1;%put the number of burst to an odd number (so the middle burst is defined)
-        end
         nbaver_init=nbaver*NbField_j;%propose by default an integer number of bursts
     end
     BrightnessRankThreshold=0.1;
@@ -143,8 +139,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     end   
     prompt = {'volume scan mode (Yes/No)';...
         'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
-        'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles';...
-        'image saturation level for rescaling( reduce the influence of particles brighter than this value), =0 for no rescaling' };
+        'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
     dlg_title = 'get (slice by slice) a sliding background and substract to each image';
     num_lines= 3;
     def     = { CheckVolume;num2str(nbaver_init);num2str(BrightnessRankThreshold)};
@@ -205,7 +200,7 @@ FileExt=Param.InputTable{1,5};
 % nbaver=nbaver_ima/step: nbre of bursts corresponding to nbaver_ima images. It has been adjusted so that nbaver is an odd integer
 i_indices=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 if isfield(Param.IndexRange,'first_j')
-j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 else
     j_indices=1;
 end
@@ -218,11 +213,11 @@ if Param.ActionInput.CheckVolume% case of volume scan: the background images mus
     step=2;% we assume the burst contains only one image pair
     NbSlice_j=NbField_j;
     nbfield_series=nbfield_i;
-else 
+else
     if Param.ActionInput.SlidingSequenceLength<NbField_j
         step=1;
     else
-    step=NbField_j;%case of bursts: the sliding background is shifted by the length of one burst
+        step=NbField_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
     NbSlice_j=1;
     nbfield_series=nbfield_i*NbField_j;
@@ -233,7 +228,7 @@ if nbaver_ima > nbfield
     disp('number of images in a slice smaller than the proposed number of images for the sliding average')
     return
 end
-halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding background 
+halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding background
 
 
 %% File relabeling documented by the xml file
@@ -245,9 +240,10 @@ if CheckRelabel
     if ~isempty(XmlFileName)
         XmlData=imadoc2struct(XmlFileName);%read the time from XmlFileName
     end
-   % RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
-    [RootFileOut,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
-    FirstFileName=fullfile(RootPath,SubDir,RootFileOut);
+    RootFileOut='frame';
+    % RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
+    [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
+    FirstFileName=fullfile(RootPath,SubDir,RootFile);
 else
     FirstFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
     RootFileOut=RootFile;
@@ -268,7 +264,6 @@ if ~CheckRelabel
 end
 
 %% output file naming
-FileExtOut='.png'; % write result as .png images for image inputsFileInfo.FileType='image'
 if strcmp(FileInfo.FileType,'image')
     NomTypeOut=NomType;
 elseif NbField_j==1
@@ -309,18 +304,18 @@ for j_slice=1:NbSlice
     
     %% read the first series of nbaver_ima images and sort by luminosity at each pixel
     for iblock=1:nbaver_ima:nbfield_series
-        last_index=min((iblock-1)*nbaver_ima+nbaver_ima,nbfield_series);
-        for ifield = (iblock-1)*nbaver_ima+1:last_index
+        last_index=min(iblock+nbaver_ima,nbfield_series);
+        for ifield = iblock:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
                 [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
                 filename=fullfile(RootPath,SubDir,filename);
             else
-                filename=fullfile_uvmat(OutputPath,OutputDir,RootFile,'.png',NomType,i_indices(ifile),[],j_indices(ifile));
+                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileIndex,NomType,i_indices(ifile),[],j_indices(ifile));
                 FrameIndex=frame_index(ifile);
             end
-            if ifield==1
-                filename_out=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
+            if ifield==iblock
+                filename_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
             end
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
             if ndims(Aread)==3%color images
@@ -328,9 +323,7 @@ for j_slice=1:NbSlice
             end
             Ak(:,:,ifield)=Aread;
         end
-        if (iblock-1)*nbaver_ima+nbaver_ima > nbfield_series %the series is limited by the upper file index bound
-            
-            
+        
         Asort=sort(Ak,3);%sort the luminosity of images at each point
         B=Asort(:,:,rank);%background image
         
@@ -345,7 +338,6 @@ for j_slice=1:NbSlice
         end
         disp([filename_out ' written'])
     end
-    
 end
 
 
@@ -354,16 +346,16 @@ end
 function [nbaver_ima,nbaver,step_out]=adjust_slidinglength(nb_aver_in,step)
 %nbaver_ima=str2double(nb_aver_in);%number of images for the sliding background
 nbaver=ceil(nb_aver_in/step);%number of bursts for the sliding background
-if isequal(mod(nbaver,2),0)% if nbaver is even
-    nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
-end
+% if isequal(mod(nbaver,2),0)% if nbaver is even
+%     nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
+% end
 step_out=step;
 if nbaver>1
     nbaver_ima=nbaver*step;% correct the nbre of images corresponding to nbaver
 else
     nbaver_ima=nb_aver_in;
-    if isequal(mod(nbaver_ima,2),0)% if nbaver_ima is even
-        nbaver_ima=nbaver_ima+1;%set the number of bursts to an odd number (so the middle burst is defined)
-    end
+%     if isequal(mod(nbaver_ima,2),0)% if nbaver_ima is even
+%         nbaver_ima=nbaver_ima+1;%set the number of bursts to an odd number (so the middle burst is defined)
+%     end
     step_out=1;
 end

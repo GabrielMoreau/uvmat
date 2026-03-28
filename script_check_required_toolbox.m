@@ -3,7 +3,7 @@
 
 %% check list of fcts in main folder
 disp('%%%%%%%%%%%% fcts in the master folder UVMAT %%%%%%%%%%%%')
-[~,~,~,list_fct]=check_files;
+[~,~,list_fct]=check_files;
 for ilist=1:numel(list_fct)
     [~, pList] = matlab.codetools.requiredFilesAndProducts(list_fct{ilist});
     Name_str='';
