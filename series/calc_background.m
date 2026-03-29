@@ -280,9 +280,6 @@ if rank==0
     rank=1;%rank selected in the sorted image series
 end
 
-%% prealocate memory for the sliding background
-Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory
-
 %% selection of frame indices
 if Param.ActionInput.CheckVolume
     nbfield=floor(nbfield/NbSlice_j)*NbSlice_j;% truncate the total number of frames in case of incomplete series
@@ -304,7 +301,8 @@ for j_slice=1:NbSlice
     
     %% read the first series of nbaver_ima images and sort by luminosity at each pixel
     for iblock=1:nbaver_ima:nbfield_series
-        last_index=min(iblock+nbaver_ima,nbfield_series);
+        last_index=min(iblock+nbaver_ima-1,nbfield_series);
+        Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory
         for ifield = iblock:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
@@ -319,23 +317,17 @@ for j_slice=1:NbSlice
             end
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
             if ndims(Aread)==3%color images
-                Aread=sum(double(Aread),3);% take the sum of color components
+                Aread=sum(uint16(Aread),3);% take the sum of color components
             end
-            Ak(:,:,ifield)=Aread;
+            Ak(:,:,ifield-iblock+1)=Aread;
         end
         
-        Asort=sort(Ak,3);%sort the luminosity of images at each point
-        B=Asort(:,:,rank);%background image
+        %Asort=sort(Ak,3);%sort the luminosity of images at each point
+        B=mink(Ak,rank,3);
+        B=squeeze(B(:,:,rank));%background image
         
         %write result file
-        if isequal(FileInfo.BitDepth,16)
-            imwrite(uint16(B),filename_out,'BitDepth',16); % save the new image
-        elseif isequal(FileInfo.BitDepth,8)
-            imwrite(uint8(B),filename_out,'BitDepth',16); % save the new image
-        else
-            disp( 'invalid in input image type (must be 8 bits or 16 bits)')
-            return
-        end
+        imwrite(B,filename_out,'BitDepth',FileInfo.BitDepth); % save the new image   
         disp([filename_out ' written'])
     end
 end

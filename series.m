@@ -2275,7 +2275,7 @@ for iexp=1:NbExp
             end
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
             [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
-            filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command'); % keep track of the command in file '0-OAR/0_cluster_command'
+            filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command.txt'); % keep track of the command in file '0-OAR/0_cluster_command'
             [fid,errormsg]=fopen(filename_oarcommand,'w');
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',['cannot create ' filename_oarcommand ': ' errormsg])

@@ -51,30 +51,30 @@ GUIParam=[];
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-   GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
     %App=civ_input_App
     %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
     % if isempty(App)
     %    GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
     % end
-   GUIParam.Program=mfilename;%gives the name of the current function
-   GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-   GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-   GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
-   GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-   GUIParam.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-   GUIParam.FieldTransform = 'off';%can use a transform function
-   GUIParam.ProjObject='off';%can use projection object(option 'off'/'on',
-   GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-   GUIParam.OutputDirExt='.civ';%set the output dir extension
-   GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
-   GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
-   GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    GUIParam.Program=mfilename;%gives the name of the current function
+    GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
+    GUIParam.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    GUIParam.FieldName='on';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.FieldTransform = 'off';%can use a transform function
+    GUIParam.ProjObject='off';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.OutputDirExt='.civ';%set the output dir extension
+    GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
+    GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
+    GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-       GUIParam.IndexRange_j='off';%no j index display in series
+        GUIParam.IndexRange_j='off';%no j index display in series
     else
-       GUIParam.IndexRange_j='on';% j index display in series if relevant
+        GUIParam.IndexRange_j='on';% j index display in series if relevant
     end
     return
 end
@@ -315,8 +315,8 @@ for ifield=1:NbField
     if ~CheckOverwrite % check the existence and validity of the existing output file
         [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
         if isempty(errormsg)
-        disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
-        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+            disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
     end
     ImageName_A='';ImageName_B='';%default
@@ -331,65 +331,65 @@ for ifield=1:NbField
         par_civ1=Param.ActionInput.Civ1;% parameters for civ1
         %if CheckInputFile % read input images (except in mode Test where it is introduced directly in Param.ActionInput.Civ1.ImageNameA and B)
         % try
-            if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                ImageName_A=Param.ActionInput.RefFile;
-                FrameIndex_A=1;
-            elseif CheckRelabel
-                [RootFile,FrameIndex_A]=index2filename(XmlData.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
-                ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
-            else
-                ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
-                FrameIndex_A=FrameIndex_A_Civ1(ifield);
-            end
-            if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
-                FieldName_A=Param.InputFields.FieldName;
-                [DataIn,~,~,errormsg]=nc2struct(ImageName_A,{FieldName_A});
-                par_civ1.ImageA=DataIn.(FieldName_A);
-            else % usual image formats for image A
-                if isempty(FileType_A)% open the image object if not already done in case of movie input
-                    [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
-                    FileType_A=FileInfo_A.FileType;
-                    if isempty(Time) && ismember(FileType_A,{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
-                        Time=zeros(FileInfo_A.NumberOfFrames+1,2);
-                        Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
-                        if ~isempty(j1_series_Civ1) & j1_series_Civ1~=1
-                            Time=Time';
-                        end
-                    end
-                    if ~isempty(FileType_A) && isempty(Time)% Time = index i +0.001 index j by default
-                        MaxIndex_i=max(i2_series_Civ1);
-                        MaxIndex_j=max(j2_series_Civ1);
-                        Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
-                        Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
-                        Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
-                        Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
+        if strcmp(Param.ActionInput.ListCompareMode,'displacement')
+            ImageName_A=Param.ActionInput.RefFile;
+            FrameIndex_A=1;
+        elseif CheckRelabel
+            [RootFile,FrameIndex_A]=index2filename(XmlData.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
+            ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
+        else
+            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
+            FrameIndex_A=FrameIndex_A_Civ1(ifield);
+        end
+        if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
+            FieldName_A=Param.InputFields.FieldName;
+            [DataIn,~,~,errormsg]=nc2struct(ImageName_A,{FieldName_A});
+            par_civ1.ImageA=DataIn.(FieldName_A);
+        else % usual image formats for image A
+            if isempty(FileType_A)% open the image object if not already done in case of movie input
+                [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
+                FileType_A=FileInfo_A.FileType;
+                if isempty(Time) && ismember(FileType_A,{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
+                    Time=zeros(FileInfo_A.NumberOfFrames+1,2);
+                    Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+                    if ~isempty(j1_series_Civ1) & j1_series_Civ1~=1
+                        Time=Time';
                     end
                 end
-                if isempty(regexp(ImageName_A,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_A,'file')
-                    disp([ImageName_A ' missing'])
-                    continue
+                if ~isempty(FileType_A) && isempty(Time)% Time = index i +0.001 index j by default
+                    MaxIndex_i=max(i2_series_Civ1);
+                    MaxIndex_j=max(j2_series_Civ1);
+                    Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
+                    Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
+                    Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
+                    Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
                 end
-                tsart_input=tic;
-                [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
-                time_input=toc(tsart_input);
             end
-            if CheckRelabel
-                [RootFile,FrameIndex_B]=index2filename(XmlData.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
-                ImageName_B=fullfile(RootPath_B,SubDir_B,RootFile);
-            else
-                ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-                FrameIndex_B=FrameIndex_B_Civ1(ifield);
-            end
-            if isempty(FileType_B)% determine the image type for the first field
-                [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
-                FileType_B=FileInfo_B.FileType;
-            end
-            if isempty(regexp(ImageName_B,'(^http://)|(^https://)', 'once')) && ~exist(ImageName_B,'file')
-                disp([ImageName_B ' missing'])
+            if  ~exist_file(ImageName_A)
+                disp([ImageName_A ' missing'])
                 continue
             end
-            [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
-            
+            tsart_input=tic;
+            [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
+            time_input=toc(tsart_input);
+        end
+        if CheckRelabel
+            [RootFile,FrameIndex_B]=index2filename(XmlData.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
+            ImageName_B=fullfile(RootPath_B,SubDir_B,RootFile);
+        else
+            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
+            FrameIndex_B=FrameIndex_B_Civ1(ifield);
+        end
+        if isempty(FileType_B)% determine the image type for the first field
+            [FileInfo_B,VideoObject_B]=get_file_info(ImageName_B);
+            FileType_B=FileInfo_B.FileType;
+        end
+        if ~exist_file(ImageName_B)
+            disp([ImageName_B ' missing'])
+            continue
+        end
+        [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B);
+        
         % par_civ1.ImageWidth=size(par_civ1.ImageA,2);
         % par_civ1.ImageHeight=size(par_civ1.ImageA,1);
         list_param=(fieldnames(Param.ActionInput.Civ1))';
@@ -423,27 +423,42 @@ for ifield=1:NbField
         end
         Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
         Data.CivStage=1;
-            
-            
-            
+        CheckVolumeScan= strcmp(NomTypeNc,'_1-2_1');
+        
+        IndexPeriod=[];%default
+        if isfield(Param.ActionInput.Civ1,'IndexPeriod')
+            IndexPeriod=Param.ActionInput.Civ1.IndexPeriod;
+        end
+        NbSlice=[];
+        if isfield(Param.ActionInput.Civ1,'NbSlice')
+            NbSlice=Param.ActionInput.Civ1.NbSlice;
+        end
         % case of background image to subtract
-        if par_civ1.CheckBackground &&~isempty(par_civ1.Background)
-            [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
-            if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
-                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
-            elseif isfield(par_civ1,'NbSlice')% multilevel case NbSlice background levels
-                i1_background=mod(i1_civ1-1,par_civ1.NbSlice)+1;
-                backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
-                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
-                    par_civ1.NbSlice_j=par_civ1.NbSlice;
-                end
-            else
-                backgroundname=Param.ActionInput.Civ1.Background;% simple name with no indexing
+        if par_civ1.CheckBackground &&~isempty(par_civ1.CheckBackground)
+            BkgndRootName=Param.ActionInput.Civ1.Background;
+             IndexPeriod=[];
+            if isfield(Param.ActionInput.Civ1,'BkgndPeriod')
+                 IndexPeriod=Param.ActionInput.Civ1.BkgndPeriod;
             end
+            backgroundname=get_mask_name(BkgndRootName,i1_civ1,j1,IndexPeriod,NbSlice,CheckVolumeScan);
+            
+            
+            %             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
+            %             if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
+            %                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
+            %             elseif isfield(par_civ1,'NbSlice')% multilevel case NbSlice background levels
+            %                 i1_background=mod(i1_civ1-1,par_civ1.NbSlice)+1;
+            %                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
+            %                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
+            %                     par_civ1.NbSlice_j=par_civ1.NbSlice;
+            %                 end
+            %             else
+            %                 backgroundname=Param.ActionInput.Civ1.Background;% simple name with no indexing
+            %             end
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
                 par_civ1.Background=background; %use background already opened
             else
-                if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
+                if exist_file(backgroundname)
                     try
                         par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use
                     catch ME
@@ -503,7 +518,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
-                if ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))|| exist(maskname,'file')
+                if exist_file(maskname)
                     try
                         par_civ1.Mask=imread(maskname);%update the mask, an store it for future use
                     catch ME
@@ -534,7 +549,7 @@ for ifield=1:NbField
         if strcmp(Param.RunMode,'cluster')
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
         else
-            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop 
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop
         end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
@@ -652,7 +667,7 @@ for ifield=1:NbField
             CheckDuplicate_1to2B=true;
         else
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_2);
-             CheckDuplicate_1to2B=false;
+            CheckDuplicate_1to2B=false;
         end
         %  [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A_Civ2);
         npy_ima=size(par_civ2.ImageA,1);
@@ -695,7 +710,7 @@ for ifield=1:NbField
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
                 par_civ2.Background=background; %use background already opened
             else
-                if ~isempty(regexp(backgroundname,'(^http://)|(^https://)', 'once'))|| exist(backgroundname,'file')
+                if exist_file(backgroundname)
                     try
                         par_civ2.Background=uint16(imread(backgroundname));%update the background, an store it for future use
                     catch ME
@@ -712,13 +727,13 @@ for ifield=1:NbField
                 backgroundoldname=backgroundname;
             end
             if ~CheckDuplicate_1to2A
-            par_civ2.ImageA=uint16(par_civ2.ImageA)-par_civ2.Background;
+                par_civ2.ImageA=uint16(par_civ2.ImageA)-par_civ2.Background;
             end
             if ~CheckDuplicate_1to2B
-            par_civ2.ImageB=uint16(par_civ2.ImageB)-par_civ2.Background;
+                par_civ2.ImageB=uint16(par_civ2.ImageB)-par_civ2.Background;
             end
         end
-   
+        
         %% case of image luminosity rescaling
         if  par_civ2.CheckRescale && ~isempty(par_civ2.Maxtanh)
             if ~CheckDuplicate_1to2A %if the image A is different from civ1
@@ -820,7 +835,7 @@ for ifield=1:NbField
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ2.Mask=mask; %use mask already opened
             else
-                if exist(maskname,'file')|| ~isempty(regexp(maskname,'(^http://)|(^https://)', 'once'))
+                if exist_file(maskname)
                     try
                         par_civ2.Mask=imread(maskname);%update the mask, an store it for future use
                     catch ME
@@ -858,7 +873,7 @@ for ifield=1:NbField
             par_civ2.DVDY(nbval>0)=DVDY(nbval>0)./nbval(nbval>0);
         end
         
-        % calculate velocity data 
+        % calculate velocity data
         if strcmp(Param.RunMode,'cluster')
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ2);% single processor used in cluster
         else
@@ -1087,16 +1102,5 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
     end
 end
 
-function maskname=get_mask_name(MaskRootName,i_index,j_index,NbSlice,CheckVolumeScan)
-  [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(MaskRootName);
-if CheckVolumeScan %case of volume,masks act on different j levels
-                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-            elseif ~isempty(NbSlice)
-                i1_mask=mod(i_index,NbSlice)+1;
-                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
-                if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
-                    par_civ1.NbSlice_j=par_civ1.NbSlice;
-                end
-            else
-                maskname=MaskRootName;
-            end
+
+

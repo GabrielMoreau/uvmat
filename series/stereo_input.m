@@ -1580,50 +1580,6 @@ end
 set(handles.configSource,'String','NEW')
 set(handles.configSource,'BackgroundColor',[1 0 1])
 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in get_gridpatch1.
-% function get_gridpatch1_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% filebase=get(handles.RootPath,'String');
-% [FileName, PathName, filterindex] = uigetfile( ...
-%     {'*.grid', ' (*.grid)';
-%     '*.grid',  '.grid files '; ...
-%     '*.*', 'All Files (*.*)'}, ...
-%     'Pick a file',filebase);
-% filegrid=fullfile(PathName,FileName);
-% set(handles.grid_patch1,'string',filegrid);
-% set(hObject,'BackgroundColor',[1 0 1])
-
-%------------------------------------------------------------------------
-% --- STEREO Interp
-function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
-%------------------------------------------------------------------------
-namelog=[filename_nc(1:end-3) '_stinterp.log'];
-cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
-    ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ' -c1 ' xmlA ' -c2 ' xmlB '  -xy  x -Nfy 1024 > ' namelog ' 2>&1']; % redirect standard output to the log file
-
-% %------------------------------------------------------------------------
-% %--read images and convert them to the uint16 format used for PIV
-% function A=read_image(filename,type_ima,num,movieobject)
-% %------------------------------------------------------------------------
-% %num is the view number needed for an avi movie
-% switch type_ima
-%     case 'movie'
-%         A=read(movieobject,num);
-%     case 'avi'
-%         mov=aviread(filename,num);
-%         A=frame2im(mov(1));
-%     case 'multimage'
-%         A=imread(filename,num);
-%     case 'image'
-%         A=imread(filename);
-% end
-% siz=size(A);
-% if length(siz)==3;%color images
-%     A=sum(double(A),3);
-%     A=uint16(A);
-% end
-
 
 %------------------------------------------------------------------------
 % --- Executes on button press in get_ref_fix1.

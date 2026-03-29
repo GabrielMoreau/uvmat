@@ -478,7 +478,7 @@ update_CivOptions(handles,0)
 % --- Open the help html file 
 function MenuHelp_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
-web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#Civ')
+web('https://legi.grenoble.gricad-pages.univ-grenoble-alpes.fr/soft/uvmat-doc/help/#PIV')
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the subdir checkciv1 edit window
@@ -683,17 +683,17 @@ function ListCompareMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 ListCompareMode=get(handles.ListCompareMode,'String');
 option=ListCompareMode{get(handles.ListCompareMode,'Value')};
-hseries=findobj(allchild(0),'Tag','series');
-SeriesData=get(hseries,'UserData');
-check_nc=strcmp(SeriesData.FileType{1},'.nc');
-ImageType=SeriesData.FileType(2:end);
-if check_nc
-    ImageType=SeriesData.FileType(2:end);
-else
-    ImageType=SeriesData.FileType;
-end
-hhseries=guidata(hseries);
-InputTable=get(hhseries.InputTable,'Data');
+%hseries=findobj(allchild(0),'Tag','series');
+%SeriesData=get(hseries,'UserData');
+%check_nc=strcmp(SeriesData.FileType{1},'.nc');
+% ImageType=SeriesData.FileType(2:end);
+% if check_nc
+%     ImageType=SeriesData.FileType(2:end);
+% else
+%     ImageType=SeriesData.FileType;
+% end
+%hhseries=guidata(hseries);
+%InputTable=get(hhseries.InputTable,'Data');
 OriginIndex='off';
 PairIndices='off';
 switch option
@@ -1285,7 +1285,6 @@ function CheckMask_Callback(hObject, eventdata, handles)
 hparent=get(hObject,'parent');
 hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','Mask');% look for the mask name box in the same panel
-% handle_NbSlice=findobj(hchildren,'tag','num_NbSlice');% look for the mask name box in the same panel
 testmask=0;
 if get(hObject,'Value')% if the checkbox is activated
     hseries=findobj(allchild(0),'Tag','series');
@@ -1297,9 +1296,9 @@ if get(hObject,'Value')% if the checkbox is activated
         ind_A=1;% line index of the (first) image series
     end
     % browse for a mask
-    filebackground= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image');
-    if ~isempty(filebackground)
-        [FilePath,FileName,FileExt]=fileparts(filebackground);
+    MaskFile= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'.png');
+    if ~isempty(MaskFile)
+        [FilePath,FileName,FileExt]=fileparts(MaskFile);
         [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
         if strcmp(NomType,'_1')
             NbSlice=i1_series(1,2,end);
@@ -1308,13 +1307,13 @@ if get(hObject,'Value')% if the checkbox is activated
             msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
             return
         end
-        set(hObject,'UserData',filebackground);%store for future use
-        testmask=1;
+        set(hObject,'UserData',MaskFile);%store for future use
+        testmask=1;% check that a mask has been introduced
     end
 end
 if testmask
     set(handles.Mask,'Visible','on')
-    set(handles.Mask,'String',filebackground)
+    set(handles.Mask,'String',fullfile(RootPath,SubDir,RootFile))
     set(handles.CheckMask,'Value',1)
     if strcmp(NomType,'_1')
         set(handles.num_NbSlice,'Visible','on')
@@ -1327,50 +1326,62 @@ end
 set(handles.ConfigSource,'String','NEW')
 set(handles.ConfigSource,'BackgroundColor',[1 0 1])
 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in get_gridpatch1.
-% function get_gridpatch1_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% filebase=get(handles.RootPath,'String');
-% [FileName, PathName, filterindex] = uigetfile( ...
-%     {'*.grid', ' (*.grid)';
-%     '*.grid',  '.grid files '; ...
-%     '*.*', 'All Files (*.*)'}, ...
-%     'Pick a file',filebase);
-% filegrid=fullfile(PathName,FileName);
-% set(handles.grid_patch1,'string',filegrid);
-% set(hObject,'BackgroundColor',[1 0 1])
 
 %------------------------------------------------------------------------
-% --- STEREO Interp
-function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
+% --- Executes on button press in CheckBackground.
+function CheckBackground_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-namelog=[filename_nc(1:end-3) '_stinterp.log'];
-cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
-    ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ' -c1 ' xmlA ' -c2 ' xmlB '  -xy  x -Nfy 1024 > ' namelog ' 2>&1']; % redirect standard output to the log file
-
-% %------------------------------------------------------------------------
-% %--read images and convert them to the uint16 format used for PIV
-% function A=read_image(filename,type_ima,num,movieobject)
-% %------------------------------------------------------------------------
-% %num is the view number needed for an avi movie
-% switch type_ima
-%     case 'movie'
-%         A=read(movieobject,num);
-%     case 'avi'
-%         mov=aviread(filename,num);
-%         A=frame2im(mov(1));
-%     case 'multimage'
-%         A=imread(filename,num);
-%     case 'image'
-%         A=imread(filename);
-% end
-% siz=size(A);
-% if length(siz)==3;%color images
-%     A=sum(double(A),3);
-%     A=uint16(A);
-% end
-
+hparent=get(hObject,'parent');
+hchildren=get(hparent,'children');
+handle_txtbox=findobj(hchildren,'tag','Background');% look for the background name box in the same panel
+testbackground=0;
+if get(hObject,'Value')% if the checkbox is activated
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+    if strcmp(InputTable{1,5},'.nc')
+        ind_A=2;%case of nc file as input (for civ3), image in second line
+    else
+        ind_A=1;% line index of the (first) image series
+    end
+    % browse for a background
+    filebackground= uigetfile_uvmat('pick a background image file:',InputTable{ind_A,1},'.png');
+    if ~isempty(filebackground)
+        [FilePath,FileName,FileExt]=fileparts(filebackground);
+        [RootPath,SubDir,RootFile,i1_series,~,j1_series,~,NomType]=find_file_series(FilePath,[FileName FileExt]);
+        if strcmp(NomType,'_1')|| strcmp(NomType,'_1_1')
+            [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));% the index i stands for the i index of the image to process
+            diff_ref_i=diff(ref_i,1);
+            if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
+                set(handles.num_BkgndPeriod,'String',num2str(diff_ref_i(1)))
+                set(handles.num_BkgndPeriod,'Visible','on')
+            end
+            if strcmp(NomType,'_1_1')% period background at different levels (multilevel of volume scan)
+                NbSlice=j1_series(1,2,end);
+                set(handles.num_Nbslice,'String',num2str(NbSlice))% slice deptermination detected
+            end
+        elseif ~strcmp(NomType,'*')% other kind of file indexing
+            msgbox_uvmat('ERROR','multilevel background images must be labeled with a single index as _1,_2,...');
+            return
+        end
+        set(hObject,'UserData',filebackground);%store for future use
+        testbackground=1;
+    end
+end
+if testbackground
+    set(handles.Background,'Visible','on')
+    set(handles.Background,'String',fullfile(RootPath,SubDir,RootFile))
+    set(handles.CheckBackground,'Value',1)
+    if strcmp(NomType,'_1')
+        set(handles.num_BkgndPeriod,'Visible','on')
+    end
+else
+    set(hObject,'Value',0);
+    set(handle_txtbox,'Visible','off')
+    set(handles.num_BkgndPeriod,'Visible','off')
+end
+set(handles.ConfigSource,'String','NEW')
+set(handles.ConfigSource,'BackgroundColor',[1 0 1])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in get_ref_fix1.
@@ -1972,9 +1983,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on key press with selection of a uicontrol
-%------------------------------------------------------------------------
 function keyboard_callback(hObject,eventdata,handles)
-    
+%------------------------------------------------------------------------
 ListExclude={'CheckCiv1','CheckFix1','CheckPatch1','CheckCiv2','CheckFix2','CheckPatch2','ref_i'};
 if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontrol is not in the Exclude list
     set(handles.ConfigSource,'String','NEW')% indicate that the configuration is new
@@ -1982,69 +1992,11 @@ if isempty(find(strcmp(get(gco,'Tag'),ListExclude),1))% if the selected uicontro
     drawnow
 end
 
-
-
-
 function MinIndex_j_Callback(hObject, eventdata, handles)
-
 
 % --- Executes on selection change in field_ref2.
 function field_ref2_Callback(hObject, eventdata, handles)
 
-
-
 function num_SearchRange_3_Callback(hObject, eventdata, handles)
-% hObject    handle to num_SearchRange_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of num_SearchRange_3 as text
-%        str2double(get(hObject,'String')) returns contents of num_SearchRange_3 as a double
-
-
-
-% --- Executes on button press in CheckBackground.
-function CheckBackground_Callback(hObject, eventdata, handles)
-hparent=get(hObject,'parent');
-hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','Background');% look for the background name box in the same panel
-testbackground=0;
-if get(hObject,'Value')% if the checkbox is activated
-    hseries=findobj(allchild(0),'Tag','series');
-    hhseries=guidata(hseries);
-    InputTable=get(hhseries.InputTable,'Data');
-    if strcmp(InputTable{1,5},'.nc')
-        ind_A=2;%case of nc file as input (for civ3), image in second line
-    else
-        ind_A=1;% line index of the (first) image series
-    end
-    % browse for a background
-    filebackground= uigetfile_uvmat('pick a background image file:',InputTable{ind_A,1},'image');
-    if ~isempty(filebackground)
-        [FilePath,FileName,FileExt]=fileparts(filebackground);
-        [RootPath,SubDir,RootFile,i1_series,i2,j1,j2,NomType]=find_file_series(FilePath,[FileName FileExt]);
-        if strcmp(NomType,'_1')
-            NbSlice=i1_series(1,2,end);
-            set(handles.num_NbSlice,'String',num2str(NbSlice))
-        elseif ~strcmp(NomType,'*')
-            msgbox_uvmat('ERROR','multilevel background images must be labeled with a single index as _1,_2,...');
-            return
-        end
-        set(hObject,'UserData',filebackground);%store for future use
-        testbackground=1;
-    end
-end
-if testbackground
-    set(handles.Background,'Visible','on')
-    set(handles.Background,'String',filebackground)
-    set(handles.CheckBackground,'Value',1)
-    if strcmp(NomType,'_1')
-        set(handles.num_NbSlice,'Visible','on')
-    end
-else
-    set(hObject,'Value',0);
-    set(handle_txtbox,'Visible','off')
-    set(handles.num_NbSlice,'Visible','off')
-end
-set(handles.ConfigSource,'String','NEW')
-set(handles.ConfigSource,'BackgroundColor',[1 0 1])
+function num_BkgndPeriod_Callback(hObject, eventdata, handles)
