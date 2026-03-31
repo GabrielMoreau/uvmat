@@ -279,9 +279,9 @@ for ifield=1:NbField
     end
     OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
     if CheckRelabel
-        RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
+        RootFileOut='frame';%  root name of the input files not relevant
     else
-        RootFileOut=RootFile_A;
+        RootFileOut=RootFile_A;% reproduce the root name of the input files
     end
     if strcmp(Param.ActionInput.ListCompareMode,'PIV')
         ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
@@ -456,20 +456,16 @@ for ifield=1:NbField
             %                 backgroundname=Param.ActionInput.Civ1.Background;% simple name with no indexing
             %             end
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
-                par_civ1.Background=background; %use background already opened
+                par_civ1.Background=background; %use background already opened 
             else
-                if exist_file(backgroundname)
-                    try
-                        par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use
-                    catch ME
-                        if ~isempty(ME.message)
-                            errormsg=['error reading input image: ' ME.message];
-                            disp_uvmat('ERROR',errormsg,checkrun)
-                            return
-                        end
+                try
+                    par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use
+                catch ME
+                    if ~isempty(ME.message)
+                        errormsg=['error reading input image: ' ME.message];
+                        disp_uvmat('ERROR',errormsg,checkrun)
+                        return
                     end
-                else
-                    par_civ1.Background=[];
                 end
                 background=par_civ1.Background;
                 backgroundoldname=backgroundname;% preserve the name for next iteration (to avoid reading the background image again)
@@ -703,7 +699,6 @@ for ifield=1:NbField
         
         %% case of background image to subtract, if images civ2 different from civ1
         if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && par_civ2.CheckBackground &&~isempty(par_civ2.Background)
-            %[RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ2.Background);
             j1=1;
             if ~isempty(j1_series_Civ2)
                 j1=j1_series_Civ2(ifield);
@@ -737,18 +732,14 @@ for ifield=1:NbField
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
                 par_civ2.Background=background; %use background already opened
             else
-                if exist_file(backgroundname)
-                    try
-                        par_civ2.Background=uint16(imread(backgroundname));%update the background, an store it for future use
-                    catch ME
-                        if ~isempty(ME.message)
-                            errormsg=['error reading input image: ' ME.message];
-                            disp_uvmat('ERROR',errormsg,checkrun)
-                            return
-                        end
+                try
+                    par_civ2.Background=uint16(imread(backgroundname));%update the background, an store it for future use
+                catch ME
+                    if ~isempty(ME.message)
+                        errormsg=['error reading input image: ' ME.message];
+                        disp_uvmat('ERROR',errormsg,checkrun)
+                        return
                     end
-                else
-                    par_civ2.Background=[];
                 end
                 background=par_civ2.Background;
                 backgroundoldname=backgroundname;

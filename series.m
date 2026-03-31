@@ -1282,6 +1282,7 @@ if MaxIndex_i>MinIndex_i
     LineData=ones(1,npx);
     for iline=1:nbview
         ind_y=1+(iline-1)*range_y:iline*range_y;
+%       MissingVect=missing_indices{iline}-MinIndex_i+1/(MaxIndex_i-MinIndex_i); %missing indices mapped from 0 to 1
 %         missing_pixels=floor((missing_indices{iline}-MinIndex_i+1)*npx/range_index)+1;
 %         LineData(missing_pixels)=0;
         %     LineData=zeros(size(file_indices));
@@ -3603,7 +3604,7 @@ if isempty(oldfile)
         end
     end
 end
-filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml'); % get the xml file containing processing parameters
+filexml=uigetfile_uvmat('pick a xml file in a folder 0_XML ',oldfile,'.xml'); % get the xml file containing processing parameters
 if isempty(filexml), return, end % quit function if an xml file has not been opened
 
 %% fill the GUI series with the content of the xml file

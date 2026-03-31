@@ -179,18 +179,18 @@ path_uvmat=fileparts(which('uvmat'));
 set(hObject,'Units','pixels')%
 set(0,'Units','pixels');
 ScreenSize=get(0,'ScreenSize');%size of the current screen
-Width=1050;
-Height=700;
+GUIWidth=1050;
+GUIHeight=700;
 %adjust to screen size (reduced by a min margin)
-RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
+RescaleFactor=min((ScreenSize(3)-80)/GUIWidth,(ScreenSize(4)-80)/GUIHeight);
 if RescaleFactor>1
     RescaleFactor=RescaleFactor/2+1/2; %reduce the rescale factor to provide an increased margin for a big screen
 end
-Width=Width*RescaleFactor;
-Height=Height*RescaleFactor;
+GUIWidth=GUIWidth*RescaleFactor;
+GUIHeight=GUIHeight*RescaleFactor;
 LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
-LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
-set(hObject,'Position',[LeftX LowY Width Height])
+LowY=round(ScreenSize(4)/2-GUIHeight/2); % put at the middle height on the screen
+set(hObject,'Position',[LeftX LowY GUIWidth GUIHeight])
 %UvData.PosColorbar=[0.80 0.02 0.018 0.445];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
@@ -267,9 +267,9 @@ set(handles.TransformPath,'UserData',[])
 %% case of an input argument for uvmat
 inputfile=[];
 if exist('input','var')
-    if ishandle(handles.UVMAT_title)
-        delete(handles.UVMAT_title)
-    end
+%     if ishandle(handles.UVMAT_title)
+%         delete(handles.UVMAT_title)
+%     end
     if isstruct(input)
         if isfield(input,'InputFile')
             inputfile=input.InputFile;
@@ -298,7 +298,8 @@ else
     %% check the path and date of modification of all functions in uvmat
     path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
     [infomsg,date_str]=check_files;%check the path of the functions called by uvmat.m
-    date_str=['last modification: ' date_str];
+    date_str=['date version (git pull): ' date_str];
+    axes(handles.PlotAxes)
     display_string=[{'Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
         {'GNU General Public License'};
         {''};...% line break for visual clarity
@@ -306,10 +307,10 @@ else
         {date_str};...% date of latest modification in the package (excluding sub-folders)
         {''};...% line break for visual clarity
         infomsg];% message from GIT
-    disp(display_string)
-    if ishandle(handles.UVMAT_title)
-        set(handles.UVMAT_title,'String',display_string)
-    end
+%     if ishandle(handles.UVMAT_title)
+%         set(handles.UVMAT_title,'String',display_string)
+%     end
+  UvData.TitleText=  text(0.02,0.5,display_string,'FontSize',12,'Interpreter','none','FontWeight','bold','BackgroundColor','y');
 end
 set(handles.uvmat,'UserData',UvData)
 if ~isempty(inputfile)
@@ -1031,12 +1032,16 @@ set(handles.CheckViewObject,'Value',0) % desactivate view_object (new object cre
 set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
 set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
 set(handles.MenuObject,'checked','on')% indicate object creation for mouse pointer display
-if ishandle(handles.UVMAT_title)
-    delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
+UvData=get(handles.uvmat,'UserData');
+if isfield(UvData,'TitleText') && ishandle(UvData.TitleText)
+    delete(UvData.TitleText)
 end
+% if ishandle(handles.UVMAT_title)
+%     delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
+% end
 
 %% initiate the new projection object
-UvData=get(handles.uvmat,'UserData');
+
 data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 check_plot=0;
@@ -3691,9 +3696,12 @@ if ~exist('Field','var')
     Field={};
 end
 UvData=get(handles.uvmat,'UserData');
-if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at the first openning of the GUI)
-    delete(handles.UVMAT_title)
+if isfield(UvData,'TitleText') && ishandle(UvData.TitleText)
+    delete(UvData.TitleText)
 end
+% if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at the first openning of the GUI)
+%     delete(handles.UVMAT_title)
+% end
 
 %% determine the main input file information for action
 % if isempty(regexp(FileName,'^http://', 'once')) &&~exist(FileName,'file')

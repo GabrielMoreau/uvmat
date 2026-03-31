@@ -1,5 +1,5 @@
 %------------------------------------------------------------------------
-% --- read the data displayed for the input rootfile windows (new): TODO use read_GUI
+% --- read the data displayed for the input rootfile windows 
 %------------------------------------------------------------------------
 function [RootPath,SubDir,RootFile,FileIndices,FileExt,NomType]=read_file_boxes(handles)
 

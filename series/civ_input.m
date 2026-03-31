@@ -1350,11 +1350,15 @@ if get(hObject,'Value')% if the checkbox is activated
         [FilePath,FileName,FileExt]=fileparts(filebackground);
         [RootPath,SubDir,RootFile,i1_series,~,j1_series,~,NomType]=find_file_series(FilePath,[FileName FileExt]);
         if strcmp(NomType,'_1')|| strcmp(NomType,'_1_1')
-            [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));% the index i stands for the i index of the image to process
-            diff_ref_i=diff(ref_i,1);
-            if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
-                set(handles.num_BkgndPeriod,'String',num2str(diff_ref_i(1)))
-                set(handles.num_BkgndPeriod,'Visible','on')
+            [~,ref_i]=find(squeeze(i1_series(1,:,:)));% the index i stands for the i index of the image to process
+            if isscalar(ref_i)
+                msgbox_uvmat('ERROR','do not put any index  _1,_2,... for a single background image name');
+            else
+                diff_ref_i=diff(ref_i,1);
+                if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
+                    set(handles.num_BkgndPeriod,'String',num2str(diff_ref_i(1)))
+                    set(handles.num_BkgndPeriod,'Visible','on')
+                end
             end
             if strcmp(NomType,'_1_1')% period background at different levels (multilevel of volume scan)
                 NbSlice=j1_series(1,2,end);
@@ -1599,7 +1603,6 @@ set(handles.OK,'BackgroundColor',[1 0 1])
 %     activated by mouse motion
 function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-drawnowci
 if get(handles.TestCiv1,'Value')
     set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
     set(handles.CheckFix1,'value',0)% desactivate next step

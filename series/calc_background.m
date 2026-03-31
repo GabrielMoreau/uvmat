@@ -1,4 +1,4 @@
-%'calc_background': calculate an image background by blocks
+%'calc_background': calculate image background by sorting luminosity in sub-series blocks
 %------------------------------------------------------------------------
 % Method: 
     %calculate the background image by sorting the luminosity of each point
@@ -241,7 +241,6 @@ if CheckRelabel
         XmlData=imadoc2struct(XmlFileName);%read the time from XmlFileName
     end
     RootFileOut='frame';
-    % RootFileOut=index2filename(XmlData.FileSeries,1,1,MaxIndex_j);
     [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
     FirstFileName=fullfile(RootPath,SubDir,RootFile);
 else
@@ -297,9 +296,7 @@ end
 
 %%%%%%%  LOOP ON SLICES %%%%%%%
 for j_slice=1:NbSlice
-    
-    
-    %% read the first series of nbaver_ima images and sort by luminosity at each pixel
+     %%%%%%%  LOOP ON BLOCKS OF nbaver_ima files %%%%%%%
     for iblock=1:nbaver_ima:nbfield_series
         last_index=min(iblock+nbaver_ima-1,nbfield_series);
         Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory
@@ -309,21 +306,20 @@ for j_slice=1:NbSlice
                 [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
                 filename=fullfile(RootPath,SubDir,filename);
             else
-                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileIndex,NomType,i_indices(ifile),[],j_indices(ifile));
+                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
                 FrameIndex=frame_index(ifile);
             end
             if ifield==iblock
                 filename_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
             end
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
-            if ndims(Aread)==3%color images
+            if ndims(Aread)==3  %color images 
                 Aread=sum(uint16(Aread),3);% take the sum of color components
             end
             Ak(:,:,ifield-iblock+1)=Aread;
         end
         
-        %Asort=sort(Ak,3);%sort the luminosity of images at each point
-        B=mink(Ak,rank,3);
+        B=mink(Ak,rank,3);%sort the luminosity of images at each point, keeping the smallest values (nbre given by rank)
         B=squeeze(B(:,:,rank));%background image
         
         %write result file
