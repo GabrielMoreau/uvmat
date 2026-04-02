@@ -440,21 +440,7 @@ for ifield=1:NbField
             if isfield(Param.ActionInput.Civ1,'BkgndPeriod')
                  IndexPeriod=Param.ActionInput.Civ1.BkgndPeriod;
             end
-            backgroundname=get_background_name(BkgndRootName,i1_civ1,j1,NbSlice,CheckVolumeScan,IndexPeriod);
-            
-            
-            %             [RootPath_background,SubDir_background,RootFile_background,~,~,~,~,Ext_background]=fileparts_uvmat(Param.ActionInput.Civ1.Background);
-            %             if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
-            %                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1_series_Civ1(ifield));
-            %             elseif isfield(par_civ1,'NbSlice')% multilevel case NbSlice background levels
-            %                 i1_background=mod(i1_civ1-1,par_civ1.NbSlice)+1;
-            %                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
-            %                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
-            %                     par_civ1.NbSlice_j=par_civ1.NbSlice;
-            %                 end
-            %             else
-            %                 backgroundname=Param.ActionInput.Civ1.Background;% simple name with no indexing
-            %             end
+            backgroundname=get_background_name(BkgndRootName,floor((i1_civ1+i2_civ1)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
                 par_civ1.Background=background; %use background already opened 
             else
@@ -703,20 +689,7 @@ for ifield=1:NbField
             if ~isempty(j1_series_Civ2)
                 j1=j1_series_Civ2(ifield);
             end
-  
-%             if strcmp(NomTypeNc,'_1-2_1')% case of volume,backgrounds act on different j levels
-%                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',j1);
-%             elseif isfield(par_civ2,'NbSlice')
-%                 i1_background=mod(i1-1,par_civ2.NbSlice)+1;
-%                 backgroundname=fullfile_uvmat(RootPath_background,SubDir_background,RootFile_background,Ext_background,'_1',i1_background);
-%                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, background index refers to j index
-%                     par_civ2.NbSlice_j=par_civ2.NbSlice;
-%                 end
-%             else
-%                 backgroundname=Param.ActionInput.Civ2.Background;
-%             end
-            
-            
+
              BkgndRootName=Param.ActionInput.Civ2.Background;
              IndexPeriod=[];
             if isfield(Param.ActionInput.Civ2,'BkgndPeriod')
@@ -727,7 +700,7 @@ for ifield=1:NbField
                 NbSlice=par_civ2.NbSlice;
             end
             CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');
-            backgroundname=get_background_name(BkgndRootName,i1_civ2,j1,NbSlice,CheckVolumeScan,IndexPeriod);
+            backgroundname=get_background_name(BkgndRootName,floor((i1_civ2+i2_civ2)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
             
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
                 par_civ2.Background=background; %use background already opened

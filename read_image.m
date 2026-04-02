@@ -58,13 +58,6 @@ switch FileType
             ObjectOut=VideoReader(FileName);
             A=read(ObjectOut,num);
         end
-    % case 'mmreader'
-    %     if strcmp(class(VideoObject),'mmreader')
-    %         A=read(VideoObject,num);
-    %     else
-    %         ObjectOut=mmreader(FileName);
-    %         A=read(ObjectOut,num);
-    %     end
     case 'cine_phantom'
         A = read_cine_phantom(FileName,num );
     case 'multimage'
@@ -72,16 +65,16 @@ switch FileType
     case 'image'
         A=imread(FileName);
     case 'image_DaVis'
-                Input=readimx(FileName);
-                if isscalar(Input.Frames)
-                    A=Input.Frames{1}.Components{1}.Planes{1}';
-                else
-        A=Input.Frames{num}.Components{1}.Planes{1}';
-                end
-    case 'telopsIR'     
+        Input=readimx(FileName);
+        if isscalar(Input.Frames)
+            A=Input.Frames{1}.Components{1}.Planes{1}';
+        else
+            A=Input.Frames{num}.Components{1}.Planes{1}';
+        end
+    case 'telopsIR'
         [A,Header]=readIRCam(FileName,'Frames',num);
         A=flip(A);
-         A=(reshape(A,Header(1).Width,Header(1).Height))';
+        A=(reshape(A,Header(1).Width,Header(1).Height))';
     case 'rdvision'
-         A=read_rdvision(FileName,num);
+        A=read_rdvision(FileName,num);
 end

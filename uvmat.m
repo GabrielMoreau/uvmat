@@ -2036,12 +2036,12 @@ switch FileInfo.FileType
             ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
             FileSeries.Convention='PCO';
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-            hbrowse=browse_data(fullfile(RootPath,SubDir))
+           hbrowse=browse_data(fullfile(RootPath,SubDir))
             [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
             FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
             Camera.BurstTiming=BurstTiming;
             FileSeries.FileName={'im.tif';'im@0001.tif'};
-            FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; BurstTiming=rmfield(BurstTiming,'NbFramePerFile');
+            FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; 
             [ListPath, ListSubdir]=read_browsdata (hbrowse);
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp
@@ -2055,9 +2055,87 @@ switch FileInfo.FileType
             msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
             
         end
-    case 'rdvision'%TO CHECK******
-        check_time_rdvision(FileName,XmlData)
-    case 'telopsIR'      
+    case 'rdvision'
+        ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
+        BurstTiming = set_param_input(ListParam,{'RDVision',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+      
+        % prepare section 'FileSeries' in xml file
+        FileSeries.Convention=BurstTiming.Convention;
+        FileSeries.Source=SubDir;% name of the initial image folder
+        FileSeries.FileName={'im.seq'};
+        FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile;
+       
+        % prepare section 'Camera' in xml file
+        BurstTiming=rmfield(BurstTiming,'Convention');     
+        if isempty(BurstTiming.Dtj)% remove empty parameter for clarity
+            BurstTiming=rmfield(BurstTiming,'Dtj');
+        end
+        if isempty(BurstTiming.NbDtj)
+            BurstTiming=rmfield(BurstTiming,'NbDtj');% remove empty parameter for clarity
+        end
+         Camera.BurstTiming=BurstTiming;
+         
+         % get the corresponding time matrix
+        field_struct=fields(BurstTiming);
+        for ifield=1:numel(field_struct)
+            BurstTiming.(field_struct{ifield})=str2double(BurstTiming.(field_struct{ifield}));
+        end 
+        TimeMatrix=xmlburst2time(BurstTiming);
+        
+        % check the correspondance with the time stamps
+       errormsg=check_time_rdvision(FileName,TimeMatrix);
+       if ~isempty(errormsg)
+           msgbox_uvmat('ERROR',errormsg)
+           return
+       end
+       
+        % update the xml file
+        SubDirOut='seq';     
+        detect=exist(fullfile(RootPath,'seq'),'dir'); % test if  the dir  already exist
+        while detect % add index _1,_2... if it already exists
+                r=regexp(SubDirOut,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
+                if isempty(r)
+                    r(1).root=[SubDirOut '_'];
+                    r(1).num1='0';
+                end
+                SubDirOut=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
+                detect=exist(fullfile(RootPath,SubDirOut),'dir'); % test if  the dir  already exists
+        end
+        [success,msg]=mkdir(fullfile(RootPath,SubDirOut));
+        if success
+             msgbox_uvmat('CONFIRMATION',['Folder ' SubDirOut ' created']);
+        else
+              msgbox_uvmat('ERROR',msg);
+              return
+        end
+        
+        [PathDir,RootFile,Ext]=fileparts(FileName);
+        RootPath=fileparts(PathDir);
+        switch Ext
+            case '.seq'
+                filename_seq=FileName;
+                filename_sqb=fullfile(PathDir,[RootFile '.sqb']);
+            case '.sqb'
+                filename_seq=fullfile(PathDir,[RootFile '.seq']);
+                filename_sqb=FileName;
+        end
+        copyfile(filename_seq,fullfile(RootPath,SubDirOut))
+        copyfile(filename_sqb,fullfile(RootPath,SubDirOut))
+        [checkupdate,XmlFile,errormsg]=update_imadoc(RootPath,SubDirOut,'FileSeries',FileSeries,1);% introduce the FileSeries section in the xml file
+        update_imadoc(RootPath,SubDirOut,'Camera',Camera,0);% introduce the Camera section in the xml file
+        if isempty(errormsg)
+            if checkupdate
+                msg=[XmlFile ' updated with FileSeries and BurstTiming'];
+            else
+                 msg=[XmlFile ' created with FileSeries and BurstTiming'];
+            end
+            msgbox_uvmat('CONFIRMATION',msg);
+        else
+            msgbox_uvmat('ERROR',errormsg);
+        end
+
+            
+    case 'telopsIR'
         DirContent=dir(fullfile(RootPath,SubDir));
         NbFiles=0;
         FileSeries.Convention='telopsIR';
@@ -2077,7 +2155,7 @@ switch FileInfo.FileType
         else
             [checkupdate,Xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
             msgbox_uvmat('CONFIMATION',[XmlFile  ' updated with FileSeries']);
-        end 
+        end
         MaxIndexcell{1}=num2str(NbFiles*FileInfo.NumberOfFrames);
         set(handles.MaxIndex_i,'String',MaxIndexcell)
 end
@@ -2093,7 +2171,8 @@ else
 end
 
 % ---------------------------------------
-function check_time_rdvision(FileName,XmlData)
+function errormsg=check_time_rdvision(FileName,TimeMatrix)
+    errormsg='';
 s=ini2struct(FileName);
 SeqData=s.sequenceSettings;
 SeqData.width=str2double(SeqData.width);
@@ -2134,9 +2213,13 @@ timestamp=zeros(1,numel(m.Data));
 for ii=1: numel(m.Data)
     timestamp(ii)=m.Data(ii).timestamp;
 end
-difftime=XmlData.Time(2:end,2:end);
-difftime=timestamp'-reshape(difftime,[],1);
-disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
+difftime=reshape(TimeMatrix(2:end,2:end),1,[]);
+if ~isequal(size(difftime),size(timestamp))
+    errormsg='dimension for time differ from time stamps';
+    return
+end
+difftime=timestamp-difftime;
+disp(['time from xml and timestamp differ by ' num2str(max(difftime))])
 if max(abs(difftime))>0.01
     figure(1)
     plot(timestamp,difftime)

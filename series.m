@@ -166,7 +166,7 @@ RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .
 if isfield(SeriesData.ClusterParam, 'ExistenceTest')
     ClusterExistenceTest=SeriesData.ClusterParam.ExistenceTest;
     disp('look for cluster command available')
-    s=system(ClusterExistenceTest); % look for cluster system presence
+    s=system(ClusterExistenceTest,'-echo'); % look for cluster system presence, with no display (-echo)
     if isequal(s,0)% cluster detected
         RunModeList=[RunModeList;{'cluster'}];
         set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
@@ -1263,8 +1263,8 @@ for iline=1:nbview
     if ~isempty(i_max{iline})&& ~isequal(pair_max,0)
         MaxIndex_i(iline)=find(i_max{iline}, 1, 'last' )-1; % max ref index i
         MinIndex_i(iline)=find(i_max{iline}, 1 )-1; % min ref index i
-         exist_indices{iline}= find(i_max{iline}(2:end)~=0);
-         index_series=i_max{iline}( exist_indices{iline});
+         missing_indices{iline}= find(i_max{iline}(2:end)==0);
+         %index_series=i_max{iline}( exist_indices{iline});
     end
 end
 MinIndex_i=min(MinIndex_i);
@@ -1282,17 +1282,17 @@ if MaxIndex_i>MinIndex_i
     LineData=ones(1,npx);
     for iline=1:nbview
         ind_y=1+(iline-1)*range_y:iline*range_y;
-%       MissingVect=missing_indices{iline}-MinIndex_i+1/(MaxIndex_i-MinIndex_i); %missing indices mapped from 0 to 1
-%         missing_pixels=floor((missing_indices{iline}-MinIndex_i+1)*npx/range_index)+1;
-%         LineData(missing_pixels)=0;
+       MissingVect=1+floor(npx*missing_indices{iline}-MinIndex_i+1/(MaxIndex_i-MinIndex_i)); %missing indices mapped from 0 to npx
+        missing_pixels=unique(MissingVect);
+         LineData(missing_pixels)=0;
         %     LineData=zeros(size(file_indices));
         %     file_select=file_indices(file_indices<=numel(i_max{iline}));
         %     ind_select=file_indices<=numel(i_max{iline});
         %     LineData(ind_select)=i_max{iline}(file_select)~=0;
-        CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
+        %CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
     end
 end
-CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,g,b=0
+CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,green,b=0
 set(handles.FileStatus,'CData',CData);
 set(handles.FileStatus,'Units','normalized')
 %-----------------------------------------------------------guide -------------
@@ -1557,7 +1557,7 @@ if ~isempty(errormsg)
 end
 
 %% reset the GUI series
-update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
+%update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN, 'Value',0)
@@ -1601,14 +1601,17 @@ if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequ
     errormsg='input field name(s) not defined, select add_field...';
     return
 end
-%[status,result]=system(['svn info ' Param.Action.ActionPath]);%TODO: %mettre a jour avec GIT
 
-% if status==0
-%     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'revision' or 'Revision' in the text
-%     if ~isempty(t)
-%         Param.UvmatRevision=t.rev; %version nbre of the current package
-%     end
-% end
+%% check the info about git 
+path_series=fileparts(which('series'));
+HeadFile=fullfile(path_series,'.git','FETCH_HEAD');
+if exist(HeadFile,'file')% check the existence of GIT info
+    datfile=dir(HeadFile);
+    if isfield(datfile,'datenum')
+        dathead= datfile.datenum;
+        Param.UvmatRevision=datestr(dathead);%string for date display
+    end
+end
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local'; % default (needed for first opening of the GUI series)
@@ -1624,13 +1627,19 @@ if isfield(Param.Action,'ActionExt')
 end
 ActionName=Param.Action.ActionName;
 ActionPath=Param.Action.ActionPath;
-path_series=fileparts(which('series'));
+
 
 %% create the Action fct handle if RunMode option = 'local'
 if strcmp(RunMode,'local')
     current_dir=pwd; % current working dir
     cd(ActionPath)
+    if exist(ActionName,'file')==2
     h_fun=str2func(ActionName);% create the function handle for the function ActionName
+    else
+        cd(current_dir)
+        errormsg=[fullfile(ActionPath,ActionName) ' does not exist'];
+        return
+    end
     cd(current_dir)
 end
 
@@ -1734,11 +1743,11 @@ if get(handles.Replicate,'Value')
         ListDataSeries=ListDataSeries(DataSeriesIndices);
         NbExp=0; % counter of the number of experiments set by the GUI browse_data
         for iexp=1:numel(ListExp)
-            if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+            if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
                 for idevice=1:numel(ListDevices)
-                    if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+                    if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
                         for isubdir=1:numel(ListDataSeries)
-                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
                                     regexprep(ListDevices{idevice},'^\+/',''));
                                 lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
@@ -1758,7 +1767,6 @@ if get(handles.Replicate,'Value')
                         end
                     end
                 end
-                %                 end
             end
         end
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);

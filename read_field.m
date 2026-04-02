@@ -57,7 +57,7 @@ if ~exist('ParamIn','var')
 end
 ParamOut=ParamIn;%default
 errormsg='';
-if isempty(regexp(FileName,'^http://', 'once'))&& exist(FileName,'file')~=2
+if ~exist_file(FileName)
     errormsg='input file does not exist';
     return
 end
@@ -90,11 +90,6 @@ switch FileType
             ParamIn.VelType='';
         end
         [Field,ParamOut.VelType,errormsg]=read_pivdata_fluidimage(FileName,InputField,ParamIn.VelType);
-        ParamOut.CivStage=Field.CivStage;
-    case 'civx'% old (obsolete) format for civ results
-        ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-        [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
-        if ~isempty(errormsg),errormsg=['read_civxdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
     case {'netcdf','mat'}% general netcdf file (not recognized as civ)
         ListVarName={};

@@ -1,10 +1,10 @@
 %'update_imadoc': update an xml file with geometric calibration parameters
 %--------------------------------------------------------------------------
-%  function [checkcreate,xmlfile,errormsg]=update_imadoc(Struct,RootPath,SubDir,StructName)
+%  function [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,StructName,Struct,checkbackup)
 %
 % OUTPUT:
-% checkupdate= 1 if the xml file (containing timing)already exist, =0 when it has to be created
-% xmlfile: name of the xmlfile containing the the calibration data
+% checkupdate= 1 if the xml file (containing timing)already exist, =0 when it has been created
+% xmlfile: name of the xmlfile containing the calibration data
 % errormsg: error message, ='' if OK
 
 % INPUT:
@@ -12,7 +12,7 @@
 % RootPath: path to the folder containing the image series to calibrate
 % SubDir: folder contaiting the image series to calibrate
 % StructName : Name of the field in the xml file
-% Struct: Matlab structure containing the calibration parameters
+% Struct: Matlab structure containing the parameters to write
 % checkbackup=1 (default): backup of existing xml file as .xml~, 
 %-------------------------------------------------------------
 

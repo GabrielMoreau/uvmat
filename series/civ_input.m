@@ -1349,6 +1349,13 @@ if get(hObject,'Value')% if the checkbox is activated
     if ~isempty(filebackground)
         [FilePath,FileName,FileExt]=fileparts(filebackground);
         [RootPath,SubDir,RootFile,i1_series,~,j1_series,~,NomType]=find_file_series(FilePath,[FileName FileExt]);
+        Min_i=find( i1_series(1,2,:), 1 );
+        Check_zero=0;
+        Check_zero =(strcmp(NomType,'_0001')&& Min_i>=1000)||(strcmp(NomType,'_001')&& Min_i>=100)...
+            ||(strcmp(NomType,'_01')&& Min_i>=10); % case with the first index larger than 10
+        if Check_zero
+            NomType='_1';
+        end           
         if strcmp(NomType,'_1')|| strcmp(NomType,'_1_1')
             [~,ref_i]=find(squeeze(i1_series(1,:,:)));% the index i stands for the i index of the image to process
             if isscalar(ref_i)
