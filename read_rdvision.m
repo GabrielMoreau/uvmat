@@ -135,7 +135,6 @@ if ~isempty(frame_idx)
             errormsg=[binfile ' does not exist'];
             FileInfo.StartTime=regexprep(FileInfo.binrepertoire,'T',' ');
             FileInfo.EndTime=datestr(datenum(FileInfo.StartTime,'yyyy-mm-dd HH.MM.SS')+timestamps(end)/86400);
-            disp(FileInfo)
             return
         else
         fid=fopen(binfile,'rb');

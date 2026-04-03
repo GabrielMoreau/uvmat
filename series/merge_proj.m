@@ -72,14 +72,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         phys_polar
         sub_field
     end
-
-    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions 
+    
+    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions
     %%%%%%%%
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.mproj';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-      %check the input files
+    %check the input files
     ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
@@ -90,28 +90,32 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
+    else
+        FileInfo=get_file_info(FirstFileName);
     end
     VelocityRange=[];%default
     VelGradientRange=[];%default
-    if isfield(Param,'ActionInput')
-        if isfield(Param.ActionInput,'VelocityRange') 
-           VelocityRange= Param.ActionInput.VelocityRange;
+    if ~strcmp(FileInfo.FieldType,'image')
+        if isfield(Param,'ActionInput')
+            if isfield(Param.ActionInput,'VelocityRange')
+                VelocityRange= Param.ActionInput.VelocityRange;
+            end
+            if isfield(Param.ActionInput,'VelGradientRange')
+                VelGradientRange= Param.ActionInput.VelGradientRange;
+            end
         end
-        if isfield(Param.ActionInput,'VelGradientRange') 
-           VelGradientRange= Param.ActionInput.VelGradientRange;
+        prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)';...
+            'range (max modulus) for vel derivatives (curl, div...) for 16 bit integer records (32 bit reals if empty)'};
+        dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
+        num_lines= 2;
+        def     = { num2str(VelocityRange),num2str(VelGradientRange)};
+        answer = inputdlg(prompt,dlg_title,num_lines,def);
+        if isempty(answer)
+            return
         end
-    end   
-    prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)';...
-        'range (max modulus) for vel derivatives (curl, div...) for 16 bit integer records (32 bit reals if empty)'};
-    dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
-    num_lines= 2;
-    def     = { num2str(VelocityRange),num2str(VelGradientRange)};
-    answer = inputdlg(prompt,dlg_title,num_lines,def);
-    if isempty(answer)
-        return
+        ParamOut.ActionInput.VelocityRange=str2num(answer{1});
+        ParamOut.ActionInput.VelGradientRange=str2num(answer{2});
     end
-    ParamOut.ActionInput.VelocityRange=str2num(answer{1});
-    ParamOut.ActionInput.VelGradientRange=str2num(answer{2});   
     return
 end
 

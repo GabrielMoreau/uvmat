@@ -36,6 +36,9 @@ pathuvmat=fileparts(dir_uvmat);% path to the folder containing uvmat.m
 
 %% check the info about git 
 HeadFile=fullfile(pathuvmat,'.git','FETCH_HEAD');
+if exist(HeadFile,'file')~=2
+    HeadFile=fullfile(pathuvmat,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
+end
 date_str='';
 if exist(HeadFile,'file')% check the existence of GIT info
     datfile=dir(HeadFile);
@@ -183,7 +186,7 @@ for ilist=1:numel(list_fct_uvmat)
         elseif ~isempty(date_str)
             datfile=dir(fullname_fct);
             if isfield(datfile,'datenum')
-                if datfile.datenum> dathead
+                if datfile.datenum - dathead>0.0002 % less than 17 s between HEAD and file writting
                     check_path(ilist)=true;
                     msg_path{ilist}=['''' list_fct_uvmat{ilist} '''  changed since git pull'];% fct has changed since git pull
                 end
@@ -224,9 +227,9 @@ if CheckSeries
             elseif ~isempty(date_str)
                 datfile=dir(fullname_fct);
                 if isfield(datfile,'datenum')
-                    if datfile.datenum> dathead
+                    if datfile.datenum - dathead>0.0002 % less than 17 s between HEAD and file writting
                         check_path(ilist)=true;
-                        msg_path{ilist}=['''series/' list_fct_series{ilist} ''' changed since git pull'];% fct has changed since git pull
+                        msg_path{ilist}=['''series/' list_fct_series{ilist} ''' changed since last git update'];% fct has changed since git pull
                     end
                 end
             end

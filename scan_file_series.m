@@ -44,7 +44,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [RootPath,SubDir,RootFile,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(FilePath,fileinput)
+function [RootPath,SubDir,RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject]=scan_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
 
 %% get input root name and info on the input file
@@ -56,7 +56,7 @@ end
 [FileInfo,MovieObject]=get_file_info(fullfileinput);
 
 %% default output
-[RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,~,NomType]=fileparts_uvmat(fullfileinput);
+[RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
 i1_list=i1_input;
 i2_list=i2_input;
 j1_list=j1_input;
@@ -71,7 +71,7 @@ if isempty(NomType)||strcmp(NomType,'*')
         RootFile='';
     end
 else  % scan the directory of FilePath to detect file indices
-    detect_string=get_search_string(NomType);% get the search string for regexp from the name NomType
+    detect_string=get_search_string(RootFile,FileExt,NomType);% get the search string for regexp from the name NomType
     ListStruct=dir_uvmat(FilePath);% scan the content of the folder FilePath
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     ListFiles=ListCells(1,:);%list of file names
@@ -88,17 +88,46 @@ else  % scan the directory of FilePath to detect file indices
     for ifile=1:nbpair
         if ~isempty(rr{ifile})
             i1_list(ifile)=str2double(rr{ifile}.i1);
-            i2_list=str2double(regexprep(rr{ifile}.i2,'^-',''));
-            j1_list(ifile)=stra2double(regexprep(rr{ifile}.j1,'^_',''));
-            j2_list(ifile)=stra2double(regexprep(rr{ifile}.j2,'^-',''));
+            i2_list(ifile)=str2double(regexprep(rr{ifile}.i2,'^-',''));
+            j1_list(ifile)=stra2num(regexprep(rr{ifile}.j1,'^_',''));
+            j2_list(ifile)=stra2num(regexprep(rr{ifile}.j2,'^-',''));
         end
     end
      % update the nom type if the input file does not exist (pb of 0001)
-    [i1_min,ifile_min]=min(i1_list);
+    [~,ifile_min]=min(i1_list);
     [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ifile_min});% update the representation of indices (number of 0 before the number)      
     if isempty(FileInfo.FileName)% get file info if the input file does not exist
         [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ind_select(ifile_min)}));
     end
+    % get the reference indices
+    check_i1_nan=isnan(i1_list);%detect and suppress the files with no index i
+    i1_list(check_i1_nan)=[];
+     i2_list(check_i1_nan)=[];
+      j1_list(check_i1_nan)=[];
+       j2_list(check_i1_nan)=[];
+    check_i2_nan=isnan(i2_list);%detect NaN i2 indices, 
+    %i2_list(check_i2_nan)=i1_list(check_i2_nan);%set them to i1, which is not NaN
+    check_j2_nan=isnan(j2_list);%detect NaN j2 indices, set them to j1
+    j2_list(check_j2_nan)=j1_list(check_j2_nan);
+    ref_i_list(check_i2_nan)=i1_list(check_i2_nan);
+    ref_i_list(~check_i2_nan)=floor(0.5*(i1_list(~check_i2_nan)+i2_list(~check_i2_nan)));
+    ref_j_list(check_j2_nan)=j1_list(check_j2_nan);
+    ref_j_list(~check_j2_nan)=floor(0.5*(j1_list(~check_j2_nan)+j2_list(~check_j2_nan)));
+    min_j=min(ref_j_list,[],'omitnan');max_j=max(ref_j_list,[],'omitnan');
+    if isnan(min_j)
+        Nbj=1;
+    else
+           Nbj=max_j-min_j+1;
+    end
+    min_i=min(ref_i_list);%max_i=max(ref_i_list);
+    ref_ij=(ref_i_list-min_i)*Nbj+min_j;
+    [ref_ij,ind_sort]=sort(ref_ij);% sort the combined index
+    i1_list=i1_list(ind_sort);
+    i2_list=i2_list(ind_sort);
+     j1_list=j1_list(ind_sort);
+    j2_list=j2_list(ind_sort);
+    ref_i_list=unique(sort(ref_i_list));
+    ref_j_list=unique(sort(ref_j_list));
 end
 
 % 
@@ -147,7 +176,7 @@ end
 
 %-----------------------------------------------------------------------
 %determine the search string to use in regexp to detect file indices from file names
-function detect_string=get_search_string(NomType)
+function detect_string=get_search_string(RootFile,FileExt,NomType)
 %-----------------------------------------------------------------------
 sep1='';
 sep2='';

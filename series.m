@@ -13,6 +13,16 @@
 %      .index_fields: chosen index
 %      .civ1=0 or 1, .interp1,  ... : input civ field type
 %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                         series opening (input param) ->  update_rootinfo
+%                                                                                                ActionName_Callback
+% browser ->                   |
+% MenuFile (recorded filename) |-> display_file_name(fileinput,iview  -> |update_rootinfo
+%                                                                        |ActionName_Callback
+%            REFRESH-file(InpuTable edit)->  check_input_file_series  -> |                                 
+
+
+
+
 
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -83,7 +93,7 @@ Width=Width*RescaleFactor;
 Height=Height*RescaleFactor;
 LeftX=80*RescaleFactor; % position of the left fig side, in pixels (put to the left side, with some margin)
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
-set(hObject,'Units','points')
+set(hObject,'Units','pixels')
 set(hObject,'Position',[LeftX LowY Width Height])% position and size of the GUI at opening
 
 % settings of table MinIndex_j
@@ -279,10 +289,8 @@ if isfield(Param,'InputFile')
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
         return
     end
-    % TimeTable=[{Param.InputFile.TimeName},{[]},{[]},{[]},{[]}];
     if isfield(Param.InputFile,'RootPath_1')
         InputTable=[InputTable;[{Param.InputFile.RootPath_1},{Param.InputFile.SubDir_1},{Param.InputFile.RootFile_1},{Param.InputFile.NomType_1},{Param.InputFile.FileExt_1}]];
-        % TimeTable=[TimeTable; [{Param.InputFile.TimeName_1},{[]},{[]},{[]},{[]}]];
     end
     set(handles.InputTable,'Data',InputTable)
 
@@ -337,7 +345,7 @@ if isfield(Param,'InputFile')
     SeriesData.ref_i=ref_i;
     SeriesData.ref_j=ref_j;
     set(handles.series,'UserData',SeriesData)
-    Param.XmlData_1=[];XmlData_2=[];
+    Param.XmlData_1=[];
     if isfield(Param.HiddenData,'XmlData')
             Param.XmlData=Param.HiddenData.XmlData{1};
     end
@@ -362,10 +370,6 @@ if isfield(Param,'InputFile')
 
     %% enable field and veltype menus, in accordance with the current action
     ActionName_Callback([],[], handles)
-
-%     %% set length of waitbar
-%     displ_time(handles)
-
 else
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 end
@@ -418,8 +422,8 @@ end
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 % --- fct activated by the browser under 'Open'
-%------------------------------------------------------------------------
 function MenuBrowse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %% look for the previously opened file 'oldfile'
 InputTable=get(handles.InputTable,'Data');
 oldfile=InputTable{1,1};
@@ -434,6 +438,7 @@ if isempty(oldfile)
         end
     end
 end
+
 %% launch the browser
 fileinput=uigetfile_uvmat('pick an input data file in the series',oldfile);
 hh=dir(fileinput);
@@ -445,9 +450,9 @@ else
     end
 end
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
 function MenuBrowseAppend_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 %% look for the previously opened file 'oldfile'
 InputTable=get(handles.InputTable,'Data');
 RootPathCell=InputTable(:,1);
@@ -481,9 +486,8 @@ end
 
 %------------------------------------------------------------------------
 % --- fct activated by selecting a previous file under the menu Open
-%------------------------------------------------------------------------
 function MenuFile_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 errormsg=display_file_name(handles,get(hObject,'Label'),'one');
 if ~isempty(errormsg)
     set(hObject,'Label','')
@@ -498,9 +502,8 @@ end
 
 %------------------------------------------------------------------------
 % --- fct activated by selecting a previous file under the menu Open/append
-%------------------------------------------------------------------------
 function MenuFile_append_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 if isempty(InputTable{1,1})% no input file in the table
     display_file_name(handles,get(hObject,'Label'),'one') %refresh the input table, not append
@@ -509,33 +512,9 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- fct activated by the browser under 'Open campaign/Browse...'
-%------------------------------------------------------------------------
-function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
-
-%% look for the previously opened file 'oldfile'
-InputTable=get(handles.InputTable,'Data');
-if ~isempty(InputTable)
-oldfile=[InputTable{1,1} InputTable{1,2}];
-else
-    % use a file name stored in prefdir
-    dir_perso=prefdir;
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-        h=load (profil_perso);
-        if isfield(h,'MenuCampaign') && ~isempty(h.MenuCampaign)&& ischar(h.MenuCampaign{1})
-            oldfile=h.MenuCampaign{1};
-        end
-    end
-end
-InputTable{1,1}='...';
-set(handles.InputTable,'Data',InputTable)
-browse_data(oldfile,'on','on'); % open the GUI browse_data to get select a campaign dir, experiment and device
-
-
-
 % --- Executes when selected cell(s) is changed in InputTable.
 function InputTable_CellSelectionCallback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 iline=[];
 if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);
@@ -544,8 +523,8 @@ set(handles.InputLine,'String',num2str(iline));
 
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
-%------------------------------------------------------------------------
 function InputTable_KeyPressFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 set(handles.OutputSubDir,'BackgroundColor',[1 0 1])% set edit box OutputSubDir to magenta color to indicate that refresh may be needed
 xx=double(get(handles.series,'CurrentCharacter')); % get the keyboard character
@@ -663,12 +642,15 @@ for iview=1:nbview
         %scan the input folder
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
         InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
-        [RootPath,~,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,~,Param.FileInfo,MovieObject]=...
-            find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
+    %    [RootPath,~,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,~,Param.FileInfo,MovieObject]=...
+      %      find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
+        
+        [RootPath,SubDir,RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject]=...
+            scan_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
 
     % if no file is found on line #iview, open a browser
-    if ~Param.Relabel && isempty(RootFile)&& isempty(Param.i1_series)
+    if ~Param.Relabel && isempty(RootFile)&& isempty(Param.ref_ij)
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
         if isempty(fileinput)
             errormsg='no input file entered';
@@ -988,66 +970,56 @@ TimeLast=[];
 TimeMax=[];
 
 %% determine the min and max indices for the whole file series
-i1_series=Param.i1_series;
-i2_series=Param.i2_series;
-j1_series=Param.j1_series;
-j2_series=Param.j2_series;
+% i1_series=Param.i1_series;ref_ij,i1_list,i2_list,j1_list,j2_list
+% i2_series=Param.i2_series;
+% j1_series=Param.j1_series;
+% j2_series=Param.j2_series;
  MaxIndex_j=1;
 if Param.Relabel
-    MinIndex_i=1;
-    MinIndex_j=1;
-    set(handles.num_incr_j,'String','1')
-    MaxIndex_i=numel(i1_series);
-    set(handles.num_incr_i,'String','1')
-    if ~isempty(j1_series)
-        MaxIndex_j=numel(j1_series);
-    end
-    Time=Param.XmlData.Time;
-    TimeMin=Time(2,2);
-    TimeMax=Time(end,end);
-    TimeFirst=TimeMin;
-    TimeLast=TimeMin;
-    TimeName='xml';
+%     MinIndex_i=1;  REVOIR
+%     MinIndex_j=1;
+%     set(handles.num_incr_j,'String','1')
+%     MaxIndex_i=numel(i1_series);
+%     set(handles.num_incr_i,'String','1')
+%     if ~isempty(j1_series)
+%         MaxIndex_j=numel(j1_series);
+%     end
+%     Time=Param.XmlData.Time;
+%     TimeMin=Time(2,2);
+%     TimeMax=Time(end,end);
+%     TimeFirst=TimeMin;
+%     TimeLast=TimeMin;
+%     TimeName='xml';
 else
-    if isempty(i1_series)
+    if isempty(find(~isnan(Param.i1_list), 1))% no i index
         MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
-    elseif size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0 % file series with a single index i
-        MinIndex_j=1; % index j set to 1 by default
-        MaxIndex_j=1;
-        MinIndex_i=find(i1_series(1,2,:), 1 )-1; % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
-        MaxIndex_i=find(i1_series(1,2,:),1,'last' )-1; % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
     else
-        ref_i=squeeze(max(i1_series(1,:,:),[],2)); % select ref_j index for each ref_i
-        ref_j=squeeze(max(j1_series(1,:,:),[],3)); % select ref_i index for each ref_j
-        MinIndex_i=find(ref_i, 1 )-1;
-        MaxIndex_i=find(ref_i, 1, 'last' )-1;
-        MaxIndex_j=find(ref_j, 1, 'last' )-1;
-        MinIndex_j=find(ref_j, 1 )-1;
-        diff_j_max=diff(ref_j);
-        diff_i_max=diff(ref_i);
-        if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
-            set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to display by default
-        end
-        if ~isempty(diff_j_max) && isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
-            set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
-        end
-    end
-    if isequal(MinIndex_i,-1)
-        MinIndex_i=0;
-    end
-    if isequal(MinIndex_j,-1)
-        MinIndex_j=0;
+        MinIndex_i=min(Param.ref_i_list);
+        MaxIndex_i=max(Param.ref_i_list);
+        MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
+        MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
     end
     if isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
         MinIndex_i=0;
     end
-end
-
-%% make the j indices visible if relevant
-if (isempty(j1_series)|| ~isempty(j2_series))% no j series or j1-j2 pair
-    enable_j(handles,'off');
-else
-    enable_j(handles,'on')%%%%remark: put series with j index at the end in the case of a list
+    if iview==1% set the detected index increment for the first input table line
+        diff_i_max=max(diff(Param.ref_i_list));
+        diff_i_min=min(diff(Param.ref_i_list));
+        if diff_i_max==diff_i_min
+            set(handles.num_incr_i,'String',num2str(diff_i_max))
+        end
+        diff_j_max=max(diff(Param.ref_j_list));
+        diff_j_min=min(diff(Param.ref_j_list));
+        if diff_j_max==diff_j_min
+            set(handles.num_incr_j,'String',num2str(diff_j_max))
+        end
+        % make the j indices visible if relevant
+        if isempty(find(~isnan(Param.j1_list), 1))% no j series
+            enable_j(handles,'off');
+        else
+            enable_j(handles,'on')
+        end
+    end
 end
 
 SeriesData=get(handles.series,'UserData');
@@ -1088,7 +1060,6 @@ if ~Param.Relabel
             MinIndex_i=1;
             MinIndex_j=1;
         end
-
         first_i=str2double(get(handles.num_first_i,'String'));
         first_j=str2double(get(handles.num_first_j,'String'));
         %i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
@@ -1212,10 +1183,11 @@ TimeTable{iview,5}=TimeMax;
 set(handles.TimeTable,'Data',TimeTable)
 
 %% update the series info in 'UserData'
-SeriesData.i1_series{iview}=i1_series;
-SeriesData.i2_series{iview}=i2_series;
-SeriesData.j1_series{iview}=j1_series;
-SeriesData.j2_series{iview}=j2_series;
+SeriesData.ref_i_list{iview}=Param.ref_i_list;
+SeriesData.i1_list{iview}=Param.i1_list;
+SeriesData.i2_list{iview}=Param.i2_list;
+SeriesData.j1_list{iview}=Param.j1_list;
+SeriesData.j2_list{iview}=Param.j2_list;
 SeriesData.FileInfo{iview}=Param.FileInfo;
 SeriesData.Time{iview}=Time;
 SeriesData.TimeName=TimeName;
@@ -1226,9 +1198,9 @@ displ_time(handles);
 
 %% update pair menus
 InputTable=get(handles.InputTable,'Data');
-hset_pair=findobj(allchild(0),'Tag','set_pairs');
+hset_pair=findobj(allchild(0),'Tag','set_pairs');%look for the GUI set_pairs
 if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
-CheckPair= ~isempty(i2_series)||~isempty(j2_series); % check whether index pairs need to be defined
+CheckPair= find(~isnan(Param.i2_list)|~isnan(Param.j2_list)); % check whether index pairs need to be defined
 PairString=get(handles.PairString,'Data');
 PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
@@ -1251,20 +1223,18 @@ end
 %% display the set of existing files as an image with black bands for gaps showing gaps in the series
 
 %set(handles.FileStatus,'Units','normalized')
-nbview=numel(SeriesData.i1_series);
+nbview=numel(SeriesData.i1_list);
 i_max=cell(1,nbview);
 MaxIndex_i=ones(1,nbview); % default
 MinIndex_i=ones(1,nbview); % default
 missing_indices=cell(1,nbview);
 for iline=1:nbview
-    pair_max=squeeze(max(SeriesData.i1_series{iline},[],1)); % max i1 indices from i1_series (as obtained by fct uvmat/find_file_series.m)
-                                                            % needed in the case of mutiple pairs for the same index ref_i)
-    i_max{iline}=max(pair_max,[],1); % max on j index
-    if ~isempty(i_max{iline})&& ~isequal(pair_max,0)
-        MaxIndex_i(iline)=find(i_max{iline}, 1, 'last' )-1; % max ref index i
-        MinIndex_i(iline)=find(i_max{iline}, 1 )-1; % min ref index i
-         missing_indices{iline}= find(i_max{iline}(2:end)==0);
-         %index_series=i_max{iline}( exist_indices{iline});
+    i_min=min(SeriesData.ref_i_list{iline});
+    i_max=max(SeriesData.ref_i_list{iline});
+   % i_max{iline}=max(pair_max,[],1); % max on j index
+    if ~isnan(i_max)
+        MinIndex_i(iline)=i_min;
+        MaxIndex_i(iline)=i_max; % min ref index i
     end
 end
 MinIndex_i=min(MinIndex_i);
@@ -1279,12 +1249,12 @@ npx=floor(Position(3));%length of the bar image FileStatus in pixels
 %file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
 CData=ones(nbview*range_y,npx); % initiate the image representing the existing files
 if MaxIndex_i>MinIndex_i
-    LineData=ones(1,npx);
+    LineData=zeros(1,npx);
     for iline=1:nbview
         ind_y=1+(iline-1)*range_y:iline*range_y;
-       MissingVect=1+floor(npx*missing_indices{iline}-MinIndex_i+1/(MaxIndex_i-MinIndex_i)); %missing indices mapped from 0 to npx
-        missing_pixels=unique(MissingVect);
-         LineData(missing_pixels)=0;
+       GoodVect=1+floor(npx*(SeriesData.ref_i_list{iline}-MinIndex_i+1)/(MaxIndex_i-MinIndex_i)); %missing indices mapped from 0 to npx
+       % missing_pixels=unique(MissingVect);
+         LineData(GoodVect)=1;
         %     LineData=zeros(size(file_indices));
         %     file_select=file_indices(file_indices<=numel(i_max{iline}));
         %     ind_select=file_indices<=numel(i_max{iline});
