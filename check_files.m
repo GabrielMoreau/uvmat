@@ -141,6 +141,7 @@ list_fct_uvmat={...
     'rotate_points.fig';...
     'rotate_vector';...%calculate the components of the unit vector norm_plane normal to the plane
     'round_uvmat';...% provide a simple round value of Val of the form  1, 2 , 5 *10^n
+    'scan_file_series';...% will replace 'find_file_series':analyse an input file and find the corresponding file series
     'series';...% master function for analysis field series, with interface 'series.fig'
     'series.fig';...% interface for 'series'
     'set_col_vec';...% sets the color code for vectors depending on a scalar and input parameters (used for plot_field)
@@ -188,7 +189,7 @@ for ilist=1:numel(list_fct_uvmat)
             if isfield(datfile,'datenum')
                 if datfile.datenum - dathead>0.0002 % less than 17 s between HEAD and file writting
                     check_path(ilist)=true;
-                    msg_path{ilist}=['''' list_fct_uvmat{ilist} '''  changed since git pull'];% fct has changed since git pull
+                    msg_path{ilist}=['''' list_fct_uvmat{ilist} '''  changed since last git download'];% fct has changed since git pull
                 end
             end
         end
@@ -229,7 +230,7 @@ if CheckSeries
                 if isfield(datfile,'datenum')
                     if datfile.datenum - dathead>0.0002 % less than 17 s between HEAD and file writting
                         check_path(ilist)=true;
-                        msg_path{ilist}=['''series/' list_fct_series{ilist} ''' changed since last git update'];% fct has changed since git pull
+                        msg_path{ilist}=['''series/' list_fct_series{ilist} ''' changed since last git download'];% fct has changed since git pull
                     end
                 end
             end

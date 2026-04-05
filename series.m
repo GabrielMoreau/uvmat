@@ -20,10 +20,6 @@
 %                                                                        |ActionName_Callback
 %            REFRESH-file(InpuTable edit)->  check_input_file_series  -> |                                 
 
-
-
-
-
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
@@ -48,7 +44,6 @@
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function varargout = series(varargin)
-
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -68,15 +63,12 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-%--------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes just before series is made visible.
-%--------------------------------------------------------------------------
 function series_OpeningFcn(hObject, eventdata, handles,Param)
-
-% Choose default command line output for series
-handles.output = hObject;
-% Update handles structure
-guidata(hObject, handles);
+%------------------------------------------------------------------------
+handles.output = hObject;% Choose default command line output for series
+guidata(hObject, handles);% Update handles structure
 
 %% initial settings
 % position and  size of the GUI at opening
@@ -145,7 +137,7 @@ end
 SeriesData=[];
 path_series=fileparts(which('series'));% path to the GUI series
 xmlfile=fullfile(path_series,'series.xml');
-if ~exist(xmlfile,'file')
+if ~exist(xmlfile,'file')% use default file 'series.xml.default' if 'series.xml' does not exist (initial download of UVMAT)
     [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);
     if success==0
         disp(message)
@@ -155,9 +147,9 @@ end
 if exist(xmlfile,'file')
     SeriesData=xml2struct(xmlfile);% read the xml file containing parameters for series computations
     if ~(isfield(SeriesData,'ClusterParam')&& isfield(SeriesData.ClusterParam,'LaunchCmdFcn'))
-        [success,message]=copyfile(xmlfile,fullfile(path_series,'series.xml~'));% backup the file series.xml, not correctly documented
+        copyfile(xmlfile,fullfile(path_series,'series.xml~'));% backup the file series.xml, not correctly documented
         delete(xmlfile);
-        [success,message]=copyfile(fullfile(path_series,'series.xml.default'),xmlfile);% use the defualt series.xml
+       copyfile(fullfile(path_series,'series.xml.default'),xmlfile);% use the default series.xml
     end
     SeriesData=xml2struct(xmlfile);% read again the xml file containing parameters for series computations
 end
@@ -166,7 +158,6 @@ end
 ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'}; % WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
 set(handles.Action,'UserData',NbBuiltinAction)
-%path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
 [path_series]=fileparts(which('series')); % path to the GUI series
 path_series_fct=fullfile(path_series,'series'); % path of the functions in subdirectroy 'series'
 ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab fct .m or compiled version .sh
@@ -188,7 +179,6 @@ if isfield(SeriesData.ClusterParam, 'ExistenceTest')
 else
     disp('no cluster availability test in series.xml')
 end
-
 
 %% list of builtin transform functions in the menu TransformName
 TransformList={'';'sub_field';'phys';'phys_polar'}; % WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
@@ -315,8 +305,6 @@ if isfield(Param,'InputFile')
     end
 
     %% determine the selected reference field indices for pair display
-
-  %  [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(Param.InputFile.FileIndex);
   i1=1;j1=1;i2=[];j2=[];%default
     if isfield(Param,'i1')
         i1=Param.i1;
@@ -342,8 +330,8 @@ if isfield(Param,'InputFile')
         j2=j1;
     end
     ref_j=floor((j1+j2)/2); % reference image number corresponding to the file
-    SeriesData.ref_i=ref_i;
-    SeriesData.ref_j=ref_j;
+    SeriesData.ref_i_input=ref_i;
+    SeriesData.ref_j_input=ref_j;
     set(handles.series,'UserData',SeriesData)
     Param.XmlData_1=[];
     if isfield(Param.HiddenData,'XmlData')
@@ -394,7 +382,6 @@ varargout{1} = handles.output;
 % --- executed when closing uvmat: delete or desactivate the associated figures if exist
 function closefcn(gcbo,eventdata)
 %------------------------------------------------------------------------
-
 % delete set_object_series if detected
 hh=findobj(allchild(0),'name','view_object_series');
 if ~isempty(hh)
@@ -638,14 +625,17 @@ for iview=1:nbview
             Param.XmlData=XmlData;
         end
     end
-    if ~Param.Relabel
+    if Param.Relabel
+        [RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(RootPath,XmlData.FileSeries,XmlData.Time);
+        Param.i1_list=Param.ref_i_list;
+        Param.j1_list=Param.ref_j_list;
+        Param.i2_list=NaN;
+        Param.j2_list=NaN;
+    else
         %scan the input folder
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
         InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
-    %    [RootPath,~,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,~,Param.FileInfo,MovieObject]=...
-      %      find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
-        
-        [RootPath,SubDir,RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject]=...
+        [RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
             scan_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
     end
 
@@ -696,11 +686,10 @@ set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 %       or 'one': refresh the list
 %         'append': add a new line to the input table
 function errormsg=display_file_name(handles,InputFile,iview)
-
+%------------------------------------------------------------------------
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 errormsg=''; % default
-
 
 %% get the input root name, indices, file extension and nomenclature NomType
 if isempty(regexp(InputFile,'^http', 'once')) && ~exist(InputFile,'file')
@@ -748,7 +737,7 @@ if ~isempty(XmlFileName)
             Param.i1_series=1:size(XmlData.Time,1)-1;
             Param.i2_series=[];
             if size(XmlData.Time,2)>2
-            Param.j1_series=1:size(XmlData.Time,2)-1;
+                Param.j1_series=1:size(XmlData.Time,2)-1;
             else
                 Param.j1_series=[];
             end
@@ -760,15 +749,25 @@ end
 Param.XmlData=XmlData;
 
 %% detect the list of file in the input series in the case of no relabeling
-if ~Param.Relabel
-            set(handles.Relabel,'Value',0)
+if Param.Relabel
+    [RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(FilePath,XmlData.FileSeries,XmlData.Time);
+    Param.i1_list=Param.ref_i_list;
+    Param.j1_list=Param.ref_j_list;
+    Param.i2_list=NaN;
+     Param.j2_list=NaN;
+else
+    set(handles.Relabel,'Value',0)
     %%%%%%%%%%%%%%%%%%
     %TODO: case of input by uvmat: do not check again the input series %%%%%%%
     %%%%%%%%%%%%%%%%%%%
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
     % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-    [RootPath,SubDir,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[RootFile FileExt]);
-    if isempty(RootFile)&&isempty(Param.i1_series)
+    % [RootPath,SubDir,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[RootFile FileExt]);
+
+    [RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
+        scan_file_series(FilePath,[RootFile FileExt]);
+
+    if isempty(RootFile) && isempty(Param.i1_series)
         errormsg='no input file in the series';
         msgbox_uvmat('ERROR',errormsg)
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (end of activation)
@@ -798,20 +797,20 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     set(handles.MaxIndex_j,'Data',[])
     set(handles.PairString,'Data',{''})
     SeriesData.CheckPair=0; % reset the list of input lines with pairs
-    SeriesData.i1_series={};
-    SeriesData.i2_series={};
-    SeriesData.j1_series={};
-    SeriesData.j2_series={};
- %   SeriesData.FileType={};
+    SeriesData.ref_i_list={};
+    SeriesData.i1_list={};
+    SeriesData.i2_list={};
+    SeriesData.j1_list={};
+    SeriesData.j2_list={};
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
 if isfield(SeriesData,'i1_series')% remove the irrelevant data lines beyond iview in SeriesData
-    SeriesData.i1_series(iview+1:end)=[];
-    SeriesData.i2_series(iview+1:end)=[];
-    SeriesData.j1_series(iview+1:end)=[];
-    SeriesData.j2_series(iview+1:end)=[];
-    %SeriesData.FileType(iview+1:end)=[];
+    SeriesData.ref_i_list(iview+1:end)=[];
+    SeriesData.i1_list(iview+1:end)=[];
+    SeriesData.i2_list(iview+1:end)=[];
+    SeriesData.j1_list(iview+1:end)=[];
+    SeriesData.j2_list(iview+1:end)=[];
     SeriesData.FileInfo(iview+1:end)=[];
     SeriesData.Time(iview+1:end)=[];
 end
@@ -831,7 +830,6 @@ if isempty(i2)
     i2=i1;
 end
 ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
-% set(handles.num_ref_i,'String',num2str(ref_i));
 if isempty(j1)
     j1=1;
 end
@@ -839,8 +837,8 @@ if isempty(j2)
     j2=j1;
 end
 ref_j=floor((j1+j2)/2); % reference image number corresponding to the file
-SeriesData.ref_i=ref_i;
-SeriesData.ref_j=ref_j;
+SeriesData.ref_i_input=ref_i;
+SeriesData.ref_j_input=ref_j;
 
 %% update first and last indices to operate if the files do not exist
 if ~Param.Relabel
@@ -887,10 +885,6 @@ else
 end
 % save the opened file to initiate future opening
 SeriesData.RefFile{iview}=InputFile; % reference opening file for line iview
-SeriesData.Ref_i1=i1;
-SeriesData.Ref_i2=i2;
-SeriesData.Ref_j1=j1;
-SeriesData.Ref_j2=j2;
 
 %% define the path for the output files
 [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
@@ -920,10 +914,6 @@ update_rootinfo(handles,Param,MovieObject,iview);
 
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
-
-% %% set length of waitbar
-% displ_time(handles)
-
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
 
 %------------------------------------------------------------------------
@@ -955,74 +945,53 @@ end
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file
 function update_rootinfo(handles,Param,VideoObject,iview)
+%------------------------------------------------------------------------
+%% determine the min and max indices for the whole file series
+if isempty(find(~isnan(Param.ref_i_list), 1))% no i index
+    MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
+else
+    MinIndex_i=min(Param.ref_i_list);
+    MaxIndex_i=max(Param.ref_i_list);
+    MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
+    MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
+end
+if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
+    MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0
+end
 
-%% default time settings
-TimeUnit='';
+if iview==1% set the detected index increment for the first input table line
+    diff_i_max=max(diff(Param.ref_i_list));
+    diff_i_min=min(diff(Param.ref_i_list));
+    if diff_i_max==diff_i_min
+        set(handles.num_incr_i,'String',num2str(diff_i_max))
+    end
+    diff_j_max=max(diff(Param.ref_j_list));
+    diff_j_min=min(diff(Param.ref_j_list));
+    if diff_j_max==diff_j_min
+        set(handles.num_incr_j,'String',num2str(diff_j_max))
+    end
+    % make the j indices visible if relevant
+    if isempty(find(~isnan(Param.ref_j_list), 1))% no j series
+        enable_j(handles,'off');
+    else
+        enable_j(handles,'on')
+    end
+end
+
+%% Determine the times
+TimeUnit='';% default time settings
 % read  value set by the first series for the append mode (iwiew >1)
 if iview>1
     TimeUnit=get(handles.TimeUnit,'String');
 end
 TimeName='';
-Time=[]; % default
-TimeMin=[];
-TimeFirst=[];
-TimeLast=[];
-TimeMax=[];
-
-%% determine the min and max indices for the whole file series
-% i1_series=Param.i1_series;ref_ij,i1_list,i2_list,j1_list,j2_list
-% i2_series=Param.i2_series;
-% j1_series=Param.j1_series;
-% j2_series=Param.j2_series;
- MaxIndex_j=1;
-if Param.Relabel
-%     MinIndex_i=1;  REVOIR
-%     MinIndex_j=1;
-%     set(handles.num_incr_j,'String','1')
-%     MaxIndex_i=numel(i1_series);
-%     set(handles.num_incr_i,'String','1')
-%     if ~isempty(j1_series)
-%         MaxIndex_j=numel(j1_series);
-%     end
-%     Time=Param.XmlData.Time;
-%     TimeMin=Time(2,2);
-%     TimeMax=Time(end,end);
-%     TimeFirst=TimeMin;
-%     TimeLast=TimeMin;
-%     TimeName='xml';
-else
-    if isempty(find(~isnan(Param.i1_list), 1))% no i index
-        MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
-    else
-        MinIndex_i=min(Param.ref_i_list);
-        MaxIndex_i=max(Param.ref_i_list);
-        MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
-        MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
-    end
-    if isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
-        MinIndex_i=0;
-    end
-    if iview==1% set the detected index increment for the first input table line
-        diff_i_max=max(diff(Param.ref_i_list));
-        diff_i_min=min(diff(Param.ref_i_list));
-        if diff_i_max==diff_i_min
-            set(handles.num_incr_i,'String',num2str(diff_i_max))
-        end
-        diff_j_max=max(diff(Param.ref_j_list));
-        diff_j_min=min(diff(Param.ref_j_list));
-        if diff_j_max==diff_j_min
-            set(handles.num_incr_j,'String',num2str(diff_j_max))
-        end
-        % make the j indices visible if relevant
-        if isempty(find(~isnan(Param.j1_list), 1))% no j series
-            enable_j(handles,'off');
-        else
-            enable_j(handles,'on')
-        end
-    end
-end
-
+Time=NaN; % default
+TimeMin=NaN;
+TimeFirst=NaN;
+TimeLast=NaN;
+TimeMax=NaN;
 SeriesData=get(handles.series,'UserData');
+displ_time(handles)%%%%% A VERIFIER
 if ~Param.Relabel
     %% read timing  from the current file (prioritary)
     if ~isempty(VideoObject)% case of movies
@@ -1038,43 +1007,8 @@ if ~Param.Relabel
         end
         TimeName='video';
     end
-
-    %% get index range in case of relabeling
-    if isfield(Param,'XmlData') && isfield(Param.XmlData,'Time')&& ~isempty(Param.XmlData.Time)
-        Time=Param.XmlData.Time;
-        MinIndex_i=1;
-        MaxIndex_i=size(Time,1)-1;
-        MinIndex_j=1;
-        MaxIndex_j=size(Time,2)-1;
-        TimeName='xml';
-    else
-        InputTable=get(handles.InputTable,'Data');
-        [XmlFileName,Rank]=find_imadoc(InputTable{iview,1},InputTable{iview,2});
-        if ~isempty(XmlFileName)
-            Param.XmlData=read_imadoc(XmlFileName);
-            [nbfield,nbfield_j]=size(Param.XmlData.Time);
-            nbfield=nbfield-1; %remove the possible index 0
-            nbfield_j=nbfield_j-1; %remove the possible index 0
-            MaxIndex_i=nbfield;
-            MaxIndex_j=nbfield_j;
-            MinIndex_i=1;
-            MinIndex_j=1;
-        end
-        first_i=str2double(get(handles.num_first_i,'String'));
-        first_j=str2double(get(handles.num_first_j,'String'));
-        %i1=(first_i-SeriesData.FileSeries{1}.FirstFileIndex)*SeriesData.FileSeries{1}.NbFramePerFile+1;%frame index deduced from input file index
-        i1=1;
-        if isfield(SeriesData,'TimeName') && strcmp(SeriesData.TimeName,'xml')% indices i and j
-            j1=mod(i1-1,nbfield_j)+first_j;
-            i1=floor((i1-1)/nbfield_j)+1;
-            set(handles.num_first_j,'String',num2str(j1))
-        end
-    end
 end
 
-if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
-    set(handles.OutputSubDir,'String','/im')
-end
 
 %% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
 if isempty(TimeName)
@@ -1116,11 +1050,10 @@ end
 %% adjust the first and last indices for the selected series, only if requested by the bounds
 % i index, compare input to min index i
 first_i=str2num(get(handles.num_first_i,'String')); % retrieve previous first i
-% ref_i=str2num(get(handles.num_ref_i,'String')); % index i given by the input field
 ref_i=1;
 
 if isfield(SeriesData,'ref_i')
-    ref_i=SeriesData.ref_i;
+    ref_i=SeriesData.ref_i_input;
 end
 if isempty(first_i)
     first_i=ref_i; % first_i updated by the input value
@@ -1133,7 +1066,7 @@ end
 first_j=str2num(get(handles.num_first_j,'String'));
 ref_j=1;
 if isfield(SeriesData,'ref_j')
-    ref_j=SeriesData.ref_j;
+    ref_j=SeriesData.ref_j_input;
 end
 if isempty(first_j)
     first_j=ref_j; % first_j updated by the input value
@@ -1193,22 +1126,22 @@ SeriesData.Time{iview}=Time;
 SeriesData.TimeName=TimeName;
 set(handles.series,'UserData',SeriesData)
 
-%% updtate the time info
+%% update the time info
 displ_time(handles);
 
 %% update pair menus
 InputTable=get(handles.InputTable,'Data');
 hset_pair=findobj(allchild(0),'Tag','set_pairs');%look for the GUI set_pairs
 if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
-CheckPair= find(~isnan(Param.i2_list)|~isnan(Param.j2_list)); % check whether index pairs need to be defined
+CheckPair= ~isempty(find(~isnan(Param.i2_list)|~isnan(Param.j2_list), 1)); % check whether index pairs need to be defined
 PairString=get(handles.PairString,'Data');
 PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
-    [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series);
-    Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
-    if numel(Menu)>=1
-        PairString{iview,1}=Menu{1};
-    end
+    [ModeMenu,ModeValue]=update_mode(Param.ref_j_list,Param.j1_list,Param.j2_list);
+    Menu=update_listpair(Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
+   if numel(Menu)>=1
+         PairString{iview,1}=Menu{1};
+     end
 end
 set(handles.PairString,'Data',PairString)
 if isempty(find(cellfun('isempty',get(handles.PairString,'Data'))==0, 1))% if all lines of pairs are empty
@@ -1219,85 +1152,62 @@ else
     set(handles.SetPairs,'Visible','on')
 end
 
-
 %% display the set of existing files as an image with black bands for gaps showing gaps in the series
-
-%set(handles.FileStatus,'Units','normalized')
 nbview=numel(SeriesData.i1_list);
-i_max=cell(1,nbview);
-MaxIndex_i=ones(1,nbview); % default
-MinIndex_i=ones(1,nbview); % default
-missing_indices=cell(1,nbview);
+MaxIndex_i=ones(nbview,1); % default
+MinIndex_i=ones(nbview,1); % default
 for iline=1:nbview
-    i_min=min(SeriesData.ref_i_list{iline});
-    i_max=max(SeriesData.ref_i_list{iline});
-   % i_max{iline}=max(pair_max,[],1); % max on j index
-    if ~isnan(i_max)
-        MinIndex_i(iline)=i_min;
-        MaxIndex_i(iline)=i_max; % min ref index i
-    end
+    MinIndex_i(iline)=min(SeriesData.ref_i_list{iline});
+    MaxIndex_i(iline)=max(SeriesData.ref_i_list{iline});
 end
-MinIndex_i=min(MinIndex_i);
+MinIndex_i=min(MinIndex_i);% min index i for the whole list of input file series
 MaxIndex_i=max(MaxIndex_i);
-range_index=MaxIndex_i-MinIndex_i+1;
-
 set(handles.FileStatus,'Units','pixels')
-Position=get(handles.FileStatus,'Position');
+Position=get(handles.FileStatus,'Position');% get length of the status color bar in pixels
 range_y=max(1,floor(Position(4)/nbview));
 npx=floor(Position(3));%length of the bar image FileStatus in pixels
-
-%file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
 CData=ones(nbview*range_y,npx); % initiate the image representing the existing files
 if MaxIndex_i>MinIndex_i
-    LineData=zeros(1,npx);
+    CheckMissing=ones(1,MaxIndex_i-MinIndex_i+1);
     for iline=1:nbview
+        CheckMissing(SeriesData.ref_i_list{iline}-MinIndex_i+1)=0;% CheckMissing=false for detected files
+        if npx<MaxIndex_i-MinIndex_i
+            IndexMissing=find(CheckMissing)-1;% indices of the missing files -1 (from 0 to end-1)
+            LineData=ones(1,npx);
+            LineData(floor(npx*IndexMissing/(MaxIndex_i-MinIndex_i-1))+1)=0;
+        else
+            pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
+            LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
+        end
         ind_y=1+(iline-1)*range_y:iline*range_y;
-       GoodVect=1+floor(npx*(SeriesData.ref_i_list{iline}-MinIndex_i+1)/(MaxIndex_i-MinIndex_i)); %missing indices mapped from 0 to npx
-       % missing_pixels=unique(MissingVect);
-         LineData(GoodVect)=1;
-        %     LineData=zeros(size(file_indices));
-        %     file_select=file_indices(file_indices<=numel(i_max{iline}));
-        %     ind_select=file_indices<=numel(i_max{iline});
-        %     LineData(ind_select)=i_max{iline}(file_select)~=0;
-        %CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
+        CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
     end
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,green,b=0
 set(handles.FileStatus,'CData',CData);
 set(handles.FileStatus,'Units','normalized')
-%-----------------------------------------------------------guide -------------
+
+
 %------------------------------------------------------------------------
 %  III - FUNCTIONS ASSOCIATED TO THE FRAME IndexRange
 %------------------------------------------------------------------------
 
-
 % ---- determine the menu to put in mode and advice a default choice
 %------------------------------------------------------------------------
-function [ModeMenu,ModeValue]=update_mode(i1_series,i2_series,j2_series)
+function [ModeMenu,ModeValue]=update_mode(ref_j_list,j1_list,j2_list)
 %------------------------------------------------------------------------
-ModeMenu={''};
-if isempty(j2_series)% no j pair
-    ModeValue=1;
-    if ~isempty(i2_series)
+if isempty(find(~isnan(j2_list), 1))% no j pairs
         ModeMenu={'series(Di)'}; % pair menu with only option Di
-    end
 else %existence of j pairs
-    pair_max=squeeze(max(i1_series,[],1)); % max on pair index
-    j_max=max(pair_max,[],1);
-    MaxIndex_i=find(j_max, 1, 'last' )-1; % max ref index i
-    MinIndex_i=find(j_max, 1 )-1; % min ref index i
-    i_max=max(pair_max,[],2);
-    MaxIndex_j=find(i_max, 1, 'last' )-1; % max ref index i
-    MinIndex_j=find(i_max, 1 )-1; % min ref index i
-    if MaxIndex_j==MinIndex_j
+    if max(ref_j_list)==min(ref_j_list)
         ModeValue=1;
         ModeMenu={'bursts'};
-    elseif MaxIndex_i==MinIndex_i
+    elseif max(j2_list-j1_list)==min(j2_list-j1_list)
         ModeValue=1;
         ModeMenu={'series(Dj)'};
     else
         ModeMenu={'bursts';'series(Dj)'};
-        if (MaxIndex_j-MinIndex_j)>10
+        if max(ref_j_list)>10
             ModeValue=2; % set mode to series(Dj) if more than 10 j values
         else
             ModeValue=1;
@@ -1479,6 +1389,19 @@ set(handles.Waitbar,'Position',Position)
 update_waitbar(handles.Waitbar,0)
 
 %------------------------------------------------------------------------
+%--- update the waitbar display, used for ACTION functions in the GUI 'series'
+function update_waitbar(hwaitbar,advance_ratio)
+%------------------------------------------------------------------------
+set(hwaitbar,'Units','pixels')
+pos=get(hwaitbar,'Position');%read waitbar position in pixels
+set(hwaitbar,'Units','normalized')%set back to normalize(the waitbar scales with the GUI)
+CData=zeros(floor(pos(4)),floor(pos(3)),3);
+CData(:,:,3)=1 ;% initial color blue(rgb=[1 1 0])
+CData(:,1:floor(advance_ratio*size(CData,2)),2)=0; % advancement part in red (suppress the second color component green)
+set(hwaitbar,'CData',CData)
+drawnow
+
+%------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in PairString.
 function PairString_CellSelectionCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1489,9 +1412,9 @@ if numel(eventdata.Indices)>=1
     end
 end
 
-
-%-----------------------------------
+%------------------------------------------------------------------------
 function enable_j(handles,state)
+%------------------------------------------------------------------------
 set(handles.j_txt,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
@@ -1505,8 +1428,8 @@ set(handles.MaxIndex_j,'Visible',state)
 %%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 % --- Executes on button press in RUN.
-%------------------------------------------------------------------------
 function RUN_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 %% settings of the button RUN
 if ~isequal(get(handles.ActionInput,'BackgroundColor'),[1 0 0])
@@ -1549,7 +1472,7 @@ set(handles.RUN, 'Value',0)
 % dispatched in parallel into NbCore processors by the cluster managing system.
 
 function errormsg=launch_action(handles)
-%errormsg=''; % default
+%------------------------------------------------------------------------
 
 %% read the data on the GUI series
 Param=read_GUI_series(handles); % displayed parameters
@@ -1575,6 +1498,9 @@ end
 %% check the info about git 
 path_series=fileparts(which('series'));
 HeadFile=fullfile(path_series,'.git','FETCH_HEAD');
+if exist(HeadFile,'file')~=2
+    HeadFile=fullfile(pathuvmat,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
+end
 if exist(HeadFile,'file')% check the existence of GIT info
     datfile=dir(HeadFile);
     if isfield(datfile,'datenum')
@@ -1854,6 +1780,9 @@ for iexp=1:NbExp
         set(handles.OutputDirExt,'String',Param.OutputDirExt)
         drawnow
     end
+    % if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
+    %     set(handles.OutputSubDir,'String','/im')
+    % end
     if get(handles.Replicate,'Value')%resset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
         set(handles.OutputPath,'String',OutputPath)
@@ -2581,9 +2510,6 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-% if ~isfield(SeriesData,'FileType')
-%     SeriesData.FileType={'none'};
-% end
 iview_civ=[];
 iview_netcdf=[];
 for iview=1:numel(SeriesData.FileInfo)
@@ -3049,10 +2975,6 @@ if strcmp(field,'add_field...')
                     TimeTable{LineIndex,5}=get_time(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Max time
                 case 'variable'
                     TimeName=['var:' GetFieldData.Time.TimeName];
-                   % set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-%                     set(handles.NomType,'String','*')
-%                     set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
-%                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix_index'
                     TimeName=['dim:' GetFieldData.Time.TimeName];
@@ -3344,33 +3266,23 @@ set(handles.DeleteObject,'Visible','off')
 % --- Executed when CheckMask is activated
 function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% SeriesData=get(handles.series,'UserData');
 
-if get(handles.CheckMask,'Value')
-    
+if get(handles.CheckMask,'Value')   
     set(handles.DeleteMask,'Visible','on')
     Param=read_GUI_series(handles); % displayed parameters
     NbView=size(Param.InputTable,1);
     MaskTable=cell(NbView,2);
-    
-    %RootPath=Param.InputTable{1,1};
     first_j=[];% note that the function will propose to cover the whole range of indices
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-   %last_j=[];
     if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    %checkmask=zeros(NbView,1);
     for iview=1:NbView
         checkmask=false;
         FirstFileName=fullfile_uvmat(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3},...
-            Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);
-        
+            Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);       
         [FileInfo,VideoObject]=get_file_info(FirstFileName);
-        
-        
-       %  Data=nc2struct(FirstFileName);
         if isfield(FileInfo,'MaskFile') && isfield(FileInfo,'MaskExt')
            if  isfield(FileInfo,'MaskNbSlice')&& exist([FileInfo.MaskFile '_1' FileInfo.MaskExt],'file')
             MaskTable{iview,1}=[FileInfo.MaskFile '_1' FileInfo.MaskExt];
@@ -3400,69 +3312,6 @@ if get(handles.CheckMask,'Value')
     end
     set(handles.MaskTable,'Data',MaskTable)
 end
-
-%       
-% if ~isempty(NewMask)
-%     if isempty(MaskList)
-%         MaskList={NewMask};
-%     else
-%     MaskList={MaskList;NewMask};
-%     end
-%     set(handles.Mask,'String',MaskList)
-% end
-% end
-% %     MaskTable=cell(nbview,1); % default
-% %     ListMask=cell(nbview,1); % default
-% %     MaskData=get(handles.MaskTable,'Data');
-% %     MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1); % complement if undefined lines
-%     for iview=1:nbview
-%         ListMask{iview,1}=num2str(iview);
-%         RootPath=InputTable{iview,1};
-%         if ~isempty(RootPath)
-%             if isempty(MaskData{iview})
-%                 SubDir=InputTable{iview,2};
-%                 MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']); % take the root part of SubDir, before the first dot '.'
-%                 if exist(MaskPath,'dir')
-%                     ListStruct=dir(MaskPath); % look for a mask file
-%                     ListCells=struct2cell(ListStruct); % transform dir struct to a cell arrray
-%                     check_dir=cell2mat(ListCells(4,:)); % =1 for directories, =0 for files
-%                     ListFiles=ListCells(1,:); % list of file and dri names
-%                     ListFiles=ListFiles(~check_dir); % list of file names (excluding dir)
-%                     mdetect=0;
-%                     if ~isempty(ListFiles)
-%                         for ifile=1:numel(ListFiles)
-%                             [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{ifile},0);
-%                             if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
-%                                 mdetect=1;
-%                                 MaskName=ListFiles{ifile};
-%                             end
-%                             if ~strcmp(MaskFile{ifile},MaskFile{1})
-%                                 mdetect=0; % cancel detection test in case of multiple masks, use the brower for selection
-%                                 break
-%                             end
-%                         end
-%                     end
-%                     if mdetect==1
-%                         MaskName=fullfile(MaskPath,'mask_1.png');
-%                     else
-%                         MaskName=uigetfile_uvmat('select a mask file:',MaskPath,'image');
-%                     end
-%                 else
-%                     MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
-%                 end
-%                 MaskTable{iview,1}=MaskName ;
-%                 ListMask{iview,1}=num2str(iview);
-%             end
-%         end
-%     end
-%     set(handles.MaskTable,'Data',MaskTable)
-%     set(handles.MaskTable,'Visible','on')
-%     set(handles.MaskBrowse,'Visible','on')
-%     set(handles.ListMask,'Visible','on')
-%     set(handles.ListMask,'String',ListMask)
-%     set(handles.ListMask,'Value',1)
-
-
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in MaskTable.
@@ -3612,8 +3461,6 @@ if isfield(Param,'InputFields')
      set(handles.FieldName,'Visible','on')
 end
 if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-%     set(handles.ActionInput,'Visible','on')
-%     set(handles.ActionInput,'Value',0)
     Param.ActionInput.ConfigSource=filexml; % record the source of config for future info
     SeriesData.ActionInput=Param.ActionInput;
 end
@@ -4103,15 +3950,6 @@ else
         delete(hh)
     end
 end
-
-
-function OutputPath_Callback(hObject, eventdata, handles)
-
-
-function Experiment_Callback(hObject, eventdata, handles)
-
-
-function Device_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in OutputPathBrowse.

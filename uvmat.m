@@ -298,7 +298,7 @@ else
     %% check the path and date of modification of all functions in uvmat
     path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
     [infomsg,date_str]=check_files;%check the path of the functions called by uvmat.m
-    date_str=['date version (git pull): ' date_str];
+    date_str=['date version (git download): ' date_str];
     axes(handles.PlotAxes)
     display_string=[{'Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France'};...
         {'GNU General Public License'};

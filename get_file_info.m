@@ -81,7 +81,7 @@ switch FileExt
         FileInfo.FileType='figure';
     case '.mat'% Matlab data format
         FileInfo.FileType='mat';
-    case {'.txt','.log','.stdout','.stderr','.sh'}
+    case {'.txt','.log','.stdout','.stderr','.sh','.rec'}
         FileInfo.FileType='txt';
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
