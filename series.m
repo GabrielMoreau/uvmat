@@ -167,7 +167,7 @@ RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .
 if isfield(SeriesData.ClusterParam, 'ExistenceTest')
     ClusterExistenceTest=SeriesData.ClusterParam.ExistenceTest;
     disp('look for cluster command available')
-    s=system(ClusterExistenceTest,'-echo'); % look for cluster system presence, with no display (-echo)
+    [s,~]=system(ClusterExistenceTest); % look for cluster system presence, with no display (-echo)
     if isequal(s,0)% cluster detected
         RunModeList=[RunModeList;{'cluster'}];
         set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
@@ -947,7 +947,7 @@ end
 function update_rootinfo(handles,Param,VideoObject,iview)
 %------------------------------------------------------------------------
 %% determine the min and max indices for the whole file series
-if isempty(find(~isnan(Param.ref_i_list), 1))% no i index
+if isequal(Param.ref_i_list,NaN)% no i index
     MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
 else
     MinIndex_i=min(Param.ref_i_list);
@@ -991,7 +991,7 @@ TimeFirst=NaN;
 TimeLast=NaN;
 TimeMax=NaN;
 SeriesData=get(handles.series,'UserData');
-displ_time(handles)%%%%% A VERIFIER
+refresh_first_last_info(handles)%%%%% A VERIFIER
 if ~Param.Relabel
     %% read timing  from the current file (prioritary)
     if ~isempty(VideoObject)% case of movies
@@ -1127,7 +1127,7 @@ SeriesData.TimeName=TimeName;
 set(handles.series,'UserData',SeriesData)
 
 %% update the time info
-displ_time(handles);
+refresh_first_last_info(handles);
 
 %% update pair menus
 InputTable=get(handles.InputTable,'Data');
@@ -1137,7 +1137,7 @@ CheckPair= ~isempty(find(~isnan(Param.i2_list)|~isnan(Param.j2_list), 1)); % che
 PairString=get(handles.PairString,'Data');
 PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
-    [ModeMenu,ModeValue]=update_mode(Param.ref_j_list,Param.j1_list,Param.j2_list);
+    [ModeMenu,ModeValue]=update_mode(Param.j1_list,Param.j2_list);% determine the menu and default selection for pair menu
     Menu=update_listpair(Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
    if numel(Menu)>=1
          PairString{iview,1}=Menu{1};
@@ -1194,106 +1194,65 @@ set(handles.FileStatus,'Units','normalized')
 
 % ---- determine the menu to put in mode and advice a default choice
 %------------------------------------------------------------------------
-function [ModeMenu,ModeValue]=update_mode(ref_j_list,j1_list,j2_list)
+function [ModeMenu,ModeValue]=update_mode(j1_list,j2_list)
 %------------------------------------------------------------------------
-if isempty(find(~isnan(j2_list), 1))% no j pairs
+ModeValue=1;%default
+if isequal(j2_list,NaN)% no j pairs
         ModeMenu={'series(Di)'}; % pair menu with only option Di
 else %existence of j pairs
+    ref_j_list=floor((j1_list+j2_list)/2);
     if max(ref_j_list)==min(ref_j_list)
-        ModeValue=1;
         ModeMenu={'bursts'};
     elseif max(j2_list-j1_list)==min(j2_list-j1_list)
-        ModeValue=1;
         ModeMenu={'series(Dj)'};
     else
         ModeMenu={'bursts';'series(Dj)'};
         if max(ref_j_list)>10
             ModeValue=2; % set mode to series(Dj) if more than 10 j values
-        else
-            ModeValue=1;
         end
     end
 end
 
-
 %------------------------------------------------------------------------
-%fill the menu of possible pairs as input
-function displ_pair=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo)
+%--- give the string 'pair_string' to fill the menu of possible index pairs
+function pair_string=update_listpair(i1_list,i2_list,j1_list,j2_list,mode)
 %------------------------------------------------------------------------
-displ_pair={};
-if isempty(TimeUnit)
-    dtunit='e-03';
-else
-    dtunit=['m' TimeUnit];
-end
+pair_string={};
+% if isempty(TimeUnit)
+%     dtunit='e-03';
+% else
+%     dtunit=['m' TimeUnit];
+% end
 switch mode
     case 'series(Di)'
-        diff_i=i2_series-i1_series;
-        min_diff=min(diff_i(diff_i>0));
-        max_diff=max(diff_i(diff_i>0));
-        for ipair=min_diff:max_diff
-            if ~isempty(find(diff_i==ipair,1))% if the considered difference exists as input
-                pair_string=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-                if size(time,1)>=ref_i+ceil(ipair/2)
-                    if ref_i<=floor(ipair/2)
-                        ref_i=floor(ipair/2)+1; % shift ref_i to get the first pair
-                    end
-                    Dt=time(ref_i+ceil(ipair/2),ref_j)-time(ref_i-floor(ipair/2),ref_j);
-                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
-                end
-                displ_pair=[displ_pair;{pair_string}];
-            end
-        end
-        if ~isempty(displ_pair)
-            displ_pair=[displ_pair;{'Di=*|*'}];
+        diff_i=i2_list-i1_list;
+        ipairs=unique(diff_i,'descend');% find the list of pairs y
+        pair_string=cell(size(ipairs,1),1);
+        for ilist=1:numel(pair_string)
+             pair_string{ilist}=['Di= ' num2str(-floor(ipairs(ilist)/2)) '|' num2str(ceil(ipairs(ilist)/2)) ];
         end
     case 'series(Dj)'
-        if isempty(j2_series)
+        if isnan(j2_list)
             msgbox_uvmat('ERROR','no j1-j2 pair available')
             return
         end
-        diff_j=j2_series-j1_series;
-        min_diff=min(diff_j(diff_j>0));
-        max_diff=max(diff_j(diff_j>0));
-        for ipair=min_diff:max_diff
-            if numel(diff_j(diff_j==ipair))>0
-                pair_string=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-                if ~isempty(time)
-                    if ref_j<=floor(ipair/2)
-                        ref_j=floor(ipair/2)+1; % shift ref_i to get the first pair
-                    end
-                    Dt=time(ref_i,ref_j+ceil(ipair/2))-time(ref_i,ref_j-floor(ipair/2));
-                    pair_string=[pair_string ', Dt=' num2str(Dt) ' ' dtunit];
-                end
-                displ_pair=[displ_pair;{pair_string}];
-            end
-        end
-        if ~isempty(displ_pair)
-            displ_pair=[displ_pair;{'Dj=*|*'}];
+        diff_j=sort(j2_list-j1_list,'descend');
+        jpairs=unique(diff_j);% find the list of pairs y
+        pair_string=cell(size(jpairs,1),1);
+        for ilist=1:numel(pair_string)
+             pair_string{ilist}=['Dj= ' num2str(-floor(jpairs(ilist)/2)) '|' num2str(ceil(jpairs(ilist)/2)) ];
         end
     case 'bursts'
-        if isempty(j2_series)
+        if isempty(j2_list)
             msgbox_uvmat('ERROR','no j1-j2 pair available')
             return
         end
-        %diff_j=j2_series-j1_series;
-        min_j1=min(j1_series(j1_series>0));
-        max_j1=max(j1_series(j1_series>0));
-        min_j2=min(j2_series(j2_series>0));
-        max_j2=max(j2_series(j2_series>0));
-        for pair1=min_j1:min(max_j1,min_j1+20)
-            for pair2=min_j2:min(max_j2,min_j2+20)
-                if numel(j1_series(j1_series==pair1))>0 && numel(j2_series(j2_series==pair2))>0
-                    pair_string=['j= ' num2str(pair1) '-' num2str(pair2)];
-                    [TimeValue,DtValue]=get_time(ref_i,[],pair_string,InputTable,FileInfo,TimeName,'Dt');
-                    %Dt=time(ref_i,pair2+1)-time(ref_i,pair1+1);
-                    pair_string=[pair_string ', Dt=' num2str(DtValue) ' ' dtunit];
-                    displ_pair=[displ_pair;{pair_string}];
-                end
-            end
-        end
-        if ~isempty(displ_pair)
-            displ_pair=[displ_pair;{'j=*-*'}];
+        jpairs=unique([j1_list j2_list],'rows');% find the list of pairs j1-j2
+        [~,isort]=sort(jpairs(:,2)-jpairs(:,1),'descend');
+        jpairs=jpairs(isort,:);
+        pair_string=cell(size(jpairs,1),1);
+        for ilist=1:numel(pair_string)
+             pair_string{ilist}=['j= ' num2str(jpairs(ilist,1)) '-' num2str(jpairs(ilist,2))];
         end
 end
 
@@ -1309,7 +1268,7 @@ SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
-displ_time(handles);
+refresh_first_last_info(handles);
 
 %------------------------------------------------------------------------
 function num_first_j_Callback(hObject, eventdata, handles)
@@ -1323,45 +1282,53 @@ SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
-displ_time(handles);
+refresh_first_last_info(handles);
 
 %------------------------------------------------------------------------
-% ---- find the times corresponding to the first and last indices of a series
-function displ_time(handles)
+% ---- update the displayed info after selection of  the first and last indices to process
+function refresh_first_last_info(handles)
 %------------------------------------------------------------------------
+
+first_i=str2double(get(handles.num_first_i,'String')); % first reference i index
+if isnan(first_i)
+    first_i=1;
+end
+last_i=str2double(get(handles.num_last_i,'String')); % last reference i index
+if isnan(last_i)
+    last_i=1;
+end
+first_j=NaN;last_j=NaN;
+if strcmp(get(handles.num_first_j,'Visible'),'on')
+    first_j=str2double(get(handles.num_first_j,'String'));% first reference j index
+    last_j=str2double(get(handles.num_last_j,'String'));% last reference j index
+end
+PairString=get(handles.PairString,'Data');
+[i1_1,i2_1,j1_1,j2_1] = get_file_index(first_i,first_j,PairString);
+[i1_2,i2_2,j1_2,j2_2] = get_file_index(last_i,last_j,PairString);
+
+
+%%%%%%
+% read the time in the input fields as priority
+%get_time(FullFileName,FileType,TimeName,DtName)%%%% TODO
+%[TimeValue,DtValue]=get_time(first_i,first_j,PairString,InputTable,FileInfo,TimeName,DtName)
+
+
+%%%%%%%
 SeriesData=get(handles.series,'UserData'); %
 if ~isfield(SeriesData,'Time')
     return
 end
-PairString=get(handles.PairString,'Data');
-ref_i_1=str2double(get(handles.num_first_i,'String')); % first reference index
-if isnan(ref_i_1)
-    ref_i_1=1;
-end
-ref_i_2=str2double(get(handles.num_last_i,'String')); % last reference index
-if isnan(ref_i_2)
-    ref_i_2=1;
-end
-ref_j_1=NaN;ref_j_2=NaN;
-if strcmp(get(handles.num_first_j,'Visible'),'on')
-    ref_j_1=str2double(get(handles.num_first_j,'String'));
-    ref_j_2=str2double(get(handles.num_last_j,'String'));
-end
-[i1_1,i2_1,j1_1,j2_1] = get_file_index(ref_i_1,ref_j_1,PairString);
-[i1_2,i2_2,j1_2,j2_2] = get_file_index(ref_i_2,ref_j_2,PairString);
+
+%% update the table TimeTable
 TimeTable=get(handles.TimeTable,'Data');
-%%%%%%
-%TODO: read time in netcdf file, see ActionName_Callback
-%%%%%%%
-%Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
     if numel(SeriesData.Time)<iview
         break
     end
     TimeTable{iview,3}=[];
     TimeTable{iview,4}=[];
-    if size(SeriesData.Time{iview},1)>=i2_2+1 && (isnan(ref_j_1)||size(SeriesData.Time{iview},2)>=j2_2+1)
-        if isnan(ref_j_1)
+    if size(SeriesData.Time{iview},1)>=i2_2+1 && (isnan(first_j)||size(SeriesData.Time{iview},2)>=j2_2+1)
+        if isnan(first_j)
             time_first=(SeriesData.Time{iview}(i1_1+1,2)+SeriesData.Time{iview}(i2_1+1,2))/2;% take  the average between index i1 and i2
             time_last=(SeriesData.Time{iview}(i1_2+1,2)+SeriesData.Time{iview}(i2_2+1,2))/2;
         else
@@ -1377,8 +1344,8 @@ set(handles.TimeTable,'Data',TimeTable)
 %% set the waitbar position with respect to the min and max in the series
 MinIndex_i=min(get(handles.MinIndex_i,'Data'));
 MaxIndex_i=max(get(handles.MaxIndex_i,'Data'));
-pos_first=(ref_i_1-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
-pos_last=(ref_i_2-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
+pos_first=(first_i-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
+pos_last=(last_i-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
 if isempty(pos_first), pos_first=0; end
 if isempty(pos_last), pos_last=1; end
 Position=get(handles.Waitbar,'Position'); % position of the waitbar:= [ x,y, width, height]
@@ -2471,7 +2438,6 @@ set(handles.num_CPUTime,'String','')
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
 set(handles.ActionInput,'BackgroundColor',[1 1 0])
 SeriesData=get(handles.series,'UserData'); % info on the input file series
 
@@ -2493,7 +2459,6 @@ Param=read_GUI_series(handles); % read the parameters from the GUI series
 Param.Action.RUN=0;% indicate that we are in the mode of parameter input, not program run
 Param.SeriesData=SeriesData;% info stored in 'UserData' of the fig 'series'
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
-
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
 VelTypeRequest=1; % VelType requested by default
@@ -2520,7 +2485,6 @@ for iview=1:numel(SeriesData.FileInfo)
          end
     end
 end
-
 FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
 FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
@@ -2997,16 +2961,16 @@ if strcmp(field,'add_field...')
 end
 
 %------------------------------------------------------------------------
-function [TimeValue,DtValue]=get_time(ref_i,ref_j,PairString,InputTable,FileInfo,TimeName,DtName)
+%--- give the time 'TimeValue' and time interval 'DtValue' from the input file name (including path)
+function [TimeValue,DtValue]=get_time(FullFileName,FileType,TimeName,DtName)
 %------------------------------------------------------------------------
-[i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
-FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
-%Data=nc2struct(FileName,[]);
-TimeValue=[];
-DtValue=[];
-switch FileInfo.FileType
+% [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
+% FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
+TimeValue=NaN;
+DtValue=NaN;
+switch FileType
     case 'civdata'
-    Data=nc2struct(FileName,[]);
+    Data=nc2struct(FullFileName,[]);
     if ismember(TimeName,{'civ1','filter1'})
         if isfield(Data,'Civ1_Time')
         TimeValue=Data.Civ1_Time;
@@ -3022,11 +2986,8 @@ switch FileInfo.FileType
         DtValue=Data.Civ2_Dt;
         end
     end
-    case 'pivdata_fluidimage'
-      TimeValue=ref_i;%default
-      DtValue=1;%default
     case 'netcdf'
-        Data=nc2struct(FileName,[]);
+        Data=nc2struct(FullFileName,[]);
     if ~isempty(TimeName)&& isfield(Data,TimeName)
         TimeValue=Data.(TimeName);
     end
@@ -3108,46 +3069,6 @@ if ~isempty(indiff)
         [~,indsort2]=sort(datepair); % sort the multiplet by creation date
         ind_s=indsort2(1:end-1); %
         ind_remove=[ind_remove ind_pairs(ind_s)]; % remove these indices, leave the last one
-    end
-end
-
-%------------------------------------------------------------------------
-% --- determine the list of index pairstring of processing file
-function [num_i1,num_i2,num_j1,num_j2,num_i_out,num_j_out]=find_file_indices(num_i,num_j,ind_shift,NomType,mode)
-%------------------------------------------------------------------------
-num_i1=num_i; % set of first image numbers by default
-num_i2=num_i;
-num_j1=num_j;
-num_j2=num_j;
-num_i_out=num_i;
-num_j_out=num_j;
-% if isequal (NomType,'_1-2_1') || isequal (NomType,'_1-2')
-if isequal(mode,'series(Di)')
-    num_i1_line=num_i+ind_shift(3); % set of first image numbers
-    num_i2_line=num_i+ind_shift(4);
-    % adjust the first and last field number
-        indsel=find(num_i1_line >= 1);
-    num_i_out=num_i(indsel);
-    num_i1_line=num_i1_line(indsel);
-    num_i2_line=num_i2_line(indsel);
-    num_j1=meshgrid(num_j,ones(size(num_i1_line)));
-    num_j2=meshgrid(num_j,ones(size(num_i1_line)));
-    [~,num_i1]=meshgrid(num_j,num_i1_line);
-    [~,num_i2]=meshgrid(num_j,num_i2_line);
-elseif isequal (mode,'series(Dj)')||isequal (mode,'bursts')
-    if isequal(mode,'bursts') %case of bursts (png_old or png_2D)
-        num_j1=ind_shift(1)*ones(size(num_i));
-        num_j2=ind_shift(2)*ones(size(num_i));
-    else
-        num_j1_col=num_j+ind_shift(1); % set of first image numbers
-        num_j2_col=num_j+ind_shift(2);
-        % adjust the first field number
-        indsel=find((num_j1_col >= 1));
-        num_j_out=num_j(indsel);
-        num_j1_col=num_j1_col(indsel);
-        num_j2_col=num_j2_col(indsel);
-        [num_i1,num_j1]=meshgrid(num_i,num_j1_col);
-        [num_i2,num_j2]=meshgrid(num_i,num_j2_col);
     end
 end
 
@@ -3674,33 +3595,18 @@ if strcmp(ActionExt,'fluidimage')
     set(handles.RunMode,'Value',2)
 end
 
-
+%------------------------------------------------------------------------
 function num_NbSlice_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
 
 %------------------------------------------------------------------------
-% --- set the visibility of relevant velocity type menus:
+% --- set the visibility of relevant velocity type menus
+% (called by ActionName_Callback)
 function menu=set_veltype_display(CivStage,FileType)
 %------------------------------------------------------------------------
-if ~exist('FileType','var')
-    FileType='civx';
-end
-imin=1;
-switch FileType
-    case 'civx'
-        menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
-        if isequal(CivStage,0)
-            imax=0;
-        elseif isequal(CivStage,1) || isequal(CivStage,2)
-            imax=1;
-        elseif isequal(CivStage,3)
-            imax=3;
-        elseif isequal(CivStage,4) || isequal(CivStage,5)
-            imax=4;
-        elseif isequal(CivStage,6) %patch2
-            imax=6;
-        end
-    case {'civdata','civdata_compress'}
+menu={};
+if ismember(FileType, {'civdata','civdata_compress'})
         menu={'civ1';'filter1';'civ2';'filter2'};
         if isequal(CivStage,0)
             imax=0;
@@ -3715,9 +3621,12 @@ switch FileType
         end
         if strcmp(FileType,'civdata_compress') && CivStage>=4
             imin=CivStage-3;
+        else
+            imin=1;
         end
+        menu=menu(imin:imax);
 end
-menu=menu(imin:imax);
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in SetPairs.
@@ -3761,17 +3670,15 @@ ref_j=1; % default
 if strcmp(get(handles.num_first_j,'String'),'Visible')
     ref_j=str2num(get(handles.num_first_j,'String'));
 end
-[ModeMenu,ModeValue]=update_mode(SeriesData.i1_series{1},SeriesData.i2_series{1},SeriesData.j2_series{1});
+[ModeMenu,ModeValue]=update_mode(SeriesData.j1_list{1},SeriesData.j2_list{1});
 InputTable=get(handles.InputTable,'Data');
-displ_pair=update_listpair(SeriesData.i1_series{1},SeriesData.i2_series{1},SeriesData.j1_series{1},SeriesData.j2_series{1},ModeMenu{ModeValue},...
-                                                 SeriesData.Time{1},TimeUnit,ref_i,ref_j,SeriesData.TimeName,InputTable,SeriesData.FileInfo{1});
+displ_pair=update_listpair(SeriesData.i1_list{1},SeriesData.i2_list{1},SeriesData.j1_list{1},SeriesData.j2_list{1},ModeMenu{ModeValue});
 for iline=1:size(InputTable,1)
     viewcell{iline}=num2str(iline);
 end
 viewcell=viewcell';
 ModeMenu={'bursts';'series(Dj)'};
 ModeValue=1;
-                   %i1_series,i2_series,j1_series,j2_series,mode,time,TimeUnit,ref_i,ref_j,TimeName,InputTable,FileInfo
 % first raw of the GUI
 uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.88 0.5 0.1],'BackgroundColor',BackgroundColor,...
     'String','row to edit #','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right'); % title
@@ -3801,9 +3708,6 @@ uicontrol('Style','edit','Units','normalized', 'Position', [0.55 0.17 0.3 0.08],
 uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.01 0.01 0.3 0.12],'BackgroundColor',[0 1 0],...
     'Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),'String','OK','FontUnits','points','FontSize',12,'FontWeight','bold',...
     'Tag','OK','TooltipString','''OK'': validate the choice');
-%  last raw  of the GUI: pushbuttons
-% uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.01 0.3 0.15],'BackgroundColor',[0 1 0],'String','OK','Callback',@(hObject,eventdata)OK_Callback(hObject,eventdata),...
-%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''OK'': apply the output to the current field series in uvmat');
 drawnow
 
 %------------------------------------------------------------------------
@@ -3823,10 +3727,6 @@ mode_list=get(hObject,'String');
 mode=mode_list{get(hObject,'Value')};
 hListView=findobj(get(hObject,'parent'),'Tag','ListView');
 iview=get(hListView,'Value');
-i1_series=SeriesData.i1_series{iview};
-i2_series=SeriesData.i2_series{iview};
-j1_series=SeriesData.j1_series{iview};
-j2_series=SeriesData.j2_series{iview};
 
 %% enable j index visibility after the new choice
 if strcmp(mode,'series(Dj)')
@@ -3850,7 +3750,8 @@ if isempty(ref_j)
 end
 
 %% update the menu ListPair
-Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo);
+Menu=update_listpair(SeriesData.i1_list{iview},SeriesData.i2_list{iview},SeriesData.j1_list{iview},SeriesData.j2_list{iview},mode);
+%Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo);
 hlist_pairs=findobj(get(hObject,'parent'),'Tag','ListPair');
 set(hlist_pairs,'Value',1)% set the first choice by default in ListPair
 set(hlist_pairs,'String',Menu)% set the menu in ListPair

@@ -127,7 +127,18 @@ else  % scan the directory of FilePath to detect file indices
     ref_i_list=unique(sort(ref_i_list));
     ref_j_list=unique(sort(ref_j_list));
 end
-
+if isempty(find(~isnan(i1_list), 1))
+    i1_list=NaN;
+end
+if isempty(find(~isnan(i2_list), 1))
+    i2_list=NaN;
+end
+if isempty(find(~isnan(j1_list), 1))
+    j1_list=NaN;
+end
+if isempty(find(~isnan(j2_list), 1))
+    j2_list=NaN;
+end
 % 
 % 
 %% introduce the frame index in case of movies or multimage type

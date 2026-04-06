@@ -3,7 +3,7 @@
 % [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString)
 %------------------------------------------------------------------------
 % OUTPUT:
-% i1,i2,j1,j2: frem indices i and j for image 1 and 2
+% i1,i2,j1,j2: frame indices i and j for image 1 and 2
 %
 % INPUT:
 % ref_i,ref_j: reference indices set in the GUI series
@@ -28,8 +28,7 @@
 %=======================================================================
 
 function [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString)
-%get the first file name set by the GUI series
-
+%------------------------------------------------------------------------
 if iscell(PairString)
     PairString=PairString{1};
 end
