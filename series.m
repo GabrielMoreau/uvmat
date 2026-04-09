@@ -601,16 +601,15 @@ for iview=1:nbview
                 if strcmp(answer,'Yes')% relabel option activated
                     set(handles.Relabel,'Value',1)% activate the relabel option
                     CheckRelabel=true;
-                    NomType='*';
-                    i1=1;i2=[];j1=1;j2=[];
-                    Param.i1_series=1:size(XmlData.Time,1)-1;
-                    Param.i2_series=[];
-                    if size(XmlData.Time,2)>2
-                        Param.j1_series=1:size(XmlData.Time,2)-1;
-                    else
-                        Param.j1_series=[];
-                    end
-                    Param.j2_series=[];
+%                     NomType='*';
+%                     i1=1;i2=[];j1=1;j2=[];
+%                     Param.ref_i_list=1:size(XmlData.Time,1)-1;
+%                     Param.i2_list=[];
+%                     if size(XmlData.Time,2)>2
+%                         Param.ref_j_list=1:size(XmlData.Time,2)-1;
+%                     else
+%                         Param.ref_j_list=NaN;
+%                     end
                     Param.Relabel=true;
                     FirstFile=fullfile(InputTable{iview,1},InputTable{iview,2},XmlData.FileSeries.FileName{1});
                     if ~exist(FirstFile,'file')
@@ -722,7 +721,8 @@ Param.FileInfo=FileInfo;
 %% Look for file relabeling option
 [FilePath,RootFile,FileExt]=fileparts(InputFile);
 [RootPath,SubDir,SubDirExt]=fileparts(FilePath);
-[XmlFileName,Rank]=find_imadoc(RootPath,[SubDir SubDirExt]);
+SubDir=[SubDir SubDirExt];% append again the extension possibly found
+[XmlFileName,Rank]=find_imadoc(RootPath,SubDir);
 Param.Relabel=false;%no file relabeling by default
 XmlData=[];
 if ~isempty(XmlFileName)
@@ -992,7 +992,10 @@ TimeLast=NaN;
 TimeMax=NaN;
 SeriesData=get(handles.series,'UserData');
 refresh_first_last_info(handles)%%%%% A VERIFIER
-if ~Param.Relabel
+if Param.Relabel
+    TimeName='xml';
+    Time=Param.XmlData.Time;
+else
     %% read timing  from the current file (prioritary)
     if ~isempty(VideoObject)% case of movies
         imainfo=get(VideoObject);
@@ -1174,7 +1177,7 @@ if MaxIndex_i>MinIndex_i
         if npx<MaxIndex_i-MinIndex_i
             IndexMissing=find(CheckMissing)-1;% indices of the missing files -1 (from 0 to end-1)
             LineData=ones(1,npx);
-            LineData(floor(npx*IndexMissing/(MaxIndex_i-MinIndex_i-1))+1)=0;
+            LineData(ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i-1)))=0;
         else
             pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
             LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
@@ -1453,7 +1456,7 @@ end
 if isfield(SeriesData,'FileSeries')
     Param.FileSeries=SeriesData.FileSeries{1};
 end
-if ~isfield(SeriesData,'i1_series')
+if ~isfield(SeriesData,'ref_i_list')
     errormsg='The input field series needs to be refreshed: press REFRESH';
     return
 end

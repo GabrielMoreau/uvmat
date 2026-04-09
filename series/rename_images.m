@@ -154,26 +154,15 @@ end
  if strcmpi(NomType{1}(end),'a')
      NomTypeOut=NomType{1};
  else
-     NomTypeOut='_1_1';
+     NomTypeOut='';
  end
 
-%% Set field names and velocity types
-%not relevant for this function
-
-%% Initiate output fields
-%not relevant for this function
-
-%% set processing parameters
-% not needed for this function
-
-%% update the xml file
-% not needed for this function
 
 %% main loop on fields
 j1=[];%default
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 for ifile=1:nbfield
-            update_waitbar(WaitbarHandle,ifile/nbfield)
+          
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return

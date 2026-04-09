@@ -1,28 +1,19 @@
-%'scan_file_series': check the info about an input file and find the corresponding index series
+%'scan_file_series': check the info from XmlData/FileSeries and find the corresponding index series
 %--------------------------------------------------------------------------
-% function [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(FilePath,fileinput)
+% function [RootFile,ref_i_list,ref_j_list,NomType]=scan_relabeled_series(FilePath,FileSeries,Time)
+
 %
 % OUTPUT:
-% ref_i_list: (line vector) list of detected reference i indices, sorted in increasing order, no duplicate. For multimage files or movies indexing is done on frames
+% RootFile: root name of the file series
+% ref_i_list: (line vector) list of reference i indices, sorted in increasing order, no duplicate. 
 % ref_j_list: (column vector) list of detected reference j indices, sorted in increasing order, no duplicate
-% ref_ij: sorted list of combined indices  (ref_i_list-min_i)*Nbj+ref_j_list;
-% i1_list,i2_list,j1_list,j2_list: list of indices, sorted in correspondance with ref_ij
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
-% FileInfo: structure containing info on the input files (assumed identical on the whole series)
-% FileInfo.FileType: type of file, =
-%       = 'image', usual image as recognised by Matlab
-%       = 'multimage', image series stored in a single file
-%       = 'civx', netcdf file with civx convention
-%       = 'civdata', civ data with new convention
-%       = 'netcdf' other netcdf files
-%       = 'video': movie recognised by VideoReader (e;g. avi)
-% MovieObject: video object (=[] otherwise
-% i1_input,i2_input,j1_input,j2_input: indices of the input file, or of the first file in the series if the input file does not exist
+
 %
 %INPUT
 % FilePath: path to the directory to be scanned
-% fileinput: name (without path) of the input file sample
-
+% FileSeries: section of the xml file ImaDoc describing the relabeling
+% Time: matrix of time(j,i) given by the xml file ImaDoc.
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
@@ -43,13 +34,15 @@
 
 function [RootFile,ref_i_list,ref_j_list,NomType]=scan_relabeled_series(FilePath,FileSeries,Time)
 %------------------------------------------------------------------------
- NbField_j=size(Time,2)-1;
+NbField_j=size(Time,2)-1;
+NbField_i=size(Time,1)-1;
+NbTime=NbField_i*NbField_j;
 if ischar(FileSeries.FileName)
-        FileSeries.FileName={FileSeries.FileName};
- end
- [~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
+    FileSeries.FileName={FileSeries.FileName};
+end
+[~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
 Step=FileSeries.NbFramePerFile;
-NbFiles=floor(numel(Time)/Step);
+NbFiles=floor(NbTime/Step);
 check_exist=zeros(1,NbFiles);
 for ifile=1:NbFiles
     if ifile<=numel(FileSeries.FileName)
@@ -61,7 +54,14 @@ for ifile=1:NbFiles
     check_exist(ifile)=exist(FullFileName,'file')==2;
 end
 check_ij=reshape(ones(Step,1)* check_exist,[],1);
-ref_i=find(check_ij)
+FileInfo=get_file_info(FullFileName);%check the info about the last file
+if isfield (FileInfo,'NumberOfFrames')
+    NbMissingFrames=FileSeries.NbFramePerFile-FileInfo.NumberOfFrames;
+    if NbMissingFrames>=1
+    check_ij(end-NbMissingFrames+1:end)=[];
+    end
+end
+ref_i=find(check_ij);
 ref_i_list=floor(ref_i/NbField_j);
 if NbField_j==1
     ref_j_list=NaN;
@@ -69,14 +69,14 @@ else
     ref_j_list=1:NbField_j;
 end
 
-% 
+%
 % if exist(Time','var')
 %     Step_i=floor(Step/(size(Time,1)-1));
 % end
 % for i1=1:size(Time,1)-1
-% 
+%
 % [FileName,FrameIndex]=index2filename(FileSeries,i1,j1,NbField_j)
-% 
+%
 % %% default output
 % [~,~,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
 % i1_list=i1_input;
@@ -120,7 +120,7 @@ end
 %     end
 %      % update the nom type if the input file does not exist (pb of 0001)
 %     [~,ifile_min]=min(i1_list);
-%     [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ifile_min});% update the representation of indices (number of 0 before the number)      
+%     [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ifile_min});% update the representation of indices (number of 0 before the number)
 %     if isempty(FileInfo.FileName)%  if the input file does not exist, get the info in the file with lower index i in the series
 %         [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
 %     end
@@ -130,7 +130,7 @@ end
 %      i2_list(check_i1_nan)=[];
 %       j1_list(check_i1_nan)=[];
 %        j2_list(check_i1_nan)=[];
-%     check_i2_nan=isnan(i2_list);%detect NaN i2 indices, 
+%     check_i2_nan=isnan(i2_list);%detect NaN i2 indices,
 %     check_j2_nan=isnan(j2_list);%detect NaN j2 indices, set them to j1
 %     ref_i_list(check_i2_nan)=i1_list(check_i2_nan);
 %     ref_i_list(~check_i2_nan)=floor(0.5*(i1_list(~check_i2_nan)+i2_list(~check_i2_nan)));
@@ -152,8 +152,8 @@ end
 %     ref_i_list=unique(sort(ref_i_list));
 %     ref_j_list=unique(sort(ref_j_list));
 % end
-% 
-% % 
+%
+% %
 % % 
 % %% introduce the frame index in case of movies or multimage type
 % if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1

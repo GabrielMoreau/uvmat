@@ -155,29 +155,28 @@ if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j'
     MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
 end
 %update the bounds if possible
-if isfield(SeriesData,'i1_series')&&numel(SeriesData.i1_series)>=iview_image
-    if size(SeriesData.i1_series{iview_image},2)==2 && min(min(SeriesData.i1_series{iview_image}(:,1,:)))==0
-        MinIndex_j=1;% index j set to 1 by default
-        MaxIndex_j=1;
-        MinIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
-        MaxIndex_i=find(SeriesData.i1_series{iview_image}(1,2,:),1,'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
-    else
-        
-        if ndims(SeriesData.j1_series{iview_image})==3% usuual file series input
-            ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
-            ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
-            MinIndex_i=min(find(ref_i))-1;
-            MaxIndex_i=max(find(ref_i))-1;
-            MaxIndex_j=max(find(ref_j))-1;
-            MinIndex_j=min(find(ref_j))-1;
-        else %case with relabeling
-            MinIndex_i=1;
-            MaxIndex_i=numel(SeriesData.i1_series{iview_image});% case relabel
-            MinIndex_j=1;
-            MaxIndex_j=max(1,numel(SeriesData.j1_series{iview_image}));% =1 if j1_series empty
-        end
-    end
-end
+% if isfield(SeriesData,'i_ref_list')&&numel(SeriesData.i_ref_list)>=iview_image
+%     if size(SeriesData.i_ref_list{iview_image},2)==2 && min(min(SeriesData.i_ref_list{iview_image}(:,1,:)))==0
+%         MinIndex_j=1;% index j set to 1 by default
+%         MaxIndex_j=1;
+%         MinIndex_i=min(SeriesData.i_ref_list{iview_image});% min ref index i detected in the series 
+%         MaxIndex_i=max(SeriesData.i_ref_list{iview_image});%max ref index i detected in the series 
+%     else     
+%         if ndims(SeriesData.j1_series{iview_image})==3% usual file series input
+%             ref_i=squeeze(max(SeriesData.i1_series{iview_image}(1,:,:),[],2));% select ref_j index for each ref_i
+%             ref_j=squeeze(max(SeriesData.j1_series{iview_image}(1,:,:),[],3));% select ref_i index for each ref_j
+%             MinIndex_i=min(find(ref_i))-1;
+%             MaxIndex_i=max(find(ref_i))-1;
+%             MaxIndex_j=max(find(ref_j))-1;
+%             MinIndex_j=min(find(ref_j))-1;
+%         else %case with relabeling
+%             MinIndex_i=1;
+%             MaxIndex_i=numel(SeriesData.i1_series{iview_image});% case relabel
+%             MinIndex_j=1;
+%             MaxIndex_j=max(1,numel(SeriesData.j1_series{iview_image}));% =1 if j1_series empty
+%         end
+%     end
+% end
 
 
 %%  transfer the time from the GUI series, or use file index by default
@@ -211,7 +210,11 @@ else
     time=time+0.001*(MinIndex_j:MaxIndex_j)'*ones(1,MaxIndex_i-MinIndex_i+1);
 end
 CivInputData.Time=time;
-CivInputData.NomTypeIma=NomTypeImaA;
+if ~isempty(regexp(NomTypeImaA,'(a|A)$'))
+    CivInputData.NomTypeIma=NomTypeImaA;
+else
+    CivInputData.NomTypeIma='_1';%used only to display pairs in ListPairCiv1 and 2
+end
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
@@ -241,7 +244,7 @@ else  %case of netcdf file opening, start with the stage read in the file if the
         fill_civ_input(Data,handles); %fill civ_input with the parameters retrieved from an input Civ file
         if index<=3
         set(handles.(ListOptions{index}),'Visible','off')
-        PanelTag=regexprep(ListOptions{index},'Check','')
+        PanelTag=regexprep(ListOptions{index},'Check','');
         set(handles.(PanelTag),'Visible','off')
         end
     end
@@ -255,7 +258,6 @@ else  %case of netcdf file opening, start with the stage read in the file if the
             set(handles.(ListOptions{index}),'String',regexprep(ListOptions{index},'Check','redo '))
         end
         set(handles.CheckCiv3,'Visible','off')% make visible the switch 'iterate/repet' for Civ2.
-        %set(handles.CheckCiv3,'Value',0)% select'iterate/repet' by default
     else %civ3 proposed
         for index = 1:3
             set(handles.(ListOptions{index}),'value',0)
@@ -326,6 +328,8 @@ set(handles.ListPairCiv2,'Value',1)
 set(handles.ListPairCiv2,'String',{''}) 
 
 %% set the menu and default choice of civ pairs
+MinIndex_j=min(SeriesData.j1_list{iview_image});
+MaxIndex_j=max(SeriesData.j1_list{iview_image});
 if isequal(MaxIndex_j,MinIndex_j)|| strcmp(Param.Action.ActionName,'civ_3D')% no possibility of j pairs
     PairMenu={'series(Di)'};
 elseif MaxIndex_j-MinIndex_j==1
@@ -874,7 +878,7 @@ if ~strcmp(compare,'displacement')%||strcmp(compare,'shift')
     end
     mode_selected=mode_list{mode_value};
 end
-nom_type_ima=CivInputData.NomTypeIma;
+NomTypeIma=CivInputData.NomTypeIma;
 menu_pair=get(handles.ListPairCiv1,'String');%previous menu of ListPairCiv1
 PairCiv1Init=menu_pair{get(handles.ListPairCiv1,'Value')};%previous choice of pair
 menu_pair=get(handles.ListPairCiv2,'String');%previous menu of ListPairCiv1
@@ -964,7 +968,7 @@ switch mode_selected
         for numod_a=MinIndex_j:MaxIndex_j-1 %nbfield2 always >=2 for 'pair j1-j2' mode
             for numod_b=(numod_a+1):MaxIndex_j
                 index_pair=index_pair+1;
-                displ_pair{index_pair}=['j= ' num2stra(numod_a,nom_type_ima) '-' num2stra(numod_b,nom_type_ima)];
+                displ_pair{index_pair}=['j= ' num2stra(numod_a,NomTypeIma) '-' num2stra(numod_b,NomTypeIma)];
                 displ_pair_dt{index_pair}=displ_pair{index_pair};
                 dt(index_pair)=numod_b-numod_a;%default dt
                 if size(Time,1)>ref_i && size(Time,2)>numod_b  % && ~checkframe
@@ -1369,7 +1373,8 @@ if get(hObject,'Value')% if the checkbox is activated
             end
             if strcmp(NomType,'_1_1')% period background at different levels (multilevel of volume scan)
                 NbSlice=j1_series(1,2,end);
-                set(handles.num_Nbslice,'String',num2str(NbSlice))% slice deptermination detected
+                set(handles.num_NbSlice,'String',num2str(NbSlice))% slice deptermination detected
+                set(handles.num_NbSlice,'Visible','on')
             end
         elseif ~strcmp(NomType,'*')% other kind of file indexing
             msgbox_uvmat('ERROR','multilevel background images must be labeled with a single index as _1,_2,...');
