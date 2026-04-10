@@ -42,7 +42,7 @@ if ischar(FileSeries.FileName)
 end
 [~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
 Step=FileSeries.NbFramePerFile;
-NbFiles=floor(NbTime/Step);
+NbFiles=ceil(NbTime/Step);
 check_exist=zeros(1,NbFiles);
 for ifile=1:NbFiles
     if ifile<=numel(FileSeries.FileName)

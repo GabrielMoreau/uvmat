@@ -952,8 +952,12 @@ if isequal(Param.ref_i_list,NaN)% no i index
 else
     MinIndex_i=min(Param.ref_i_list);
     MaxIndex_i=max(Param.ref_i_list);
+    if isnan(Param.ref_j_list)
+        MinIndex_j=1;MaxIndex_j=1;
+    else
     MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
     MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
+    end
 end
 if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
     MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0
