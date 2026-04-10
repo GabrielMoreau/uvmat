@@ -58,7 +58,8 @@ if checkupdate
             backupfile=[backupfile '~'];
             testexist=exist(backupfile,'file');
         end
-        [success,message]=copyfile(xmlfile,backupfile);%make backup
+        [success,message]=movefile(xmlfile,backupfile);%make backup
+        [success,message]=copyfile(backupfile,xmlfile);%make a new copy (to get writing access)
         if success~=1
             errormsg=['errror in xml file backup: ' message];
             return

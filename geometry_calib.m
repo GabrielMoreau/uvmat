@@ -142,7 +142,7 @@ function varargout = geometry_calib_OutputFcn(~, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
-                
+
 %------------------------------------------------------------------------
 % executed when closing: set the parent interface button to value 0
 function closefcn(gcbo,eventdata)
@@ -160,7 +160,7 @@ if ~isempty(huvmat)
         delete(hobject)
     end
 end
-                
+
 %------------------------------------------------------------------------
 % --- Executes on button press APPLY (used to launch the calibration).
 function APPLY_Callback(hObject, eventdata, handles)
@@ -291,49 +291,57 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
         %% open the GUI browse_data
         hbrowse=findobj(allchild(0),'Tag','browse_data');
         if ~isempty(hbrowse)% look for the GUI browse_data
-            BrowseData=guidata(hbrowse);
-            SourceDir=get(BrowseData.SourceDir,'String');
-            ListExp=get(BrowseData.ListExperiments,'String');
-            ListExp=ListExp(get(BrowseData.ListExperiments,'Value'));% list of selected experiments
-            ListDevices=get(BrowseData.ListDevices,'String');
-            ListDevices=ListDevices(get(BrowseData.ListDevices,'Value'));% list of selected devices
-            ListDataSeries=get(BrowseData.DataSeries,'String');
-            ListDataSeries=ListDataSeries(get(BrowseData.DataSeries,'Value'));% list of selected data series
-            if find(~cellfun('isempty',strfind(ListDataSeries,'.xml')))
-                msgbox_uvmat('ERROR','select folders in browse_data, not xml files');
+            %             BrowseData=guidata(hbrowse);
+            %             SourceDir=get(BrowseData.SourceDir,'String');
+            %             ListExp=get(BrowseData.ListExperiments,'String');
+            %             ListExp=ListExp(get(BrowseData.ListExperiments,'Value'));% list of selected experiments
+            %             ListDevices=get(BrowseData.ListDevices,'String');
+            %             ListDevices=ListDevices(get(BrowseData.ListDevices,'Value'));% list of selected devices
+            %             ListDataSeries=get(BrowseData.DataSeries,'String');
+            %             ListDataSeries=ListDataSeries(get(BrowseData.DataSeries,'Value'));% list of selected data series
+            %             if find(~cellfun('isempty',strfind(ListDataSeries,'.xml')))
+            %                 msgbox_uvmat('ERROR','select folders in browse_data, not xml files');
+            %                 return
+            %             end
+            %             if find(~cellfun('isempty',strfind(ListDataSeries,'.')))
+            %                 msgbox_uvmat('WARNING','select folders at the root, without dot (.) in the name');
+            %             end
+            %             NbExp=0; % counter of the number of experiments set by the GUI browse_data
+            %             for iexp=1:numel(ListExp)
+            %                 if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
+            %                     for idevice=1:numel(ListDevices)
+            %                         if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
+            %                             for isubdir=1:numel(ListDataSeries)
+            %                                 if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
+            %                                     lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+            %                                         regexprep(ListDevices{idevice},'^\+/',''));
+            %                                     ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+            %                                     if exist(fullfile(lpath,ldir),'dir')
+            %                                         NbExp=NbExp+1;
+            %                                         ListPath{NbExp}=lpath;
+            %                                         ListSubdir{NbExp}=ldir;
+            %                                     end
+            %                                 end
+            %                             end
+            %                         end
+            %                     end
+            %                 end
+            %             end
+            [ListPath, ListSubdir,ListDataSeries]=read_browsedata (hbrowse);
+            if ~isempty(find(endsWith(ListDataSeries,'.xml'), 1))
+                msgbox_uvmat('WARNING','select folders in browse_data, not xml files');
+            end
+            if ~isempty(find(contains(ListDataSeries,'.'),1))
+                msgbox_uvmat('ERROR','select folders at the root, without dot (.) in the name');
                 return
             end
-            if find(~cellfun('isempty',strfind(ListDataSeries,'.')))
-                msgbox_uvmat('WARNING','select folders at the root, without dot (.) in the name');
-            end
-            NbExp=0; % counter of the number of experiments set by the GUI browse_data
-            for iexp=1:numel(ListExp)
-                if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-                    for idevice=1:numel(ListDevices)
-                        if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                            for isubdir=1:numel(ListDataSeries)
-                                if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                                    lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                        regexprep(ListDevices{idevice},'^\+/',''));
-                                    ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                                    if exist(fullfile(lpath,ldir),'dir')
-                                        NbExp=NbExp+1;
-                                        ListPath{NbExp}=lpath;
-                                        ListSubdir{NbExp}=ldir;
-                                        ExpIndex{NbExp}=iexp;
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
             NbErrors=0;
+            NbExp=numel(ListSubdir);
             for iexp=1:NbExp
                 [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'GeometryCalib',GeometryCalib);% introduce the calibration data in the xml file
                 dispmessage='';
                 if checkslice
-                   [~,~,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice,0);% introduce the slice position in the xml file
+                    [~,~,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice,0);% introduce the slice position in the xml file
                     dispmessage=' and slice position';
                 end
                 if ~strcmp(errormsg,'')
@@ -363,12 +371,12 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
         % endSlice,
         [~,~,errormsg]=update_imadoc(RootPath,get(hhuvmat.SubDir,'String'),'GeometryCalib',GeometryCalib);% introduce the calibration data in the xml file
         if checkslice
-          [~,~,errormsg]=update_imadoc(RootPath,get(hhuvmat.SubDir,'String'),'Slice',Slice,0);% introduce the slice position in the xml file
+            [~,~,errormsg]=update_imadoc(RootPath,get(hhuvmat.SubDir,'String'),'Slice',Slice,0);% introduce the slice position in the xml file
         end
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
         end
-
+        
         %% display image with new calibration in the currently opened uvmat GUI
         FieldList=get(hhuvmat.FieldName,'String');
         val=get(hhuvmat.FieldName,'Value');

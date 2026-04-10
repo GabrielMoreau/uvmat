@@ -1,5 +1,5 @@
-function [ListPath, ListSubdir]=read_browsdata (hbrowse)
-
+function [ListPath, ListSubdir,ListDataSeries]=read_browsedata (hbrowse)
+ListPath={}; ListSubdir={};
 BrowseData=guidata(hbrowse);
 SourceDir=get(BrowseData.SourceDir,'String');
 ListExp=get(BrowseData.ListExperiments,'String');
@@ -25,7 +25,7 @@ for iexp=1:numel(ListExp)
                             NbExp=NbExp+1;
                             ListPath{NbExp}=lpath;
                             ListSubdir{NbExp}=ldir;
-                            ExpIndex{NbExp}=iexp;
+                            %ExpIndex{NbExp}=iexp;
                         end
                     end
                 end

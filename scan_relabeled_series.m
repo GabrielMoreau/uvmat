@@ -62,7 +62,7 @@ if isfield (FileInfo,'NumberOfFrames')
     end
 end
 ref_i=find(check_ij);
-ref_i_list=floor(ref_i/NbField_j);
+ref_i_list=ceil(ref_i/NbField_j);
 if NbField_j==1
     ref_j_list=NaN;
 else

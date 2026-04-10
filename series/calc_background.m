@@ -228,7 +228,7 @@ if nbaver_ima > nbfield
     disp('number of images in a slice smaller than the proposed number of images for the sliding average')
     return
 end
-halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding background
+%halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding background
 
 
 %% File relabeling documented by the xml file
@@ -263,12 +263,10 @@ if ~CheckRelabel
 end
 
 %% output file naming
-if strcmp(FileInfo.FileType,'image')
-    NomTypeOut=NomType;
-elseif NbField_j==1
-    NomTypeOut='_1';
+if Param.ActionInput.CheckVolume
+    NomTypeOut='_1_1';
 else
-    NomTypeOut='_1_1';% case of purely numerical indexing
+    NomTypeOut='_1';
 end
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);

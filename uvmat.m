@@ -2036,13 +2036,13 @@ switch FileInfo.FileType
             ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
             FileSeries.Convention='PCO';
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-           hbrowse=browse_data(fullfile(RootPath,SubDir))
+           hbrowse=browse_data(fullfile(RootPath,SubDir));
             [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
             FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
             Camera.BurstTiming=BurstTiming;
             FileSeries.FileName={'im.tif';'im@0001.tif'};
             FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; 
-            [ListPath, ListSubdir]=read_browsdata (hbrowse);
+            [ListPath, ListSubdir]=read_browsedata (hbrowse);
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp
                 [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);

@@ -71,11 +71,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-        GUIParam.IndexRange_j='off';%no j index display in series
-    else
-        GUIParam.IndexRange_j='on';% j index display in series if relevant
-    end
+%     if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+%         GUIParam.IndexRange_j='off';%no j index display in series
+%     else
+%         GUIParam.IndexRange_j='on';% j index display in series if relevant
+%     end
     return
 end
 
@@ -394,11 +394,13 @@ for ifield=1:NbField
         % par_civ1.ImageHeight=size(par_civ1.ImageA,1);
         list_param=(fieldnames(Param.ActionInput.Civ1))';
         list_param(strcmp('TestCiv1',list_param))=[];% remove the parameter TestCiv1 from the list
-        Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
-        Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
+        Civ1_param1=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
+        Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_FrameIndexA','Civ1_FrameIndexB','Civ1_Dt'} Civ1_param1]; %insert the names of the two input images
         %indicate the values of all the global attributes in the output data
         Data.Civ1_ImageA=ImageName_A;
         Data.Civ1_ImageB=ImageName_B;
+        Data.Civ1_FrameIndexA=FrameIndex_A;
+        Data.Civ1_FrameIndexB=FrameIndex_B;
         i1_civ1=i1_series_Civ1(ifield);
         i2_civ1=i1_civ1;
         if ~isempty(i2_series_Civ1)
@@ -419,7 +421,7 @@ for ifield=1:NbField
             Data.Civ1_Dt=Time(i2_civ1+1,j2+1)-Time(i1_civ1+1,j1+1);
         end
         for ilist=1:length(list_param)
-            Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
+            Data.(Civ1_param{5+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
         Data.CivStage=1;
@@ -464,19 +466,7 @@ for ifield=1:NbField
         if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
             par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
             par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
-        end
-        
-        
-        
-        % set the list of variables
-        %         Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_FF'};%  cell array containing the names of the fields to record
-        %         Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
-        %         Data.VarAttribute{1}.Role='coord_x';
-        %         Data.VarAttribute{2}.Role='coord_y';
-        %         Data.VarAttribute{3}.Role='vector_x';
-        %         Data.VarAttribute{4}.Role='vector_y';
-        %         Data.VarAttribute{5}.Role='ancillary';
-        %         Data.VarAttribute{6}.Role='errorflag';
+        end    
         
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
@@ -493,22 +483,6 @@ for ifield=1:NbField
             end
             CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');
             maskname=get_mask_name(MaskRootName,i1_civ1,j1,NbSlice,CheckVolumeScan);
-            
-                     
-%             
-%             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ1.Mask);
-% 
-%             if strcmp(NomTypeNc,'_1-2_1')&& ~isequal(i1_series_Civ1,i2_series_Civ1)% case of volume,masks act on different j levels
-%                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-%             elseif isfield(par_civ1,'NbSlice')
-%                 i1_mask=mod(i1_civ1-1,par_civ1.NbSlice)+1;
-%                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
-%                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
-%                     par_civ1.NbSlice_j=par_civ1.NbSlice;
-%                 end
-%             else
-%                 maskname=Param.ActionInput.Civ1.Mask;
-%             end
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ1.Mask=mask; %use mask already opened
             else
@@ -590,20 +564,7 @@ for ifield=1:NbField
         end
         Data.CivStage=3;% record the new state of processing
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Patch1_param];
-        
-        % list the variables to record
-        %         nbvar=length(Data.ListVarName);
-        %         Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-        %         Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
-        %             {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
-        %         Data.VarAttribute{nbvar+1}.Role='vector_x';
-        %         Data.VarAttribute{nbvar+2}.Role='vector_y';
-        %         Data.VarAttribute{nbvar+5}.Role='coord_tps';
-        %         Data.VarAttribute{nbvar+6}.Role='vector_x';
-        %         Data.VarAttribute{nbvar+7}.Role='vector_y';
-        %Data.Civ1_U_smooth=Data.Civ1_U; % zeros(size(Data.Civ1_X));
-        %Data.Civ1_V_smooth=Data.Civ1_V; %zeros(size(Data.Civ1_X));
-        %         if isfield(Data,'Civ1_FF')
+
         if isempty(Civ_FF)
             ind_good=1:numel(Civ_X);
         else
@@ -813,31 +774,7 @@ for ifield=1:NbField
             end
             CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');
             maskname=get_mask_name(MaskRootName,i1_civ2,j1,NbSlice,CheckVolumeScan);
-            
-            
-%             
-%             
-%             [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.ActionInput.Civ2.Mask);
-%             if ~isempty(i2_series_Civ2) && ~isequal(i1_series_Civ2,i2_series_Civ2) % we do PIV among indices i,  at given indices j (volume scan), mask depends on position j
-%                 if Check_j_Civ2
-%                     j1=j1_series_Civ2(ifield);
-%                 else
-%                     j1=[];
-%                 end
-%                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',j1);
-%             elseif isfield(par_civ2,'NbSlice')
-%                 i1=i1_series_Civ2(ifield);
-%                 i1_mask=mod(i1-1,par_civ2.NbSlice)+1;
-%                 maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
-%                 if strcmp(Param.ActionInput.PairIndices.ListPairMode,'series(Di)')% case of volume, mask index refers to j index
-%                     par_civ2.NbSlice_j=par_civ2.NbSlice;
-%                 end
-%             else
-%                 maskname=Param.ActionInput.Civ2.Mask;
-%             end
-             
-            
-            
+                       
             if strcmp(maskoldname,maskname)% mask exist, not already read in civ1
                 par_civ2.Mask=mask; %use mask already opened
             else
@@ -889,12 +826,14 @@ for ifield=1:NbField
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
-        Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
-        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_Time','Civ2_Dt'} Civ2_param]; %insert the names of the two input images
+        Civ2_param1=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
+        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_FrameIndexA','Civ2_FrameIndexB','Civ2_Time','Civ2_Dt'} Civ2_param1]; %insert the names of the two input images
         %indicate the values of all the global attributes in the output data
         if exist('ImageName_A','var')
             Data.Civ2_ImageA=ImageName_A;
             Data.Civ2_ImageB=ImageName_B;
+            Data.Civ2_FrameIndexA=FrameIndex_A_2;
+            Data.Civ2_FrameIndexB=FrameIndex_B_2;
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
                 Data.Civ2_Time=Time(i2_civ2+1,j2_civ2+1);% the Time is the Time of the secodn image
                 Data.Civ2_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
@@ -904,7 +843,7 @@ for ifield=1:NbField
             end
         end
         for ilist=1:length(list_param)
-            Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
+            Data.(Civ2_param{6+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
         

@@ -533,8 +533,8 @@ end
 % --- Executes on button press in REFRESH.
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CheckRelabel=get(handles.Relabel,'Value');
-errormsg=check_input_file_series(handles,CheckRelabel);
+
+errormsg=check_input_file_series(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);% no input files entered
     set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
@@ -546,8 +546,9 @@ ActionInput_Callback([],[], handles)
 
 %------------------------------------------------------------------------
 % --- check the input file series.
-function errormsg=check_input_file_series(handles,CheckRelabel)
+function errormsg=check_input_file_series(handles)
 %------------------------------------------------------------------------
+CheckRelabel=get(handles.Relabel,'Value');
 InputTable=get(handles.InputTable,'Data');%read the table of input file series
 set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
@@ -1393,8 +1394,8 @@ set(handles.j_txt,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
-set(handles.MinIndex_j,'Visible',state)
-set(handles.MaxIndex_j,'Visible',state)
+ set(handles.MinIndex_j,'Visible',state)
+ set(handles.MaxIndex_j,'Visible',state)
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -1620,15 +1621,15 @@ if get(handles.Replicate,'Value')
                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
                                     regexprep(ListDevices{idevice},'^\+/',''));
-                                lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
-                                    regexprep(ListDevices{idevice},'^\+/',''));
+%                                 lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
+%                                     regexprep(ListDevices{idevice},'^\+/',''));
                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
                                 if exist(fullfile(lpath,ldir),'dir')
                                     NbExp=NbExp+1;
                                     ExpIndex(NbExp)=ExpIndices(iexp);
                                     DeviceIndex(NbExp)=DeviceIndices(idevice);
                                     ListPath{NbExp}=lpath;
-                                    ListPathOut{NbExp}=lpathout;
+                                   % ListPathOut{NbExp}=lpathout;
                                     ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
                                     ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
                                     ListSubdir{NbExp}=ldir;
@@ -3902,3 +3903,4 @@ check_input_file_series(handles,CheckRelabel)% check the min and max relabeled i
 ActionInput_Callback([],[], handles)% %% enable menus (field, vel type,...), in accordance with the current action function
 
 
+function Background_Callback(hObject, eventdata, handles)
