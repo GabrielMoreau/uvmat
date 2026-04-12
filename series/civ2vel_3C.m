@@ -69,7 +69,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('ERROR','two or three input file series are needed')
         return
     end
-    if  ~isfield(Param,'ProjObject')
+    if  ~(isfield(Param,'CheckObject')&& Param.CheckObject)
         msgbox_uvmat('ERROR','You  need a projection object of type plane')
         return
     end
@@ -81,7 +81,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if exist(FirstFileName,'file')
         FileInfo=get_file_info(FirstFileName);
-        if ~strcmp(FileInfo.FileType,'civdata')
+        if ~strcmp(FileInfo.FieldType,'civdata')
             msgbox_uvmat('ERROR','civ data are needed as input')
             return
         end
@@ -89,6 +89,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('ERROR',['the first input file ' FirstFileName ' does not exist'])
         return
     end
+    return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
@@ -152,7 +153,7 @@ else
     disp_uvmat('ERROR','no geometric calibration available for image B',checkrun)
     return
 end
-[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
 
 %% grid of physical positions (given by projection plane)
 if ~Param.CheckObject
@@ -172,13 +173,6 @@ warning off
 CheckOverwrite=true;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
-end
-if ~CheckOverwrite % check the existence and validity of the existing output file
-    [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
-    if isempty(errormsg)
-        disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
-        continue% skip iteration if the mode overwrite is desactivated and the result file already exists
-    end
 end
 VelType='*';%latest field filter2 opened by default
 if isfield(Param.InputFields,'VelType')
@@ -212,9 +206,9 @@ for index=1:NbField
     end
     OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1-2',i1,i2,j1,j2); 
     if ~CheckOverwrite % check the existence and validity of the existing output file
-        [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
+        [~,~,~,errormsg]=nc2struct(OutputFile,'ListGlobalAttribute','CivStage');
         if isempty(errormsg)
-            disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
+            disp(['output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
     end

@@ -4,7 +4,7 @@
 %
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
-%     .FileName: confirms the file name, ='' if the file is not detected  
+%     .FileName: confirms the file name, ='' if the file is not detected
 %     .FileType: type of file, needed as input of read_field.m
 %               ='': unknown format
 %               ='bin': binary file without specific organisation
@@ -25,7 +25,7 @@
 %               ='image_DaVis': images from softwar DaVis (company LaVision), requires specific conditions of Matlab version and computer system
 %               ='cine_phantom': images from fast camera Phantom
 %               ='telopsIR': Infrared images from  company Telops
-%      .FieldType='image' for all kinds of images and movies, =FileType  else
+%      .FieldType='image' for all kinds of images and movies, ='civdata' for civ formats ('civdata' or 'civdata_compress'), =FileType  else
 %      .FileIndexing='on'/'off', = 'on' for series of indexed files or frames to scan
 %      .Height: image height in pixels
 %      .Width:  image width in pixels
@@ -69,7 +69,7 @@ end
 %% check the existence (not possible for OpenDAP data)
 if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
     FileInfo.FileName=fileinput;
-%     FileInfo.FileType='txt'; %default
+    %     FileInfo.FileType='txt'; %default
 else
     return %input file does not exist.
 end
@@ -96,14 +96,14 @@ switch FileExt
             FileInfo.Height=size(Image,2);
             FileInfo.Width=size(Image,1);
             FileInfo.TimeName='timestamp';
-            for ilist=1:numel(Input.Attributes)
+%             for ilist=1:numel(Input.Attributes)
                 % if strcmp(Input.Attributes{ilist}.Name,'_Date')
                 %     DateString=Input.Attributes{ilist}.Value;
                 % end
                 % if strcmp(Input.Attributes{ilist}.Name,'_Time')
                 %     TimeString=Input.Attributes{ilist}.Value;
                 % end
-            end
+%             end
         catch ME
             msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is not possible with this Matlab version and system'})
             return
@@ -144,39 +144,13 @@ switch FileExt
         FileInfo.NumberOfFrames=numel(InfoArray);
         FileInfo.TimeName='video';
         Path=fileparts(fileinput);% look for the xml file to document theb file series
-        [RootPath,SubDir,DirExt]=fileparts(Path);
+        [~,~,DirExt]=fileparts(Path);
         if ~isempty(DirExt)
             disp(['ERROR: change the name of the folder containing the image files: no file extension ' DirExt])
             FileInfo.FileType='error';
             return
         end
-%         XmlFile=fullfile(RootPath,[SubDir '.xml']);
-%         CheckWriteImaDoc=true;
-%         if exist(XmlFile,'file')
-%             [XmlData,~,errormsg]=xml2struct(XmlFile);
-%             if ~isempty(errormsg)
-%                 disp(errormsg)
-%                 FileInfo.FileType='error';
-%                 return
-%             elseif isfield(XmlData,'FileSeries')
-%                 CheckWriteImaDoc=false;
-%             end
-%         end
-%         if CheckWriteImaDoc
-%             DirContent=dir(Path);
-%             NbFiles=0;
-%             FileSeries.Convention='telopsIR';
-%             for ilist=1:numel(DirContent)
-%                 FName=DirContent(ilist).name;
-%                 if ~isempty(regexp(FName,'.hcc$', 'once'))
-%                     NbFiles=NbFiles+1;
-%                     FileSeries.FileName{NbFiles,1}=FName;
-%                 end
-%             end
-%             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-%             [checkupdate,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
-%         end
-
+        
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -200,18 +174,18 @@ switch FileExt
                     catch ME
                         FileInfo.error=ME.message;
                     end
-
+                    
                 else
                     error_nc=0;
                     try %try netcdf file
                         [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
                             if isfield(Data,'Conventions') && ismember(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'})
-                               if strcmp(Data.Conventions,'uvmat/civdata')
-                                FileInfo.FileType='civdata'; % test for civ velocity fields
-                               else
-                                   FileInfo.FileType='civdata_compress'; % test for civ velocity fields
-                               end
+                                if strcmp(Data.Conventions,'uvmat/civdata')
+                                    FileInfo.FileType='civdata'; % test for civ velocity fields
+                                else
+                                    FileInfo.FileType='civdata_compress'; % test for civ velocity fields
+                                end
                                 FileInfo.CivStage=Data.CivStage;
                                 MaskFile='';
                                 if isfield(Data,'Civ2_Mask')
@@ -261,12 +235,12 @@ switch FileExt
                     if error_nc
                         try
                             % if exist('mmreader.m','file')% OBSOLETE Matlab 2009a
-                                INFO=mmfileinfo (fileinput);
-                                if  ~isempty(INFO.Video.Format)
-                                    VideoObject=VideoReader(fileinput);
-                                    FileInfo=get(VideoObject);
-                                    FileInfo.FileType='video';
-                                end
+                            INFO=mmfileinfo (fileinput);
+                            if  ~isempty(INFO.Video.Format)
+                                VideoObject=VideoReader(fileinput);
+                                FileInfo=get(VideoObject);
+                                FileInfo.FileType='video';
+                            end
                             % end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';

@@ -612,6 +612,9 @@ for iview=1:nbview
 %                         Param.ref_j_list=NaN;
 %                     end
                     Param.Relabel=true;
+                    if ischar(XmlData.FileSeries.FileName)
+                        XmlData.FileSeries.FileName={XmlData.FileSeries.FileName};%transform char to cell in case of a single file
+                    end
                     FirstFile=fullfile(InputTable{iview,1},InputTable{iview,2},XmlData.FileSeries.FileName{1});
                     if ~exist(FirstFile,'file')
                         errormsg=[FirstFile ' set by the xml file does not exist'];
@@ -1146,7 +1149,7 @@ PairString=get(handles.PairString,'Data');
 PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
     [ModeMenu,ModeValue]=update_mode(Param.j1_list,Param.j2_list);% determine the menu and default selection for pair menu
-    Menu=update_listpair(Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,ModeMenu{ModeValue},Time,TimeUnit,ref_i,ref_j,TimeName,InputTable(iview,:),Param.FileInfo);
+    Menu=update_listpair(Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,ModeMenu{ModeValue});
    if numel(Menu)>=1
          PairString{iview,1}=Menu{1};
      end
