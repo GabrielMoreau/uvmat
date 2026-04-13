@@ -39,7 +39,7 @@
 %          .NewSeries: =0/1 flag telling whether a new field series has been opened
 %          .FileName_1: name of the current second field (used to detect a  constant field during file scanning)
 %          .FileType: current file type, as defined by the fct  get_file_type.m)
-%          .i1_series,.i2_series,.j1_series,.j1_series: series of num_i1,num_i2,num_j1,num_j2 indices detected in the input dir,set by  the fct find_file_series
+%          .ref_i_list,.ref_j_list,.i1_list,.i2_list,.j1_list,.j1_list: series of num_i1,num_i2,num_j1,num_j2 indices detected in the input dir,set by  the fct scan_file_series
 %          .MovieObject: current movie object
 %          .TimeUnit: unit for time
 %          .XmlData: cell array of 1 or 2 structures representing the xml files associated with the input fieldname (containing timing  and geometry calibration)
@@ -655,7 +655,7 @@ for ilist=1:numel(ListFig)
         ListTags=get(ListAxes,'Tag');
         if ~isempty(ListTags) && ~isempty(find(~strcmp('Colorbar',ListTags), 1))
             ListAxes=ListAxes(~strcmp('Colorbar',ListTags));
-            if numel(ListAxes)==1
+            if isscalar(ListAxes)
                 nb_option=nb_option+1;
                 menu{nb_option}=FigName ;
                 AxesHandle(nb_option)=ListAxes;
@@ -696,10 +696,9 @@ end
 
 
 %------------------------------------------------------------------------
-% function called by the upper bar menu item Export/make movie
-% --------------------------------------------------------------------
+%--- function called by the upper bar menu item Export/make movie
 function MenuExportMovie_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
 set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
 
 [RootPath,SubDir,RootFile]=read_file_boxes(handles);%read input file path from the GUI uvmat
@@ -768,6 +767,7 @@ drawnow
 %------------------------------------------------------------------------
 % function called by selecting movie size in the GUI  set_movie
 function set_movie_size_Callback(hObject,eventdata)
+%------------------------------------------------------------------------
 hset_movie=get(hObject,'parent');
 hMovieSize=findobj(hset_movie,'Tag','MovieSize');
 nbpix=[640 480; 720 480; 1280 720];
@@ -1290,262 +1290,6 @@ else
     app.UITable.Visible='off';
 end
 
-%% create the GUI set_slice
-% return
-% 'TEST'
-% %%old version
-% set(0,'Units','points')
-% ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-% Width=350;% fig width in points (1/72 inch)
-% Height=min(0.8*ScreenSize(4),300);
-% Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
-% Bottom=ScreenSize(4)-Height-40; %put fig at top right
-% hfig=findobj(allchild(0),'Tag','set_slice');
-% % if ~isempty(hfig),delete(hfig), end %delete existing version of the GUI
-% % hfig=uifigure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
-% % 
-% %return
-% hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Units','pixels','Position',[Left,Bottom,Width,Height],'UserData',Slice);
-% BackgroundColor=get(hfig,'Color');
-% hh=0.14; % box height (relative)
-% ii=0.01; % gap between uicontrols
-% 
-% ww=(1-5*ii)/4; % box width (relative)
-% % first raw of the GUI
-% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-%     'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-%     'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-%     'String','surface','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% %  raw 2 of the GUI
-% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
-%     'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-% uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
-%     'String',num2str(Slice.SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
-%     'String',num2str(Slice.SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
-%     'String',num2str(InterfaceCoord),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
-% %  raw 3 of the GUI
-% hcheckrefraction=uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-2*hh 2*ww hh],'tag','CheckRefraction','BackgroundColor',BackgroundColor,...
-%     'Callback',@(hObject,eventdata)set_slice_CheckRefraction_Callback(hObject,eventdata),...
-%     'String','refraction','Value',CheckRefraction,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckRefraction'':=1 to provide refraction correction');
-% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-3*ii-1.7*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
-%     'String','index','Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
-%     'String',num2str(RefractionIndex),'Visible','off','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
-% %  raw 4 of the GUI
-% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.0*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
-%     'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
-% uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-2.8*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
-%     'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
-% uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-2.7*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
-%     'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
-% %  raw 5 of the GUI
-% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+1*ww 0.95-2*ii-3.9*hh ww hh],'BackgroundColor',BackgroundColor,...
-%     'String','origin','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
-%     'String',{'first';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-2*ii-3.5*hh ww hh],'BackgroundColor',BackgroundColor,...
-%     'String',{'last';'angle'},'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% 
-% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceCoord_1','BackgroundColor',[1 1 1],...
-%     'String',num2str(Slice.SliceCoord(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_1'':x position of the tild origin');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceCoord_2','BackgroundColor',[1 1 1],...
-%     'String',num2str(Slice.SliceCoord(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceCoord_2'':y position of the tild origin');%edit box
-% 
-% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
-%     'String','tild x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-6*ii-5*hh 1.3*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
-%     'String','tild y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
-% %  raw 6 of the GUI
-% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_1','BackgroundColor',[1 1 1],...
-%     'String',num2str(SliceAngle(1,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_1'':first slice angle of inclination (in degrees) around the x axis');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-4.2*hh ww hh],'tag','num_SliceAngle_1_2','BackgroundColor',[1 1 1],...
-%     'String',num2str(SliceAngle(end,1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1_2'':last slice angle of inclination (in degrees) around the x axis');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_1','BackgroundColor',[1 1 1],...
-%     'String',num2str(SliceAngle(1,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_1'':first slice angle of inclination (in degrees) around the y axis');%edit box
-% uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-6*ii-5.2*hh ww hh],'tag','num_SliceAngle_2_2','BackgroundColor',[1 1 1],...
-%     'String',num2str(SliceAngle(end,2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_2_2'':last slice angle of inclination (in degrees) around the y axis');%edit box
-% 
-% %  raw 7 of the GUI: pushbuttons
-% wwp=(1-4*ii)/3; %width of the push buttons
-% uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
-%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
-% uicontrol('Style','checkbox','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'tag','CheckReplicate','BackgroundColor',[1 0 0],'String','Replicate','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
-%     'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''CheckReplicate'': select to replicate the output of APPLY to a series of experiments');
-% uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
-%     'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
-% drawnow
-% set_slice_CheckRefraction_Callback(hcheckrefraction,[])
-
-%------------------------------------------------------------------------
-% function called by selecting CheckRefraction in the GUI set_slices
-% function set_slice_CheckRefraction_Callback(hObject,eventdata)
-% %------------------------------------------------------------------------
-% hset_slice=get(hObject,'parent');
-% h_refraction(1)=findobj(hset_slice,'String','surface');
-% h_refraction(2)=findobj(hset_slice,'Tag','num_H');
-% h_refraction(3)=findobj(hset_slice,'String','index');
-% h_refraction(4)=findobj(hset_slice,'Tag','num_RefractionIndex');
-% if isequal(get(hObject,'Value'),1)
-%     set(h_refraction,'Visible','on')
-% else
-%     set(h_refraction,'Visible','off')
-% end
-% 
-% %------------------------------------------------------------------------
-% % function called by pressing APPLY in the GUI  set_slices
-% function set_slice_APPLY_Callback(hObject,eventdata)
-% %------------------------------------------------------------------------
-% set(hObject,'BackgroundColor',[1 1 0]);% paint button in yellow to indicate action
-% drawnow
-% 
-% %% get the uvmat GUI data and read the current xml file
-% huvmat=findobj(allchild(0),'Tag','uvmat');
-% hhuvmat=guidata(huvmat);
-% [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
-% FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the current input file
-% [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
-% XmlFile=find_imadoc(RootPath,SubDir);%find name of the relevant xml file
-% if isempty(XmlFile)
-%     msgbox_uvmat('ERROR','an xml file with calibration parameters must be first created, use Tools/geometric calibration');
-%     return
-% end
-% [s,RootTag,errormsg]=xml2struct(XmlFile);
-% 
-% %% read the content of the GUI set_slice
-% hset_slice=get(hObject, 'parent');
-% hZ=findobj(hset_slice,'Tag','num_Z_1');
-% Z_plane=str2double(get(hZ,'String'));% set of Z positions explicitly entered as a Matlab vector
-% SliceData=read_GUI(hset_slice);
-% Slice.NbSlice=SliceData.NbSlice;
-% Slice.CheckVolumeScan=SliceData.CheckVolumeScan;
-% if numel(Z_plane)<=2
-%     Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
-% else
-%     set(hZ,'String',num2str(Z_plane))% restitute the display after reading by read_GUI
-% end
-% Slice.SliceCoord=Z_plane'*[0 0 1];
-% Slice.SliceCoord(:,1)=SliceData.SliceCoord(1);
-% Slice.SliceCoord(:,2)=SliceData.SliceCoord(2);
-% Slice.SliceAngle=zeros(Slice.NbSlice,3);
-% Angle_1=linspace(SliceData.SliceAngle_1(1),SliceData.SliceAngle_1(2),SliceData.NbSlice);
-% Angle_2=linspace(SliceData.SliceAngle_2(1),SliceData.SliceAngle_2(2),SliceData.NbSlice);
-% Slice.SliceAngle(:,1)=Angle_1';%rotation angle around x axis 
-% Slice.SliceAngle(:,2)=Angle_2';%rotation angle around y axis 
-% Slice.SliceAngle(:,3)=0;
-% if SliceData.CheckRefraction
-%     Slice.InterfaceCoord=[0 0 SliceData.H];
-%     Slice.RefractionIndex=SliceData.RefractionIndex;
-% elseif isfield(Slice,'RefractionIndex')
-%     Slice=rmfield(Slice,'RefractionIndex');
-%     Slice=rmfield(Slice,'InterfaceCoord');
-% end
-% 
-% hreplicate=findobj(hset_slice,'Tag','CheckReplicate');
-% if get(hreplicate,'Value')
-%     %% open the GUI browse_data
-%     hbrowse=findobj(allchild(0),'Tag','browse_data');
-%     if ~isempty(hbrowse)% look for the GUI browse_data
-%         BrowseData=guidata(hbrowse);
-%         SourceDir=get(BrowseData.SourceDir,'String');
-%         ListExp=get(BrowseData.ListExperiments,'String');
-%         ExpIndices=get(BrowseData.ListExperiments,'Value');
-%         ListExp=ListExp(ExpIndices);
-%         ListDevices=get(BrowseData.ListDevices,'String');
-%         DeviceIndices=get(BrowseData.ListDevices,'Value');
-%         ListDevices=ListDevices(DeviceIndices);
-%         ListDataSeries=get(BrowseData.DataSeries,'String');
-%         DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-%         ListDataSeries=ListDataSeries(DataSeriesIndices);
-%         NbExp=0; % counter of the number of experiments set by the GUI browse_data
-%         for iexp=1:numel(ListExp)
-%             if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-%                 for idevice=1:numel(ListDevices)
-%                     if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-%                         for isubdir=1:numel(ListDataSeries)
-%                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-%                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-%                                     regexprep(ListDevices{idevice},'^\+/',''));
-%                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-%                                 if exist(fullfile(lpath,ldir),'dir')
-%                                     NbExp=NbExp+1;
-%                                     ListPath{NbExp}=lpath;
-%                                     ListSubdir{NbExp}=ldir;
-%                                     ExpIndex{NbExp}=iexp;
-%                                 end
-%                             end
-%                         end
-%                     end
-%                 end
-%             end
-%         end
-%         for iexp=1:NbExp
-%             % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-%             % if exist(XmlName,'file')
-%             %     check_update=1;
-%             % else
-%             %     check_update=0;
-%             % end
-%             [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Slice',Slice);% introduce the calibration data in the xml file
-%             if ~strcmp(errormsg,'')
-%                 msgbox_uvmat('ERROR',errormsg);
-%             else
-%                 if check_update
-%                     disp([xmlfile ' updated with slice positions'])
-%                 else
-%                     disp([xmlfile ' created with slice positions'])
-%                 end
-%             end
-%         end
-%     end
-%     msgbox_uvmat('CONFIMATION',['slices replicated for ' num2str(NbExp) ' experiments']);
-% else
-%     
-%     %% store the result in the xml file used for calibration
-%     [~,xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'Slice',Slice);% introduce the calibration data in the xml file
-%     if strcmp(errormsg,'')
-%         msgbox_uvmat('CONFIRMATION',['slice positions saved in ' xmlfile]);
-%     else
-%         msgbox_uvmat('ERROR',errormsg);
-%     end
-%     
-%     %% display image with new calibration in the currently opened uvmat interface
-%     %set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-%     uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-%     set(hObject,'BackgroundColor',[1 0 0]);% paint button back to red
-% end
-% 
-% delete(hset_slice)
-% 
-% %------------------------------------------------------------------------
-% % function called by pressing REPLICATE in the GUI  set_slices
-% function set_slice_REPLICATE_Callback(hObject,eventdata)
-% %------------------------------------------------------------------------
-% if get(hObject,'Value') %open the GUI browse_data
-%     % look for the GUI uvmat and check for an image as input
-%     huvmat=findobj(allchild(0),'Name','uvmat');
-%     hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-%     RootPath=get(hhuvmat.RootPath,'String');
-%     SubDir=get(hhuvmat.SubDir,'String');
-%     browse_data(fullfile(RootPath,SubDir))
-% else
-%     hbrowse=findobj(allchild(0),'Tag','browse_data');
-%     if ~isempty(hbrowse)
-%         delete(hbrowse)
-%     end
-% end
-% 
-% 
-% %------------------------------------------------------------------------
-% % function called by pressing Cancel in the GUI  set_slices
-% function set_slice_Cancel_Callback(hObject,eventdata)
-% %------------------------------------------------------------------------
-% hset_slice=get(hObject,'parent');
-% delete(hset_slice)
-
 %------------------------------------------------------------------------
 % --- called by menu bar Tools/LIF calibration
 function MenuLIFCalib_Callback(hObject, eventdata, handles)
@@ -1790,55 +1534,17 @@ if strcmp(answer,'Current series')
     set(handles.TransformName,'Value',ichoice)
     TransformName_Callback(hObject, eventdata, handles)
 elseif strcmp(answer,'Replicate')
-    
-    BrowseData=guidata(hbrowse);
-    SourceDir=get(BrowseData.SourceDir,'String');
-    ListExp=get(BrowseData.ListExperiments,'String');
-    ExpIndices=get(BrowseData.ListExperiments,'Value');
-    ListExp=ListExp(ExpIndices);
-    ListDevices=get(BrowseData.ListDevices,'String');
-    DeviceIndices=get(BrowseData.ListDevices,'Value');
-    ListDevices=ListDevices(DeviceIndices);
-    ListDataSeries=get(BrowseData.DataSeries,'String');
-    DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-    ListDataSeries=ListDataSeries(DataSeriesIndices);
-    NbExp=0; % counter of the number of experiments set by the GUI browse_data
-    for iexp=1:numel(ListExp)
-        if ~isempty(regexp(ListExp{iexp},'^\+/'))% if it is a folder
-            for idevice=1:numel(ListDevices)
-                if ~isempty(regexp(ListDevices{idevice},'^\+/'))% if it is a folder
-                    for isubdir=1:numel(ListDataSeries)
-                        if ~isempty(regexp(ListDataSeries{isubdir},'^\+/'))% if it is a folder
-                            lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                regexprep(ListDevices{idevice},'^\+/',''));
-                            ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                            if exist(fullfile(lpath,ldir),'dir')
-                                NbExp=NbExp+1;
-                                ListPath{NbExp}=lpath;
-                                ListSubdir{NbExp}=ldir;
-                                ExpIndex{NbExp}=iexp;
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
+    [ListPath, ListSubdir]=read_browsedata (hbrowse);
+    NbExp=numel(ListSubdir);
     for iexp=1:NbExp
-        % XmlName=fullfile(ListPath{iexp},[ListSubdir{iexp} '.xml']);
-        % if exist(XmlName,'file')
-        %     check_update=1;
-        % else
-        %     check_update=0;
-        % end
         [check_update,xmlfile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'LIFCalib',XmlData.LIFCalib);% introduce the calibration data in the xml file
         if ~strcmp(errormsg,'')
             msgbox_uvmat('ERROR',errormsg);
         else
             if check_update
-                display([xmlfile ' updated with calibration parameters'])
+                disp([xmlfile ' updated with calibration parameters'])
             else
-                display([xmlfile ' created with calibration parameters'])
+                disp([xmlfile ' created with calibration parameters'])
             end
         end
     end
@@ -2388,8 +2094,8 @@ end
 if ~isempty(errormsg) && get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootPath,SubDir,~,i1_series,~,~,~,~,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-    if isempty(i1_series)
+    [RootFile,ref_i_list,~,~,~,~,~,~,~,NomType,FileInfo,MovieObject]=scan_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    if isnan(ref_i_lists)
         fileinput=uigetfile_uvmat('pick an input file for the second line',fullfile(RootPath,SubDir));
         hh=dir(fileinput);
         if numel(hh)>1
@@ -2615,7 +2321,6 @@ set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then inputfilerefresh current plots
-%function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileInfo,VideoObject,input_line)
 function errormsg=update_rootinfo(handles,RootPath,SubDir,FileName,FileInfo,VideoObject,input_line)
 %------------------------------------------------------------------------
 
@@ -2673,32 +2378,30 @@ state_j='off'; % no visualisation of the j index by default
 MovieObject=[];
 if CheckRelabel
     NomType='*';
-    i1_series=[];
-    i2_series=[];
-    j1_series=[];
-    j2_series=[];
+    i1_list=[];
+    i2_list=[];
+    j1_list=[];
+    j2_list=[];
     nbfield_i=[];
     nbfield_j=[];
     FileInfo=XmlData.FileInfo;
     set(handles.num_i1,'String','1')% the index does not correspond to file name index anymore, set i=1, j=1 by default as s start
     set(handles.num_j1,'String','1')
 else % scan the input folder to get the list of existing files and NomType
-    [~,~,~,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,MovieObject]=...
-        find_file_series(fullfile(RootPath,SubDir),FileName);
-    nbfield_i=max(max(max(i2_series)));% total number of fields (i index)
-    if isempty(nbfield_i)
-        nbfield_i=max(max(max(i1_series)));
-    end
-    nbfield_j=max(max(max(j2_series)));% number of fields along j index
-    if isempty(nbfield_j)
-        nbfield_j=max(max(max(j1_series)));
-    end
-    if ~isempty(j1_series)&& ~strcmp(NomType,'*')% the j index is used to label the frame in multimage series
-        set(handles.num_j1,'String','1')
-             state_j='on';
-    elseif strcmp(FileInfo.FieldType,'image') && ~isequal(FileInfo.NumberOfFrames,1)
-        set(handles.num_i1,'String','1')
-    end
+     [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(fullfile(RootPath,SubDir),FileName);
+     nbfield_i=ref_i_list(end);
+     nbfield_j=ref_j_list(end);
+  
+   % nbfield_j=max(max(max(j2_series)));% number of fields along j index
+    % if isempty(nbfield_j)
+    %     nbfield_j=max(max(max(j1_series)));
+    % end
+    % if ~isempty(j1_series)&& ~strcmp(NomType,'*')% the j index is used to label the frame in multimage series
+    %     set(handles.num_j1,'String','1')
+    %          state_j='on';
+    % elseif strcmp(FileInfo.FieldType,'image') && ~isequal(FileInfo.NumberOfFrames,1)
+    %     set(handles.num_i1,'String','1')
+    % end
 end
 if input_line==1
     set(handles.NomType,'String',NomType)
@@ -2713,11 +2416,12 @@ UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
 UvData.FileInfo{input_line}=FileInfo;
 UvData.MovieObject{input_line}=MovieObject;
-UvData.i1_series{input_line}=i1_series;
-UvData.i2_series{input_line}=i2_series;
-UvData.j1_series{input_line}=j1_series;
-UvData.j2_series{input_line}=j2_series;
-
+UvData.ref_i_list{input_line}=ref_i_list;
+UvData.ref_j_list{input_line}=ref_j_list;
+UvData.i1_list{input_line}=i1_list;
+UvData.i2_list{input_line}=i2_list;
+UvData.j1_list{input_line}=j1_list;
+UvData.j2_list{input_line}=j2_list;
 
 %% read timing and total frame number from the current file (e.g. movie files)
 ColorType='falsecolor'; %default
@@ -2750,12 +2454,12 @@ if CheckRelabel
 else
     if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video data)
         TimeUnit='s';
-        if isempty(j1_series) %frame index along i
+        if isnan(ref_j_list) %frame index along i
             XmlData.Time=zeros(FileInfo.NumberOfFrames+1,2);
             XmlData.Time(:,2)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate)';
             set(handles.num_i1,'String','1')% set the frame index to 1 to start the movie
         else
-            XmlData.Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
+            XmlData.Time=[0;ones(numel(ref_i_list),1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
             state_j='on';
         end
     end
@@ -2811,6 +2515,7 @@ else
     last_i_cell{input_line}=num2str(nbfield_i);
 end
 set(handles.MaxIndex_i,'String',last_i_cell)
+set(handles.MaxIndex_i,'Value',input_line)
 last_j_cell=get(handles.MaxIndex_j,'String');
 if isempty(nbfield_j)
      last_j_cell{input_line}='';
@@ -2939,7 +2644,7 @@ switch FileInfo.FieldType
         set(handles.Coord_x,'String','Coord_x');
     set(handles.Coord_y,'String','Coord_y');
     set(handles.MenuRun2,'Label','civ_series')
-    set(handles.MenuRun3,'Label','sub_background')
+    set(handles.MenuRun3,'Label','calc_background')
 end
 
 
@@ -2954,18 +2659,17 @@ if input_line==2
         state_j='on';
     end
 end
-if ~isempty(i1_series)
-    [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
-    if ~isempty(j1_series)
+if ~isnan(ref_i_list)
+    if ~isnan(ref_j_list)
         state_j='on';
         if input_line==1
-            if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first value
+            if isscalar(ref_i_list)% if ref_i is always equal to its first value
                 scan_option='j'; %scan j indext
             end
         end
     end
     if isequal(scan_option,'i')
-        diff_ref_i=diff(ref_i,1);
+        diff_ref_i=diff(ref_i_list,1);
         if isempty(diff_ref_i)
             diff_ref_i=1;
         end
@@ -2975,7 +2679,7 @@ if ~isempty(i1_series)
         set(handles.scan_i,'Value',1)
         scan_i_Callback([],[], handles);
     else
-        diff_ref_j=diff(ref_j);
+        diff_ref_j=diff(ref_j_list);
         if isempty(diff_ref_j)
             diff_ref_j=1;
         end
@@ -2991,7 +2695,7 @@ set(handles.num_j1,'Visible',state_j)
 set(handles.num_j2,'Visible',state_j)
 set(handles.MaxIndex_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
-if ~isempty(i2_series)||~isempty(j2_series)
+if ~isnan(i2_list)
     set(handles.CheckFixPair,'Visible','on')
 elseif input_line==1
     set(handles.CheckFixPair,'Visible','off')
@@ -3191,19 +2895,20 @@ if isequal(get(handles.CheckMask,'Value'),1)
             Mask.MaskNbSlice=FileInfo.MaskNbSlice;
         end
     else % look for an apporpriate mask with the browser
-        filemask= uigetfile_uvmat('pick a mask image file:',fileinput,'image');
+        filemask= uigetfile_uvmat('pick a mask image file:',fileinput,'.png');
         if ~isempty(filemask)
             [FilePath,FileName,FileExt]=fileparts(filemask);
-            [RootPath,SubDir,RootFile,i1_series,~,~,~,NomType]=find_file_series(FilePath,[FileName FileExt]);
+            if ~strcmp(FileExt,'.png')
+                 msgbox_uvmat('ERROR',' masks must be ;png images');
+                 set(handles.CheckMask,'Value',0)
+                 return
+            end
+             [RootFile,ref_i_list,ref_j_list,~,~,~,~,~,NomType]=scan_file_series(FilePath,[FileName '.png']);
+            Mask.MaskFile=fullfile(FilePath,RootFile);
             if strcmp(NomType,'_1')
-                Mask.MaskFile=fullfile(RootPath,SubDir,RootFile);
-                Mask.MaskExt=FileExt;
-                Mask.MaskNbSlice=i1_series(1,2,end);
-            elseif strcmp(NomType,'*')
-                Mask.MaskFile=fullfile(RootPath,SubDir,RootFile);
-                Mask.MaskExt=FileExt;
-            else
-                msgbox_uvmat('ERROR','multilevel masks must be labeled with a single index as _1,_2,...');
+                Mask.MaskNbSlice=ref_i_list(end);
+            elseif ~strcmp(NomType,'*')
+                msgbox_uvmat('ERROR','single mask files must have no index while multilevel masks must be labeled as _1,_2,...');
                 set(handles.CheckMask,'Value',0)
                 return
             end
@@ -3285,7 +2990,7 @@ if isfield(MaskInfo,'MaskFile')
             transform=get(handles.TransformPath,'UserData');
             if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
                 if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
-                    Calib=UvData.XmlData{1}.GeometryCalib;
+                   % Calib=UvData.XmlData{1}.GeometryCalib;
                     MaskField=transform(MaskField,UvData.XmlData{1});
                 end
             end
@@ -3335,9 +3040,9 @@ if isnan(increment)% case of free increment: move to next available field index
     increment='+';
 end
 errormsg=runpm(hObject,eventdata,handles,increment);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg);
-end
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg);
+% end
 set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back in red
 
 %------------------------------------------------------------------------
@@ -3346,7 +3051,6 @@ set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back in 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
 set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=-str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
@@ -3354,16 +3058,15 @@ if isnan(increment)% case of free increment: move to previous available field in
     increment='-';
 end
 errormsg=runpm(hObject,eventdata,handles,increment);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg);
-end
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg);
+% end
 set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back in red
 
 %------------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
 function Movie_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
 set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
@@ -3416,7 +3119,7 @@ while get(handles.MovieBackward,'Value')==1 && get(handles.speed,'Value')~=0 && 
 end
 if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
     UvData.aviobj=close(UvData.aviobj);
-   set(handles.uvmat,'UserData',UvData);
+    set(handles.uvmat,'UserData',UvData);
 end
 set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
@@ -3491,136 +3194,126 @@ if isnumeric(increment)
             j2_1=j2_1+increment;
         end
     end
-
-    % the pair num_i1-num_i2 or num_j1-num_j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
-else
-    ref_i=i1;
-    if ~isempty(i2)
-        ref_i=floor((i1+i2)/2);% current reference index i
-    end
-    ref_j=1;
-    if ~isempty(j1)
-        ref_j=j1;
-        if ~isempty(j2)
-            ref_j=floor((j1+j2)/2);% current reference index j
-        end
-    end
-
+else % the pair num_i1-num_i2 or num_j1-num_j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
+     index=find(UvData.i1_list{1}==i1 & UvData.j1_list{1}==j1,1);
     if strcmp(increment,'+')% if runplus or movie is activated
-        step=1;
-    else
-        step=-1;
-    end
-    if get(handles.scan_i,'Value')==1% case of scanning along index i
-        ref_i=ref_i+step;
-        while ref_i>=0  && size(UvData.i1_series{1},3)>=ref_i+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
-            ref_i=ref_i+step;
-        end
-    else % case of scanning along index j (burst numbers)
-        ref_j=ref_j+step;
-        while ref_j>=0  && size(UvData.i1_series{1},2)>=ref_j+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
-            ref_j=ref_j+step;
-        end
-    end
-    if ref_i<0
-        errormsg='minimum i index reached';
-    elseif ref_j<0
-        errormsg='minimum j index reached';
-    elseif ref_i+1>size(UvData.i1_series{1},3)
-        errormsg='maximum i index reached (reload the input file to update the index bound)';
-    elseif ref_j+1>size(UvData.i1_series{1},2)
-        errormsg='maximum j index reached (reload the input file to update the index bound)';
-    end
-    if ~isempty(errormsg),return,end
-    siz=size(UvData.i1_series{1});
-    ref_indices=ref_i*siz(1)*siz(2)+ref_j*siz(1)+1:ref_i*siz(1)*siz(2)+(ref_j+1)*siz(1);
-    i1_subseries=UvData.i1_series{1}(ref_indices);
-    ref_indices=ref_indices(i1_subseries>0);
-    if isempty(ref_indices)% case of pairs (free index i)
-        ref_indices=ref_i*siz(1)*siz(2)+1:(ref_i+1)*siz(1)*siz(2);
-        i1_subseries=UvData.i1_series{1}(ref_indices);
-        ref_indices=ref_indices(i1_subseries>0);
-    end
-    if isempty(ref_indices),errormsg='no next frame: set num_IndexIncrement =''*'' to reach the next existing file';return
-    end
-    i1=UvData.i1_series{1}(ref_indices(end));
-    if ~isempty(UvData.i2_series{1})
-        i2=UvData.i2_series{1}(ref_indices(end));
-    end
-    if ~isempty(UvData.j1_series{1})
-        j1=UvData.j1_series{1}(ref_indices(end));
-    end
-    if ~isempty(UvData.j2_series{1})
-        j2=UvData.j2_series{1}(ref_indices(end));
-    end
-
-    % case of a second file series
-    if sub_value
-        ref_i_1=i1_1;
-        if ~isempty(i2_1)
-            ref_i_1=floor((i1_1+i2_1)/2);% current reference index i
-        end
-        ref_j_1=1;
-        if ~isempty(j1_1)
-            ref_j_1=j1_1;
-            if ~isempty(j2_1)
-                ref_j_1=floor((j1_1+j2_1)/2);% current reference index j
+        if get(handles.scan_j,'Value')==1% case of scanning along index j
+            if index==numel(UvData.j1_list{1})
+                errormsg='maximum j index reached (reload the input file to update the index bound)'
+            else
+                j1=UvData.j1_list{1}(index+1);
+                if ~isnan(UvData.j2_list{1})
+                    j2=UvData.j2_list{1}(index+1);
+                end
+            end
+        else          
+            while UvData.j1_list{1}(index)==j1
+                index=index+1;
+            end
+            if index==numel(UvData.i1_list{1})
+                errormsg='maximum i index reached (reload the input file to update the index bound)'
+            else
+                i1=UvData.i1_list{1}(index+1);
+                j1=UvData.j1_list{1}(index+1);
+                if ~isnan(UvData.j2_list{1})
+                    j2=UvData.j2_list{1}(index+1);
+                end
             end
         end
-        if isnumeric(increment)
-            if get(handles.scan_i,'Value')==1% case of scanning along index i
-                ref_i_1=ref_i_1+increment;% increment the current reference index i
-            else % case of scanning along index j (burst numbers)
-                ref_j_1=ref_j_1+increment;% increment the current reference index j if scan_j option is used
+    else % if runmin or movie is activated
+         if get(handles.scan_j,'Value')==1% case of scanning along index j
+            if index==1
+                errormsg='minimum j index reached '
+            else
+                j1=UvData.j1_list{1}(index-1);
+                if ~isnan(UvData.j2_list{1})
+                    j2=UvData.j2_list{1}(index-1);
+                end
             end
-        else % free increment, synchronise the ref indices with the first series
-            ref_i_1=ref_i;
-            ref_j_1=ref_j;
-        end
-        if isscalar(UvData.i1_series)
-            UvData.i1_series{2}=UvData.i1_series{1};
-            UvData.j1_series{2}=UvData.j1_series{1};
-            UvData.i2_series{2}=UvData.i2_series{1};
-            UvData.j2_series{2}=UvData.j2_series{1};
-        end
-        if ref_i_1<0
-            errormsg='minimum i index reached';
-        elseif ref_j_1<0
-            errormsg='minimum j index reached';
-        elseif ref_i_1+1>size(UvData.i1_series{2},3)&&~isempty(InputFile.NomType_1)
-            errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
-            %elseif ref_j_1+1>size(UvData.i1_series{2},2)&&~isempty(InputFile.NomType_1)
-            %   errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
-        end
-        if ~isempty(errormsg),return,end
-        siz=size(UvData.i1_series{2});
-        ref_indices=ref_i_1*siz(1)*siz(2)+ref_j_1*siz(1)+1:ref_i_1*siz(1)*siz(2)+(ref_j_1+1)*siz(1);
-        if ~isempty(InputFile.NomType_1)
-            i1_subseries=UvData.i1_series{2}(ref_indices);
-            ref_indices=ref_indices(i1_subseries>0);
-            if isempty(ref_indices)% case of pairs (free index i)
-                ref_indices=ref_i_1*siz(1)*siz(2)+1:(ref_i_1+1)*siz(1)*siz(2);
-                i1_subseries=UvData.i1_series{2}(ref_indices);
-                ref_indices=ref_indices(i1_subseries>0);
+         else
+            while UvData.j1_list{1}(index)==j1
+                index=index-1;
             end
-            i1_1=UvData.i1_series{2}(ref_indices(end));
-            if ~isempty(UvData.i2_series{2})
-                i2_1=UvData.i2_series{2}(ref_indices(end));
-            end
-            if ~isempty(UvData.j1_series{2})
-                j1_1=UvData.j1_series{2}(ref_indices(end));
-            end
-            if ~isempty(UvData.j2_series{2})
-                j2_1=UvData.j2_series{1}(ref_indices(end));
+            if index==numel(UvData.i1_list{1})
+                errormsg='minimum i index reached';
+            else
+                i1=UvData.i1_list{1}(index-1);
+                j1=UvData.j1_list{1}(index-1);
+                if ~isnan(UvData.j2_list{1})
+                    j2=UvData.j2_list{1}(index-1);
+                end
             end
         end
-    else% the second series (if needed) is the same file as the first
-        i1_1=i1;
-        i2_1=i2;
-        j1_1=j1;
-        j2_1=j2;
     end
 end
+
+if ~isempty(errormsg),return,end
+
+% case of a second file series
+if sub_value
+    ref_i_1=i1_1;
+    if ~isempty(i2_1)
+        ref_i_1=floor((i1_1+i2_1)/2);% current reference index i
+    end
+    ref_j_1=1;
+    if ~isempty(j1_1)
+        ref_j_1=j1_1;
+        if ~isempty(j2_1)
+            ref_j_1=floor((j1_1+j2_1)/2);% current reference index j
+        end
+    end
+    if isnumeric(increment)
+        if get(handles.scan_i,'Value')==1% case of scanning along index i
+            ref_i_1=ref_i_1+increment;% increment the current reference index i
+        else % case of scanning along index j (burst numbers)
+            ref_j_1=ref_j_1+increment;% increment the current reference index j if scan_j option is used
+        end
+    else % free increment, synchronise the ref indices with the first series
+        ref_i_1=ref_i;
+        ref_j_1=ref_j;
+    end
+    if isscalar(UvData.i1_series)
+        UvData.i1_series{2}=UvData.i1_series{1};
+        UvData.j1_series{2}=UvData.j1_series{1};
+        UvData.i2_series{2}=UvData.i2_series{1};
+        UvData.j2_series{2}=UvData.j2_series{1};
+    end
+    if ref_i_1<UvData.i1_list(1)
+        errormsg='minimum i index reached';
+    elseif ref_j_1<UvData.j1_list(1)
+        errormsg='minimum j index reached';
+    elseif ref_i_1+1>UvData.i1_list(end) && ~isempty(InputFile.NomType_1)
+        errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
+    end
+    if ~isempty(errormsg),return,end
+    siz=size(UvData.i1_series{2});
+    ref_indices=ref_i_1*siz(1)*siz(2)+ref_j_1*siz(1)+1:ref_i_1*siz(1)*siz(2)+(ref_j_1+1)*siz(1);
+    if ~isempty(InputFile.NomType_1)
+        i1_subseries=UvData.i1_series{2}(ref_indices);
+        ref_indices=ref_indices(i1_subseries>0);
+        if isempty(ref_indices)% case of pairs (free index i)
+            ref_indices=ref_i_1*siz(1)*siz(2)+1:(ref_i_1+1)*siz(1)*siz(2);
+            i1_subseries=UvData.i1_series{2}(ref_indices);
+            ref_indices=ref_indices(i1_subseries>0);
+        end
+        i1_1=UvData.i1_series{2}(ref_indices(end));
+        if ~isempty(UvData.i2_series{2})
+            i2_1=UvData.i2_series{2}(ref_indices(end));
+        end
+        if ~isempty(UvData.j1_series{2})
+            j1_1=UvData.j1_series{2}(ref_indices(end));
+        end
+        if ~isempty(UvData.j2_series{2})
+            j2_1=UvData.j2_series{1}(ref_indices(end));
+        end
+    end
+else% the second series (if needed) is the same file as the first
+    i1_1=i1;
+    i2_1=i2;
+    j1_1=j1;
+    j2_1=j2;
+end
+
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
 
 %% refresh plots
@@ -3630,9 +3323,6 @@ if sub_value
 else
     errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
 end
-set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
-set(handles.runplus,'BackgroundColor',[1 0 0])
-set(handles.runmin,'BackgroundColor',[1 0 0])
 
 %% update the index counters if the index move is successfull
 if isempty(errormsg)
@@ -3667,7 +3357,13 @@ if isempty(errormsg)
     end
     if isempty(i2), set(handles.num_i2,'String',''); end % suppress the second index display if not used
     if isempty(j2), set(handles.num_j2,'String',''); end
+else
+    msgbox_uvmat('ERROR',errormsg)
 end
+set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
+set(handles.runplus,'BackgroundColor',[1 0 0])
+set(handles.runmin,'BackgroundColor',[1 0 0])
+set(handles.REFRESH,'BackgroundColor',[1 0 0])%paint the command button back in red
 
 %------------------------------------------------------------------------
 % --- Executes on button press in movie_pair: create an alternating movie with two view
@@ -3784,15 +3480,6 @@ UvData=get(handles.uvmat,'UserData');
 if isfield(UvData,'TitleText') && ishandle(UvData.TitleText)
     delete(UvData.TitleText)
 end
-% if ishandle(handles.UVMAT_title) %remove title panel on uvmat (which appears at the first openning of the GUI)
-%     delete(handles.UVMAT_title)
-% end
-
-%% determine the main input file information for action
-% if isempty(regexp(FileName,'^http://', 'once')) &&~exist(FileName,'file')
-%     errormsg=['input file ' FileName ' does not exist'];
-%     return
-% end
 NomType=get(handles.NomType,'String');
 %update the z position index
 mode_slice=get(handles.slices,'String');
@@ -5394,7 +5081,7 @@ if check_refresh
     num_i2=stra2num(get(handles.num_i2,'String'));
     num_j1=stra2num(get(handles.num_j1,'String'));
     num_j2=stra2num(get(handles.num_j2,'String'));
-    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(['xx' FileIndex_1]);
+    [~,~,~,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(['xx' FileIndex_1]);
     errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg);

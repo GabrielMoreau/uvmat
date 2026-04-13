@@ -166,14 +166,15 @@ ActionPathList(:)={path_series_fct}; % set the default path to series fcts to al
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
 if isfield(SeriesData.ClusterParam, 'ExistenceTest')
     ClusterExistenceTest=SeriesData.ClusterParam.ExistenceTest;
-    disp('look for cluster command available')
-    [s,~]=system(ClusterExistenceTest); % look for cluster system presence, with no display (-echo)
+    [s,~]=system(ClusterExistenceTest); % look for cluster system presence, with no display
     if isequal(s,0)% cluster detected
         RunModeList=[RunModeList;{'cluster'}];
         set(handles.MonitorCluster,'Visible','on'); % make visible button for access to Monika
         set(handles.num_CPUTime,'Visible','on'); % make visible button for CPU time estimate for one ref index
         set(handles.num_CPUTime,'String','')% default CPU time undefined
         set(handles.CPUTime_txt,'Visible','on'); % make visible button for CPU time title
+    else
+         disp('no computer cluster detected')
     end
     set(handles.RunMode,'String',RunModeList)% display the menu of available run modes, local, background or cluster manager
 else
@@ -305,7 +306,7 @@ if isfield(Param,'InputFile')
     end
 
     %% determine the selected reference field indices for pair display
-  i1=1;j1=1;i2=[];j2=[];%default
+    i1=1;j1=1;i2=[];j2=[];%default
     if isfield(Param,'i1')
         i1=Param.i1;
     end
@@ -320,7 +321,7 @@ if isfield(Param,'InputFile')
     end
     ref_i=i1;%default
     if ~isempty(i2)
-    ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
+        ref_i=floor((i1+i2)/2); % reference image number corresponding to the file
     end
     % set(handles.num_ref_i,'String',num2str(ref_i));
     if isempty(j1)
@@ -335,23 +336,27 @@ if isfield(Param,'InputFile')
     set(handles.series,'UserData',SeriesData)
     Param.XmlData_1=[];
     if isfield(Param.HiddenData,'XmlData')
-            Param.XmlData=Param.HiddenData.XmlData{1};
+        Param.XmlData=Param.HiddenData.XmlData{1};
     end
-    Param.i1_series=Param.HiddenData.i1_series{1};
-    Param.i2_series=Param.HiddenData.i2_series{1};
-    Param.j1_series=Param.HiddenData.j1_series{1};
-    Param.j2_series=Param.HiddenData.j2_series{1};
+    Param.ref_i_list=Param.HiddenData.ref_i_list{1};
+    Param.ref_j_list=Param.HiddenData.ref_j_list{1};
+    Param.i1_list=Param.HiddenData.i1_list{1};
+    Param.i2_list=Param.HiddenData.i2_list{1};
+    Param.j1_list=Param.HiddenData.j1_list{1};
+    Param.j2_list=Param.HiddenData.j2_list{1};
     Param.FileInfo=Param.HiddenData.FileInfo{1};
     Param.Relabel=[];%default
     update_rootinfo(handles,Param,Param.HiddenData.MovieObject{1},1)% update the data for the first input line
     if isfield(Param,'FileName_1')% if there is a second input line from uvmat
         if isfield(Param.HiddenData,'XmlData') && numel(Param.HiddenData.XmlData)>=2
-            Param.XmlData=Param.HiddenData.XmlData{1};
+            Param.XmlData=Param.HiddenData.XmlData{2};
         end
-        Param.i1_series=Param.HiddenData.i1_series{2};
-        Param.i2_series=Param.HiddenData.i2_series{2};
-        Param.j1_series=Param.HiddenData.j1_series{2};
-        Param.j2_series=Param.HiddenData.j2_series{2};
+        Param.ref_i_list=Param.HiddenData.ref_i_list{2};
+        Param.ref_j_list=Param.HiddenData.ref_j_list{2};
+        Param.i1_list=Param.HiddenData.i1_list{2};
+        Param.i2_list=Param.HiddenData.i2_list{2};
+        Param.j1_list=Param.HiddenData.j1_list{2};
+        Param.j2_list=Param.HiddenData.j2_list{2};
         Param.FileInfo=Param.HiddenData.FileInfo{2};
         update_rootinfo(handles,Param,Param.HiddenData.MovieObject{2},2)% update the data for the second input line
     end
@@ -761,13 +766,8 @@ if Param.Relabel
      Param.j2_list=NaN;
 else
     set(handles.Relabel,'Value',0)
-    %%%%%%%%%%%%%%%%%%
-    %TODO: case of input by uvmat: do not check again the input series %%%%%%%
-    %%%%%%%%%%%%%%%%%%%
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
     % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-    % [RootPath,SubDir,RootFile,Param.i1_series,Param.i2_series,Param.j1_series,Param.j2_series,NomType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[RootFile FileExt]);
-
     [RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
         scan_file_series(FilePath,[RootFile FileExt]);
 
@@ -962,6 +962,9 @@ else
     MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
     MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
     end
+end
+if isempty(Param.Relabel)
+    Param.Relabel=false;
 end
 if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
     MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0

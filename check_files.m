@@ -142,6 +142,7 @@ list_fct_uvmat={...
     'rotate_vector';...%calculate the components of the unit vector norm_plane normal to the plane
     'round_uvmat';...% provide a simple round value of Val of the form  1, 2 , 5 *10^n
     'scan_file_series';...% will replace 'find_file_series':analyse an input file and find the corresponding file series
+    'scan_relabeled_series';...%  check the info from XmlData/FileSeries and find the corresponding index series
     'series';...% master function for analysis field series, with interface 'series.fig'
     'series.fig';...% interface for 'series'
     'set_col_vec';...% sets the color code for vectors depending on a scalar and input parameters (used for plot_field)
