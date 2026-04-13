@@ -618,7 +618,7 @@ end
 hseries=findobj(allchild(0),'Tag','series');% find the parent GUI 'series'
 hhseries=guidata(hseries); %handles of the elements in 'series'
 InputTable=get(hhseries.InputTable,'Data');
-if size(InputTable,1)>=1 && strcmp(InputTable{1,5},'.nc') && max(checkbox(1:3))==0 %&& get(handles.CheckCiv2,'UserData')==6,% no operation asked before Civ2 and input file ready for civ3
+if size(InputTable,1)>=1 && size(InputTable,2)>=5 && strcmp(InputTable{1,5},'.nc') && max(checkbox(1:3))==0 %&& get(handles.CheckCiv2,'UserData')==6,% no operation asked before Civ2 and input file ready for civ3
     set(handles.CheckCiv3,'Visible','on')
 else
     set(handles.CheckCiv3,'Visible','off')

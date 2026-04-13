@@ -8,7 +8,7 @@
 % INPUT:
 % NomTypeIn: file index nomenclature for images 
 % 
-% for definitions of file index nomenclature, see fct fullfile_uvmat
+% for definitions of file index nomenclature, see fct fullfile_indices
 
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France

@@ -50,7 +50,7 @@ if isfield(FileSeries,'FileName')
     FileIndex=floor((i_vector-1)/FileSeries.NbFramePerFile)+1;
     if FileIndex>numel(FileSeries.FileName)
         FileIndex=FileIndex-numel(FileSeries.FileName)+i1;
-        FileName=fullfile_uvmat('','',RootFile,FileExt,NomType,FileIndex);
+        FileName=fullfile_indices(RootFile,FileExt,NomType,FileIndex);
     else
         FileName=FileSeries.FileName{FileIndex};
     end

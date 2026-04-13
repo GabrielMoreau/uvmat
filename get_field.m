@@ -802,7 +802,7 @@ if check_consistent
         dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
         if isequal(dimnames,dim_var)
             test_component(ilist)=1;
-        elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var)))%variable ilist is a 1D array which can be coordinate variable
+        elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var), 1))%variable ilist is a 1D array which can be coordinate variable
             test_coord(ilist)=1;
         end
     end
@@ -844,16 +844,16 @@ if check_consistent
                 end
             end
         end
-        if isempty(find(coord_val))
+        if isempty(find(coord_val, 1))
             coord_val=var_coord;% case of dimension coordinates
         end
         if numel(find(coord_val))<2
             coord_val=[1 2 3];
         end
-        set(handles.Coord_x,'Value',min(coord_val(end),numel(ListCoord)))
-        set(handles.Coord_y,'Value',min(coord_val(end-1),numel(ListCoord)))
+        set(handles.Coord_y,'Value',min(coord_val(end),numel(ListCoord)))
+        set(handles.Coord_x,'Value',min(coord_val(end-1),numel(ListCoord)))
         if numel(coord_val)>=3
-            set(handles.Coord_z,'Value',coord_val(end-2))
+            set(handles.Coord_z,'Value',coord_val(end))
         end
     end
 end

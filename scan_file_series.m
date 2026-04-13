@@ -127,16 +127,16 @@ else  % scan the directory of FilePath to detect file indices
     ref_i_list=unique(sort(ref_i_list));
     ref_j_list=unique(sort(ref_j_list));
 end
-if isempty(find(~isnan(i1_list), 1))
+if all(isnan(i1_list))
     i1_list=NaN;
 end
-if isempty(find(~isnan(i2_list), 1))
+if all(isnan(i2_list))
     i2_list=NaN;
 end
-if isempty(find(~isnan(j1_list), 1))
+if all(isnan(j1_list))
     j1_list=NaN;
 end
-if isempty(find(~isnan(j2_list), 1))
+if all(isnan(j2_list))
     j2_list=NaN;
 end
 % 
@@ -149,30 +149,12 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         NomType='*';
     else  % if there is a file index, j denotes the frame index while i denotes the file index
         if ~isempty(regexp(NomType,'ab$', 'once'))% recognized as a pair (case LaVision, to check !!)
-            RootFile=fullfile_uvmat('','',RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices
+            RootFile=fullfile_indices(RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices
            ref_i_list=1:FileInfo.NumberOfFrames;% i= list of frame indices
             i1_input=1;
             NomType='*';
         else
             ref_j_list=(1:FileInfo.NumberOfFrames)';% the frame index becomes index j
-           % ref_ij=(ref_i_list-min(ref_i_list))*FileInfo.NumberOfFrames+ref_j_list*ones(1,numel(ref_i_list));
-           % j1_list= ref_j_list;
-
-            % j1_series=[zeros(size(i1_series,1),1) j1_series];
-            % %  include the first index in the root name
-            % r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
-            % if ~isempty(r)
-            %     fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
-            %     if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
-            %         rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
-            %     else% if a separator '_' is  detected
-            %         rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
-            %     end
-            %     if ~isempty(rr)
-            %         j1_input=1;
-            %         j2_input=[];
-            %     end
-            % end
         end
     end
 end

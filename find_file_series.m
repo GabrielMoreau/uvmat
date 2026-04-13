@@ -1,4 +1,4 @@
-%'find_file_series': check the content of an input file and find the corresponding file series
+%'find_file_series': check the content of an input file and find the corresponding file series TO REPLACE BY 'scan_file_series'
 %--------------------------------------------------------------------------
 % function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileInfo,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %

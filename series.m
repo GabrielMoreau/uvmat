@@ -586,11 +586,11 @@ nbview=size(InputTable,1);% number of lines filled in the Input file table after
 %% get info on each line of the input table
 CheckRelabelQuest=true;% will ask for relabeling if relevant
 for iview=1:nbview
-    RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
+    Param.RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
     Param.Relabel=false;% no relabeling by default
     MovieObject=[];
     Param.FileInfo=[];
-    if ~exist(RootPath,'dir')
+    if ~exist(Param.RootPath,'dir')
         Param.i1_series=[];
         RootFile='';% input folder does not exist, will ask by browser
     else
@@ -607,15 +607,6 @@ for iview=1:nbview
                 if strcmp(answer,'Yes')% relabel option activated
                     set(handles.Relabel,'Value',1)% activate the relabel option
                     CheckRelabel=true;
-%                     NomType='*';
-%                     i1=1;i2=[];j1=1;j2=[];
-%                     Param.ref_i_list=1:size(XmlData.Time,1)-1;
-%                     Param.i2_list=[];
-%                     if size(XmlData.Time,2)>2
-%                         Param.ref_j_list=1:size(XmlData.Time,2)-1;
-%                     else
-%                         Param.ref_j_list=NaN;
-%                     end
                     Param.Relabel=true;
                     if ischar(XmlData.FileSeries.FileName)
                         XmlData.FileSeries.FileName={XmlData.FileSeries.FileName};%transform char to cell in case of a single file
@@ -634,7 +625,7 @@ for iview=1:nbview
         end
     end
     if Param.Relabel
-        [RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(RootPath,XmlData.FileSeries,XmlData.Time);
+        [Param.RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(Param.RootPath,XmlData.FileSeries,XmlData.Time);
         Param.i1_list=Param.ref_i_list;
         Param.j1_list=Param.ref_j_list;
         Param.i2_list=NaN;
@@ -642,13 +633,14 @@ for iview=1:nbview
     else
         %scan the input folder
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
-        InputFile=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
-        [RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
-            scan_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),InputFile);
+        Param.FileExt=InputTable{iview,5};
+        InputFile=[InputTable{iview,3} InputTable{iview,4} Param.FileExt];
+        [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
+            scan_file_series(Param.RootPath,InputFile);
     end
 
     % if no file is found on line #iview, open a browser
-    if ~Param.Relabel && isempty(RootFile)&& isempty(Param.ref_ij)
+    if ~Param.Relabel && isempty(Param.RootFile)&& isempty(Param.ref_ij)
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
         if isempty(fileinput)
             errormsg='no input file entered';
@@ -700,7 +692,7 @@ drawnow
 errormsg=''; % default
 
 %% get the input root name, indices, file extension and nomenclature NomType
-if isempty(regexp(InputFile,'^http', 'once')) && ~exist(InputFile,'file')
+if ~exist_file(InputFile)
     errormsg=['input file ' InputFile  ' does not exist'];
     msgbox_uvmat('ERROR',errormsg)
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (refresh still needed)
@@ -708,9 +700,9 @@ if isempty(regexp(InputFile,'^http', 'once')) && ~exist(InputFile,'file')
 end
 
 %% Check the nature of the input file
-[FileInfo,MovieObject]=get_file_info(InputFile);
+[Param.FileInfo,MovieObject]=get_file_info(InputFile);
 CheckOpen=false;
-switch FileInfo.FileType
+switch Param.FileInfo.FileType
     case 'txt'%text input file
         CheckOpen=true;
         edit(InputFile)
@@ -725,11 +717,10 @@ if CheckOpen
     set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta  color (end of activation)
     return
 end
-Param.FileInfo=FileInfo;
 
 %% Look for file relabeling option
-[FilePath,RootFile,FileExt]=fileparts(InputFile);
-[RootPath,SubDir,SubDirExt]=fileparts(FilePath);
+[Param.FilePath,RootFile,Param.FileExt]=fileparts(InputFile);
+[RootPath,SubDir,SubDirExt]=fileparts(Param.FilePath);
 SubDir=[SubDir SubDirExt];% append again the extension possibly found
 [XmlFileName,Rank]=find_imadoc(RootPath,SubDir);
 Param.Relabel=false;%no file relabeling by default
@@ -759,7 +750,7 @@ Param.XmlData=XmlData;
 
 %% detect the list of file in the input series in the case of no relabeling
 if Param.Relabel
-    [RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(FilePath,XmlData.FileSeries,XmlData.Time);
+    [Param.RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(Param.FilePath,XmlData.FileSeries,XmlData.Time);
     Param.i1_list=Param.ref_i_list;
     Param.j1_list=Param.ref_j_list;
     Param.i2_list=NaN;
@@ -768,8 +759,8 @@ else
     set(handles.Relabel,'Value',0)
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
     % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-    [RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
-        scan_file_series(FilePath,[RootFile FileExt]);
+    [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
+        scan_file_series(Param.FilePath,[RootFile Param.FileExt]);
 
     if isempty(RootFile) && isempty(Param.i1_series)
         errormsg='no input file in the series';
@@ -820,7 +811,7 @@ if isfield(SeriesData,'i1_series')% remove the irrelevant data lines beyond ivie
 end
 
 %% fill the current Intput Table line
-InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];%fill the current Intput Table line
+InputTable(iview,:)=[{RootPath},{SubDir},{Param.RootFile},{Param.NomType},{Param.FileExt}];%fill the current Intput Table line
 if iview >1
     set(handles.InputLine,'String',num2str(iview))
 end
@@ -989,54 +980,6 @@ if iview==1% set the detected index increment for the first input table line
     end
 end
 
-%% Determine the times
-TimeUnit='';% default time settings
-% read  value set by the first series for the append mode (iwiew >1)
-if iview>1
-    TimeUnit=get(handles.TimeUnit,'String');
-end
-TimeName='';
-Time=NaN; % default
-TimeMin=NaN;
-TimeFirst=NaN;
-TimeLast=NaN;
-TimeMax=NaN;
-SeriesData=get(handles.series,'UserData');
-refresh_first_last_info(handles)%%%%% A VERIFIER
-if Param.Relabel
-    TimeName='xml';
-    Time=Param.XmlData.Time;
-else
-    %% read timing  from the current file (prioritary)
-    if ~isempty(VideoObject)% case of movies
-        imainfo=get(VideoObject);
-        if isfield(imainfo,'NumFrames')
-            imainfo.NumberOfFrames=imainfo.NumFrames;
-        end
-        if isempty(j1_series) % frame index along i
-            Time=zeros(imainfo.NumberOfFrames+1,2);
-            Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
-        else
-            Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
-        end
-        TimeName='video';
-    end
-end
-
-
-%% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
-if isempty(TimeName)
-    TimeMin=NaN;    TimeMax=NaN;  TimeFirst=NaN;    TimeLast=NaN;
-else
-    if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
-        msgbox_uvmat('WARNING','incomplete time info in xml file');
-    end
-    TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
-    if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
-        TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
-    end
-end
-
 %% update the tables of Min and Max indices
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
@@ -1063,6 +1006,7 @@ end
 
 %% adjust the first and last indices for the selected series, only if requested by the bounds
 % i index, compare input to min index i
+SeriesData=get(handles.series,'UserData');
 first_i=str2num(get(handles.num_first_i,'String')); % retrieve previous first i
 ref_i=1;
 
@@ -1119,6 +1063,61 @@ if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2double(get(handles.num_NbSlice,'String'));
 end
 
+%% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
+TimeUnit='';% default time settings
+% read  value set by the first series for the append mode (iwiew >1)
+if iview>1
+    TimeUnit=get(handles.TimeUnit,'String');
+end
+
+TimeName='';
+if strcmp(Param.FileInfo.FieldType,'civdata')
+    if Param.FileInfo.CivStage<=3
+        TimeName='Civ1_Time';
+    else
+        TimeName='Civ2_Time';
+    end
+end
+Time=NaN; % default
+TimeMin=NaN;
+TimeFirst=NaN;
+TimeLast=NaN;
+TimeMax=NaN;
+if Param.Relabel
+    TimeName='xml';
+    Time=Param.XmlData.Time;
+else
+    % read timing  from the current file (prioritary)
+    if ~isempty(VideoObject)% case of movies
+        imainfo=get(VideoObject);
+        if isfield(imainfo,'NumFrames')
+            imainfo.NumberOfFrames=imainfo.NumFrames;
+        end
+        if isempty(j1_series) % frame index along i
+            Time=zeros(imainfo.NumberOfFrames+1,2);
+            Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+        else
+            Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+        end
+        TimeName='video';
+    else
+        MinFullFileName=fullfile_indices(fullfile(Param.RootPath,Param.RootFile),Param.FileExt,Param.NomType,Param.i1_list(1),Param.i2_list(1),Param.j1_list(1),Param.j2_list(1));
+ TimeMin=get_time(MinFullFileName,Param.FileInfo.FieldType,TimeName)
+    end
+end
+
+
+if isempty(TimeName)
+    TimeMin=NaN;    TimeMax=NaN;  TimeFirst=NaN;    TimeLast=NaN;
+else
+    if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
+        msgbox_uvmat('WARNING','incomplete time info in xml file');
+    end
+    TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
+    if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
+        TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
+    end
+end
 
 %% update the time table
 TimeTable=get(handles.TimeTable,'Data');
@@ -1140,11 +1139,11 @@ SeriesData.Time{iview}=Time;
 SeriesData.TimeName=TimeName;
 set(handles.series,'UserData',SeriesData)
 
-%% update the time info
+%% update the info relative to first_i and last_i
 refresh_first_last_info(handles);
 
 %% update pair menus
-InputTable=get(handles.InputTable,'Data');
+%InputTable=get(handles.InputTable,'Data');
 hset_pair=findobj(allchild(0),'Tag','set_pairs');%look for the GUI set_pairs
 if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
 CheckPair= ~isempty(find(~isnan(Param.i2_list)|~isnan(Param.j2_list), 1)); % check whether index pairs need to be defined
@@ -1153,9 +1152,9 @@ PairString{iview,1}=''; % no pair for #iview by default
 if CheckPair% if pairs need to be display for line iview
     [ModeMenu,ModeValue]=update_mode(Param.j1_list,Param.j2_list);% determine the menu and default selection for pair menu
     Menu=update_listpair(Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,ModeMenu{ModeValue});
-   if numel(Menu)>=1
-         PairString{iview,1}=Menu{1};
-     end
+    if numel(Menu)>=1
+        PairString{iview,1}=Menu{1};
+    end
 end
 set(handles.PairString,'Data',PairString)
 if isempty(find(cellfun('isempty',get(handles.PairString,'Data'))==0, 1))% if all lines of pairs are empty
@@ -1188,7 +1187,7 @@ if MaxIndex_i>MinIndex_i
         if npx<MaxIndex_i-MinIndex_i
             IndexMissing=find(CheckMissing)-1;% indices of the missing files -1 (from 0 to end-1)
             LineData=ones(1,npx);
-            LineData(ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i-1)))=0;
+            LineData(ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i)))=0;
         else
             pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
             LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
@@ -1211,7 +1210,7 @@ set(handles.FileStatus,'Units','normalized')
 function [ModeMenu,ModeValue]=update_mode(j1_list,j2_list)
 %------------------------------------------------------------------------
 ModeValue=1;%default
-if isequal(j2_list,NaN)% no j pairs
+if isnan(j2_list)% no j pairs
         ModeMenu={'series(Di)'}; % pair menu with only option Di
 else %existence of j pairs
     ref_j_list=floor((j1_list+j2_list)/2);
@@ -1240,7 +1239,7 @@ pair_string={};
 switch mode
     case 'series(Di)'
         diff_i=i2_list-i1_list;
-        ipairs=unique(diff_i,'descend');% find the list of pairs y
+        ipairs=unique(diff_i);% find the list of pairs y
         pair_string=cell(size(ipairs,1),1);
         for ilist=1:numel(pair_string)
              pair_string{ilist}=['Di= ' num2str(-floor(ipairs(ilist)/2)) '|' num2str(ceil(ipairs(ilist)/2)) ];
@@ -2975,39 +2974,23 @@ if strcmp(field,'add_field...')
 end
 
 %------------------------------------------------------------------------
-%--- give the time 'TimeValue' and time interval 'DtValue' from the input file name (including path)
-function [TimeValue,DtValue]=get_time(FullFileName,FileType,TimeName,DtName)
+%--- give the time 'TimeValue'  from the input file name (including path)
+function TimeValue=get_time(FullFileName,FieldType,TimeName)
 %------------------------------------------------------------------------
-% [i1,i2,j1,j2] = get_file_index(ref_i,ref_j,PairString);
-% FileName=fullfile_uvmat(InputTable{1},InputTable{2},InputTable{3},InputTable{5},InputTable{4},i1,i2,j1,j2);
 TimeValue=NaN;
-DtValue=NaN;
-switch FileType
+switch FieldType
     case 'civdata'
-    Data=nc2struct(FullFileName,[]);
-    if ismember(TimeName,{'civ1','filter1'})
-        if isfield(Data,'Civ1_Time')
-        TimeValue=Data.Civ1_Time;
+        Data=nc2struct(FullFileName,[]);
+        if Data.CivStage<=3
+                TimeValue=Data.Civ1_Time;
+        else
+                TimeValue=Data.Civ2_Time;
         end
-        if isfield(Data,'Civ1_Dt')
-        DtValue=Data.Civ1_Dt;
-        end
-    else
-        if isfield(Data,'Civ2_Time')
-        TimeValue=Data.Civ2_Time;
-        end
-        if isfield(Data,'Civ2_Dt')
-        DtValue=Data.Civ2_Dt;
-        end
-    end
     case 'netcdf'
         Data=nc2struct(FullFileName,[]);
-    if ~isempty(TimeName)&& isfield(Data,TimeName)
-        TimeValue=Data.(TimeName);
-    end
-    if exist('DtName','var') && isfield(Data,DtName)
-        DtValue=Data.(DtName);
-    end
+        if ~isempty(TimeName)&& isfield(Data,TimeName)
+            TimeValue=Data.(TimeName);
+        end
 end
 
 %------------------------------------------------------------------------
@@ -3907,6 +3890,3 @@ if CheckRelabel
 end
 check_input_file_series(handles,CheckRelabel)% check the min and max relabeled indices, or original ones if CheckRelabel=false
 ActionInput_Callback([],[], handles)% %% enable menus (field, vel type,...), in accordance with the current action function
-
-
-function Background_Callback(hObject, eventdata, handles)

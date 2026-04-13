@@ -2377,20 +2377,18 @@ state_j='off'; % no visualisation of the j index by default
 %% get the file series
 MovieObject=[];
 if CheckRelabel
-    NomType='*';
-    i1_list=[];
-    i2_list=[];
-    j1_list=[];
-    j2_list=[];
-    nbfield_i=[];
-    nbfield_j=[];
+    [RootFile,ref_i_list,ref_j_list,NomType]=scan_relabeled_series(fullfile(RootPath,SubDir),XmlData.FileSeries,XmlData.Time)
+    %NomType='*';
+    i1_list=ref_i_list;
+    i2_list=NaN;
+    j1_list=ref_j_list;
+    j2_list=NaN;
     FileInfo=XmlData.FileInfo;
     set(handles.num_i1,'String','1')% the index does not correspond to file name index anymore, set i=1, j=1 by default as s start
     set(handles.num_j1,'String','1')
 else % scan the input folder to get the list of existing files and NomType
-     [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(fullfile(RootPath,SubDir),FileName);
-     nbfield_i=ref_i_list(end);
-     nbfield_j=ref_j_list(end);
+     [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject]=scan_file_series(fullfile(RootPath,SubDir),FileName);
+
   
    % nbfield_j=max(max(max(j2_series)));% number of fields along j index
     % if isempty(nbfield_j)
@@ -2408,7 +2406,8 @@ if input_line==1
 else
     set(handles.NomType_1,'String',NomType)
 end
-
+ nbfield_i=ref_i_list(end);
+ nbfield_j=ref_j_list(end);
 
 %% record info in UserData of the figure uvmat
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
@@ -3272,11 +3271,11 @@ if sub_value
         ref_i_1=ref_i;
         ref_j_1=ref_j;
     end
-    if isscalar(UvData.i1_series)
-        UvData.i1_series{2}=UvData.i1_series{1};
-        UvData.j1_series{2}=UvData.j1_series{1};
-        UvData.i2_series{2}=UvData.i2_series{1};
-        UvData.j2_series{2}=UvData.j2_series{1};
+    if isscalar(UvData.i1_list)
+        UvData.i1_list{2}=UvData.i1_list{1};
+        UvData.j1_list{2}=UvData.j1_list{1};
+        UvData.i2_list{2}=UvData.i2_list{1};
+        UvData.j2_list{2}=UvData.j2_list{1};
     end
     if ref_i_1<UvData.i1_list(1)
         errormsg='minimum i index reached';

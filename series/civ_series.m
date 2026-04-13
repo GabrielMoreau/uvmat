@@ -98,7 +98,6 @@ inv_scale_factor=100; % scale factor of displacements for uin16 records in netcd
 %% input files and indexing
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-% WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 MaxIndex_i=Param.IndexRange.MaxIndex_i;
 MinIndex_i=Param.IndexRange.MinIndex_i;
 MaxIndex_j=ones(size(MaxIndex_i));MinIndex_j=ones(size(MinIndex_i));
@@ -107,7 +106,15 @@ if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j
     MinIndex_j=Param.IndexRange.MinIndex_j;
 end
 if isfield(Param,'InputTable')
-    [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+    %[filecell,,i2_series,j1_series,j2_series]=get_file_series(Param);
+    ref_i=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
+    if isfield(Param.IndexRange,'first_j')
+        ref_j=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+        [ref_i_list,ref_j_list]=meshgrid(ref_i,ref_j);
+    else
+        ref_i_list=ref_i;
+        ref_j_list=ones(size(ref_i));
+    end
     iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
     if Param.ActionInput.CheckCiv1
         iview_A=1;% usual PIV, the image series is on the first line of the table
@@ -137,10 +144,10 @@ if isfield(Param,'InputTable')
             end
             if iview_A==1% if Civ1 is performed
                 [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-                    find_pair_indices(PairCiv1,i1_series{1},j1_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+                    find_pair_indices(PairCiv1,ref_i_list,ref_j_list,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
                 if ~isempty(PairCiv2)
                     [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                        find_pair_indices(PairCiv2,i1_series{1},j1_series{1},MinIndex_i(1),MaxIndex_i(1),MinIndex_j(1),MaxIndex_j(1));
+                        find_pair_indices(PairCiv2,ref_i_list,ref_j_list,MinIndex_i(1),MaxIndex_i(1),MinIndex_j(1),MaxIndex_j(1));
                     check_bounds=check_bounds | check_bounds_Civ2;
                 end
             else% we start from an existing Civ1 file
@@ -698,7 +705,7 @@ for ifield=1:NbField
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
         if iview_A==2 && isfield (par_civ2,'CheckCiv3') && strcmp(par_civ2.CheckCiv3,'iterate(civ3)') %get the guess from  patch2% Civ1 data read in a netcdf file
-            [DataIn,~,~,errormsg]=nc2struct(filecell{1,ifield});
+            [DataIn,~,~,errormsg]=nc2struct(filecell{1,ifield});%TO UPDATE*******!!!
             if ~isempty(errormsg)
                 disp(errormsg)
                 return
