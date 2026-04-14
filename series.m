@@ -588,11 +588,11 @@ nbview=size(InputTable,1);% number of lines filled in the Input file table after
 %% get info on each line of the input table
 CheckRelabelQuest=true;% will ask for relabeling if relevant
 for iview=1:nbview
-    Param.RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
+    Param.FilePath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
     Param.Relabel=false;% no relabeling by default
     MovieObject=[];
     Param.FileInfo=[];
-    if ~exist(Param.RootPath,'dir')
+    if ~exist(Param.FilePath,'dir')
         Param.i1_series=[];
         RootFile='';% input folder does not exist, will ask by browser
     else
@@ -627,7 +627,7 @@ for iview=1:nbview
         end
     end
     if Param.Relabel
-        [Param.RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(Param.RootPath,XmlData.FileSeries,XmlData.Time);
+        [Param.RootFile,Param.ref_i_list,Param.ref_j_list]=scan_relabeled_series(Param.FilePath,XmlData.FileSeries,XmlData.Time);
         Param.i1_list=Param.ref_i_list;
         Param.j1_list=Param.ref_j_list;
         Param.i2_list=NaN;
@@ -638,12 +638,12 @@ for iview=1:nbview
         Param.FileExt=InputTable{iview,5};
         InputFile=[InputTable{iview,3} InputTable{iview,4} Param.FileExt];
         [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
-            scan_file_series(Param.RootPath,InputFile);
+            scan_file_series(Param.FilePath,InputFile);
     end
 
     % if no file is found on line #iview, open a browser
     if ~Param.Relabel && isempty(Param.RootFile)&& isempty(Param.ref_ij)
-        fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
+        fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],Param.FilePath);
         if isempty(fileinput)
             errormsg='no input file entered';
             return
@@ -945,11 +945,11 @@ end
 function update_rootinfo(handles,Param,iview)
 %------------------------------------------------------------------------
 %% determine the min and max indices for the whole file series
-if isequal(Param.ref_i_list,NaN)% no i index
+if isnan(Param.ref_i_list)% no i index
     MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
 else
-    MinIndex_i=min(Param.ref_i_list);
-    MaxIndex_i=max(Param.ref_i_list);
+    MinIndex_i=min(Param.ref_i_list)
+    MaxIndex_i=max(Param.ref_i_list)
     if isnan(Param.ref_j_list)
         MinIndex_j=1;MaxIndex_j=1;
     else
@@ -988,11 +988,11 @@ MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in t
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
-if ~isempty(MinIndex_i)&&~isempty(MaxIndex_i)
+if ~isnan(MinIndex_i)&&~isnan(MaxIndex_i)
     MinIndex_i_table(iview,1)=MinIndex_i;
     MaxIndex_i_table(iview,1)=MaxIndex_i;
 end
-if ~isempty(MinIndex_j)&&~isempty(MaxIndex_j)
+if ~isnan(MinIndex_j)&& ~isnan(MaxIndex_j)
     MinIndex_j_table(iview,1)=MinIndex_j;
     MaxIndex_j_table(iview,1)=MaxIndex_j;
 end
@@ -1005,40 +1005,41 @@ if isfield(Param,'XmlData') && isfield(Param.XmlData,'NbSlice') && ~isempty(Para
     set(handles.num_NbSlice,'String',num2str(Param.XmlData.NbSlice))
     set(handles.num_NbSlice,'Visible','on')
 end
-
-
-%% adjust the first and last indices for the selected series, only if requested by the bounds
-% i index, compare input to min index i
 SeriesData=get(handles.series,'UserData');
-first_i=str2num(get(handles.num_first_i,'String')); % retrieve previous first i
-ref_i=1;
 
-if isfield(SeriesData,'ref_i')
-    ref_i=SeriesData.ref_i_input;
+%% adjust the first indices for the selected series, only if requested by the bounds
+% i index, compare input to min index i
+ref_i=1;%default
+if isfield(SeriesData,'ref_i_input')
+    ref_i=SeriesData.ref_i_input;%take the value possibly selected by the input file 
 end
-if isempty(first_i)
+first_i=str2double(get(handles.num_first_i,'String')); % retrieve previous first i by default
+if isnan(first_i)
     first_i=ref_i; % first_i updated by the input value
 elseif first_i < MinIndex_i
-    first_i=MinIndex_i; % first_i set to the min i index (restricted by oter input lines)
+    first_i=MinIndex_i; % first_i set to the min i index 
 elseif first_i >MaxIndex_i
-    first_i=MaxIndex_i; % first_i set to the max i index (restricted by oter input lines)
+    first_i=MaxIndex_i; % first_i set to the max i index 
 end
+
 % j index,  compare input to min index j
-first_j=str2num(get(handles.num_first_j,'String'));
 ref_j=1;
-if isfield(SeriesData,'ref_j')
-    ref_j=SeriesData.ref_j_input;
+if isfield(SeriesData,'ref_j_input')
+    ref_j=SeriesData.ref_j_input;%take the value possibly selected by the input file 
 end
-if isempty(first_j)
+first_j=str2double(get(handles.num_first_j,'String'));% keep the previous value by default
+if isnan(first_j)
     first_j=ref_j; % first_j updated by the input value
 elseif first_j<MinIndex_j
     first_j=MinIndex_j; % first_j set to the min j index (restricted by oter input lines)
 elseif first_j >MaxIndex_j
     first_j=MaxIndex_j; % first_j set to the max j index (restricted by oter input lines)
 end
+
+%% adjust the last indices for the selected series, only if requested by the bounds
 % i index, compare input to max index i
-last_i=str2num(get(handles.num_last_i,'String'));
-if isempty(last_i)
+last_i=str2double(get(handles.num_last_i,'String'));
+if isnan(last_i)
     last_i=ref_i;
 elseif last_i > MaxIndex_i
     last_i=MaxIndex_i;
@@ -1046,8 +1047,8 @@ elseif last_i<first_i
     last_i=first_i;
 end
 % j index, compare input to max index j
-last_j=str2num(get(handles.num_last_j,'String'));
-if isempty(last_j)
+last_j=str2double(get(handles.num_last_j,'String'));
+if isnan(last_j)
     last_j=ref_j;
 elseif last_j>MaxIndex_j
     last_j=MaxIndex_j;
@@ -1273,10 +1274,10 @@ num_last_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function num_last_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SeriesData=get(handles.series,'UserData');
-if ~isfield(SeriesData,'Time')
-    SeriesData.Time{1}=[];
-end
+% SeriesData=get(handles.series,'UserData');
+% if ~isfield(SeriesData,'Time')
+%     SeriesData.Time{1}=[];
+% end
 refresh_first_last_info(handles);
 
 %------------------------------------------------------------------------
@@ -1468,7 +1469,7 @@ end
 path_series=fileparts(which('series'));
 HeadFile=fullfile(path_series,'.git','FETCH_HEAD');
 if exist(HeadFile,'file')~=2
-    HeadFile=fullfile(pathuvmat,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
+    HeadFile=fullfile(path_series,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
 end
 if exist(HeadFile,'file')% check the existence of GIT info
     datfile=dir(HeadFile);
@@ -2792,10 +2793,10 @@ switch OutputSubDirMode
         SubDirOut=InputTable{1,2}; % use the first subdir name (+OutputDirExt) as output  subdirectory
     case 'two'
         OutputDirVisible='on';
-        SubDir=InputTable(1:2,2); % set of subdirectories
-        SubDirOut=SubDir{1};
-        if numel(SubDir)>1
-                SubDirOut=[SubDirOut '-' regexprep(SubDir{2},'^/','')];
+        %SubDir=InputTable(1:2,2); % set of subdirectories
+        SubDirOut=InputTable{1,2};
+        if size(InputTable,1)>=2
+                SubDirOut=[SubDirOut '-' regexprep(InputTable{2,2},'^/','')];
         end
     case 'last'
         OutputDirVisible='on';
@@ -2969,17 +2970,22 @@ function TimeValue=get_time(FullFileName,FieldType,TimeName)
 TimeValue=NaN;
 switch FieldType
     case 'civdata'
-        Data=nc2struct(FullFileName,[]);
+        [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
+        if isempty(errormsg)
         if Data.CivStage<=3
                 TimeValue=Data.Civ1_Time;
         else
                 TimeValue=Data.Civ2_Time;
         end
+        end
     case 'netcdf'
-        Data=nc2struct(FullFileName,[]);
-        if ~isempty(TimeName)&& isfield(Data,TimeName)
+        [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
+        if isempty(errormsg) && ~isempty(TimeName)&& isfield(Data,TimeName)
             TimeValue=Data.(TimeName);
         end
+end
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
 
 %------------------------------------------------------------------------
