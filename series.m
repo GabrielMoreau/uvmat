@@ -124,6 +124,8 @@ set(handles.PairString,'ColumnEditable',false)
 set(handles.PairString,'ColumnFormat',{'char'})
 set(handles.PairString,'Data',{''})
 
+set(handles.TimeTable,'Data',cell(1,5))
+
 series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
 set(hObject,'DeleteFcn',{@closefcn})%
@@ -346,7 +348,7 @@ if isfield(Param,'InputFile')
     Param.j2_list=Param.HiddenData.j2_list{1};
     Param.FileInfo=Param.HiddenData.FileInfo{1};
     Param.Relabel=[];%default
-    update_rootinfo(handles,Param,Param.HiddenData.MovieObject{1},1)% update the data for the first input line
+    update_rootinfo(handles,Param,1)% update the data for the first input line
     if isfield(Param,'FileName_1')% if there is a second input line from uvmat
         if isfield(Param.HiddenData,'XmlData') && numel(Param.HiddenData.XmlData)>=2
             Param.XmlData=Param.HiddenData.XmlData{2};
@@ -358,7 +360,7 @@ if isfield(Param,'InputFile')
         Param.j1_list=Param.HiddenData.j1_list{2};
         Param.j2_list=Param.HiddenData.j2_list{2};
         Param.FileInfo=Param.HiddenData.FileInfo{2};
-        update_rootinfo(handles,Param,Param.HiddenData.MovieObject{2},2)% update the data for the second input line
+        update_rootinfo(handles,Param,2)% update the data for the second input line
     end
 
     %% enable field and veltype menus, in accordance with the current action
@@ -649,7 +651,7 @@ for iview=1:nbview
             display_file_name(handles,fileinput,iview)% update the table of input file series #iview, then will call update_rootinfo
         end
     else
-        update_rootinfo(handles,Param,MovieObject,iview)
+        update_rootinfo(handles,Param,iview)
     end
 end
 
@@ -755,6 +757,7 @@ if Param.Relabel
     Param.j1_list=Param.ref_j_list;
     Param.i2_list=NaN;
      Param.j2_list=NaN;
+     Param.NomType='*';
 else
     set(handles.Relabel,'Value',0)
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
@@ -905,7 +908,7 @@ set(handles.series,'UserData',SeriesData)
 set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:
-update_rootinfo(handles,Param,MovieObject,iview);
+update_rootinfo(handles,Param,iview);
 
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
@@ -939,7 +942,7 @@ end
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file
-function update_rootinfo(handles,Param,VideoObject,iview)
+function update_rootinfo(handles,Param,iview)
 %------------------------------------------------------------------------
 %% determine the min and max indices for the whole file series
 if isequal(Param.ref_i_list,NaN)% no i index
@@ -1063,87 +1066,7 @@ if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2double(get(handles.num_NbSlice,'String'));
 end
 
-%% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
-TimeUnit='';% default time settings
-% read  value set by the first series for the append mode (iwiew >1)
-if iview>1
-    TimeUnit=get(handles.TimeUnit,'String');
-end
-
-TimeName='';
-if strcmp(Param.FileInfo.FieldType,'civdata')
-    if Param.FileInfo.CivStage<=3
-        TimeName='Civ1_Time';
-    else
-        TimeName='Civ2_Time';
-    end
-end
-Time=NaN; % default
-TimeMin=NaN;
-TimeFirst=NaN;
-TimeLast=NaN;
-TimeMax=NaN;
-if Param.Relabel
-    TimeName='xml';
-    Time=Param.XmlData.Time;
-else
-    % read timing  from the current file (prioritary)
-    if ~isempty(VideoObject)% case of movies
-        imainfo=get(VideoObject);
-        if isfield(imainfo,'NumFrames')
-            imainfo.NumberOfFrames=imainfo.NumFrames;
-        end
-        if isempty(j1_series) % frame index along i
-            Time=zeros(imainfo.NumberOfFrames+1,2);
-            Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
-        else
-            Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
-        end
-        TimeName='video';
-    else
-        MinFullFileName=fullfile_indices(fullfile(Param.RootPath,Param.RootFile),Param.FileExt,Param.NomType,Param.i1_list(1),Param.i2_list(1),Param.j1_list(1),Param.j2_list(1));
- TimeMin=get_time(MinFullFileName,Param.FileInfo.FieldType,TimeName)
-    end
-end
-
-
-if isempty(TimeName)
-    TimeMin=NaN;    TimeMax=NaN;  TimeFirst=NaN;    TimeLast=NaN;
-else
-    if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
-        msgbox_uvmat('WARNING','incomplete time info in xml file');
-    end
-    TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
-    if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1]
-        TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
-    end
-end
-
-%% update the time table
-TimeTable=get(handles.TimeTable,'Data');
-TimeTable{iview,1}=TimeName;
-TimeTable{iview,2}=TimeMin;
-TimeTable{iview,3}=TimeFirst;
-TimeTable{iview,4}=TimeLast;
-TimeTable{iview,5}=TimeMax;
-set(handles.TimeTable,'Data',TimeTable)
-
-%% update the series info in 'UserData'
-SeriesData.ref_i_list{iview}=Param.ref_i_list;
-SeriesData.i1_list{iview}=Param.i1_list;
-SeriesData.i2_list{iview}=Param.i2_list;
-SeriesData.j1_list{iview}=Param.j1_list;
-SeriesData.j2_list{iview}=Param.j2_list;
-SeriesData.FileInfo{iview}=Param.FileInfo;
-SeriesData.Time{iview}=Time;
-SeriesData.TimeName=TimeName;
-set(handles.series,'UserData',SeriesData)
-
-%% update the info relative to first_i and last_i
-refresh_first_last_info(handles);
-
 %% update pair menus
-%InputTable=get(handles.InputTable,'Data');
 hset_pair=findobj(allchild(0),'Tag','set_pairs');%look for the GUI set_pairs
 if ~isempty(hset_pair), delete(hset_pair); end % delete the GUI set_pair if opened
 CheckPair= ~isempty(find(~isnan(Param.i2_list)|~isnan(Param.j2_list), 1)); % check whether index pairs need to be defined
@@ -1165,6 +1088,78 @@ else
     set(handles.SetPairs,'Visible','on')
 end
 
+%% determine the min and max times: case of Netcdf files will be treated later in FieldName_Callback
+TimeUnit='';% default time settings
+% read  value set by the first series for the append mode (iwiew >1)
+if iview>1
+    TimeUnit=get(handles.TimeUnit,'String');
+end
+
+TimeName='';
+
+Time=NaN; % default
+TimeMin=NaN;
+TimeFirst=NaN;
+TimeLast=NaN;
+TimeMax=NaN;
+
+% read timing  from the current file (prioritary)
+if ~Param.Relabel && isfield(Param.FileInfo,'FrameRate') && isfield(Param.FileInfo,'NumberOfFrames') % case of movies
+    if isnan(Param.j1_list) % frame index along i
+        Time=zeros(Param.FileInfo.NumberOfFrames+1,2);
+        Time(:,2)=(0:1/Param.FileInfo.FrameRate:(Param.FileInfo.NumberOfFrames)/Param.FileInfo.FrameRate)';
+    else
+        Time=[0;ones(Param.j1_list(end),1)]*(0:1/Param.FileInfo.FrameRate:(Param.FileInfo.NumberOfFrames)/Param.FileInfo.FrameRate);
+    end
+    TimeName='video';
+elseif strcmp(Param.FileInfo.FieldType,'civdata')
+    if Param.FileInfo.CivStage<=3
+        TimeName='Civ1_Time';
+    else
+        TimeName='Civ2_Time';
+    end
+    [i1,i2,j1,j2] = get_file_index(MinIndex_i,MinIndex_j,PairString);
+    MinFullFileName=fullfile_indices(fullfile(Param.FilePath,Param.RootFile),Param.FileExt,Param.NomType,i1,i2,j1,j2);
+    TimeMin=get_time(MinFullFileName,Param.FileInfo.FieldType,TimeName);
+    [i1,i2,j1,j2] = get_file_index(MaxIndex_i,MaxIndex_j,PairString);
+    MaxFullFileName=fullfile_indices(fullfile(Param.FilePath,Param.RootFile),Param.FileExt,Param.NomType,i1,i2,j1,j2);
+    TimeMax=get_time(MaxFullFileName,Param.FileInfo.FieldType,TimeName);
+end
+% read timing  from the xml file (second prioritary)
+if isempty(TimeName)&& isfield(Param,'XmlData') && isfield(Param.XmlData,'Time')
+    TimeName='xml';
+    Time=Param.XmlData.Time;
+    if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
+        msgbox_uvmat('WARNING','incomplete time info in xml file');
+    else
+         TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
+         TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
+    end
+end
+
+%% update the series info in 'UserData'
+SeriesData.ref_i_list{iview}=Param.ref_i_list;
+SeriesData.i1_list{iview}=Param.i1_list;
+SeriesData.i2_list{iview}=Param.i2_list;
+SeriesData.j1_list{iview}=Param.j1_list;
+SeriesData.j2_list{iview}=Param.j2_list;
+SeriesData.FileInfo{iview}=Param.FileInfo;
+SeriesData.Time{iview}=Time;
+SeriesData.TimeName{iview}=TimeName;
+set(handles.series,'UserData',SeriesData)
+
+%% update the time table
+TimeTable=get(handles.TimeTable,'Data');
+TimeTable{iview,1}=TimeName;
+TimeTable{iview,2}=TimeMin;
+TimeTable{iview,3}=TimeFirst;
+TimeTable{iview,4}=TimeLast;
+TimeTable{iview,5}=TimeMax;
+set(handles.TimeTable,'Data',TimeTable)
+
+%% update the info relative to first_i and last_i
+refresh_first_last_info(handles);
+
 %% display the set of existing files as an image with black bands for gaps showing gaps in the series
 nbview=numel(SeriesData.i1_list);
 MaxIndex_i=ones(nbview,1); % default
@@ -1185,9 +1180,10 @@ if MaxIndex_i>MinIndex_i
     for iline=1:nbview
         CheckMissing(SeriesData.ref_i_list{iline}-MinIndex_i+1)=0;% CheckMissing=false for detected files
         if npx<MaxIndex_i-MinIndex_i
-            IndexMissing=find(CheckMissing)-1;% indices of the missing files -1 (from 0 to end-1)
+            IndexMissing=find(CheckMissing);% indices of the missing files -1 (from 0 to end-1)
             LineData=ones(1,npx);
-            LineData(ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i)))=0;
+            NewIndexMissing=min(npx,ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i)));
+            LineData(NewIndexMissing)=0;
         else
             pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
             LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
@@ -1316,41 +1312,34 @@ if strcmp(get(handles.num_first_j,'Visible'),'on')
     last_j=str2double(get(handles.num_last_j,'String'));% last reference j index
 end
 PairString=get(handles.PairString,'Data');
-[i1_1,i2_1,j1_1,j2_1] = get_file_index(first_i,first_j,PairString);
-[i1_2,i2_2,j1_2,j2_2] = get_file_index(last_i,last_j,PairString);
-
-
-%%%%%%
-% read the time in the input fields as priority
-%get_time(FullFileName,FileType,TimeName,DtName)%%%% TODO
-%[TimeValue,DtValue]=get_time(first_i,first_j,PairString,InputTable,FileInfo,TimeName,DtName)
-
+[i1_first,i2_first,j1_first,j2_first] = get_file_index(first_i,first_j,PairString);
+[i1_last,i2_last,j1_last,j2_last] = get_file_index(last_i,last_j,PairString);
 
 %%%%%%%
 SeriesData=get(handles.series,'UserData'); %
-if ~isfield(SeriesData,'Time')
-    return
-end
+InputTable=get(handles.InputTable,'Data');
 
 %% update the table TimeTable
 TimeTable=get(handles.TimeTable,'Data');
 for iview=1:size(TimeTable,1)
-    if numel(SeriesData.Time)<iview
-        break
-    end
-    TimeTable{iview,3}=[];
-    TimeTable{iview,4}=[];
-    if size(SeriesData.Time{iview},1)>=i2_2+1 && (isnan(first_j)||size(SeriesData.Time{iview},2)>=j2_2+1)
+    time_first=[];
+    time_last=[];
+    if ismember(SeriesData.TimeName{iview},{'Civ1_Time','Civ2_Time'})
+        MinFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_first,i2_first,j1_first,j2_first);
+        time_first=get_time(MinFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
+        MaxFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_last,i2_last,j1_last,j2_last);
+        time_last=get_time(MaxFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
+    elseif size(SeriesData.Time{iview},1)>=i2_last+1 && (isnan(first_j)||size(SeriesData.Time{iview},2)>=j2_last+1)
         if isnan(first_j)
-            time_first=(SeriesData.Time{iview}(i1_1+1,2)+SeriesData.Time{iview}(i2_1+1,2))/2;% take  the average between index i1 and i2
-            time_last=(SeriesData.Time{iview}(i1_2+1,2)+SeriesData.Time{iview}(i2_2+1,2))/2;
+            time_first=(SeriesData.Time{iview}(i1_first+1,2)+SeriesData.Time{iview}(i2_first+1,2))/2;% take  the average between index i1 and i2
+            time_last=(SeriesData.Time{iview}(i1_last+1,2)+SeriesData.Time{iview}(i2_last+1,2))/2;
         else
-            time_first=(SeriesData.Time{iview}(i1_1+1,j1_1+1)+SeriesData.Time{iview}(i2_1+1,j2_1+1))/2;
-            time_last=(SeriesData.Time{iview}(i1_2+1,j1_2+1)+SeriesData.Time{iview}(i2_2+1,j2_1+1))/2;
+            time_first=(SeriesData.Time{iview}(i1_first+1,j1_first+1)+SeriesData.Time{iview}(i2_first+1,j2_first+1))/2;
+            time_last=(SeriesData.Time{iview}(i1_last+1,j1_last+1)+SeriesData.Time{iview}(i2_last+1,j2_last+1))/2;
         end
-        TimeTable{iview,3}=time_first; % TODO: take into account pairs
-        TimeTable{iview,4}=time_last; % TODO: take into account pairs
     end
+    TimeTable{iview,3}=time_first; 
+    TimeTable{iview,4}=time_last; 
 end
 set(handles.TimeTable,'Data',TimeTable)
 

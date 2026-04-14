@@ -1733,8 +1733,8 @@ if strcmp(FileExt,'.seq')
 else
     XmlFile=fullfile(RootPath,[SubDir '.xml']);
 end
-[XmlData,errormsg]=imadoc2struct(XmlFile);
-
+%[XmlData,errormsg]=imadoc2struct(XmlFile);
+errormsg='';
 FileInfo=get_file_info(FileName);
 switch FileInfo.FileType
     case 'multimage'

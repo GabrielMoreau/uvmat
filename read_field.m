@@ -49,7 +49,7 @@ Field=[];
 if ~exist('frame_index','var')
     frame_index=1;
 end
-if isempty(frame_index)
+if isempty(frame_index)||isnan(frame_index)
     frame_index=1;
 end
 if ~exist('ParamIn','var')

@@ -127,18 +127,7 @@ else  % scan the directory of FilePath to detect file indices
     ref_i_list=unique(sort(ref_i_list));
     ref_j_list=unique(sort(ref_j_list));
 end
-if all(isnan(i1_list))
-    i1_list=NaN;
-end
-if all(isnan(i2_list))
-    i2_list=NaN;
-end
-if all(isnan(j1_list))
-    j1_list=NaN;
-end
-if all(isnan(j2_list))
-    j2_list=NaN;
-end
+
 % 
 % 
 %% introduce the frame index in case of movies or multimage type
@@ -157,6 +146,24 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
             ref_j_list=(1:FileInfo.NumberOfFrames)';% the frame index becomes index j
         end
     end
+end
+if isempty(ref_i_list)||all(isnan(ref_i_list))
+    ref_i_list=NaN;
+end
+if isempty(ref_j_list)||all(isnan(ref_j_list))
+    ref_j_list=NaN;
+end
+if all(isnan(i1_list))
+    i1_list=NaN;
+end
+if all(isnan(i2_list))
+    i2_list=NaN;
+end
+if all(isnan(j1_list))
+    j1_list=NaN;
+end
+if all(isnan(j2_list))
+    j2_list=NaN;
 end
 
 %-----------------------------------------------------------------------
