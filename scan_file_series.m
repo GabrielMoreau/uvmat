@@ -1,6 +1,6 @@
 %'scan_file_series': check the info about an input file and find the corresponding index series
 %--------------------------------------------------------------------------
-% function [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(FilePath,fileinput)
+% function [RootFile,ref_i_list,ref_j_list,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo]=scan_file_series(FilePath,fileinput)
 %
 % OUTPUT:
 % ref_i_list: (line vector) list of detected reference i indices, sorted in increasing order, no duplicate. For multimage files or movies indexing is done on frames
@@ -16,7 +16,6 @@
 %       = 'civdata', civ data with new convention
 %       = 'netcdf' other netcdf files
 %       = 'video': movie recognised by VideoReader (e;g. avi)
-% MovieObject: video object (=[] otherwise
 % i1_input,i2_input,j1_input,j2_input: indices of the input file, or of the first file in the series if the input file does not exist
 %
 %INPUT
@@ -41,8 +40,15 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=scan_file_series(FilePath,fileinput)
+function [RootFile,ref_i_list,ref_j_list,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo]=scan_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
+%% default output
+RootFile='';ref_i_list=NaN;ref_j_list=NaN;i1_list=NaN;i2_list=NaN;j1_list=NaN;j2_list=NaN;NomType='';FileInfo.FileName='';
+
+%% case of non existing path
+if isempty(regexp(FilePath,'^http://', 'once')) && ~exist(FilePath,'dir')   
+    return % don't go further if the dir path does not exist
+end
 
 %% get input root name and info on the input file
 if isempty(regexp(FilePath,'^http://','once'))% case of usual file input
@@ -50,25 +56,20 @@ if isempty(regexp(FilePath,'^http://','once'))% case of usual file input
 else
   fullfileinput=[FilePath '/' fileinput]; % case of web input
 end
-[FileInfo,MovieObject]=get_file_info(fullfileinput);
+FileInfo=get_file_info(fullfileinput);
 
 %% default output
-[~,~,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
-i1_list=i1_input;
-i2_list=i2_input;
-j1_list=j1_input;
-j2_list=j2_input;
+[~,~,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
+% i1_list=i1_input;
+% i2_list=i2_input;
+% j1_list=j1_input;
+% j2_list=j2_input;
 ref_i_list=i1_input;
 ref_j_list=j1_input;
-ref_ij=i1_input;
-if isempty(regexp(FilePath,'^http://', 'once')) && ~exist(FilePath,'dir')
-    return % don't go further if the dir path does not exist
-end
-if isempty(NomType)||strcmp(NomType,'*')
+
+if isempty(NomType)||strcmp(NomType,'*')% no indexing
     if exist_file(fullfileinput)
         [~,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
-    else
-        RootFile='';
     end
 else  % scan the directory of FilePath to detect file indices
     detect_string=get_search_string(RootFile,FileExt,NomType);% get the search string for regexp from the name NomType
@@ -76,10 +77,15 @@ else  % scan the directory of FilePath to detect file indices
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     ListFiles=ListCells(1,:);%list of file names
     rr=regexp(ListFiles,detect_string,'names');%detect the string 'detect_string'
-    NbDetectedFiles=numel(rr);
-    if NbDetectedFiles==0% no detected file
-        RootFile='';
+    IndexDetection=find(~cellfun(@isempty,rr));
+    if isempty(IndexDetection)
+        ref_i_list=NaN;
+        ref_j_list=NaN;
+        return
     end
+    rr=rr(IndexDetection);
+    NbDetectedFiles=numel(rr);
+    ListFiles=ListFiles(IndexDetection);
     % scan the list of relevant files, extract the indices
     i1_list=nan(NbDetectedFiles,1);
     j1_list=nan(NbDetectedFiles,1);
@@ -93,33 +99,33 @@ else  % scan the directory of FilePath to detect file indices
             j2_list(ifile)=stra2num(regexprep(rr{ifile}.j2,'^-',''));
         end
     end
-     % update the nom type if the input file does not exist (pb of 0001)
+    % update the nom type if the input file does not exist (pb of 0001)
     [~,ifile_min]=min(i1_list);
-    [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ifile_min});% update the representation of indices (number of 0 before the number)      
+    [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(ListFiles{ifile_min});% update the representation of indices (number of 0 before the number)
     if isempty(FileInfo.FileName)%  if the input file does not exist, get the info in the file with lower index i in the series
-        [FileInfo,MovieObject]=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
+        FileInfo=get_file_info(fullfile(FilePath,ListFiles{ifile_min}));
     end
     % get the reference indices
     check_i1_nan=isnan(i1_list);%detect and suppress the files with no index i
     i1_list(check_i1_nan)=[];
-     i2_list(check_i1_nan)=[];
-      j1_list(check_i1_nan)=[];
-       j2_list(check_i1_nan)=[];
-    check_i2_nan=isnan(i2_list);%detect NaN i2 indices, 
+    i2_list(check_i1_nan)=[];
+    j1_list(check_i1_nan)=[];
+    j2_list(check_i1_nan)=[];
+    ref_i_list=i1_list;%default
+    ref_j_list=j1_list;%default
+    check_i2_nan=isnan(i2_list);%detect NaN i2 indices,
     check_j2_nan=isnan(j2_list);%detect NaN j2 indices, set them to j1
-    ref_i_list(check_i2_nan)=i1_list(check_i2_nan);
     ref_i_list(~check_i2_nan)=floor(0.5*(i1_list(~check_i2_nan)+i2_list(~check_i2_nan)));
-    ref_j_list(check_j2_nan)=j1_list(check_j2_nan);
     ref_j_list(~check_j2_nan)=floor(0.5*(j1_list(~check_j2_nan)+j2_list(~check_j2_nan)));
     min_j=min(ref_j_list,[],'omitnan');max_j=max(ref_j_list,[],'omitnan');
     if isnan(min_j)
         Nbj=1;
     else
-           Nbj=max_j-min_j+1;
+        Nbj=max_j-min_j+1;
     end
     min_i=min(ref_i_list);%max_i=max(ref_i_list);
-    ref_ij=(ref_i_list-min_i)*Nbj+ref_j_list;
-    [ref_ij,ind_sort]=sort(ref_ij);% sort the combined index
+    ref_ij=(ref_i_list-min_i)*Nbj+ref_j_list;%combined index
+    [~,ind_sort]=sort(ref_ij);%sort the combined index
     i1_list=i1_list(ind_sort);
     i2_list=i2_list(ind_sort);
     j1_list=j1_list(ind_sort);
@@ -127,20 +133,16 @@ else  % scan the directory of FilePath to detect file indices
     ref_i_list=unique(sort(ref_i_list));
     ref_j_list=unique(sort(ref_j_list));
 end
-
-% 
-% 
+%
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
     if isempty(ref_i_list)%  if there is no file index, i denotes the frame index
         ref_i_list=1:FileInfo.NumberOfFrames;% i= list of frame indices
-        i1_input=1;
         NomType='*';
     else  % if there is a file index, j denotes the frame index while i denotes the file index
         if ~isempty(regexp(NomType,'ab$', 'once'))% recognized as a pair (case LaVision, to check !!)
             RootFile=fullfile_indices(RootFile,'',NomType,i1_input,i2_input,j1_input,j2_input);% restitute the root name without the detected indices
-           ref_i_list=1:FileInfo.NumberOfFrames;% i= list of frame indices
-            i1_input=1;
+            ref_i_list=1:FileInfo.NumberOfFrames;% i= list of frame indices
             NomType='*';
         else
             ref_j_list=(1:FileInfo.NumberOfFrames)';% the frame index becomes index j

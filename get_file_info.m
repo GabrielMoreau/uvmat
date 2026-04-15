@@ -4,7 +4,7 @@
 %
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
-%     .FileName: confirms the file name, ='' if the file is not detected
+%     .FileName: confirms the file name, including path, ='' if the file is not detected
 %     .FileType: type of file, needed as input of read_field.m
 %               ='': unknown format
 %               ='bin': binary file without specific organisation
@@ -67,9 +67,8 @@ if ~ischar(fileinput)
 end
 
 %% check the existence (not possible for OpenDAP data)
-if ~isempty(regexp(fileinput,'^http://','once'))|| exist(fileinput,'file')
+if exist_file(fileinput)
     FileInfo.FileName=fileinput;
-    %     FileInfo.FileType='txt'; %default
 else
     return %input file does not exist.
 end
@@ -178,7 +177,7 @@ switch FileExt
                 else
                     error_nc=0;
                     try %try netcdf file
-                        [Data,tild,tild,errormsg]=nc2struct(fileinput,[]);
+                        [Data,~,~,errormsg]=nc2struct(fileinput,[]);
                         if isempty(errormsg)
                             if isfield(Data,'Conventions') && ismember(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'})
                                 if strcmp(Data.Conventions,'uvmat/civdata')
@@ -224,7 +223,6 @@ switch FileExt
                                     FileInfo.VarAttribute=Data.VarAttribute;
                                 end
                                 FileInfo.ListDimName=Data.ListDimName;
-                                %                                 FileInfo.NumberOfFrames=Data.DimValue;
                             end
                         else
                             error_nc=1;
@@ -241,13 +239,10 @@ switch FileExt
                                 FileInfo=get(VideoObject);
                                 FileInfo.FileType='video';
                             end
-                            % end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';
                             FileInfo.TimeName='video';
                             FileInfo.FileName=fileinput;
-                            nbfield=numel(fieldnames(FileInfo));
-                            %FileInfo=orderfields(FileInfo,[nbfield nbfield-4 nbfield-3 nbfield-1 nbfield-2 (1:nbfield-5)]); %reorder the fields of fileInfo for clarity
                             if ~isfield(FileInfo,'NumberOfFrames')
                                 FileInfo.NumberOfFrames=floor(FileInfo.Duration*FileInfo.FrameRate);
                             end

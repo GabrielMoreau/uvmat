@@ -2094,7 +2094,7 @@ end
 if ~isempty(errormsg) && get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-    [RootFile,ref_i_list,~,~,~,~,~,~,~,NomType,FileInfo,MovieObject]=scan_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    [RootFile,ref_i_list,~,~,~,~,~,NomType,FileInfo]=scan_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
     if isnan(ref_i_lists)
         fileinput=uigetfile_uvmat('pick an input file for the second line',fullfile(RootPath,SubDir));
         hh=dir(fileinput);
@@ -2387,7 +2387,7 @@ if CheckRelabel
     set(handles.num_i1,'String','1')% the index does not correspond to file name index anymore, set i=1, j=1 by default as s start
     set(handles.num_j1,'String','1')
 else % scan the input folder to get the list of existing files and NomType
-     [RootFile,ref_i_list,ref_j_list,ref_ij,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo,MovieObject]=scan_file_series(fullfile(RootPath,SubDir),FileName);
+     [RootFile,ref_i_list,ref_j_list,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo]=scan_file_series(fullfile(RootPath,SubDir),FileName);
 
   
    % nbfield_j=max(max(max(j2_series)));% number of fields along j index
@@ -2902,7 +2902,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
                  set(handles.CheckMask,'Value',0)
                  return
             end
-             [RootFile,ref_i_list,ref_j_list,~,~,~,~,~,NomType]=scan_file_series(FilePath,[FileName '.png']);
+             [RootFile,ref_i_list,ref_j_list,~,~,~,~,NomType]=scan_file_series(FilePath,[FileName '.png']);
             Mask.MaskFile=fullfile(FilePath,RootFile);
             if strcmp(NomType,'_1')
                 Mask.MaskNbSlice=ref_i_list(end);

@@ -1010,7 +1010,7 @@ switch mode
         i1_series=i_series-ind1;% set of first image numbers
         i2_series=i_series+ind2;
         check_bounds=i1_series<MinIndex_i | i2_series>MaxIndex_i;
-        if isempty(j_series)
+        if isempty(j_series)||isequal(MinIndex_j,MaxIndex_j)
             NomTypeNc='_1-2';
         else
             j1_series=j_series;

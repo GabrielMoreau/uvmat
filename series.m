@@ -637,12 +637,11 @@ for iview=1:nbview
         InputTable{iview,3}=regexprep(InputTable{iview,3},'^/','');%suppress '/' at the beginning of the input name
         Param.FileExt=InputTable{iview,5};
         InputFile=[InputTable{iview,3} InputTable{iview,4} Param.FileExt];
-        [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
+        [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo]=...
             scan_file_series(Param.FilePath,InputFile);
     end
-
     % if no file is found on line #iview, open a browser
-    if ~Param.Relabel && isempty(Param.RootFile)&& isempty(Param.ref_ij)
+    if ~Param.Relabel && all(isnan(Param.ref_i_list))
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],Param.FilePath);
         if isempty(fileinput)
             errormsg='no input file entered';
@@ -762,14 +761,17 @@ else
     set(handles.Relabel,'Value',0)
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
     % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-    [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.ref_ij,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo,MovieObject,i1,i2,j1,j2]=...
+    [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo]=...
         scan_file_series(Param.FilePath,[RootFile Param.FileExt]);
-
-    if isempty(RootFile) && isempty(Param.i1_series)
+    
+    if isempty(RootFile) && all(isnan(Param.ref_i_list))
         errormsg='no input file in the series';
         msgbox_uvmat('ERROR',errormsg)
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (end of activation)
         return
+    end
+    if isequal(regexp(Param.NomType,'^_\d+-\d+$'),1)
+        Param.NomType='_1-2';
     end
 end
 
@@ -821,6 +823,7 @@ end
 set(handles.InputTable,'Data',InputTable)
 
 %% determine the selected reference field indices for pair display
+[RootPath,SubDir,RootFile,i1,i2,j1,j2]=fileparts_uvmat(RootFile);
 if isempty(i1)
     i1=1;
 end
@@ -948,8 +951,8 @@ function update_rootinfo(handles,Param,iview)
 if isnan(Param.ref_i_list)% no i index
     MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
 else
-    MinIndex_i=min(Param.ref_i_list)
-    MaxIndex_i=max(Param.ref_i_list)
+    MinIndex_i=min(Param.ref_i_list);
+    MaxIndex_i=max(Param.ref_i_list);
     if isnan(Param.ref_j_list)
         MinIndex_j=1;MaxIndex_j=1;
     else
@@ -3788,13 +3791,24 @@ delete(get(hObject,'parent'))
 % --- Executes on button press in ClearLine.
 function ClearLine_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-InputTable=get(handles.InputTable,'Data');
 iline=str2double(get(handles.InputLine,'String'));
-if size(InputTable,1)>1
-    InputTable(iline,:)=[]; % suppress the current line if not the first
-    set(handles.InputTable,'Data',InputTable);
-end
+clear_table(handles.InputTable,iline)
+clear_table(handles.TimeTable,iline)
+clear_table(handles.PairString,iline)
+clear_table(handles.MinIndex_i,iline)
+clear_table(handles.MaxIndex_i,iline)
+clear_table(handles.MinIndex_j,iline)
+clear_table(handles.MaxIndex_j,iline)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refr
+
+%------------------------------------------------------------------------
+function clear_table(handle,iline)
+%------------------------------------------------------------------------
+TableData=get(handle,'Data');
+if iline<=size(TableData,1)
+    TableData(iline,:)=[]; % suppress the current line if relevant
+    set(handle,'Data',TableData);
+end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in MonitorCluster.
