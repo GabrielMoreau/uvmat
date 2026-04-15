@@ -319,11 +319,11 @@ for ifield=1:NbField
             ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
         end
     end
-    if ~CheckOverwrite % check the existence and validity of the existing output file
-        [Data,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
+    if ~CheckOverwrite && exist(ncfile_out,'file')% check the existence and validity of the existing output file      
+        [~,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
         if isempty(errormsg)
             disp(['existing output file ' ncfile_out ' already exists, skip to next field'])
-            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists and reads well
         end
     end
     ImageName_A='';ImageName_B='';%default
