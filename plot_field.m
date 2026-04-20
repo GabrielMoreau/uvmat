@@ -118,7 +118,7 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
     return
 end
-index_0D=find(NbDimArray==0);
+index_0D=find(NbDimArray==0, 1);
 index_1D=find(NbDimArray==1);
 index_2D=find(NbDimArray==2);%find 2D fields
 index_3D=find(NbDimArray>2,1);
@@ -238,30 +238,16 @@ AspectRatio=get(haxes,'DataAspectRatio');
 PlotParamOut.Axes.AspectRatio=AspectRatio(1)/AspectRatio(2);
 
 %% text display
-if ~(isfield(PlotParamOut,'Axes')&&isfield(PlotParamOut.Axes,'TextDisplay')&&(PlotParamOut.Axes.TextDisplay)) % if text is not already given as statistics
-    htext=findobj(hfig,'Tag','TableDisplay');
-    if ~isempty(htext)%&&~isempty(hchecktable)
-        if isempty(index_0D)
-        else
-            errormsg=plot_text(Data,CellInfo(index_0D),htext);
-            set(htext,'visible','on')
-        end
-        set(hfig,'Unit','pixels');
-        set(htext,'Unit','pixels')
-        PosFig=get(hfig,'Position');
-        % case of no plot with view_field: only text display
-        if strcmp(get(hfig,'Tag'),'view_field')
-            if isempty(index_1D) && isempty(index_2D)% case of no plot: only text display
-                set(haxes,'Visible','off')
-                PosTable=get(htext,'Position');
-                set(hfig,'Position',[PosFig(1) PosFig(2)  PosTable(3) PosTable(4)])
-            else
-                set(haxes,'Visible','on')
-                set(hfig,'Position',[PosFig(1) PosFig(2)  877 677])%default size for view_field
-            end
-        end
+if ~isempty(index_0D)
+    ListVarName=Data.ListVarName(CellInfo{index_0D}.VarIndex);
+    for ilist=1:numel(ListVarName)
+        DataTable.(ListVarName{ilist})=Data.(ListVarName{ilist});
     end
+    t=struct2table(DataTable);
+    figure(1)
+     uit = uitable(1,'Data',t,'Position',[20 20 500 400]);
 end
+
 %% display error message
 if ~isempty(errormsg)
     PlotType=errormsg;

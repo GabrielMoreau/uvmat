@@ -47,7 +47,6 @@
 %            = 'vector': represents a vector field whose number of components
 %                is given by the last dimension (called 'NbDim')
 %            = 'vector_x', 'vector_y', 'vector_z'  :represents the x, y or z  component of a vector  
-%            = 'warnflag' : provides a warning flag about the quality of data in a 'Field', default=0, no warning
 %            = 'errorflag': provides an error flag marking false data,
 %                   default=0, no error. Different non zero values can represent different criteria of elimination.
 %
@@ -56,7 +55,6 @@
 %    .X,.Y: position of the velocity vectors, projected on the object
 %    .U, .V, .W: velocity components, projected on the object
 %    .C, .CName: scalar associated to the vector
-%    .F : equivalent to 'warnflag'
 %    .FF: equivalent to 'errorflag'
 %  scalar field or image:
 %    .AName: name of a scalar (to be calculated from velocity fields after projection), transmitted 
@@ -170,7 +168,7 @@ for icell=1:length(CellInfo)
     if NbDimArray(icell)<=1
         continue %projection only for multidimensional fields
     end
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
+    %VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
     ivar_X=CellInfo{icell}.CoordIndex(end);
     ivar_Y=CellInfo{icell}.CoordIndex(end-1);
     ivar_Z=[];
@@ -194,26 +192,26 @@ for icell=1:length(CellInfo)
        end
    end
    VarIndex=find(check_proj);
-    ProjData.ListVarName={'Y','X','NbVal'};
-    ProjData.VarDimName={'nb_points','nb_points','nb_points'};
-    ProjData.VarAttribute{1}.Role='ancillary';
-    ProjData.VarAttribute{2}.Role='ancillary';
-    ProjData.VarAttribute{3}.Role='ancillary';
-    for ivar=VarIndex        
-        VarName=FieldData.ListVarName{ivar};
-        ProjData.ListVarName=[ProjData.ListVarName {VarName}];% add the current variable to the list of projected variables
-        ProjData.VarDimName=[ProjData.VarDimName {'nb_points'}]; % projected VarName has a single dimension called 'nb_points' (set of projection points)
-
+    ProjData.ListVarName=[{'Y','X','NbVal'} FieldData.ListVarName(VarIndex)];
+    ProjData.VarDimName=repmat({'nb_points'}, 1, numel(ProjData.ListVarName)); % each variable has dimension 'nb_points'
+    ProjData.VarAttribute{1}.Role='tabledata';
+    ProjData.VarAttribute{2}.Role='tabledata';
+    ProjData.VarAttribute{3}.Role='tabledata';    
+    for ivar=1:numel(VarIndex)  
+        ProjData.VarAttribute{3+ivar}.Role='tabledata';
     end
+    %     VarName=FieldData.ListVarName{ivar};
+    %     ProjData.ListVarName=[ProjData.ListVarName {VarName}];% add the current variable to the list of projected variables
+    %     ProjData.VarDimName=[ProjData.VarDimName {'nb_points'}]; % projected VarName has a single dimension called 'nb_points' (set of projection points)
+    % end
     if strcmp( CellInfo{icell}.CoordType,'scattered')
         coord_x=FieldData.(FieldData.ListVarName{ivar_X});
         coord_y=FieldData.(FieldData.ListVarName{ivar_Y});
         test3D=0;% TEST 3D CASE : NOT COMPLETED ,  3D CASE : NOT COMPLETED 
-        if length(ivar_Z)==1
+        if isscalar(ivar_Z)
             coord_z=FieldData.(FieldData.ListVarName{ivar_Z});
             test3D=1;
-        end
-   
+        end   
         for ipoint=1:siz(1)
            Xpoint=ObjectData.Coord(ipoint,:);
            distX=coord_x-Xpoint(1);
@@ -243,12 +241,12 @@ for icell=1:length(CellInfo)
         end
     else    %case of structured coordinates
         if  strcmp( CellInfo{icell}.CoordType,'grid')
-            AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-            AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-            eval(['AX=FieldData.' AXName ';']);% set of x positions
-            eval(['AY=FieldData.' AYName ';']);% set of y positions  
+            %AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+           % AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+           %AX=FieldData.(AXName);% set of x positions
+            %AY=FieldData.(AYName);% set of y positions  
             AName=FieldData.ListVarName{VarIndex(1)};% a single variable assumed in the current cell
-            eval(['A=FieldData.' AName ';']);% scalar
+            A=FieldData.(AName);% scalar
             npxy=size(A);         
             %update VarDimName in case of components (non coordinate dimensions e;g. color components)
             if numel(npxy)>NbDimArray(icell)
@@ -296,7 +294,7 @@ for icell=1:length(CellInfo)
                 ProjData.NbVal(ipoint,1)=length(j_int)*length(i_int);
                 if isempty(i_int) || isempty(j_int)
                    for ivar=VarIndex   
-                        eval(['ProjData.' FieldData.ListVarName{ivar} '(ipoint,:)=NaN;']);
+                        ProjData.(FieldData.ListVarName{ivar}(ipoint,:))=NaN;
                    end
                    errormsg=['no data points in the selected projection range ' num2str(width) ];
                 else
@@ -1763,8 +1761,8 @@ for icell=1:length(CellInfo)
                 UName=ListVarName{ivar_U};
                 VName=ListVarName{ivar_V};
                 if check3D
-                    UValue=cos(PlaneAngle(1))*ProjData.(UName)+ sin(PlaneAngle(1))*ProjData.(VName);
-                    ProjData.(VName)=(-sin(PlaneAngle(1))*ProjData.(UName)+ cos(PlaneAngle(1))*ProjData.(VName));
+                    % UValue=cos(PlaneAngle(1))*ProjData.(UName)+ sin(PlaneAngle(1))*ProjData.(VName);
+                    % ProjData.(VName)=(-sin(PlaneAngle(1))*ProjData.(UName)+ cos(PlaneAngle(1))*ProjData.(VName));
                 else
                     UValue=cos(PlaneAngle(1))*ProjData.(UName)+ sin(PlaneAngle(1))*ProjData.(VName);
                     ProjData.(VName)=(-sin(PlaneAngle(1))*ProjData.(UName)+ cos(PlaneAngle(1))*ProjData.(VName));
@@ -1902,11 +1900,10 @@ for icell=1:length(CellInfo)
     ivar_U=VarType.vector_x;
     ivar_V=VarType.vector_y;
     ivar_W=VarType.vector_z;
-    ivar_C=VarType.scalar ;
+    %ivar_C=VarType.scalar ;
     ivar_Anc=VarType.ancillary;
     test_anc=zeros(size(VarIndex));
     test_anc(ivar_Anc)=ones(size(ivar_Anc));
-    ivar_F=VarType.warnflag;
     ivar_FF=VarType.errorflag;
     %check_unstructured_coord=~isempty(ivar_X) && ~isempty(ivar_Y);
     DimCell=FieldData.VarDimName{VarIndex(1)};
@@ -1985,11 +1982,11 @@ for icell=1:length(CellInfo)
             indcut=find(testin);
             for ivar=VarIndex
                 VarName=FieldData.ListVarName{ivar};
-                eval(['FieldData.' VarName '=FieldData.' VarName '(indcut);'])            
+                FieldData.(VarName)=FieldData.(VarName)(indcut);           
             end
             coord_X=coord_X(indcut);
             coord_Y=coord_Y(indcut);
-            if length(ivar_Z)==1
+            if isscalar(ivar_Z)
                 coord_Z=coord_Z(indcut);
             end
         end
@@ -2024,17 +2021,17 @@ for icell=1:length(CellInfo)
             ProjData.coord_z=[ZMin ZMax];
             ProjData.coord_y=[YMin YMax];
             ProjData.coord_x=[XMin XMax];
-            if isempty(ivar_X), ivar_X=0; end;
-            if isempty(ivar_Y), ivar_Y=0; end;
-            if isempty(ivar_Z), ivar_Z=0; end;
-            if isempty(ivar_U), ivar_U=0; end;
-            if isempty(ivar_V), ivar_V=0; end;
-            if isempty(ivar_W), ivar_W=0; end;
-            if isempty(ivar_F), ivar_F=0; end;
-            if isempty(ivar_FF), ivar_FF=0; end;
+            if isempty(ivar_X), ivar_X=0; end
+            if isempty(ivar_Y), ivar_Y=0; end
+            if isempty(ivar_Z), ivar_Z=0; end
+            if isempty(ivar_U), ivar_U=0; end
+            if isempty(ivar_V), ivar_V=0; end
+            if isempty(ivar_W), ivar_W=0; end
+            if isempty(ivar_F), ivar_F=0; end
+            if isempty(ivar_FF), ivar_FF=0; end
             if ~isequal(ivar_FF,0)
                 VarName_FF=FieldData.ListVarName{ivar_FF};
-                eval(['indsel=find(FieldData.' VarName_FF '==0);'])
+                indsel=find(FieldData.(VarName_FF)==0);
                 coord_X=coord_X(indsel);
                 coord_Y=coord_Y(indsel);
             end
@@ -2051,7 +2048,7 @@ for icell=1:length(CellInfo)
                         ProjData.VarAttribute{ivar_new+nbcoord}=FieldData.VarAttribute{ivar};
                     end
                     if  ~isequal(ivar_FF,0)
-                        eval(['FieldData.' VarName '=FieldData.' VarName '(indsel);'])
+                        FieldData.(VarName)=FieldData.(VarName)(indsel);
                     end
                     % linear interpolation
                     InterpFct=TriScatteredInterp(double(coord_X),double(coord_Y),double(coord_Z),double(FieldData.(VarName)));
@@ -2087,7 +2084,7 @@ for icell=1:length(CellInfo)
 %% case of input fields defined on a structured  grid 
     else
         VarName=FieldData.ListVarName{VarIndex(1)};%get the first variable of the cell to get the input matrix dimensions
-        eval(['DimValue=size(FieldData.' VarName ');'])%input matrix dimensions
+        DimValue=size(FieldData.(VarName));%input matrix dimensions
         DimValue(DimValue==1)=[];%remove singleton dimensions       
         NbDim=numel(DimValue);%update number of space dimensions
         nbcolor=1; %default number of 'color' components: third matrix index without corresponding coordinate
@@ -2105,8 +2102,8 @@ for icell=1:length(CellInfo)
         end
         AYName=FieldData.ListVarName{VarType.coord(NbDim-1)};%name of input x coordinate (name preserved on projection)
         AXName=FieldData.ListVarName{VarType.coord(NbDim)};%name of input y coordinate (name preserved on projection)    
-        eval(['AX=FieldData.' AXName ';'])
-        eval(['AY=FieldData.' AYName ';'])
+        %AX=FieldData.(AXName);
+        %AY=FieldData.(AYName);
         ListDimName=FieldData.VarDimName{VarIndex(1)};
         ProjData.ListVarName=[ProjData.ListVarName {AYName} {AXName}]; %TODO: check if it already exists in Projdata (several cells)
         ProjData.VarDimName=[ProjData.VarDimName {AYName} {AXName}];
@@ -2129,7 +2126,7 @@ for icell=1:length(CellInfo)
             test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
             ivar=VarType.coord(idim);% index of the variable corresponding to the current dimension
             if ~isequal(ivar,0)%  a variable corresponds to the dimension #idim
-                eval(['Coord{idim}=FieldData.' FieldData.ListVarName{ivar} ';']) ;% coord values for the input field
+                Coord{idim}=FieldData.(FieldData.ListVarName{ivar});% coord values for the input field
                 if numel(Coord{idim})==2 %input array defined on a regular grid
                    DCoord_min(idim)=(Coord{idim}(2)-Coord{idim}(1))/DimValue(idim);
                 else
@@ -2203,8 +2200,8 @@ for icell=1:length(CellInfo)
             if ~test_direct(1)
                 DZ=-DZ;
             end
-            Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
-            test_direct_z=test_direct(1);
+           % Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
+          %  test_direct_z=test_direct(1);
         end
         npX=floor((XMax-XMin)/DX+1);
         npY=floor((YMax-YMin)/DY+1);   
@@ -2269,13 +2266,13 @@ for icell=1:length(CellInfo)
                         ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
                     end
                     if NbDim==3
-                        eval(['ProjData.' VarName '=squeeze(FieldData.' VarName '(iz,min_indy:max_indy,min_indx:max_indx));']);
+                        ProjData.(VarName)=squeeze(FieldData.(VarName)(iz,min_indy:max_indy,min_indx:max_indx));
                     else
-                        eval(['ProjData.' VarName '=FieldData.' VarName '(min_indy:max_indy,min_indx:max_indx,:);']);
+                        ProjData.(VarName)=FieldData.(VarName)(min_indy:max_indy,min_indx:max_indx,:);
                     end
                 end  
-                eval(['ProjData.' AYName '=[Ybound(1) Ybound(2)];']) %record the new (projected ) y coordinates
-                eval(['ProjData.' AXName '=[Xbound(1) Xbound(2)];']) %record the new (projected ) x coordinates
+                ProjData.(AYName)=[Ybound(1) Ybound(2)]; %record the new (projected ) y coordinates
+                ProjData.(AXName)=[Xbound(1) Xbound(2)]; %record the new (projected ) x coordinates
             end
         elseif isfield(FieldData,'A') %TO GENERALISE       % case with rotation and/or interpolation
             if NbDim==2 %2D case
@@ -2300,7 +2297,7 @@ for icell=1:length(CellInfo)
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
                     if test_interp(1) || test_interp(2)%interpolate on a regular grid        
-                          eval(['ProjData.' VarName '=interp2(Coord{2},Coord{1},FieldData.' VarName ',Coord_x,Coord_y'');']) %TO TEST
+                          ProjData.(VarName)=interp2(Coord{2},Coord{1},FieldData.(VarName),Coord_x,Coord_y); %TO TEST
                     end
                     %filter the field (image) if option 'interp_tps' is used
                     if test_interp_tps  
@@ -2310,8 +2307,7 @@ for icell=1:length(CellInfo)
                              ProjData.(VarName)=Aclass(FieldData.(VarName));%revert to integer values
                          end
                     end
-                    eval(['vec_A=reshape(FieldData.' VarName ',[],nbcolor);'])%put the original image in line              
-                    %ind_in=find(flagin);
+                    vec_A=reshape(FieldData.(VarName),[],nbcolor);%put the original image in line              
                     ind_out=find(~flagin);
                     ICOMB=(XIMA-1)*DimValue(1)+YIMA;
                     ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
@@ -2324,7 +2320,7 @@ for icell=1:length(CellInfo)
                     if isfield(FieldData,'VarAttribute')&&length(FieldData.VarAttribute)>=ivar
                         ProjData.VarAttribute{length(ProjData.ListVarName)+nbcoord}=FieldData.VarAttribute{ivar};
                     end     
-                    eval(['ProjData.' VarName '=reshape(vec_B,npY,npX,nbcolor);']);
+                    ProjData.(VarName)=reshape(vec_B,npY,npX,nbcolor);
                 end
                 ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga ant???rieur  
                 ProjData.ListVarName=[ProjData.ListVarName 'FF'];
@@ -2343,15 +2339,15 @@ for icell=1:length(CellInfo)
                             VarName=FieldData.ListVarName{ivar}; 
                             ProjData.ListVarName=[ProjData.ListVarName VarName];
                             ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes  
-                            eval(['ProjData.' VarName '=squeeze(FieldData.' VarName '(iz,:,:));'])% select the z index iz
+                            ProjData.(VarName)=squeeze(FieldData.(VarName)(iz,:,:));% select the z index iz
                             %TODO : do a vertical average for a thick plane
                             if test_interp(2) || test_interp(3)
-                                eval(['ProjData.' VarName '=interp2(Coord{3},Coord{2},ProjData.' VarName ',Coord_x,Coord_y'');']) 
+                                ProjData.(VarName)=interp2(Coord{3},Coord{2},ProjData.(VarName),Coord_x,Coord_y); 
                             end
                         end
                     end
                 else
-                    RotMatrix=rodrigues(om);
+                   % RotMatrix=rodrigues(om);
                     
                     errormsg='projection of structured coordinates on oblique plane not yet implemented';
                     %TODO: use interp3
@@ -2369,16 +2365,19 @@ for icell=1:length(CellInfo)
         end
         UName=FieldData.ListVarName{ivar_U};
         VName=FieldData.ListVarName{ivar_V};    
-        eval(['ProjData.' UName  '=cos(Phi)*ProjData.' UName '+ sin(Phi)*ProjData.' VName ';'])
-        eval(['ProjData.' VName  '=cos(Theta)*(-sin(Phi)*ProjData.' UName '+ cos(Phi)*ProjData.' VName ');'])
+        Uproj=cos(Phi)*ProjData.(UName)+ sin(Phi)*ProjData.(VName);
+        ProjData.(VName)=cos(Theta)*(-sin(Phi)*ProjData.(UName)+ cos(Phi)*ProjData.(VName));
+        ProjData.(UName)=Uproj;
         if ~isempty(ivar_W)
             WName=FieldData.ListVarName{ivar_W};
-            eval(['ProjData.' VName '=ProjData.' VName '+ ProjData.' WName '*sin(Theta);'])% 
-            eval(['ProjData.' WName '=NormVec_X*ProjData.' UName '+ NormVec_Y*ProjData.' VName '+ NormVec_Z* ProjData.' WName ';']);
+            Vproj=ProjData.(VName)+ ProjData.(WName)*sin(Theta);% 
+            ProjData.(WName)=NormVec_X*ProjData.(UName)+ NormVec_Y*ProjData.(VName)+ NormVec_Z* ProjData.(WName);
+            ProjData.(VName)=Vproj;
         end
         if ~isequal(Psi,0)
-            eval(['ProjData.' UName '=cos(Psi)* ProjData.' UName '- sin(Psi)*ProjData.' VName ';']);
-            eval(['ProjData.' VName '=sin(Psi)* ProjData.' UName '+ cos(Psi)*ProjData.' VName ';']);
+           Uproj=cos(Psi)* ProjData.(UName)- sin(Psi)*ProjData.(VName);
+            ProjData.(VName)=sin(Psi)* ProjData.(UName)+ cos(Psi)*ProjData.(VName);
+            ProjData.(UName)=Uproj;
         end
     end
 end

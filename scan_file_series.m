@@ -167,6 +167,9 @@ end
 if all(isnan(j2_list))
     j2_list=NaN;
 end
+if isequal(regexp(NomType,'^_\d+-\d+$'),1)% correct a problem with NomType='001-001'
+        NomType='_1-2';
+end
 
 %-----------------------------------------------------------------------
 %determine the search string to use in regexp to detect file indices from file names

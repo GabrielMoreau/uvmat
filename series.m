@@ -770,9 +770,6 @@ else
         set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH  button to magenta color (end of activation)
         return
     end
-    if isequal(regexp(Param.NomType,'^_\d+-\d+$'),1)
-        Param.NomType='_1-2';
-    end
 end
 
 %% enable other menus and uicontrols
