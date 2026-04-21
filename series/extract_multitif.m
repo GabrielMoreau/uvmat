@@ -99,8 +99,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    FullFile=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3});
+    FirstFileName=fullfile_indices(FullFile,Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
     if ~exist(FirstFileName,'file')
         msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     end
@@ -120,14 +120,13 @@ end
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 RUNHandle=[];
-WaitbarHandle=[];
+
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 else
     hseries=findobj(allchild(0),'Tag','series');
     RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 end
 
 %% output directory
@@ -140,7 +139,7 @@ if ~isempty(errormsg)
     disp(['bad xml input file: ' errormsg])
     return
 end
-ImagesPerLevel=size(XmlInput.Time,2)-1;%100;%use the xmlinformation to get the nbre of j indices
+ImagesPerLevel=size(XmlInput.Time,1)-1;%100;%use the xmlinformation to get the nbre of j indices
 
 %% create the xml file for timing if it does not exist : example to adapt
 TEST=0;
@@ -178,12 +177,14 @@ end
 % include the first tiff file with no index in the first iteration
 if Param.IndexRange.first_i==1% first slice of processing
     firstindex=0;
-   count=0;
+    count=0;
+%count=-1;%suppress the first image and shifts the other ones
 else
     firstindex=Param.IndexRange.first_i;
     ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
     NbFrames=numel(imfinfo(ImageName));
-   count=Param.IndexRange.first_i*NbFrames;
+    count=Param.IndexRange.first_i*NbFrames;
+ %count=Param.IndexRange.first_i*NbFrames-1;%suppress the first image and shifts the other ones
 end
 for ifile=firstindex:Param.IndexRange.last_i
     tic

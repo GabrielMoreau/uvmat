@@ -286,6 +286,9 @@ for icell=1:numel(CellInfo)
                     CellInfo{icell}.ZIndex=ivar;
                     check_used(ivar)=true;
                     break
+                else
+                    CellInfo{icell}.CoordIndex(1)=[]; % coord_z is only a label of a plane, not a coordinate 
+                    NbDim(icell)=2;
                 end
             end
         end

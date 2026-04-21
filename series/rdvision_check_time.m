@@ -248,7 +248,7 @@ for iview=1:size(Param.InputTable,1)
         disp(errormsg)
         return
     end
-    difftime=XmlData.Time(2:end,2:end)-(reshape(timestamp,nbfield2,[]))';
+    difftime=XmlData.Time(2:end,2:end)-(reshape(timestamp,nbfield2,[]));
     disp(['time from xml and timestamp differ by ' num2str(max(max(abs(difftime))))])
     if max(abs(difftime))>0.01
         checkpreserve=1;% will not erase the initial files, possibility of error

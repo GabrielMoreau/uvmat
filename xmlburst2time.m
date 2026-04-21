@@ -62,3 +62,4 @@ TimeMatrix=[zeros(size(TimeMatrix,1),1) TimeMatrix]; %insert a vertical line of 
 if FirstFrameIndexI~=0
     TimeMatrix=[zeros(FirstFrameIndexI,size(TimeMatrix,2)); TimeMatrix]; %insert a horizontal line of zeros
 end
+TimeMatrix=TimeMatrix';

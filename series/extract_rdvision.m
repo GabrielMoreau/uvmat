@@ -162,7 +162,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 
         if ParamOut.ActionInput.Createxml
             ParamOut.ActionInput.XmlData.Camera.BurstTiming=time2xmlburst(timestamp,ParamOut.ActionInput.BurstLength);
-            Time=xmlburst2time(ParamOut.ActionInput.XmlData.Camera.BurstTiming);
+            Time=(xmlburst2time(ParamOut.ActionInput.XmlData.Camera.BurstTiming))';
         else
            Time=XmlData.Time;
         end

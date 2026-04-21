@@ -1789,7 +1789,7 @@ switch FileInfo.FileType
         TimeMatrix=xmlburst2time(BurstTiming);
         
         % check the correspondance with the time stamps
-       errormsg=check_time_rdvision(FileName,TimeMatrix);
+       errormsg=check_time_rdvision(FileName,TimeMatrix');
        if ~isempty(errormsg)
            msgbox_uvmat('ERROR',errormsg)
            return
@@ -2377,7 +2377,7 @@ state_j='off'; % no visualisation of the j index by default
 %% get the file series
 MovieObject=[];
 if CheckRelabel
-    [RootFile,ref_i_list,ref_j_list,NomType]=scan_relabeled_series(fullfile(RootPath,SubDir),XmlData.FileSeries,XmlData.Time)
+    [RootFile,ref_i_list,ref_j_list,NomType]=scan_relabeled_series(fullfile(RootPath,SubDir),XmlData.FileSeries,XmlData.Time);
     %NomType='*';
     i1_list=ref_i_list;
     i2_list=NaN;
@@ -2442,8 +2442,8 @@ if CheckRelabel
         i1=(i1-FirstFileIndex)*XmlData.FileSeries.NbFramePerFile+1;%frame index deduced from input file index
     end
     if isfield(XmlData,'Time') && size(XmlData.Time,2)>1%
-        nbfield_j=size(XmlData.Time,2)-1;
-        nbfield_i=size(XmlData.Time,1)-1;
+        nbfield_j=size(XmlData.Time,1)-1;
+        nbfield_i=size(XmlData.Time,2)-1;
         j1=mod(i1-1,nbfield_j)+1;
         i1=floor((i1-1)/nbfield_j)+1;
         set(handles.num_j1,'String',num2str(j1))
@@ -2454,11 +2454,11 @@ else
     if isfield(FileInfo,'FrameRate')% frame rate given in the file (case of video data)
         TimeUnit='s';
         if isnan(ref_j_list) %frame index along i
-            XmlData.Time=zeros(FileInfo.NumberOfFrames+1,2);
-            XmlData.Time(:,2)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate)';
+            XmlData.Time=zeros(2,FileInfo.NumberOfFrames+1);
+            XmlData.Time(2,:)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
             set(handles.num_i1,'String','1')% set the frame index to 1 to start the movie
         else
-            XmlData.Time=[0;ones(numel(ref_i_list),1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
+            XmlData.Time=([0;ones(numel(ref_i_list),1)]*(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate))';
             state_j='on';
         end
     end
@@ -2479,14 +2479,6 @@ if strcmp(ColorType,'grayscale')
 else
     set(handles.CheckBW,'Value',2)
 end
-
-%% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
-%XmlData.GeometryCalib=[];%default
-% if input_line==1
-%     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-% else
-%     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-% end
 
 %% Define timing
 % time not set by the input file: images or civ data: indicate that time is read from the xml file

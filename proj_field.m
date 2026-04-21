@@ -1267,7 +1267,7 @@ for icell=1:length(CellInfo)
             coord_x=FieldData.(CellInfo{icell}.XName);% initial x coordinates
             coord_y=FieldData.(CellInfo{icell}.YName);% initial y coordinates
             
-            if check3D
+            if NbDim==3
                 coord_z=FieldData.(CellInfo{icell}.ZName);
             end
             

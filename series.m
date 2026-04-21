@@ -960,9 +960,9 @@ end
 if isempty(Param.Relabel)
     Param.Relabel=false;
 end
-if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
-    MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0
-end
+% if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
+%     MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0
+% end
 
 if iview==1% set the detected index increment for the first input table line
     diff_i_max=max(diff(Param.ref_i_list));
@@ -1120,6 +1120,12 @@ elseif strcmp(Param.FileInfo.FieldType,'civdata')
         TimeName='Civ2_Time';
     end
     [i1,i2,j1,j2] = get_file_index(MinIndex_i,MinIndex_j,PairString);
+    if isfield(Param,'InputFile')
+        Param.FilePath=fullfile(Param.InputFile.RootPath,Param.InputFile.SubDir);
+    Param.RootFile=Param.InputFile.RootFile;
+    Param.FileExt=Param.InputFile.FileExt;
+    Param.NomType=Param.InputFile.NomType;
+    end
     MinFullFileName=fullfile_indices(fullfile(Param.FilePath,Param.RootFile),Param.FileExt,Param.NomType,i1,i2,j1,j2);
     TimeMin=get_time(MinFullFileName,Param.FileInfo.FieldType,TimeName);
     [i1,i2,j1,j2] = get_file_index(MaxIndex_i,MaxIndex_j,PairString);
@@ -1130,11 +1136,11 @@ end
 if isempty(TimeName)&& isfield(Param,'XmlData') && isfield(Param.XmlData,'Time')
     TimeName='xml';
     Time=Param.XmlData.Time;
-    if size(Time)<[MaxIndex_i+1 MaxIndex_j+1]
+    if size(Time)<[MaxIndex_j+1 MaxIndex_i+1]
         msgbox_uvmat('WARNING','incomplete time info in xml file');
-    else
-         TimeMin=Time(MinIndex_i+1,MinIndex_j+1);
-         TimeMax=Time(MaxIndex_i+1,MaxIndex_j+1);
+    elseif size(Time)>=[MaxIndex_j+1 MaxIndex_i+1]
+         TimeMin=Time(MinIndex_j+1,MinIndex_i+1);
+         TimeMax=Time(MaxIndex_j+1,MaxIndex_i+1);
     end
 end
 

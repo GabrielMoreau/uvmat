@@ -231,12 +231,12 @@ for ifield=1:nbinput %1 or 2 input fields
                 end
                 [Theta,Radius] = cart2pol(X-origin_xy(1),Y-origin_xy(2));
                 Data.(radius_name)=Radius-radius_offset;
-                Data.(theta_name)=Theta*angle_scale-angle_offset;
+                Data.(theta_name)=(Theta-angle_offset)*angle_scale;
                 if Z~=0
                     Data.Z=Z;
                     nbvar=nbvar+1;
                     Data.ListVarName = [Data.ListVarName {'Z'}];
-                    Data.VarDimName=[Data.VarDimName {dim_name}];
+                    Data.VarDimName=[Data.VarDimName {'label'}];% only one value, dimension named 'label'
                     Data.VarAttribute{nbvar}.Role='coord_z';
                 end
                 if isfield(CellInfo{icell},'VarIndex_scalar')

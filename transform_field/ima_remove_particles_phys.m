@@ -57,6 +57,7 @@ DataOut=DataIn;%default
 [npy,npx]=size(DataIn.A);
 [X,Y]=meshgrid(1:npx,1:npy);
 Atype=class(DataIn.A);
-DataOut.A=imerode(DataIn.A,SE);
-
+Aerode=imerode(DataIn.A,SE);
+[DataOut.A,DataOut.Coord_x,DataOut.Coord_y]=phys_ima(Aerode,Param,1);
+DataOut.A=feval(Atype,DataOut.A);
 

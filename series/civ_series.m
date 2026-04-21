@@ -357,8 +357,8 @@ for ifield=1:NbField
                 [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
                 FileType_A=FileInfo_A.FileType;
                 if isempty(Time) && ismember(FileType_A,{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
-                    Time=zeros(FileInfo_A.NumberOfFrames+1,2);
-                    Time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
+                    Time=zeros(2,FileInfo_A.NumberOfFrames+1);
+                    Time(2,:)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate);
                     if ~isempty(j1_series_Civ1) & j1_series_Civ1~=1
                         Time=Time';
                     end
@@ -369,7 +369,7 @@ for ifield=1:NbField
                     Time=(1:MaxIndex_i)'*ones(1,MaxIndex_j);
                     Time=Time+0.001*ones(MaxIndex_i,1)*(1:MaxIndex_j);
                     Time=[zeros(1,MaxIndex_j);Time];% insert a first line of zeros
-                    Time=[zeros(MaxIndex_i+1,1) Time];% insert a first column of zeros
+                    Time=([zeros(MaxIndex_i+1,1) Time])';% insert a first column of zeros
                 end
             end
             if  ~exist_file(ImageName_A)
@@ -421,11 +421,11 @@ for ifield=1:NbField
             j2=j2_series_Civ1(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Data.Civ1_Time=Time(i2_civ1+1,j2+1);% the Time is the Time of the second image
+            Data.Civ1_Time=Time(j2+1,i2_civ1+1);% the Time is the Time of the second image
             Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
         else
-            Data.Civ1_Time=(Time(i2_civ1+1,j2+1)+Time(i1_civ1+1,j1+1))/2;% the Time is the Time at the middle of the image pair
-            Data.Civ1_Dt=Time(i2_civ1+1,j2+1)-Time(i1_civ1+1,j1+1);
+            Data.Civ1_Time=(Time(j2+1,i2_civ1+1)+Time(j1+1,i1_civ1+1))/2;% the Time is the Time at the middle of the image pair
+            Data.Civ1_Dt=Time(j2+1,i2_civ1+1)-Time(j1+1,i1_civ1+1);
         end
         for ilist=1:length(list_param)
             Data.(Civ1_param{5+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
@@ -810,7 +810,7 @@ for ifield=1:NbField
             Civ1_Dt=1;
             Civ2_Dt=1;
         else
-            Civ2_Dt=Time(i2_civ2+1,j2_civ2+1)-Time(i1_civ2+1,j1_civ2+1);
+            Civ2_Dt=Time(j2_civ2+1,i2_civ2+1)-Time(j1_civ2+1,i1_civ2+1);
         end
         par_civ2.SearchBoxShift=zeros(size(par_civ2.Grid));
         par_civ2.SearchBoxShift(:,1)=(Civ2_Dt/Civ1_Dt)*Shiftx;%rescale the shift in case of Dt different for Civ1 and Civ2
@@ -842,10 +842,10 @@ for ifield=1:NbField
             Data.Civ2_FrameIndexA=FrameIndex_A_2;
             Data.Civ2_FrameIndexB=FrameIndex_B_2;
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                Data.Civ2_Time=Time(i2_civ2+1,j2_civ2+1);% the Time is the Time of the secodn image
+                Data.Civ2_Time=Time(j2_civ2+1,i2_civ2+1);% the Time is the Time of the secodn image
                 Data.Civ2_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
             else
-                Data.Civ2_Time=(Time(i2_civ2+1,j2_civ2+1)+Time(i1_civ2+1,j1_civ2+1))/2;
+                Data.Civ2_Time=(Time(j2_civ2+1,i2_civ2+1)+Time(j1_civ2+1,i1_civ2+1))/2;
                 Data.Civ2_Dt=Civ2_Dt;
             end
         end
