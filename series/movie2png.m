@@ -131,7 +131,6 @@ save(t,[fileparts(InputFileName) '.xml'])
 %% LOOP ON FRAMES
 
 for index=Param.IndexRange.first_i:increment:Param.IndexRange.last_i
-    update_waitbar(WaitbarHandle,(index-Param.IndexRange.first_i)/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return

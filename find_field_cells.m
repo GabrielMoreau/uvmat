@@ -84,10 +84,16 @@ end
 %% role of variables and list of requested operations
 %ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','errorflag',...
 %   'ancillary','color','discrete','scalar','coord_tps'};% rmq vector_x_tps and vector_y_tps to be replaced by vector_x and vector_y
-Role=num2cell(blanks(nbvar));%initialize a cell array of nbvar blanks
+if isfield(Data,'ListRole')
+    Role=Data.ListRole;
+else
+    Role=num2cell(blanks(nbvar));%initialize a cell array of nbvar blanks
+end
 ProjModeRequest=regexprep(Role,' ',''); % fieldRequest set to '' by default
 FieldName=cell(size(Role)); % fieldRequest set to {} by default
 CheckSub=zeros(size(Role));% =1 for fields to substract
+
+
 
 if isfield(Data,'VarAttribute')
     for ivar=1:numel(Data.VarAttribute)

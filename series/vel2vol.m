@@ -92,7 +92,6 @@ set(hseries.last_j,'String',num2str(nbfield2))% display the last image in the pr
 
 %% main loop
 for ifile=1:nbfield1
-    update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield1)
     for jfile=1:nbfield2
         filename=name_generator(basename,num_i1(ifile,jfile),num_j1(ifile,jfile),Series.FileExt,Series.NomType,1,num_i2(ifile,jfile),num_j2(ifile,jfile),Series.SubDir);
         [Field,VelTypeOut]=read_civxdata(filename,FieldName,VelType);

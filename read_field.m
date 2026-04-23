@@ -138,14 +138,11 @@ switch FileType
         if ~isfield(ParamIn,'Coord_z')
             ParamIn.Coord_z=[];
         end
-        NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
+       % NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
             [Field,~,~,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
             [Field,~,~,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,frame_index,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
-%             if numel(frame_index)~=1
-%                 NbCoord=NbCoord+1;% adds time coordinate, except if a single time has been selected
-%             end
         else
             [Field,~,~,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVarName]);
         end
@@ -288,6 +285,7 @@ if ~isempty(A)
     Field.NbDim=2;%default
     Field.AName='image';
     Field.ListVarName={'Coord_y','Coord_x','A'}; %
+    Field.ListRole={'coord_y','coord_x','scalar'};
     Field.VarAttribute{1}.Unit='pixel';
     Field.VarAttribute{2}.Unit='pixel';
     Field.VarAttribute{1}.Role='coord_y';

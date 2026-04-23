@@ -1,4 +1,5 @@
-%'fullfile_uvmat': creates a file name from path, root name and indices. 
+%'fullfile_uvmat': creates a file name from path, root name and indices.
+%!!!TO REPLACE BY fullfile_indices
 %------------------------------------------------------------------------
 % filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
 %------------------------------------------------------------------------           

@@ -178,6 +178,7 @@ end
 if ~isempty(ivar_V_tps)
     Field.VarAttribute{ivar_V}.VarIndex_tps=ivar_V_tps;
 end
+Field.Role=role;
 
 %% update list of global attributes
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];

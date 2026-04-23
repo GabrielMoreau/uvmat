@@ -136,11 +136,6 @@ for iview=1:nbview
             datnum=zeros(1,nbfield_i);
             Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
             for ifile=1:nbfield_i
- %               update_waitbar(WaitbarHandle,ifile/nbfield_i)
-%                 if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
-%                     disp('program stopped by user')
-%                     break
-%                 end
                 file=filecell{iview,index_slice(ifile)};
                 [Path,Name,ext]=fileparts(file);
                 detect=exist(file,'file'); % check the existence of the file

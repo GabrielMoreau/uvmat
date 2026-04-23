@@ -281,7 +281,6 @@ if isfield(Param,'CheckOverwrite')
 end
 
 for ifield=1:NbField
-    update_waitbar(WaitbarHandle,ifield/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break

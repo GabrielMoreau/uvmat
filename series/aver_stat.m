@@ -291,7 +291,6 @@ for islice=index_j
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_series+index_j(islice)-index_j(1)
-        update_waitbar(WaitbarHandle,index/NbField)
         if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break

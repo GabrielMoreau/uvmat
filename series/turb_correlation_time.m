@@ -198,7 +198,6 @@ DataOut.VarDimName={'delta_t','coord_y','coord_x',...
 disp('loop for mean started')
 Time=zeros(1,NbField);
 for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
@@ -243,7 +242,6 @@ VMean=VMean./Counter;
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 disp('loop for correlation started')
 for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break

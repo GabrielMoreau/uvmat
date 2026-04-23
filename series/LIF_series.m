@@ -94,7 +94,6 @@ itime=0;
 for ifile=1:nbfield 
     stopstate=get(hRUN,'BusyAction');%enable stop button
     if isequal(stopstate,'queue')% enable STOP command
-        update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
         %name of the current LIF input file 
         [inputfile,idetect]=name_generator(filebase,num_i1{1}(ifile),num_j1{1}(ifile),Series.FileExt{1},Series.NomType{1},1,num_i1{1}(ifile),num_j2{1}(ifile));
         if ~idetect

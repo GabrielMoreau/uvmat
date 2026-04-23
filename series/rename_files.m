@@ -173,7 +173,6 @@ end
 j1=[];%default
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 for ifile=1:nbfield
-            update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return

@@ -427,11 +427,7 @@ for ifield=1:NbField
             Data.Civ1_Time=(Time(j2+1,i2_civ1+1)+Time(j1+1,i1_civ1+1))/2;% the Time is the Time at the middle of the image pair
             Data.Civ1_Dt=Time(j2+1,i2_civ1+1)-Time(j1+1,i1_civ1+1);
         end
-        for ilist=1:length(list_param)
-            Data.(Civ1_param{5+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
-        end
-        Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
-        Data.CivStage=1;
+
         CheckVolumeScan= strcmp(NomTypeNc,'_1-2_1');
         
         IndexPeriod=[];%default
@@ -452,16 +448,8 @@ for ifield=1:NbField
             backgroundname=get_background_name(BkgndRootName,floor((i1_civ1+i2_civ1)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
             if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
                 par_civ1.Background=background; %use background already opened 
-            else
-                try
-                    par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use
-                catch ME
-                    if ~isempty(ME.message)
-                        errormsg=['error reading input image: ' ME.message];
-                        disp_uvmat('ERROR',errormsg,checkrun)
-                        return
-                    end
-                end
+            else          
+                par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use     
                 background=par_civ1.Background;
                 backgroundoldname=backgroundname;% preserve the name for next iteration (to avoid reading the background image again)
             end
@@ -519,6 +507,16 @@ for ifield=1:NbField
             par_civ1.Grid=GridData.Grid;
             par_civ1.CorrBoxSize=GridData.CorrBox;
         end
+        
+        % write global attributes
+        for ilist=1:length(list_param)
+            Data.(Civ1_param{5+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
+        end
+          if isfield( Data,'Civ1_Background')
+                Data.Civ1_Background=backgroundname;% update with the relevant background used
+            end
+        Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
+        Data.CivStage=1;
         
         % caluclate velocity data
         if strcmp(Param.RunMode,'cluster')
@@ -853,6 +851,9 @@ for ifield=1:NbField
             Data.(Civ2_param{6+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
+         if isfield( Data,'Civ2_Background')
+                Data.Civ2_Background=backgroundname;% update with the relevant background used
+            end
         
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);

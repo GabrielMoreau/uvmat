@@ -129,15 +129,6 @@ if ismember( FileType,{'civdata','civdata_3D'})
         iview_image=2;%line # for the input images
 end
         
-%% prepare the GUI with input parameters 
-% 
-set(handles.ref_i,'String',num2str(Param.IndexRange.first_i))
-if isfield(Param.IndexRange,'first_j')
-    set(handles.ref_j,'String',num2str(Param.IndexRange.first_j))
-end
-set(handles.ConfigSource,'String','\default')
-
-%%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 
 %% display the min and max indices for the whole file series
 if isempty(Param.IndexRange.MaxIndex_i)|| isempty(Param.IndexRange.MinIndex_i)
@@ -154,6 +145,18 @@ if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j'
     MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_image);
     MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
 end
+
+%% det the reference indices for pair display
+% 
+% set(handles.ref_i,'String',num2str(Param.IndexRange.first_i))
+ref_i=floor((MinIndex_i+MaxIndex_i)/2);
+set(handles.ref_i,'String',num2str(ref_i))%take the middle of the available range
+ if isfield(Param.IndexRange,'first_j')
+%     set(handles.ref_j,'String',num2str(Param.IndexRange.first_j))
+    ref_j=floor((MinIndex_j+MaxIndex_j)/2);
+    set(handles.ref_j,'String',num2str(ref_j))%take the middle of the available range
+end
+set(handles.ConfigSource,'String','\default')
 %update the bounds if possible
 % if isfield(SeriesData,'i_ref_list')&&numel(SeriesData.i_ref_list)>=iview_image
 %     if size(SeriesData.i_ref_list{iview_image},2)==2 && min(min(SeriesData.i_ref_list{iview_image}(:,1,:)))==0
@@ -194,13 +197,13 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
-    if size(time,1)<MaxIndex_i
+    if size(time,2)<MaxIndex_i
         msgbox_uvmat('WARNING','maximum i index restricted by the timing of the xml file');
-    elseif size(time,2)<MaxIndex_j
+    elseif size(time,1)<MaxIndex_j
         msgbox_uvmat('WARNING','maximum j index restricted by the timing of the xml file');
     end
-    MaxIndex_i=min(size(time,1),MaxIndex_i);%possibly adjust the max index according to time data
-    MaxIndex_j=min(size(time,2),MaxIndex_j);
+    MaxIndex_i=min(size(time,2),MaxIndex_i);%possibly adjust the max index according to time data
+%     MaxIndex_j=min(size(time,1),MaxIndex_j);
     set(handles.TimeSource,'String',Param.IndexRange.TimeSource);
 else
     msgbox_uvmat('WARNING','timing not defined (check xml file), default values used')
@@ -210,7 +213,7 @@ else
     time=time+0.001*(MinIndex_j:MaxIndex_j)'*ones(1,MaxIndex_i-MinIndex_i+1);
 end
 CivInputData.Time=time;
-if ~isempty(regexp(NomTypeImaA,'(a|A)$'))
+if ~isempty(regexp(NomTypeImaA,'(a|A)$', 'once'))
     CivInputData.NomTypeIma=NomTypeImaA;
 else
     CivInputData.NomTypeIma='_1';%used only to display pairs in ListPairCiv1 and 2
@@ -218,7 +221,6 @@ end
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
-% set(handles.SearchRange,'UserData', pxcm_search);
 
 
 %% set the civ_input options, depending on the input file content if a nc file has been opened
@@ -330,7 +332,7 @@ set(handles.ListPairCiv2,'String',{''})
 %% set the menu and default choice of civ pairs
 MinIndex_j=min(SeriesData.j1_list{iview_image});
 MaxIndex_j=max(SeriesData.j1_list{iview_image});
-if isequal(MaxIndex_j,MinIndex_j)|| strcmp(Param.Action.ActionName,'civ_3D')% no possibility of j pairs
+if isnan(MinIndex_j)||isequal(MaxIndex_j,MinIndex_j)|| strcmp(Param.Action.ActionName,'civ_3D')% no possibility of j pairs
     PairMenu={'series(Di)'};
 elseif MaxIndex_j-MinIndex_j==1
     PairMenu={'pair j1-j2';'series(Di)'};
@@ -762,7 +764,6 @@ if isequal(mode_selected,'pair j1-j2')
     dt=1;
     index=0;
     numlist_a=[];
-    numlist_B=[];
     %get all the time intervals in bursts
     displ_dt=1;%default
     nbfield2=min(nbfield2,10);%limitate the number of pairs to 10x10
@@ -771,15 +772,15 @@ if isequal(mode_selected,'pair j1-j2')
             index=index+1;
             numlist_a(index)=numod_a;
             numlist_b(index)=numod_b;
-            if size(time,2)>1 && ~checkframe && size(CivInputData.Time,1)>ref_i && size(CivInputData.Time,2)>numod_b
-                dt(numod_a,numod_b)=CivInputData.Time(ref_i+1,numod_b+1)-CivInputData.Time(ref_i+1,numod_a+1);%first time interval dt
+            if size(time,1)>1 && ~checkframe && size(CivInputData.Time,2)>ref_i && size(CivInputData.Time,1)>numod_b
+                dt(numod_a,numod_b)=CivInputData.Time(numod_b+1,ref_i+1)-CivInputData.Time(numod_a+1,ref_i+1);%first time interval dt
                 displ_dt(index)=dt(numod_a,numod_b);
             else
                 displ_dt(index)=1;
             end
         end
     end
-    [dtsort,indsort]=sort(displ_dt);
+%     [dtsort,indsort]=sort(displ_dt);
     enable_j(handles, 'off')
 elseif isequal(mode_selected,'series(Dj)') %| isequal(mode,'st_series(Dj)')
     enable_j(handles, 'on')
@@ -826,11 +827,6 @@ function ListPairCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %reproduce by default the chosen pair in the checkciv2 menu
 set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ1 by default
-
-% %------------------------------------------------------------------------
-% % --- Executes on selection change in ListPairCiv2.
-% function ListPairCiv2_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)
@@ -893,8 +889,8 @@ ref_i=str2double(get(handles.ref_i,'String'));
 ref_j=[];
 if isequal(mode_selected,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
      ref_j=0;
-    MinIndex_j=str2num(get(handles.MinIndex_j,'String'));
-        MaxIndex_j=str2num(get(handles.MaxIndex_j,'String'));
+    MinIndex_j=str2double(get(handles.MinIndex_j,'String'));
+        MaxIndex_j=str2double(get(handles.MaxIndex_j,'String'));
         if MaxIndex_j-MinIndex_j>10
             mode_selected= 'series(Dj)';
            ref_j= str2double(get(handles.ref_j,'String'));
@@ -918,17 +914,17 @@ select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 %% determine the menu display in .ListPairCiv1
 switch mode_selected
     case 'series(Di)'
+        displ_pair_dt=cell(nbpair,1);
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
                 displ_pair_dt{ipair}=displ_pair{ipair};
                 if ~checkframe
-                    if size(Time,1)>=ref_i+1+ceil(ipair/2) && size(Time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
-                        dt=Time(ref_i+1+ceil(ipair/2),ref_j+1)-Time(ref_i+1-floor(ipair/2),ref_j+1);%Time interval dtref_j+1
+                    if size(Time,2)>=ref_i+1+ceil(ipair/2) && size(Time,1)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
+                        dt=Time(ref_j+1,ref_i+1+ceil(ipair/2))-Time(ref_j+1,ref_i+1-floor(ipair/2));%Time interval dtref_j+1
                         displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(dt*1000)];
                     end
                 else
-                    dt=ipair/1000;
                     displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(ipair)];
                 end
             else
@@ -937,13 +933,14 @@ switch mode_selected
             end
         end
     case 'series(Dj)'
+        displ_pair_dt=cell(nbpair,1);
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
                 displ_pair_dt{ipair}=displ_pair{ipair};
                 if ~checkframe
-                    if size(Time,2)>=ref_j+1+ceil(ipair/2) && size(Time,1)>=ref_i+1 && ref_j-floor(ipair/2)>=0 && ref_i>=0
-                        dt=Time(ref_i+1,ref_j+1+ceil(ipair/2))-Time(ref_i+1,ref_j+1-floor(ipair/2));%Time interval dtref_j+1
+                    if size(Time,1)>=ref_j+1+ceil(ipair/2) && size(Time,2)>=ref_i+1 && ref_j-floor(ipair/2)>=0 && ref_i>=0
+                        dt=Time(ref_j+1+ceil(ipair/2),ref_i+1)-Time(ref_j+1-floor(ipair/2),ref_i+1);%Time interval dtref_j+1
                         displ_pair_dt{ipair}=[displ_pair_dt{ipair} ' :dt= ' num2str(dt*1000)];
                     end
                 else
@@ -972,7 +969,7 @@ switch mode_selected
                 displ_pair_dt{index_pair}=displ_pair{index_pair};
                 dt(index_pair)=numod_b-numod_a;%default dt
                 if size(Time,1)>ref_i && size(Time,2)>numod_b  % && ~checkframe
-                    dt(index_pair)=Time(ref_i+1,numod_b+1)-Time(ref_i+1,numod_a+1);% Time interval dt
+                    dt(index_pair)=Time(numod_b+1,ref_i+1)-Time(numod_a+1,ref_i+1);% Time interval dt
                     displ_pair_dt{index_pair}=[displ_pair_dt{index_pair} ' :dt= ' num2str(dt(index_pair)*1000)];
                 end
             end
@@ -984,8 +981,6 @@ switch mode_selected
         displ_pair_dt=displ_pair_dt(indsort);
         end
     case 'displacement'
-%         displ_pair={'Di=Dj=0'};
-%         displ_pair_dt={'Di=Dj=0'};
         set(handles.PairIndices,'Visible','off')
 end
 if index==1 && ~strcmp(mode_selected,'displacement')
@@ -993,8 +988,6 @@ if index==1 && ~strcmp(mode_selected,'displacement')
 end
 
 %% determine the default selection in the pair menu for Civ1
-%ichoice=find(select,1);% index of first selected pair
-%if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
 end_pair=regexp(PairCiv1Init,' :dt=');
 if ~isempty(end_pair)
     PairCiv1Init=PairCiv1Init(1:end_pair-1);
@@ -1031,18 +1024,12 @@ set(gcf,'Pointer','arrow')% Indicate that the process is finished
 % Callbacks in the uipanel Reference Indices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
-function MinIndex_i_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-first_i=str2double(get(handles.MinIndex_i,'String'));
-set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
-ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
+% function MinIndex_i_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% first_i=str2double(get(handles.MinIndex_i,'String'));
+% set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
+% ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
-% %------------------------------------------------------------------------
-% function MinIndex_j_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% first_j=str2num(get(handles.MinIndex_j,'String'));
-% set(handles.ref_j,'String', num2str(first_j))% reference index for pair dt = first index
-% ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Callbacks in the uipanel Civ1
@@ -1755,9 +1742,9 @@ function NomTypeNc=nomtype2pair(NomTypeIma,mode_selected)
 NomTypeNc=NomTypeIma;%default
 switch mode_selected
     case 'pair j1-j2'
-        if ~isempty(regexp(NomTypeIma,'a$'))
+        if ~isempty(regexp(NomTypeIma,'a$', 'once'))
             NomTypeNc=[NomTypeIma 'b'];
-        elseif ~isempty(regexp(NomTypeIma,'A$'))
+        elseif ~isempty(regexp(NomTypeIma,'A$', 'once'))
             NomTypeNc=[NomTypeIma 'B'];
         else
             r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
@@ -1766,10 +1753,7 @@ switch mode_selected
             end
         end
     case 'series(Dj)'
-        %         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
-        %         if ~isempty(r)
         NomTypeNc='_1_1-2';
-        %         end
     case 'series(Di)'
         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
         if ~isempty(r)

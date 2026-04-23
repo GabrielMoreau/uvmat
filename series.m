@@ -976,10 +976,10 @@ if iview==1% set the detected index increment for the first input table line
         set(handles.num_incr_j,'String',num2str(diff_j_max))
     end
     % make the j indices visible if relevant
-    if isempty(find(~isnan(Param.ref_j_list), 1))% no j series
-        enable_j(handles,'off');
+    if all(isnan(Param.ref_j_list))% no j series
+        enable_j(handles,'off',false);
     else
-        enable_j(handles,'on')
+        enable_j(handles,'on',false)
     end
 end
 
@@ -1389,14 +1389,16 @@ if numel(eventdata.Indices)>=1
 end
 
 %------------------------------------------------------------------------
-function enable_j(handles,state)
+function enable_j(handles,state,keepminmax)
 %------------------------------------------------------------------------
 set(handles.j_txt,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
+if ~keepminmax
  set(handles.MinIndex_j,'Visible',state)
  set(handles.MaxIndex_j,'Visible',state)
+end
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -2680,13 +2682,13 @@ num_first_j_Callback(hObject, eventdata, handles)
 
 %% enable or desable j index visibility
 if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
-    enable_j(handles,'off')
+    enable_j(handles,'off',true)
 else% show j index if relevant in the input series
     if isfield(SeriesData,'j1_series')
     j1_series=SeriesData.j1_series;
     for iview=1:size(j1_series,1)
         if ~isempty(j1_series{iview})
-            enable_j(handles,'on')
+            enable_j(handles,'on',true)
             break
         end
     end
@@ -3730,9 +3732,9 @@ iview=get(hListView,'Value');
 if strcmp(mode,'series(Dj)')
    status_j='on'; % default
 else
-       status_j='off'; % no j index needed for bust case
+       status_j='off'; % no j index needed for burst case
 end
-enable_j(hhseries,status_j) % no j index needed
+enable_j(hhseries,status_j,true) % no j index needed
 
 %% get the reference indices for the time interval Dt
 href_i=findobj(get(hObject,'parent'),'Tag','ref_i');

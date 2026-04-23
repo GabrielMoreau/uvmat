@@ -190,7 +190,6 @@ end
 %%%%%% MAIN LOOP ON FRAMES %%%%%%
 for ifile=1:nbfield
     if checkrun
-        update_waitbar(WaitbarHandle,ifile/nbfield)
         if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             return

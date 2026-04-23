@@ -73,11 +73,13 @@ for icell=1:numel(CellInfo)
         if isfield(CellInfo{icell},'VarIndex_vector_y')%interpolate vector y component
             Index_interp=[Index_interp CellInfo{icell}.VarIndex_vector_y];
         end
-        for iselect=1:numel(Index_interp)
-            Attr=DataIn.VarAttribute{Index_interp(iselect)};
+        if isfield(DataIn,'VarAttribute') 
+        for iselect=1:numel(Index_interp)      
+               Attr=DataIn.VarAttribute{Index_interp(iselect)};
             if ~isfield(Attr,'VarIndex_tps')&& (checkall || (isfield(Attr,'ProjModeRequest')&&strcmp(Attr.ProjModeRequest,'interp_tps')))
                 check_interp_tps(Index_interp(iselect))=1;
             end
+        end
         end
         ListVarInterp=DataIn.ListVarName(check_interp_tps);
         VarIndexInterp=find(check_interp_tps);
