@@ -192,7 +192,6 @@ end
 index_slice=1:nbfield;% select the file indices
 for index=index_slice
     if checkrun
-        update_waitbar(hseries.Waitbar,index/(nbfield))
         stopstate=get(hseries.RUN,'BusyAction');
     else
         stopstate='queue';

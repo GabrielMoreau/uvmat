@@ -250,7 +250,6 @@ for ifield=1:NbField_i
     time_civ2=0;
     time_patch2=0;
     if checkrun% update the waitbar in interactive mode with GUI series  (checkrun=1)
-        update_waitbar(WaitbarHandle,ifield/NbField_i)
         if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break

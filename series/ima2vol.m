@@ -115,7 +115,6 @@ end
 
 %% main loop
 for ifile=1:nbfield_i
-    update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return

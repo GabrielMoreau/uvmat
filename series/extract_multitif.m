@@ -177,14 +177,14 @@ end
 % include the first tiff file with no index in the first iteration
 if Param.IndexRange.first_i==1% first slice of processing
     firstindex=0;
-    count=0;
-%count=-1;%suppress the first image and shifts the other ones
+ %   count=0;
+count=-1;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% suppress the first image and shifts the other ones
 else
     firstindex=Param.IndexRange.first_i;
     ImageName=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},'im.tif');
     NbFrames=numel(imfinfo(ImageName));
-    count=Param.IndexRange.first_i*NbFrames;
- %count=Param.IndexRange.first_i*NbFrames-1;%suppress the first image and shifts the other ones
+    %count=Param.IndexRange.first_i*NbFrames;
+ count=Param.IndexRange.first_i*NbFrames-1;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% suppress the first image and shifts the other ones
 end
 for ifile=firstindex:Param.IndexRange.last_i
     tic

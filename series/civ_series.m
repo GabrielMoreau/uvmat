@@ -71,11 +71,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-%     if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-%         GUIParam.IndexRange_j='off';%no j index display in series
-%     else
-%         GUIParam.IndexRange_j='on';% j index display in series if relevant
-%     end
+    if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+        GUIParam.IndexRange_j='off';%no j index display in series
+    else
+        GUIParam.IndexRange_j='on';% j index display in series if relevant
+    end
     return
 end
 

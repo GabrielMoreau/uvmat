@@ -206,7 +206,6 @@ vec_C=0;
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
     index
-    update_waitbar(WaitbarHandle,index/nbfield)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break

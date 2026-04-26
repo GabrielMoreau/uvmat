@@ -1583,9 +1583,8 @@ if strcmp(ActionExt,'.sh')
             end
         end
     end
-
     set(handles.ActionExt,'BackgroundColor',[1 1 1])
-     set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
+    set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
 
 %% set nbre of cluster cores and processes:
@@ -1599,12 +1598,12 @@ OutputPath=get(handles.OutputPath,'String');
 %% Look for processing on multiple experiments set by the GUI browse_data
 NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
 if get(handles.Replicate,'Value')
-    hh=findobj(allchild(0),'Tag','browse_data');
-    if isempty(hh)
+    hbrowse=findobj(allchild(0),'Tag','browse_data');
+    if isempty(hbrowse)
         set(handles.Replicate,'Value',0)
     else
         set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
-        BrowseData=guidata(hh);
+         BrowseData=guidata(hbrowse);  %TODO: use the fct read_browsedata ?      
         SourceDir=get(BrowseData.SourceDir,'String');
         ListExp=get(BrowseData.ListExperiments,'String');
         ExpIndices=get(BrowseData.ListExperiments,'Value');
@@ -1624,15 +1623,12 @@ if get(handles.Replicate,'Value')
                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
                                     regexprep(ListDevices{idevice},'^\+/',''));
-%                                 lpathout= fullfile(OutputPath,regexprep(ListExp{iexp},'^\+/',''),...
-%                                     regexprep(ListDevices{idevice},'^\+/',''));
                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
                                 if exist(fullfile(lpath,ldir),'dir')
                                     NbExp=NbExp+1;
                                     ExpIndex(NbExp)=ExpIndices(iexp);
                                     DeviceIndex(NbExp)=DeviceIndices(idevice);
                                     ListPath{NbExp}=lpath;
-                                   % ListPathOut{NbExp}=lpathout;
                                     ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
                                     ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
                                     ListSubdir{NbExp}=ldir;
@@ -1664,7 +1660,7 @@ for iexp=1:NbExp
         Param.InputTable(:,2)=ListSubdir(:,iexp);
         OutputSubDir=unique(ListSubdir(:,iexp));
         Param.OutputSubDir=OutputSubDir{1};
-        if numel(OutputSubDir)>1% case
+        if numel(OutputSubDir)>1% case of several input lines
             for iout=2:numel(OutputSubDir)
                 Param.OutputSubDir=[Param.OutputSubDir '-' OutputSubDir{iout}];
             end
@@ -1761,9 +1757,10 @@ for iexp=1:NbExp
     % if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
     %     set(handles.OutputSubDir,'String','/im')
     % end
-    if get(handles.Replicate,'Value')%resset the input file settings in case of replicated processing
+    if get(handles.Replicate,'Value')%reset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
         set(handles.OutputPath,'String',OutputPath)
+        regexprep(ListExp{iexp},'^\+/','')
         set(handles.Experiment,'String',ListExpOut{iexp})
         set(handles.Device,'String',ListDeviceOut{iexp})
         Param.Experiment=ListExpOut{iexp};
@@ -1882,9 +1879,8 @@ for iexp=1:NbExp
                 disp('ClusterParam.NbCoreMax not documented in series.xml, set to 36 by default')
                 NbCoreMax=min(NbProcess,36);
             end
-            if NbCoreMax~=1
-                %%%% TEST ELETTA
-                if NbCoreMax==0
+            if NbCoreMax~=1                
+                if NbCoreMax==0  %%%% TEST ELETTA problem
                     disp(NbProcess)
                      disp(Param.IndexRange.NbSlice)
                     disp(SeriesData.ClusterParam.NbCoreMax)                 
@@ -1920,7 +1916,7 @@ for iexp=1:NbExp
             case 'NbInput_i'
                 StatusData.NbOutputFile=numel(ref_i);
             case 'NbSlice'
-                StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
+                StatusData.NbOutputFile=str2double(get(handles.num_NbSlice,'String'));
         end
     end
     StatusData.TimeStart=now;
@@ -2011,7 +2007,7 @@ for iexp=1:NbExp
         end
         %create subdirectory for executable files
         if ~exist(DirExe,'dir')
-            [tild,msg1]=mkdir(DirExe);
+            [~,msg1]=mkdir(DirExe);
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' DirExe ': ' msg1]; % error message for directory creation
                 return
@@ -2024,7 +2020,7 @@ for iexp=1:NbExp
         %create subdirectory for log files
         DirLog=fullfile(OutputDir,'0_LOG');
         if ~exist(DirLog,'dir')
-            [tild,msg1]=mkdir(DirLog);
+            [~,msg1]=mkdir(DirLog);
             if ~strcmp(msg1,'')
                 errormsg=['cannot create ' DirLog ': ' msg1]; % error message for directory creation
                 return
@@ -2696,7 +2692,13 @@ else% show j index if relevant in the input series
 end
 
 %% NbSlice visibility
-if isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice))
+if ~isfield(ParamOut,'OutputFileMode')
+    ParamOut.OutputFileMode='NbSlice'; %default value, the program will not be parallelised in mode 'cluster'
+end
+if ~isfield(ParamOut,'NbSlice')
+    ParamOut.NbSlice=1; %default value
+end
+if strcmp(ParamOut.OutputFileMode,'NbSlice')||(isfield(ParamOut,'NbSlice') && (strcmp(ParamOut.NbSlice,'on')||isnumeric(ParamOut.NbSlice)))
     set(handles.num_NbSlice,'Visible','on')
     set(handles.NbSlice_title,'Visible','on')
     if isnumeric(ParamOut.NbSlice)

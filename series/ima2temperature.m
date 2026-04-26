@@ -200,7 +200,6 @@ DataOut.VarDimName={'Coord_x','Coord_y',{'Coord_y','Coord_x'}};
 %% main loop on images,
 j1=[];%default
 for ifile=1:nbfield
-            update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return

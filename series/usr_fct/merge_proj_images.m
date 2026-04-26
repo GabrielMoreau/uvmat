@@ -226,7 +226,6 @@ end
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
-    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
