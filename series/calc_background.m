@@ -248,6 +248,11 @@ else
     RootFileOut=RootFile;
 end
 [FileInfo,MovieObject]=get_file_info(FirstFileName);
+if isfield(FileInfo,'ColorType') && strcmp(FileInfo.ColorType,'truecolor')
+    BitDepth=16;
+else
+    BitDepth=FileInfo.BitDepth;
+end
 FileType=FileInfo.FileType;
 if ~CheckRelabel
     if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
@@ -263,7 +268,7 @@ if ~CheckRelabel
 end
 
 %% output file naming
-if Param.ActionInput.CheckVolume
+if Param.ActionInput.CheckVolume || Param.IndexRange.first_j>Param.IndexRange.MinIndex_j || Param.IndexRange.last_j<Param.IndexRange.MaxIndex_j
     NomTypeOut='_1_1';
 else
     NomTypeOut='_1';
@@ -297,14 +302,14 @@ for j_slice=1:NbSlice
      %%%%%%%  LOOP ON BLOCKS OF nbaver_ima files %%%%%%%
     for iblock=1:nbaver_ima:nbfield_series
         last_index=min(iblock+nbaver_ima-1,nbfield_series);
-        Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(FileInfo.BitDepth)]); %prealocate memory
+        Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(BitDepth)]); %prealocate memory
         for ifield = iblock:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
                 [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
                 filename=fullfile(RootPath,SubDir,filename);
             else
-                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile));
+                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile))
                 FrameIndex=frame_index(ifile);
             end
             if ifield==iblock
@@ -321,7 +326,7 @@ for j_slice=1:NbSlice
         B=squeeze(B(:,:,rank));%background image
         
         %write result file
-        imwrite(B,filename_out,'BitDepth',FileInfo.BitDepth); % save the new image   
+        imwrite(B,filename_out,'BitDepth',BitDepth); % save the new image   
         disp([filename_out ' written'])
     end
 end

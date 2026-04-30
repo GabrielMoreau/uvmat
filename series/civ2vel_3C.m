@@ -89,6 +89,20 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('ERROR',['the first input file ' FirstFileName ' does not exist'])
         return
     end
+    VelocityRange=[];%default
+    if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VelocityRange')
+        VelocityRange= Param.ActionInput.VelocityRange;
+    end
+    
+    prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)'};
+    dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
+    num_lines= 1;
+    def     = { num2str(VelocityRange)};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    if isempty(answer)
+        return
+    end
+    GUIParam.ActionInput.VelocityRange=str2double(answer{1});
     return
 end
 
@@ -178,6 +192,13 @@ VelType='*';%latest field filter2 opened by default
 if isfield(Param.InputFields,'VelType')
     VelType=Param.InputFields.VelType;%imposed civ or filter
 end
+
+%% define a range of values to store results as integers for projection of PIV data
+scale_factor_inv_uv=[];
+if isfield(Param.ActionInput,'VelocityRange') && ~isempty(Param.ActionInput.VelocityRange)
+    scale_factor_inv_uv=floor(32767/Param.ActionInput.VelocityRange);
+end
+ 
 
 %%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
 for index=1:NbField
@@ -433,7 +454,8 @@ for index=1:NbField
         MergeData.VarAttribute{4}.Role='vector_y';
         MergeData.VarAttribute{5}.Role='vector_z';
         MergeData.VarAttribute{6}.Role='ancillary';
-        MergeData.VarAttribute{6}.unit='pixel'; %error estimate expressed in pixel
+        MergeData.VarAttribute{6}.units='pixel'; %error estimate expressed in pixel
+        MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 10000 to get an integer
         if CheckZ
             MergeData.ListVarName=[MergeData.ListVarName {'Z'}];
             MergeData.VarDimName=[MergeData.ListVarName {'coord_y','coord_x'}];
@@ -447,14 +469,22 @@ for index=1:NbField
     MergeData.U=U/Dt;
     MergeData.V=V/Dt;
     MergeData.W=W/Dt;
-    
-    
+    if ~isempty(scale_factor_inv_uv)
+        MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+        MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+        MergeData.W=int16(scale_factor_inv_uv*MergeData.W);
+        MergeData.VarAttribute{3}.scale_factor=1/scale_factor_inv_uv;
+        MergeData.VarAttribute{4}.scale_factor=1/scale_factor_inv_uv;
+        MergeData.VarAttribute{5}.scale_factor=1/scale_factor_inv_uv;
+    end
+
     mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
     mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
     MergeData.Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
     MergeData.U(MergeData.Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
     MergeData.V(MergeData.Error>1)=NaN;
     MergeData.W(MergeData.Error>1)=NaN;
+    MergeData.Error=uint16(1000*MergeData.Error);% transform to integers 
     errormsg=struct2nc(OutputFile,MergeData);%save result file
     if isempty(errormsg)
         disp(['output file ' OutputFile ' written'])

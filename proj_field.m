@@ -1208,15 +1208,17 @@ if ~isempty(find(check_grid,1))||~strcmp(ObjectData.ProjMode,'projection')%no ex
     ProjData.VarAttribute{2}.Role='coord_x';
     YAttribute=[];
     XAttribute=[];
-    if ~isempty(icell_grid)
+    if isfield(FieldData,'VarAttribute')
+        if ~isempty(icell_grid)
             YAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim-1)};
-        XAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim)};
-    elseif ~isempty(icell_scattered)
-        NbDim=NbDimArray(icell_scattered);
-        YAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim-1)};
-        XAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim)};
+            XAttribute=FieldData.VarAttribute{CellInfo{icell_grid}.CoordIndex(NbDim)};
+        elseif ~isempty(icell_scattered)
+            NbDim=NbDimArray(icell_scattered);
+            YAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim-1)};
+            XAttribute=FieldData.VarAttribute{CellInfo{icell_scattered}.CoordIndex(NbDim)};
+        end
     end
-    if ~testangle 
+    if ~testangle
         if isfield(YAttribute,'units')
             ProjData.VarAttribute{1}.units=YAttribute.units;
         end

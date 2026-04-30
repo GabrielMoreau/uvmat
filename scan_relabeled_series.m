@@ -40,7 +40,14 @@ NbTime=NbField_i*NbField_j;
 if ischar(FileSeries.FileName)
     FileSeries.FileName={FileSeries.FileName};
 end
-[~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
+[~,~,FileExt]=fileparts(FileSeries.FileName{end});
+[rr,index_rank]=regexp(FileSeries.FileName{end},['(?<i1>\d+)' FileExt '$'],'names');
+i1=str2double(rr.i1);
+RootFile=FileSeries.FileName{end}(1:index_rank-1);
+nbdigit=numel(rr.i1);
+numstring=['%0' num2str(nbdigit) 'd'];
+NomType=num2str(1,numstring);
+%[~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
 Step=FileSeries.NbFramePerFile;
 NbFiles=ceil(NbTime/Step);
 check_exist=zeros(1,NbFiles);
@@ -49,7 +56,9 @@ for ifile=1:NbFiles
         FullFileName=fullfile(FilePath,FileSeries.FileName{ifile});
     else
         FileIndex=ifile-numel(FileSeries.FileName)+i1;
-        FullFileName=fullfile_uvmat(FilePath,'',RootFile,FileExt,NomType,FileIndex);
+        FileName=[RootFile num2str(FileIndex,numstring) FileExt];
+        FullFileName=fullfile(FilePath,FileName);
+        %FullFileName=fullfile_uvmat(FilePath,'',RootFile,FileExt,NomType,FileIndex);
     end
     check_exist(ifile)=exist(FullFileName,'file')==2;
 end

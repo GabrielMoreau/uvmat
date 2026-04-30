@@ -1389,6 +1389,8 @@ if numel(eventdata.Indices)>=1
 end
 
 %------------------------------------------------------------------------
+% make the series of j indices visible or not if relevant
+% if keepminmax=true, do not change the visibility of the min and max indices, (as needed to get the time matrix)
 function enable_j(handles,state,keepminmax)
 %------------------------------------------------------------------------
 set(handles.j_txt,'Visible',state)
@@ -1396,8 +1398,8 @@ set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
 if ~keepminmax
- set(handles.MinIndex_j,'Visible',state)
- set(handles.MaxIndex_j,'Visible',state)
+    set(handles.MinIndex_j,'Visible',state)
+    set(handles.MaxIndex_j,'Visible',state)
 end
 
 
@@ -2680,15 +2682,15 @@ num_first_j_Callback(hObject, eventdata, handles)
 if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
     enable_j(handles,'off',true)
 else% show j index if relevant in the input series
-    if isfield(SeriesData,'j1_series')
-    j1_series=SeriesData.j1_series;
-    for iview=1:size(j1_series,1)
-        if ~isempty(j1_series{iview})
+%     if isfield(SeriesData,'j1_list')
+%     j1_list=SeriesData.j1_list;
+%     for iview=1:size(j1_list,1)
+%         if ~isempty(j1_list{iview})
             enable_j(handles,'on',true)
-            break
-        end
-    end
-    end
+%             break
+%         end
+%     end
+%     end
 end
 
 %% NbSlice visibility

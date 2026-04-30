@@ -81,10 +81,10 @@ Field_1.VarDimName(check_char)=num2cell(Field_1.VarDimName(check_char)); %transf
 [CellInfo_1,NbDim,errormsg]=find_field_cells(Field_1);
 %look for scalar
 ind_cell_scalar=find(cellfun(@(x) check_field_struct(x,'VarType','scalar'),CellInfo));
-ind_cell_scalar_1=find(cellfun(@(x) check_field(x,'VarType','scalar'),CellInfo_1));
+ind_cell_scalar_1=find(cellfun(@(x) check_field_struct(x,'VarType','scalar'),CellInfo_1));
 %look for vectors
 ind_cell_vector=find(cellfun(@(x) check_field_struct(x,'VarType','vector'),CellInfo));
-ind_cell_vector_1=find(cellfun(@(x) check_field(x,'VarType','vector'),CellInfo_1));
+ind_cell_vector_1=find(cellfun(@(x) check_field_struct(x,'VarType','vector'),CellInfo_1));
 
 %% subtract vector fields
 if ~isempty(ind_cell_vector) && ~isempty(ind_cell_vector_1)
@@ -92,21 +92,57 @@ if ~isempty(ind_cell_vector) && ~isempty(ind_cell_vector_1)
     Cellmin=CellInfo{ind_cell_vector_1};
     vector_x_name=Field.ListVarName{Cellplus.VarIndex_vector_x};
     vector_x=Field.(vector_x_name);
-    vector_x_name_1=Field.ListVarName{Cellmin.VarIndex_vector_x};
-    vector_x_1=Field.(vector_x_name_1);
+    vector_x_name_1=Field_1.ListVarName{Cellmin.VarIndex_vector_x};
+    vector_x_1=Field_1.(vector_x_name_1);
     if isequal(size(vector_x),size(vector_x_1))
         vector_y_name=Field.ListVarName{Cellplus.VarIndex_vector_y};
-        vector_y_name_1=Field.ListVarName{Cellmin.VarIndex_vector_y};
+        vector_y_name_1=Field_1.ListVarName{Cellmin.VarIndex_vector_y};
         dim_name=Field.VarDimName{Cellplus.VarIndex_vector_x};
         coord_x=Field.(Cellplus.XName);
-         coord_y=Field.(Cellplus.YName);
-         coord_x_1=Field.(Cellmin.XName);
-         coord_y_1=Field.(Cellmin.YName);
-        SubData.ListVarName={Cellplus.XName,Cellplus.YName,vector_x_name,vector_y_name};
+        coord_y=Field.(Cellplus.YName);
+        coord_x_1=Field_1.(Cellmin.XName);
+        coord_y_1=Field_1.(Cellmin.YName);
+        SubData.ListVarName={Cellplus.XName,Cellplus.YName,vector_x_name,vector_y_name}; 
+        SubData.VarAttribute{1}.Role='coord_x';
+        ListRole={'coord_x','coord_y','vector_x','vector_y'};
+        for ilist=1:numel(ListRole)
+             SubData.VarAttribute{ilist}.Role=ListRole{ilist};
+        end
+        % scattered coordinates
+        if isequal(size(coord_x),size(vector_x)) && isequal(size(coord_x_1),size(vector_x_1))
         SubData.VarDimName={dim_name,dim_name,dim_name,dim_name};
-        SubData.ListRole={'coord_x','coord_y','vector_x','vector_y'};
+        else
+            SubData.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'}};
+        end
         SubData.(vector_x_name)=vector_x-vector_x_1;
         SubData.(vector_y_name)=Field.(vector_y_name)-Field_1.(vector_y_name_1);
+        SubData.(Cellplus.XName)=0.5*(coord_x+coord_x_1);
+        SubData.(Cellplus.YName)=0.5*(coord_y+coord_y_1);
+    end
+end
+
+%% subtract scalars
+if ~isempty(ind_cell_scalar) && ~isempty(ind_cell_scalar_1)
+    Cellplus=CellInfo{ind_cell_scalar};
+    Cellmin=CellInfo{ind_cell_scalar_1};
+    scalar_name=Field.ListVarName{Cellplus.VarIndex_scalar};
+    scalar=Field.(scalar_name);
+    scalar_name_1=Field_1.ListVarName{Cellmin.VarIndex_scalar};
+    scalar_1=Field_1.(scalar_name_1);
+    if isequal(size(scalar),size(scalar_1))
+        scalar_name=Field.ListVarName{Cellplus.VarIndex_scalar};
+        dim_name=Field.VarDimName{Cellplus.VarIndex_scalar};
+        coord_x=Field.(Cellplus.XName);
+        coord_y=Field.(Cellplus.YName);
+         coord_x_1=Field_1.(Cellmin.XName);
+         coord_y_1=Field_1.(Cellmin.YName);
+        SubData.ListVarName={Cellplus.XName,Cellplus.YName,scalar_name};
+        SubData.VarDimName={dim_name,dim_name,dim_name};
+        ListRole={'coord_x','coord_y','scalar'};
+        for ilist=1:numel(ListRole)
+             SubData.VarAttribute{ilist}.Role=ListRole{ilist};
+        end
+        SubData.(scalar_name)=scalar-scalar_1;
         SubData.(Cellplus.XName)=0.5*(coord_x+coord_x_1);
          SubData.(Cellplus.YName)=0.5*(coord_y+coord_y_1);
     end

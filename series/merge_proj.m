@@ -1,11 +1,11 @@
 %'merge_proj': concatene several fields from series, can project them on a regular grid in phys coordinates
 %------------------------------------------------------------------------
-% function ParamOut=merge_proj(Param)
+% function GUIParam=merge_proj(Param)
 %------------------------------------------------------------------------
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %OUTPUT
-% ParamOut: sets options in the GUI series.fig needed for the function
+% GUIParam: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
@@ -56,16 +56,16 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=merge_proj(Param)
+function GUIParam=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
-    ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'on';%can use a transform function
+    GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
+    GUIParam.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    GUIParam.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.FieldTransform = 'on';%can use a transform function
     %%%%% list of possible transform functions (needed only for compilation)
     if 0==1 %never satisfied but trigger compilation with the appropriate transform functions ('eval' inactive for compilation)
         phys
@@ -73,14 +73,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         sub_field
     end
     
-    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions
+    GUIParam.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions
     %%%%%%%%
-    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.mproj';%set the output dir extension
-    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.OutputDirExt='.mproj';%set the output dir extension
+    GUIParam.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     %check the input files
-    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     FileInfo=Param.SeriesData.FileInfo{1};
@@ -104,14 +104,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         if isempty(answer)
             return
         end
-        ParamOut.ActionInput.VelocityRange=str2num(answer{1});
-        ParamOut.ActionInput.VelGradientRange=str2num(answer{2});
+        GUIParam.ActionInput.VelocityRange=str2doubleanswer{1});
+        GUIParam.ActionInput.VelGradientRange=str2double(answer{2});
     end
     return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-ParamOut=[]; %default output
+GUIParam=[]; %default output
 RUNHandle=[];
 
 %% read input parameters from an xml file if input is a file name (batch mode)
@@ -128,19 +128,19 @@ end
 NbView=size(Param.InputTable,1);%number of input file series (lines in InputTable)
 CheckRelabel=false;
 if isfield(Param.IndexRange,'Relabel')
-CheckRelabel=Param.IndexRange.Relabel;
+    CheckRelabel=Param.IndexRange.Relabel;
 end
 NbSlice=[];
 if isfield(Param.IndexRange,'NbSlice')
     NbSlice=Param.IndexRange.NbSlice;
 end
 XmlData=cell(NbView,1);
-%NbSlice_calib=cell(NbView,1);
-time=cell(NbView,1);
 PairString=cell(NbView,1);
 CheckImage=false(NbView,1);
+FileInfo=cell(NbView,1);
 FileType=cell(NbView,1);
 BitDepth=zeros(NbView,1);
+NbSlice_calib=ones(NbView,1);%nbre of slices for Zindex in phys transform, =1 by default
 
 %% get info on the input file series
         if ~isfield(Param.IndexRange,'first_j')
@@ -177,6 +177,13 @@ for iview=1:NbView
         BitDepth(iview)=FileInfo{iview}.BitDepth;
     end
     FileType{iview}=FileInfo{iview}.FileType;
+    if isfield(XmlData{iview},'SliceCoord')
+    NbSlice_calib(iview)=size(XmlData{iview}.SliceCoord,1);%nbre of slices for Zindex in phys transform
+    end
+end
+if min(NbSlice_calib)~=max(NbSlice_calib)
+    disp_uvmat('ERROR',' inconsitent numbers of slices',checkrun)
+    return
 end
 if min(CheckImage)==0
     CheckImage=false; %only Netcdf input files
@@ -324,7 +331,7 @@ CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=t
 %% MAIN LOOP ON FIELDS INDICES
 Index_i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 if isfield(Param.IndexRange,'last_j')
-Index_j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+    Index_j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 else
     Index_j_series=1;
 end
@@ -343,7 +350,7 @@ for index_i=Index_i_series
         
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         Data=cell(1,NbView);%initiate the set Data
-        timeread=zeros(1,NbView);
+        timeread=NaN(1,NbView);
         for iview=1:NbView
             %% reading input file(s)
             % generating the name of the input field
@@ -379,7 +386,7 @@ for index_i=Index_i_series
                 Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
             end
             % get the time defined in the current file if not already defined from the xml file
-            if isempty(time) && isfield(Data{iview},'Time')
+            if isfield(Data{iview},'Time')
                 timeread(iview)=Data{iview}.Time;
             end
             if ~isempty(NbSlice)
@@ -425,9 +432,8 @@ for index_i=Index_i_series
                     disp(['error reading ' maskname ' :' errormsg])
                     return
                 end
-                if ~isempty(NbSlice_calib)
-                    MaskData.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-                end
+               
+                MaskData.ZIndex=mod(index_i-1,NbSlice_calib)+1;%Zindex for phys transform
                 if ~isempty(transform_fct) && nargin(transform_fct)>=2
                     MaskData=transform_fct(MaskData,XmlData{iview});
                 end
@@ -450,14 +456,10 @@ for index_i=Index_i_series
         end
         
         %% time of the merged field: take the average of the different views
-%         if ~isempty(time)
-%             timeread=time(index);
-%         elseif ~isempty(find(timeread, 1))% time defined from ImaDoc
-%             timeread=mean(timeread(timeread~=0));% take average over times form the files (when defined)
-%         else
-%             timeread=index;% take time=file index
-%         end
-        
+        MergeData.Time=mean(timeread,'omitnan');
+        if min(timeread)~=max(timeread)
+            disp(['time discrepency among fields by ' num2str(max(timeread)-min(timeread))])
+        end
         
         %% recording the merged field
         if strcmp(FileExtOut,'.png')    %output as image

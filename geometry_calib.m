@@ -1295,8 +1295,7 @@ end
     '*.mat',  '.mat matlab files '}, ...
     'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
+if contains(fileinput,' ')
     msgbox_uvmat('ERROR','forbidden input file name or path: no blank character allowed')
     return
 end

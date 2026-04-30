@@ -46,11 +46,18 @@ if isfield(FileSeries,'FileName')
     if ischar(FileSeries.FileName)
         FileSeries.FileName={FileSeries.FileName};
     end
-    [~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
+    %[~,~,RootFile,i1,~,~,~,FileExt,NomType]=fileparts_uvmat(FileSeries.FileName{end});
+    [~,~,FileExt]=fileparts(FileSeries.FileName{end});
+[rr,index_rank]=regexp(FileSeries.FileName{end},['(?<i1>\d+)' FileExt '$'],'names');
+i1=str2double(rr.i1);
+RootFile=FileSeries.FileName{end}(1:index_rank-1);
+nbdigit=numel(rr.i1);
+numstring=['%0' num2str(nbdigit) 'd'];
     FileIndex=floor((i_vector-1)/FileSeries.NbFramePerFile)+1;
     if FileIndex>numel(FileSeries.FileName)
         FileIndex=FileIndex-numel(FileSeries.FileName)+i1;
-        FileName=fullfile_indices(RootFile,FileExt,NomType,FileIndex);
+        FileName=[RootFile num2str(FileIndex,numstring) FileExt];
+       % FileName=fullfile_indices(RootFile,FileExt,NomType,FileIndex);
     else
         FileName=FileSeries.FileName{FileIndex};
     end

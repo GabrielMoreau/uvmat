@@ -1736,18 +1736,20 @@ end
 %[XmlData,errormsg]=imadoc2struct(XmlFile);
 errormsg='';
 FileInfo=get_file_info(FileName);
+
 switch FileInfo.FileType
+    
     case 'multimage'
         if strcmp(FileExt,'.tif') && ~isempty(regexp(RootFile,'^im', 'once'))% case of PCO images, document <FileSeries> in the xml file
             ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
             FileSeries.Convention='PCO';
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
-           hbrowse=browse_data(fullfile(RootPath,SubDir));
+            hbrowse=browse_data(fullfile(RootPath,SubDir));
             [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
             FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
             Camera.BurstTiming=BurstTiming;
             FileSeries.FileName={'im.tif';'im@0001.tif'};
-            FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile; 
+            FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile;
             [ListPath, ListSubdir]=read_browsedata (hbrowse);
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp
@@ -1759,62 +1761,123 @@ switch FileInfo.FileType
                 end
             end
             msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
-            
+
         end
+        
+    case 'image'
+        FileSeries.Convention='photos';
+        rr=regexp(FileInfo.DateTime,'(?<dat>^\d+:\d\d:\d\d)','names');
+        FileSeries.Date=rr.dat;
+        FileSeries.NbFramePerFile=1;
+        ListParam={'Convention','Dtj','NbDtj','Dti','NbDti'};
+        [BurstTiming,errormsg] = set_param_input(ListParam,{'photos','','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+        BurstTiming=rmfield(BurstTiming,'Convention');
+        Camera.BurstTiming=BurstTiming;
+        % get the corresponding time matrix 'TimeMatrix'
+        field_struct=fields(BurstTiming);
+        for ifield=1:numel(field_struct)
+            BurstTiming.(field_struct{ifield})=str2double(BurstTiming.(field_struct{ifield}));
+        end
+        TimeMatrix=xmlburst2time(BurstTiming);
+        %[RootFile,ref_i_list,ref_j_list,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo]=scan_file_series(fullfile(RootPath,SubDir),[RootFile FileIndex FileExt]);
+        ListStruct=dir_uvmat(fullfile(RootPath,SubDir));% scan the content of the folder FilePath
+        ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        ListFiles=ListCells(1,:);%list of file names
+        rr=regexp(ListFiles,['(?<i1>\d+)' FileExt '$'],'names');% detect the file index
+        i1_list=nan(numel(rr),1);
+        time_photo=nan(1,numel(rr));
+        check_file=false(1,numel(rr));
+        for ifile=1:numel(rr)
+            if ~isempty(rr{ifile})
+                i1_list(ifile)=str2double(rr{ifile}.i1);
+                FileInfo=get_file_info(fullfile(RootPath,SubDir,ListFiles{ifile}));
+                time_str=regexprep(FileInfo.DateTime,[FileSeries.Date ' '],'');
+                time_photo(ifile)=datenum(time_str);
+                check_file(ifile)=true;
+            end
+        end
+        [~,ifile_min]=min(i1_list);
+        time_photo=time_photo-time_photo(ifile_min);
+        time_photo=24*3600*time_photo(check_file);%times in seconds
+        time_bursts=reshape(TimeMatrix(2:end,2:end),1,[]);
+        if numel(time_bursts)<numel(time_photo)
+            msgbox_uvmat('ERROR','photos series longer than times defined in xml')
+        return
+        end
+        time_photo=[time_photo nan(1,numel(time_bursts)-numel(time_photo))]; %complement time_photo by nan if smaller than time_bursts
+
+        FileSeries.FileName=ListFiles(ifile_min);
+        [checkupdate,XmlFile,errormsg]=update_imadoc(RootPath,SubDir,'Camera',Camera);
+        if ~strcmp(errormsg,'')
+            msgbox_uvmat('ERROR',errormsg);
+        else
+            [checkupdate,Xmlfile,errormsg]=update_imadoc(RootPath,SubDir,'FileSeries',FileSeries);
+            msgbox_uvmat('CONFIMATION',[XmlFile  ' updated with FileSeries, reload to relabel']);
+        end
+         figure(1)% chck the correspondance between xml time data and times recorded on photos
+        plot(time_bursts,time_bursts-time_photo)
+        xlabel('XmlData.Time(s)')
+        ylabel('XmlData.Time-time photo(s)')
+        xlim([time_bursts(1) time_bursts(end)])
+        grid on
+          saveas(1,regexprep(Xmlfile,'.xml','_timetest.png'))
+        % MaxIndexcell{1}=num2str(NbFiles*FileInfo.NumberOfFrames);
+        % set(handles.MaxIndex_i,'String',MaxIndexcell)
+        
     case 'rdvision'
         ListParam={'Convention','NbFramePerFile','Dtj','NbDtj','Dti','NbDti'};
         BurstTiming = set_param_input(ListParam,{'RDVision',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
-      
+
         % prepare section 'FileSeries' in xml file
         FileSeries.Convention=BurstTiming.Convention;
         FileSeries.Source=SubDir;% name of the initial image folder
         FileSeries.FileName={'im.seq'};
         FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile;
-       
+
         % prepare section 'Camera' in xml file
-        BurstTiming=rmfield(BurstTiming,'Convention');     
+        BurstTiming=rmfield(BurstTiming,'Convention');
         if isempty(BurstTiming.Dtj)% remove empty parameter for clarity
             BurstTiming=rmfield(BurstTiming,'Dtj');
         end
         if isempty(BurstTiming.NbDtj)
             BurstTiming=rmfield(BurstTiming,'NbDtj');% remove empty parameter for clarity
         end
-         Camera.BurstTiming=BurstTiming;
-         
-         % get the corresponding time matrix
+        Camera.BurstTiming=BurstTiming;
+
+        % get the corresponding time matrix
         field_struct=fields(BurstTiming);
         for ifield=1:numel(field_struct)
             BurstTiming.(field_struct{ifield})=str2double(BurstTiming.(field_struct{ifield}));
-        end 
+        end
         TimeMatrix=xmlburst2time(BurstTiming);
-        
+
         % check the correspondance with the time stamps
-       errormsg=check_time_rdvision(FileName,TimeMatrix');
-       if ~isempty(errormsg)
-           msgbox_uvmat('ERROR',errormsg)
-           return
-       end
-       
+        errormsg=check_time_rdvision(FileName,TimeMatrix');
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',errormsg)
+            return
+        end
+
         % update the xml file
-        SubDirOut='seq';     
+        SubDirOut='seq';
         detect=exist(fullfile(RootPath,'seq'),'dir'); % test if  the dir  already exist
         while detect % add index _1,_2... if it already exists
-                r=regexp(SubDirOut,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
-                if isempty(r)
-                    r(1).root=[SubDirOut '_'];
-                    r(1).num1='0';
-                end
-                SubDirOut=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
-                detect=exist(fullfile(RootPath,SubDirOut),'dir'); % test if  the dir  already exists
+            r=regexp(SubDirOut,'(?<root>.*\D)(?<num1>\d+)$','names'); % detect whether name ends by a number
+            if isempty(r)
+                r(1).root=[SubDirOut '_'];
+                r(1).num1='0';
+            end
+            SubDirOut=[r(1).root num2str(str2num(r(1).num1)+1)]; % increment the index by 1 or put 1
+            detect=exist(fullfile(RootPath,SubDirOut),'dir'); % test if  the dir  already exists
         end
         [success,msg]=mkdir(fullfile(RootPath,SubDirOut));
         if success
-             msgbox_uvmat('CONFIRMATION',['Folder ' SubDirOut ' created']);
+            msgbox_uvmat('CONFIRMATION',['Folder ' SubDirOut ' created']);
         else
-              msgbox_uvmat('ERROR',msg);
-              return
+            msgbox_uvmat('ERROR',msg);
+            return
         end
-        
+
         [PathDir,RootFile,Ext]=fileparts(FileName);
         RootPath=fileparts(PathDir);
         switch Ext
@@ -1834,14 +1897,14 @@ switch FileInfo.FileType
             if checkupdate
                 msg=[XmlFile ' updated with FileSeries and BurstTiming'];
             else
-                 msg=[XmlFile ' created with FileSeries and BurstTiming'];
+                msg=[XmlFile ' created with FileSeries and BurstTiming'];
             end
             msgbox_uvmat('CONFIRMATION',msg);
         else
             msgbox_uvmat('ERROR',errormsg);
         end
 
-            
+
     case 'telopsIR'
         DirContent=dir(fullfile(RootPath,SubDir));
         NbFiles=0;
