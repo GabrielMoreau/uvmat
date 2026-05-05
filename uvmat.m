@@ -2961,7 +2961,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
             Mask.MaskFile=fullfile(FilePath,RootFile);
             if strcmp(NomType,'_1')
                 Mask.MaskNbSlice=ref_i_list(end);
-            elseif ~strcmp(NomType,'*')
+            elseif ~(isempty(NomType)|| strcmp(NomType,'*'))
                 msgbox_uvmat('ERROR','single mask files must have no index while multilevel masks must be labeled as _1,_2,...');
                 set(handles.CheckMask,'Value',0)
                 return
@@ -3006,7 +3006,7 @@ if isfield(MaskInfo,'MaskFile')
         MaskName=[MaskInfo.MaskFile '_' num2str(MaskIndex_i) '.png'];
     else
         MaskIndex_i=1;
-    MaskName=MaskInfo.MaskFile ;
+        MaskName=[MaskInfo.MaskFile '.png'] ;
     end
     
     %% update mask image if the mask is new

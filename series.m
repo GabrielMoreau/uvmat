@@ -2377,13 +2377,13 @@ if isequal(ActionName,'more...')
     % insert the choice in the menu ActionName
     ActionIndex=find(strcmp(ActionName,ActionList),1); % look for the selected function in the menu Action
     PathName=regexprep(PathName,'/$','');
-    if ~isempty(ActionIndex) && ~strcmp(ActionPathList{ActionIndex},PathName)%compare the path to the existing fct
+    if ~isempty(ActionIndex) && (numel(ActionPathList)<ActionIndex ||~strcmp(ActionPathList{ActionIndex},PathName))%compare the path to the existing fct
         ActionIndex=[]; % the selected path is different than the recorded one
     end
     if isempty(ActionIndex)%the qselected fct (with selected path) does not exist in the menu
         ActionIndex= length(ActionList);
         ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)]; % the selected function is appended in the menu, before the last item 'more...'
-         ActionPathList=[ActionPathList; PathName];
+         ActionPathList{ActionIndex}=PathName;
     end
 
     % record the file extension and extend the path list if it is a new extension

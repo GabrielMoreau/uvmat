@@ -416,8 +416,8 @@ switch FieldOption
         set(handles.Y_title,'Visible','on')
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
-        set(handles.Coord_x,'String',Field.Display.ListVarName')
-        Coord_x_Callback(hObject, VarName, handles)     
+        set(handles.Coord_y,'String',Field.Display.ListVarName')
+        Coord_y_Callback(hObject, VarName, handles)     
     case {'scalar'}
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelScalar,'Visible','on')
@@ -912,12 +912,38 @@ function Coord_y_Callback(hObject, DimCell, handles)
 
 index=get(handles.Coord_y,'Value');
 string=get(handles.Coord_y,'String');
-VarName=string{index};
+VarName_y=string{index};
 
 if ~ischar(DimCell)
-    update_field(handles,VarName)
+    update_field(handles,VarName_y)
 end
 
+FieldList=get(handles.FieldOption,'String');
+FieldOption=FieldList{get(handles.FieldOption,'Value')};
+if strcmp( FieldOption, '1D plot')
+    Field=get(handles.get_field,'UserData');
+    VarIndex_y=find(strcmp(VarName_y,Field.Display.ListVarName),1);% find the index of the input coord variable
+    DimCell=Field.Display.VarDimName{VarIndex_y};% dimension(s) of the input coord variable
+      
+    %% set list of possible x coordinates
+        test_coord=false(size(Field.Display.VarDimName)); %=true when variable #ilist is eligible as ordinate
+        for ilist=1:numel(Field.Display.VarDimName)
+            dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+            if isequal(dimnames,DimCell)&& ~strcmp(Field.Display.ListVarName{ilist},VarName_y) %exclude the the same variable as coord_y
+                test_coord(ilist)=true;
+            elseif numel(dimnames)==2 && (isequal(dimnames(1),DimCell)||isequal(dimnames(2),DimCell))
+                test_coord(ilist)=true;
+            end
+        end
+        ListCoord=Field.Display.ListVarName(test_coord);
+
+    set(handles.Coord_x,'String',ListCoord)
+    val_x=1;
+    if ~isempty(ListCoord) && strcmp(VarName_y,ListCoord{1})&& numel(ListCoord)>=2
+        val_x=2;
+    end
+    set(handles.Coord_x,'Value',val_x)
+end
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_z.
 %------------------------------------------------------------------------
