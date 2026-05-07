@@ -268,10 +268,9 @@ if ~CheckRelabel
 end
 
 %% output file naming
-if Param.ActionInput.CheckVolume || Param.IndexRange.first_j>Param.IndexRange.MinIndex_j || Param.IndexRange.last_j<Param.IndexRange.MaxIndex_j
+NomTypeOut='_1';
+if isfield (Param.IndexRange,'MinIndex_j') && (Param.ActionInput.CheckVolume || Param.IndexRange.first_j>Param.IndexRange.MinIndex_j || Param.IndexRange.last_j<Param.IndexRange.MaxIndex_j)
     NomTypeOut='_1_1';
-else
-    NomTypeOut='_1';
 end
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);

@@ -3332,35 +3332,35 @@ if sub_value
         UvData.i2_list{2}=UvData.i2_list{1};
         UvData.j2_list{2}=UvData.j2_list{1};
     end
-    if ref_i_1<UvData.i1_list(1)
+    if ref_i_1<UvData.i1_list{2}(1)
         errormsg='minimum i index reached';
-    elseif ref_j_1<UvData.j1_list(1)
+    elseif ref_j_1<UvData.j1_list{2}(1)
         errormsg='minimum j index reached';
-    elseif ref_i_1+1>UvData.i1_list(end) && ~isempty(InputFile.NomType_1)
+    elseif ref_i_1+1>UvData.i1_list{2}(end) && ~isempty(InputFile.NomType_1)
         errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
     end
-    if ~isempty(errormsg),return,end
-    siz=size(UvData.i1_series{2});
-    ref_indices=ref_i_1*siz(1)*siz(2)+ref_j_1*siz(1)+1:ref_i_1*siz(1)*siz(2)+(ref_j_1+1)*siz(1);
-    if ~isempty(InputFile.NomType_1)
-        i1_subseries=UvData.i1_series{2}(ref_indices);
-        ref_indices=ref_indices(i1_subseries>0);
-        if isempty(ref_indices)% case of pairs (free index i)
-            ref_indices=ref_i_1*siz(1)*siz(2)+1:(ref_i_1+1)*siz(1)*siz(2);
-            i1_subseries=UvData.i1_series{2}(ref_indices);
-            ref_indices=ref_indices(i1_subseries>0);
-        end
-        i1_1=UvData.i1_series{2}(ref_indices(end));
-        if ~isempty(UvData.i2_series{2})
-            i2_1=UvData.i2_series{2}(ref_indices(end));
-        end
-        if ~isempty(UvData.j1_series{2})
-            j1_1=UvData.j1_series{2}(ref_indices(end));
-        end
-        if ~isempty(UvData.j2_series{2})
-            j2_1=UvData.j2_series{1}(ref_indices(end));
-        end
-    end
+%     if ~isempty(errormsg),return,end
+    siz=size(UvData.i1_list{2});
+%    ref_indices=ref_i_1*siz(1)*siz(2)+ref_j_1*siz(1)+1:ref_i_1*siz(1)*siz(2)+(ref_j_1+1)*siz(1);
+%     if ~isempty(InputFile.NomType_1)
+%         i1_subseries=UvData.i1_list{2}(ref_indices);
+%         ref_indices=ref_indices(i1_subseries>0);
+%         if isempty(ref_indices)% case of pairs (free index i)
+%             ref_indices=ref_i_1*siz(1)*siz(2)+1:(ref_i_1+1)*siz(1)*siz(2);
+%             i1_subseries=UvData.i1_list{2}(ref_indices);
+%             ref_indices=ref_indices(i1_subseries>0);
+%         end
+%         i1_1=UvData.i1_list{2}(ref_indices(end));
+%         if ~isempty(UvData.i2_list{2})
+%             i2_1=UvData.i2_list{2}(ref_indices(end));
+%         end
+%         if ~isempty(UvData.j1_list{2})
+%             j1_1=UvData.j1_list{2}(ref_indices(end));
+%         end
+%         if ~isempty(UvData.j2_list{2})
+%             j2_1=UvData.j2_list{1}(ref_indices(end));
+%         end
+%     end
 else% the second series (if needed) is the same file as the first
     i1_1=i1;
     i2_1=i2;
