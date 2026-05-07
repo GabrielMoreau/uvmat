@@ -1605,42 +1605,47 @@ if get(handles.Replicate,'Value')
         set(handles.Replicate,'Value',0)
     else
         set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
-         BrowseData=guidata(hbrowse);  %TODO: use the fct read_browsedata ?      
-        SourceDir=get(BrowseData.SourceDir,'String');
-        ListExp=get(BrowseData.ListExperiments,'String');
-        ExpIndices=get(BrowseData.ListExperiments,'Value');
-        ListExp=ListExp(ExpIndices);
-        ListDevices=get(BrowseData.ListDevices,'String');
-        DeviceIndices=get(BrowseData.ListDevices,'Value');
-        ListDevices=ListDevices(DeviceIndices);
-        ListDataSeries=get(BrowseData.DataSeries,'String');
-        DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-        ListDataSeries=ListDataSeries(DataSeriesIndices);
-        NbExp=0; % counter of the number of experiments set by the GUI browse_data
-        for iexp=1:numel(ListExp)
-            if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
-                for idevice=1:numel(ListDevices)
-                    if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
-                        for isubdir=1:numel(ListDataSeries)
-                            if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
-                                lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-                                    regexprep(ListDevices{idevice},'^\+/',''));
-                                ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-                                if exist(fullfile(lpath,ldir),'dir')
-                                    NbExp=NbExp+1;
-                                    ExpIndex(NbExp)=ExpIndices(iexp);
-                                    DeviceIndex(NbExp)=DeviceIndices(idevice);
-                                    ListPath{NbExp}=lpath;
-                                    ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
-                                    ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
-                                    ListSubdir{NbExp}=ldir;
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
+         BrowseData=guidata(hbrowse);  %TODO: use the fct read_browsedata ?    
+         
+          [ListPath, ListSubdir]=read_browsedata (hbrowse)
+         NbExp=numel(ListPath);
+         
+         
+%         SourceDir=get(BrowseData.SourceDir,'String');
+%         ListExp=get(BrowseData.ListExperiments,'String');
+%         ExpIndices=get(BrowseData.ListExperiments,'Value');
+%         ListExp=ListExp(ExpIndices);
+%         ListDevices=get(BrowseData.ListDevices,'String');
+%         DeviceIndices=get(BrowseData.ListDevices,'Value');
+%         ListDevices=ListDevices(DeviceIndices);
+%         ListDataSeries=get(BrowseData.DataSeries,'String');
+%         DataSeriesIndices=get(BrowseData.DataSeries,'Value');
+%         ListDataSeries=ListDataSeries(DataSeriesIndices);
+%         NbExp=0; % counter of the number of experiments set by the GUI browse_data
+%         for iexp=1:numel(ListExp)
+%             if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
+%                 for idevice=1:numel(ListDevices)
+%                     if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
+%                         for isubdir=1:numel(ListDataSeries)
+%                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
+%                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
+%                                     regexprep(ListDevices{idevice},'^\+/',''));
+%                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
+%                                 if exist(fullfile(lpath,ldir),'dir')
+%                                     NbExp=NbExp+1;
+%                                     ExpIndex(NbExp)=ExpIndices(iexp);
+%                                     DeviceIndex(NbExp)=DeviceIndices(idevice);
+%                                     ListPath{NbExp}=lpath;
+%                                     ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
+%                                     ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
+%                                     ListSubdir{NbExp}=ldir;
+%                                 end
+%                             end
+%                         end
+%                     end
+%                 end
+%             end
+%         end
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
         if strcmp(answer,'Cancel')||strcmp(answer,'No')
             return
@@ -1656,8 +1661,8 @@ for iexp=1:NbExp
             disp('program stopped by user')
             return
         end
-        set(BrowseData.ListExperiments,'Value',ExpIndex(iexp))
-        set(BrowseData.ListDevices,'Value',DeviceIndex(iexp))
+%         set(BrowseData.ListExperiments,'Value',ExpIndex(iexp))
+%         set(BrowseData.ListDevices,'Value',DeviceIndex(iexp))
         Param.InputTable(:,1)=ListPath(:,iexp);
         Param.InputTable(:,2)=ListSubdir(:,iexp);
         OutputSubDir=unique(ListSubdir(:,iexp));
@@ -1668,7 +1673,8 @@ for iexp=1:NbExp
             end
         end
     end
-    [~,ExpName]=fileparts(Param.InputTable{1,1});
+    [RootPath,DeviceName]=fileparts(Param.InputTable{1,1});
+    [~,ExpName]=fileparts(RootPath);
     Param.IndexRange.first_i=str2double(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
     Param.IndexRange.last_i=str2double(get(handles.num_last_i,'String'));
 
@@ -1762,11 +1768,13 @@ for iexp=1:NbExp
     if get(handles.Replicate,'Value')%reset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
         set(handles.OutputPath,'String',OutputPath)
-        regexprep(ListExp{iexp},'^\+/','')
-        set(handles.Experiment,'String',ListExpOut{iexp})
-        set(handles.Device,'String',ListDeviceOut{iexp})
-        Param.Experiment=ListExpOut{iexp};
-        Param.Device=ListDeviceOut{iexp};
+        %regexprep(ListExp{iexp},'^\+/','')
+%         set(handles.Experiment,'String',ListExpOut{iexp})
+        set(handles.Experiment,'String',ExpName)
+        %set(handles.Device,'String',ListDeviceOut{iexp})
+        set(handles.Device,'String',DeviceName)
+        Param.Experiment=ExpName;
+        Param.Device=DeviceName;
         check_input_file_series(handles)
     end
     DirXml=fullfile(OutputDir,'0_XML');
