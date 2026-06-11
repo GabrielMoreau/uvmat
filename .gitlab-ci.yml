@@ -19,7 +19,7 @@ pages:
         --prefix="UVMAT-${VERSION}/" \
         --output="public/UVMAT-${VERSION}.zip" HEAD
       ln -sf public/UVMAT-${VERSION}.zip public/UVMAT-Latest.zip
-      cat EOL > public/index.html
+      cat << EOL > public/index.html
       <ul>
       <li><a href=\"UVMAT-Latest.zip\">Download UVMAT (Latest)</a></li>
       <li><a href=\"UVMAT-${VERSION}.zip\">Download UVMAT (${VERSION})</a></li>
