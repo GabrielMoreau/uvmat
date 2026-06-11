@@ -1,0 +1,23 @@
+---
+image: amd64/debian:stable-slim
+
+before_script:
+  - apt-get update -yqq
+  - apt-get install -yqq git zip
+
+variables:
+  GIT_DEPTH: 0
+
+pages:
+  stage: build
+  script:
+    - mkdir -p public
+    - VERSION="$(date '+%y.%m').$(git rev-list --count HEAD)"
+    - echo "VERSION: ${VERSION}"
+    - git archive --format=zip --prefix="UVMAT-${VERSION}/" --output="public/UVMAT-${VERSION}.zip" HEAD
+    - echo '<a href="UVMAT-'"${VERSION}"'.zip">Download UVMAT ('"${VERSION}"')</a>' > public/index.html
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
