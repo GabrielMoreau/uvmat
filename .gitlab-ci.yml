@@ -18,12 +18,16 @@ pages:
       git archive --format=zip \
         --prefix="UVMAT-${VERSION}/" \
         --output="public/UVMAT-${VERSION}.zip" HEAD
-      ln -sf public/UVMAT-${VERSION}.zip public/UVMAT-Latest.zip
+      ln -f public/UVMAT-${VERSION}.zip public/UVMAT-Latest.zip
       cat << EOL > public/index.html
+      <html>
+      <body>
       <ul>
-      <li><a href=\"UVMAT-Latest.zip\">Download UVMAT (Latest)</a></li>
-      <li><a href=\"UVMAT-${VERSION}.zip\">Download UVMAT (${VERSION})</a></li>
+      <li><a href="UVMAT-Latest.zip">Download UVMAT (Latest / ${VERSION})</a></li>
+      <li><a href="UVMAT-${VERSION}.zip">Download UVMAT (${VERSION})</a></li>
       </ul>
+      </body>
+      </html>
       EOL
   artifacts:
     paths:
