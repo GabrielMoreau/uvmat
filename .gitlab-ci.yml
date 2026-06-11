@@ -11,11 +11,15 @@ variables:
 pages:
   stage: build
   script:
-    - mkdir -p public
-    - VERSION="$(date '+%y.%m').$(git rev-list --count HEAD)"
-    - echo "VERSION: ${VERSION}"
-    - git archive --format=zip --prefix="UVMAT-${VERSION}/" --output="public/UVMAT-${VERSION}.zip" HEAD
-    - echo "<a href=\"UVMAT-${VERSION}.zip\">Download UVMAT (${VERSION})</a>" > public/index.html
+    - |
+      mkdir -p public
+      VERSION="$(date '+%y.%m').$(git rev-list --count HEAD)"
+      echo "VERSION: ${VERSION}"
+      git archive --format=zip \
+        --prefix="UVMAT-${VERSION}/" \
+        --output="public/UVMAT-${VERSION}.zip" HEAD
+      echo "<a href=\"UVMAT-${VERSION}.zip\">Download UVMAT (${VERSION})</a>" \
+        > public/index.html
   artifacts:
     paths:
       - public
