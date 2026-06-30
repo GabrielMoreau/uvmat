@@ -82,7 +82,7 @@ if ~isfield(Param,'ActionInput')
 end
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+%WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %%%%%%%%%%%%%%%% Modif pour test %%%%%%%%%%%%%%%%%%
 % CheckInputFile=isfield(Param,'InputTable');%= 1 in test use for TestCiv (no nc file involved)
@@ -318,15 +318,13 @@ for ifield=1:NbField
             end
         end
         
-
-        
         [A,Rangx,Rangy]=phys_ima(A,XmlData,1);%transform image A in phys coordinates
         [Npy,Npx]=size(A{1});
         PhysImageA=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],1);
         PhysImageB=fullfile_uvmat(RootPath_A,Civ1Dir,RootFile_A,'.png','_1a',i1_series_Civ1(ifield),[],2);
-        if LSM ~= 1
-        imwrite(A{1},PhysImageA)
-        imwrite(A{2},PhysImageB)
+        if LSM ~= 1 % save images in phys coordinates for test mode
+            imwrite(A{1},PhysImageA)
+            imwrite(A{2},PhysImageB)
         end
         
         par_civ1.ImageA=A{1};
@@ -372,6 +370,7 @@ for ifield=1:NbField
         
         % calculate velocity data (y and v in indices, reverse to y component)
         [xtable, ytable, utable, vtable, ctable, F, result_conv, errormsg] = civ (par_civ1);
+       
         Data.Civ1_X=reshape(xtable,[],1);
         Data.Civ1_Y=reshape(par_civ1.ImageHeight-ytable+1,[],1);
         % get z from u and v (displacements)

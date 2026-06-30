@@ -77,4 +77,6 @@ switch FileType
         A=(reshape(A,Header(1).Width,Header(1).Height))';
     case 'rdvision'
         A=read_rdvision(FileName,num);
+    case 'iiq'
+         A=read_iiq(FileName);
 end

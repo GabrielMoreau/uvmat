@@ -1,6 +1,6 @@
-%'gext_file_info': determine info about a file (image, multimage, civdata,...) .
+%'get_file_info': determine info about a file (image, multimage, civdata,...) .
 %------------------------------------------------------------------------
-% [FileInfo,VideoObject]=get_file_info(fileinput)
+% [FileInfo,VideoObject]=get_file_info(FileName)
 %
 % OUTPUT:
 % FileInfo: structure containing info on the file (case of images or video), in particular
@@ -36,7 +36,7 @@
 % VideoObject: in case of video
 %
 % INPUT:
-% fileinput: name, including path, of the file to analyse
+% FileName: name, including path, of the file to analyse
 
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -56,23 +56,23 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [FileInfo,VideoObject]=get_file_info(fileinput)
+function [FileInfo,VideoObject]=get_file_info(FileName)
 
 VideoObject=[];
 FileInfo.FileName='';% file doe not exist, defautlt
 FileInfo.FileType='';% input file type not detected
 FileInfo.FieldType=''; %default output
-if ~ischar(fileinput)
+if ~ischar(FileName)
     return
 end
 
 %% check the existence (not possible for OpenDAP data)
-if exist_file(fileinput)
-    FileInfo.FileName=fileinput;
+if exist_file(FileName)
+    FileInfo.FileName=FileName;
 else
     return %input file does not exist.
 end
-[~,~,FileExt]=fileparts(fileinput);%get the file extension FileExt
+[~,~,FileExt]=fileparts(FileName);%get the file extension FileExt
 
 %% look according to file extension
 switch FileExt
@@ -85,10 +85,10 @@ switch FileExt
     case {'.xml','.xls','.dat','.bin'}
         FileInfo.FileType=regexprep(FileExt,'^.','');% eliminate the dot of the extension;
     case {'.seq','.sqb'}% data from rdvision
-        [~,FileInfo]=read_rdvision(fileinput,[]);
+        [~,FileInfo]=read_rdvision(FileName,[]);
     case '.im7'% data from LaVision (DaVis), requires specific conditions of Matlab version and computer system
         try
-            Input=readimx(fileinput);
+            Input=readimx(FileName);
             Image=Input.Frames{1}.Components{1}.Planes{1};
             FileInfo.FileType='image_DaVis';
             FileInfo.NumberOfFrames=numel(Input.Frames);
@@ -108,7 +108,7 @@ switch FileExt
             return
         end
     case '.h5'% format hdf5, used for specific case of PIV data from 'Fluidimage'
-        hinfo=h5info(fileinput);
+        hinfo=h5info(FileName);
         FileInfo.CivStage=0;
         for igroup=1:numel(hinfo.Groups)
             if strcmp(hinfo.Groups(igroup).Name,'/piv0')
@@ -125,7 +125,7 @@ switch FileExt
             FileInfo.FileType='h5';
         end
     case '.cine'
-        [FileInfo,BitmapInfoHeader, CameraSetup]=readCineHeader(fileinput);
+        [FileInfo,BitmapInfoHeader, CameraSetup]=readCineHeader(FileName);
         FileInfo.FileType='cine_phantom';
         FileInfo.NumberOfFrames=FileInfo.ImageCount;
         FileInfo.FrameRate=CameraSetup.FrameRate;
@@ -135,21 +135,33 @@ switch FileExt
         FileInfo.TimeName='video';
     case '.hcc' % infrared camera Telops
         installToolboxIRCAM
-        [~,InfoArray]=readIRCam(fileinput,'HeadersOnly',true);
+        [~,InfoArray]=readIRCam(FileName,'HeadersOnly',true);
         FileInfo.FileType='telopsIR';
         FileInfo.Height=InfoArray(1).Height;
         FileInfo.Width=InfoArray(1).Width;
         FileInfo.FrameRate=InfoArray(1).AcquisitionFrameRate;
         FileInfo.NumberOfFrames=numel(InfoArray);
         FileInfo.TimeName='video';
-        Path=fileparts(fileinput);% look for the xml file to document theb file series
+        Path=fileparts(FileName);% look for the xml file to document theb file series
         [~,~,DirExt]=fileparts(Path);
         if ~isempty(DirExt)
             disp(['ERROR: change the name of the folder containing the image files: no file extension ' DirExt])
             FileInfo.FileType='error';
             return
         end
-        
+    case '.IIQ'
+        FileInfo.FileType='iiq';
+        FileInfo.NumberOfFrames=1;
+        FileInfo.BitDepth=8;
+        %pyenv('Version', '/usr/bin/python3')
+system('pip install rawpy')
+pyrun('import rawpy')
+pyrun('print ("python loaded")')
+%pyrun('importlib.import_module(''rawpy'')')
+pyrun(['filename=''' FileName '''' ])
+resu=pyrun('siz=rawpy.imread(filename).sizes','siz');
+FileInfo.Width=double(resu.width);
+FileInfo.Height=double(resu.height);
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -157,7 +169,7 @@ switch FileExt
                 if ~isempty(imformats(FileExt))%case of images
                     FileInfo.FileType='image';
                     try
-                        imainfo=imfinfo(fileinput);
+                        imainfo=imfinfo(FileName);
                         if length(imainfo) >1 %case of image with multiple frames
                             FileInfo=imainfo(1);%take info from the first frame
                             FileInfo.NumberOfFrames=length(imainfo);
@@ -177,7 +189,7 @@ switch FileExt
                 else
                     error_nc=0;
                     try %try netcdf file
-                        [Data,~,~,errormsg]=nc2struct(fileinput,[]);
+                        [Data,~,~,errormsg]=nc2struct(FileName,[]);
                         if isempty(errormsg)
                             if isfield(Data,'Conventions') && ismember(Data.Conventions,{'uvmat/civdata','uvmat/civdata/compress'})
                                 if strcmp(Data.Conventions,'uvmat/civdata')
@@ -233,16 +245,16 @@ switch FileExt
                     if error_nc
                         try
                             % if exist('mmreader.m','file')% OBSOLETE Matlab 2009a
-                            INFO=mmfileinfo (fileinput);
+                            INFO=mmfileinfo (FileName);
                             if  ~isempty(INFO.Video.Format)
-                                VideoObject=VideoReader(fileinput);
+                                VideoObject=VideoReader(FileName);
                                 FileInfo=get(VideoObject);
                                 FileInfo.FileType='video';
                             end
                             FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                             FileInfo.ColorType='truecolor';
                             FileInfo.TimeName='video';
-                            FileInfo.FileName=fileinput;
+                            FileInfo.FileName=FileName;
                             if ~isfield(FileInfo,'NumberOfFrames')
                                 FileInfo.NumberOfFrames=floor(FileInfo.Duration*FileInfo.FrameRate);
                             end
@@ -255,7 +267,7 @@ end
 
 FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
-    case {'image','multimage','video','rdvision','image_DaVis','cine_phantom','telopsIR'}
+    case {'image','multimage','video','rdvision','image_DaVis','cine_phantom','telopsIR','iiq'}
         FileInfo.FieldType='image';
     case {'civdata','civdata_compress','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';

@@ -267,6 +267,8 @@ switch FileType
         end
     case 'cine_phantom'
         [A,FileInfo] = read_cine_phantom(FileName,frame_index );
+    case 'iiq'
+         A=read_iiq(FileName);
     otherwise
         errormsg=[ FileType ': invalid input file type for uvmat'];
         

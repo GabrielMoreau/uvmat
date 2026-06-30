@@ -162,6 +162,7 @@ if ~(exist('action','var') && strcmp(action,'keep_open'))
             testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
             testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), DimValue(VarDimIndex{ivar}));%matlab vector
             %testcolumn=isequal(length(siz),2) && isequal(siz(1), DimValue(VarDimIndex{ivar}))&& isequal(siz(2),1);%matlab column vector
+            if ~isempty(VarVal)
             if testline || testrange
                 if testrange
                     VarVal=linspace(VarVal(1),VarVal(2),DimValue(VarDimIndex{ivar}));% restitute the whole array of coordinate values from the first and last values
@@ -169,6 +170,7 @@ if ~(exist('action','var') && strcmp(action,'keep_open'))
                 netcdf.putVar(nc,varid(ivar), VarVal');
             else
                 netcdf.putVar(nc,varid(ivar), VarVal);
+            end
             end
         end
     end

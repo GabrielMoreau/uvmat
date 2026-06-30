@@ -12,7 +12,7 @@
 % ListVarName....)
 
 %=======================================================================
-% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -4331,9 +4331,9 @@ if isfield(Field,'FF') && ~isempty(Field.FF) && isequal(size(Field.FF),size(Fiel
         FieldHisto=Field.(FieldName)(indsel);%field of the first variable (U)
         if ~isempty(FieldName_2)
             if isfield(Field,'NbDim') && Field.NbDim==3
-                 FieldHisto(:,:,:,2)=Field.(FieldName_2)(indsel);%field of the second variable (U)
+                FieldHisto(:,:,:,2)=Field.(FieldName_2)(indsel);%field of the second variable (U)
             else
-            FieldHisto(:,:,2)=Field.(FieldName_2)(indsel);%field of the second variable (U)
+                FieldHisto(:,:,2)=Field.(FieldName_2)(indsel);%field of the second variable (U)
             end
         end
         check_false=1;
@@ -4406,38 +4406,40 @@ else
             Amax=VarMesh*(floor(Amax/VarMesh));
         end
         Histo.(FieldName)=Amin:VarMesh:Amax; %absissa values for histo
-        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
-            C=reshape(double(FieldHisto),1,[]);% reshape in a vector
-            Histo.histo(:,1)=hist(C, Histo.(FieldName));  %calculate histogram
-        else
-            for col=1:size(FieldHisto,3)
-                B=FieldHisto(:,:,col);
-                C=reshape(B,1,nxy(1)*nxy(2));% reshape in a vector
-                
-                Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
-                % Histo.histo(:,col)=histogram(C);  %calculate histogram
-                switch get(handles.LogLinHisto,'Value')
-                    case 1
-                        PlotParam.Type='plot';
-                    case 2
-                        PlotParam.Type='semilogy';
-                    case 3
-                        PlotParam.Type='semilogx';
-                    case 4
-                        PlotParam.Type='loglog';
+        if ~isnan(Histo.(FieldName))
+            if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
+                C=reshape(double(FieldHisto),1,[]);% reshape in a vector
+                Histo.histo(:,1)=hist(C, Histo.(FieldName));  %calculate histogram
+            else
+                for col=1:size(FieldHisto,3)
+                    B=FieldHisto(:,:,col);
+                    C=reshape(B,1,nxy(1)*nxy(2));% reshape in a vector
+
+                    Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
+                    % Histo.histo(:,col)=histogram(C);  %calculate histogram
+                    switch get(handles.LogLinHisto,'Value')
+                        case 1
+                            PlotParam.Type='plot';
+                        case 2
+                            PlotParam.Type='semilogy';
+                        case 3
+                            PlotParam.Type='semilogx';
+                        case 4
+                            PlotParam.Type='loglog';
+                    end
                 end
             end
-        end
-        plot_field(Histo,handles.HistoAxes,PlotParam);
-        hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
-        if isempty(hlegend)
-            hlegend=legend;
-            set(hlegend,'Tag','HistoLegend')
-        end
-        if isempty(FieldName_2)
-            set(hlegend,'String',FieldName)
-        else
-            set(hlegend,'String',{FieldName;FieldName_2})
+            plot_field(Histo,handles.HistoAxes,PlotParam);
+            hlegend=findobj(handles.uvmat,'Tag','HistoLegend');
+            if isempty(hlegend)
+                hlegend=legend;
+                set(hlegend,'Tag','HistoLegend')
+            end
+            if isempty(FieldName_2)
+                set(hlegend,'String',FieldName)
+            else
+                set(hlegend,'String',{FieldName;FieldName_2})
+            end
         end
     end
 end

@@ -2359,7 +2359,7 @@ ActionList=get(handles.ActionName,'String'); % list menu fields
 ActionIndex=get(handles.ActionName,'Value');
 if ~isequal(ActionIndex,1)% if we are not just opening series
     InputTable=get(handles.InputTable,'Data');
-    if isempty(InputTable{1,4})
+    if isempty(InputTable{1,1})
         msgbox_uvmat('ERROR','no input file available: use Open in the menu bar')
         return
     end
