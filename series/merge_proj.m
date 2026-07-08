@@ -104,7 +104,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         if isempty(answer)
             return
         end
-        GUIParam.ActionInput.VelocityRange=str2doubleanswer{1});
+        GUIParam.ActionInput.VelocityRange=str2double(answer{1});
         GUIParam.ActionInput.VelGradientRange=str2double(answer{2});
     end
     return

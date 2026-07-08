@@ -91,7 +91,7 @@ for ifield=1:numel(fields)
         end
         for ibox=1:numel(hh)
             % finalise the update of GUI uicontrol filled by the input element
-            if ~isempty(hh(ibox))&& ~check_done
+            if ~isempty(hh(ibox))&& ~check_done && ~isequal(hh(ibox),0)
                 set(hh(ibox),'Visible','on')% make the filled GUI element visible
                 if isfield(get(hh(ibox)),'Style')
                     switch get(hh(ibox),'Style')

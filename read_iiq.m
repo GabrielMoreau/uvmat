@@ -6,4 +6,3 @@ function A=read_iiq(FileName)
 %pyrun('importlib.import_module(''rawpy'')')
 pyrun(['filename=''' FileName '''' ])
 A =uint8(pyrun('img= rawpy.imread(filename).postprocess()','img'));
-size(A)

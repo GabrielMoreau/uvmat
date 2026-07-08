@@ -550,6 +550,7 @@ end
 
 %% enable field and veltype menus, in accordance with the current action function
 ActionInput_Callback([],[], handles)
+  set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
 
 %------------------------------------------------------------------------
 % --- check the input file series.
@@ -1336,13 +1337,13 @@ for iview=1:size(TimeTable,1)
         time_first=get_time(MinFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
         MaxFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_last,i2_last,j1_last,j2_last);
         time_last=get_time(MaxFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
-    elseif size(SeriesData.Time{iview},1)>=i2_last+1 && (isnan(first_j)||size(SeriesData.Time{iview},2)>=j2_last+1)
+    elseif size(SeriesData.Time{iview},2)>=i2_last+1 && (isnan(first_j)||size(SeriesData.Time{iview},1)>=j2_last+1)
         if isnan(first_j)
-            time_first=(SeriesData.Time{iview}(i1_first+1,2)+SeriesData.Time{iview}(i2_first+1,2))/2;% take  the average between index i1 and i2
-            time_last=(SeriesData.Time{iview}(i1_last+1,2)+SeriesData.Time{iview}(i2_last+1,2))/2;
+            time_first=(SeriesData.Time{iview}(2,i1_first+1)+SeriesData.Time{iview}(2,i2_first+1))/2;% take  the average between index i1 and i2
+            time_last=(SeriesData.Time{iview}(2,i1_last+1)+SeriesData.Time{iview}(2,i2_last+1))/2;
         else
-            time_first=(SeriesData.Time{iview}(i1_first+1,j1_first+1)+SeriesData.Time{iview}(i2_first+1,j2_first+1))/2;
-            time_last=(SeriesData.Time{iview}(i1_last+1,j1_last+1)+SeriesData.Time{iview}(i2_last+1,j2_last+1))/2;
+            time_first=(SeriesData.Time{iview}(j1_first+1,i1_first+1)+SeriesData.Time{iview}(j2_first+1,i2_first+1))/2;
+            time_last=(SeriesData.Time{iview}(j1_last+1,i1_last+1)+SeriesData.Time{iview}(j2_last+1,i2_last+1))/2;
         end
     end
     TimeTable{iview,3}=time_first; 
@@ -2492,23 +2493,31 @@ if isfield(ParamOut,'FieldName')
 end
 
 %% Detect the types of input files and set menus and default options in 'VelType'
-iview_civ=[];
-iview_netcdf=[];
-for iview=1:numel(SeriesData.FileInfo)
+if ~isfield(SeriesData,'FileInfo')
+                   msgbox_uvmat('ERROR','input file serie(s) must be entered, press REFRESH')
+                   return
+end
+NbView=numel(SeriesData.FileInfo);
+
+check_civ=false(1,NbView);
+check_netcdf=false(1,NbView);
+for iview=1:NbView
     if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress','netcdf'})
-         iview_netcdf=[iview_netcdf iview];
+         check_netcdf(iview)=true;
          if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress'})
-             iview_civ=[iview_civ iview];
+             check_civ(iview)=true;
          end
     end
 end
+iview_civ=find(check_civ);
+iview_netcdf=find(check_netcdf);
 FieldList=get(handles.FieldName,'String'); % previous list as default
 if ~iscell(FieldList),FieldList={FieldList};end
-FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
+%FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
 % if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 CheckPivData_1=0; % indicate whether FieldName_1 has been updated with civ data, 0 by default
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
-if VelTypeRequest && numel(iview_civ)>=1
+if VelTypeRequest && ~isempty(iview_civ)% if civ data are in input
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileInfo{iview_civ(1)}.FileType);
     set(handles.VelType,'Value',1)% set first choice by default
     set(handles.VelType,'String',[{'*'};menu])
@@ -2518,13 +2527,13 @@ if VelTypeRequest && numel(iview_civ)>=1
     if max(get(handles.FieldName,'Value'))>numel(FieldList)
         set(handles.FieldName,'Value',1); % velocity vector choice by default
     end
-    if  VelTypeRequest_1 && numel(iview_civ)>=2
+    if  VelTypeRequest_1 && numel(iview_civ)>=2% if two civ data or more are in input
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileInfo{iview_civ(2)}.FileType);
         set(handles.VelType_1,'Value',1)% set first choice by default
         set(handles.VelType_1,'String',[{'*'};menu])
         set(handles.VelType_1,'Visible','on')
         set(handles.VelType_title_1,'Visible','on')
-        FieldList_1=[set_field_list('U','V');{'C'};{'add_field...'}]; % standard menu for civx data
+        %FieldList_1=[set_field_list('U','V');{'C'};{'add_field...'}]; % standard menu for civx data
         CheckPivData_1=1;
         set(handles.FieldName_1,'Value',1); % velocity vector choice by default
     else
@@ -2537,7 +2546,7 @@ else
 end
 
 %% Detect the types of input files and set menus and default options in 'FieldName'
-if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
+if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1% if netcdf data are in input
     set(handles.InputFields,'Visible','on')% set the frame InputFields visible
     if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         set(handles.FieldName,'Visible','on')
@@ -2572,7 +2581,7 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1
     if isempty(find(strcmp('add_field...',FieldList), 1))
         FieldList=[FieldList;{'add_field...'}];%add 'add_field...' to the menu FieldName if it is not already
     end
-    if FieldNameRequest_1 && numel(iview_netcdf)>=2
+    if FieldNameRequest_1 && numel(iview_netcdf)>=2% if two netcdf data series or more are in input
         set(handles.FieldName_1,'Visible','on')
         set(handles.Field_text_1,'Visible','on')
         if CheckPivData_1==0        % not civ input made

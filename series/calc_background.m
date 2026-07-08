@@ -198,21 +198,16 @@ FileExt=Param.InputTable{1,5};
 % step: shift of image index at each step of the sliding background (corresponding to the nbre of images in a burst)
 % nbaver_ima: nbre of the images in the sliding sequence used for the background
 % nbaver=nbaver_ima/step: nbre of bursts corresponding to nbaver_ima images. It has been adjusted so that nbaver is an odd integer
-i_indices=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
-if isfield(Param.IndexRange,'first_j')
-    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+if isfield(Param.IndexRange,'last_j')
+    j_indices=1:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 else
     j_indices=1;
 end
-nbfield_i=numel(i_indices); %nb of fields for the i index (bursts or volume slices)
 NbField_j=numel(j_indices); %nb of fields for the j index
-j_indices=j_indices'*ones(1,nbfield_i);
-i_indices=ones(NbField_j,1)*i_indices;
-
 if Param.ActionInput.CheckVolume% case of volume scan: the background images must be determined for each index j
     step=2;% we assume the burst contains only one image pair
     NbSlice_j=NbField_j;
-    nbfield_series=nbfield_i;
+    %nbfield_series=nbfield_i;
 else
     if Param.ActionInput.SlidingSequenceLength<NbField_j
         step=1;
@@ -220,16 +215,31 @@ else
         step=NbField_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
     NbSlice_j=1;
-    nbfield_series=nbfield_i*NbField_j;
+    %nbfield_series=nbfield_i*NbField_j;
 end
-nbfield=NbField_j*nbfield_i; %total number of fields
 [nbaver_ima,nbaver,step]=adjust_slidinglength(Param.ActionInput.SlidingSequenceLength,step);
+if isfield(Param.IndexRange,'first_j')
+    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+else
+    j_indices=1;
+end
+first_i= floor((Param.IndexRange.first_i-1)/nbaver_ima+1)*nbaver_ima+1;% adjust the first i index to get an interger number of nbaver_ima
+i_indices=first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
+nbfield_i=numel(i_indices); %nb of fields for the i index (bursts or volume slices)
+j_indices=j_indices'*ones(1,nbfield_i);
+i_indices=ones(NbField_j,1)*i_indices;
+
+nbfield=NbField_j*nbfield_i; %total number of fields
+
 if nbaver_ima > nbfield
     disp('number of images in a slice smaller than the proposed number of images for the sliding average')
     return
 end
-%halfnbaver=floor(nbaver/2); % half width (in unit of bursts) of the sliding background
-
+if Param.ActionInput.CheckVolume% case of volume scan: the background images must be determined for each index j
+    nbfield_series=nbfield_i;
+else
+    nbfield_series=nbfield_i*NbField_j;
+end
 
 %% File relabeling documented by the xml file
 CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO);
@@ -306,13 +316,14 @@ for j_slice=1:NbSlice
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
                 [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
-                filename=fullfile(RootPath,SubDir,filename);
+                filename=fullfile(RootPath,SubDir,filename)
             else
                 filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile))
                 FrameIndex=frame_index(ifile);
             end
             if ifield==iblock
                 filename_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
+                filename_extra=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile)-nbaver_ima,[],j_indices(ifile));
             end
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
             if ndims(Aread)==3  %color images 
@@ -325,8 +336,12 @@ for j_slice=1:NbSlice
         B=squeeze(B(:,:,rank));%background image
         
         %write result file
-        imwrite(B,filename_out,'BitDepth',BitDepth); % save the new image   
+        imwrite(B,filename_out,'BitDepth',BitDepth); % save the new image  
         disp([filename_out ' written'])
+        if iblock==1 && i_indices(ifile)-nbaver_ima>=1% duplicate the first bakground image with index preceding the firt index in the serie
+            imwrite(B,filename_extra,'BitDepth',BitDepth);
+            disp([filename_extra ' written'])
+        end
     end
 end
 
@@ -336,16 +351,10 @@ end
 function [nbaver_ima,nbaver,step_out]=adjust_slidinglength(nb_aver_in,step)
 %nbaver_ima=str2double(nb_aver_in);%number of images for the sliding background
 nbaver=ceil(nb_aver_in/step);%number of bursts for the sliding background
-% if isequal(mod(nbaver,2),0)% if nbaver is even
-%     nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
-% end
 step_out=step;
 if nbaver>1
     nbaver_ima=nbaver*step;% correct the nbre of images corresponding to nbaver
 else
     nbaver_ima=nb_aver_in;
-%     if isequal(mod(nbaver_ima,2),0)% if nbaver_ima is even
-%         nbaver_ima=nbaver_ima+1;%set the number of bursts to an odd number (so the middle burst is defined)
-%     end
     step_out=1;
 end

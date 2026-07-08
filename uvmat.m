@@ -1746,6 +1746,8 @@ switch FileInfo.FileType
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
             hbrowse=browse_data(fullfile(RootPath,SubDir));
             [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+
+
             FileSeries.Convention=BurstTiming.Convention; BurstTiming=rmfield(BurstTiming,'Convention');
             Camera.BurstTiming=BurstTiming;
             FileSeries.FileName={'im.tif';'im@0001.tif'};
@@ -1753,24 +1755,31 @@ switch FileInfo.FileType
             [ListPath, ListSubdir]=read_browsedata (hbrowse);
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp
-                [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);
-                if ~strcmp(errormsg,'')
-                    msgbox_uvmat('ERROR',errormsg);
-                else
-                    update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
-                end
-            end
-            msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
+                %%%%%%%%%%%%%% read the initial time (project STAIRWAY)
+                DirTimeInfo=fileparts(fileparts(ListPath{iexp}));
+                FileTime=fullfile(DirTimeInfo,'Time_SEQ.xml');
+                if exist(FileTime,'file')
+                    ParamTime=xml2struct(FileTime);
+                    Camera.BurstTiming.Time=ParamTime.SEQ_TIMES.(ListSubdir{iexp}).INIT_TIME;
+                    %%%%%%%%%%%%%%%%%%%%%
 
+                    [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);
+                    if ~strcmp(errormsg,'')
+                        msgbox_uvmat('ERROR',errormsg);
+                    else
+                        update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
+                    end
+                end  
+            end
+             msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
         end
-        
-    case 'image'
+    case 'image'% case of Nikon photos
         FileSeries.Convention='photos';
         rr=regexp(FileInfo.DateTime,'(?<dat>^\d+:\d\d:\d\d)','names');
         FileSeries.Date=rr.dat;
         FileSeries.NbFramePerFile=1;
-        ListParam={'Convention','Dtj','NbDtj','Dti','NbDti'};
-        [BurstTiming,errormsg] = set_param_input(ListParam,{'photos','','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
+        ListParam={'Convention','Time','Dtj','NbDtj','Dti','NbDti'};
+        [BurstTiming,errormsg] = set_param_input(ListParam,{'photos','0','','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
         BurstTiming=rmfield(BurstTiming,'Convention');
         Camera.BurstTiming=BurstTiming;
         % get the corresponding time matrix 'TimeMatrix'
@@ -1799,7 +1808,7 @@ switch FileInfo.FileType
         [~,ifile_min]=min(i1_list);
         time_photo=time_photo-time_photo(ifile_min);
         time_photo=24*3600*time_photo(check_file);%times in seconds
-        time_bursts=reshape(TimeMatrix(2:end,2:end),1,[]);
+        time_bursts=reshape(TimeMatrix(2:end,2:end),1,[])-TimeMatrix(2,2);
         if numel(time_bursts)<numel(time_photo)
             msgbox_uvmat('ERROR','photos series longer than times defined in xml')
         return
