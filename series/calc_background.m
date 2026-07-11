@@ -223,7 +223,7 @@ if isfield(Param.IndexRange,'first_j')
 else
     j_indices=1;
 end
-first_i= floor((Param.IndexRange.first_i-1)/nbaver_ima+1)*nbaver_ima+1;% adjust the first i index to get an interger number of nbaver_ima
+first_i= floor((Param.IndexRange.first_i-1)/nbaver_ima)*nbaver_ima+1;% adjust the first i index to get an interger number of nbaver_ima
 i_indices=first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 nbfield_i=numel(i_indices); %nb of fields for the i index (bursts or volume slices)
 j_indices=j_indices'*ones(1,nbfield_i);
