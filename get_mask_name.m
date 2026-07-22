@@ -8,7 +8,7 @@
 % i_index: i index of the field to mask
 % j_index: j_index of the field to mask
 % IndexPeriod: period of the i_index for which a background has been determined
-% NbSlice: number of slices 
+% NbSlice: number of slices, =[] for a unique mask file 
 % CheckVolumeScan =false for multi-level mode (the i index gives the plane
 % position modulo NbSlice)
 % =true: the j index gives the plane position

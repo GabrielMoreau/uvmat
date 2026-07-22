@@ -57,9 +57,9 @@ if ~isempty(huvmat)
    test_ruler=~CheckZoom && isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority
 end
 test_drawing=0;%default, =1 to allow drawing by further mouse action
-if ~(isfield(AxeData,'Enable')&& strcmp(AxeData.Enable,'on'))
-    return
-end
+% if ~(isfield(AxeData,'Enable')&& strcmp(AxeData.Enable,'on'))
+%     return
+% end
 
 xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
 

@@ -38,7 +38,7 @@ if strcmp(get(hCurrentGUI,'Pointer'),'watch')
 end
 hhCurrentGUI=guidata(hCurrentGUI);% tags of the children of the current GUI (uvmat or view_field)
 CheckZoom=0;
-if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value');%test for zoom action, first priority
+if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value')%test for zoom action, first priority
     CheckZoom=1;
 end
 test_piv=isfield(FigData,'CivHandle');
@@ -88,7 +88,7 @@ end
 hchildren=get(hObject,'Children');%handles of all objects in the current figure
 check_visible=strcmp(get(hchildren,'Visible'),'on')& ~strcmp(get(hchildren,'Type'),'uimenu');% if visible='on', =0 otherwise
 hchildren=hchildren(check_visible); %keep only the visible children
-set(hchildren,'Units','normalized');
+%set(hchildren,'Units','normalized');
 PosChildren=get(hchildren,'Position');% set of object positions
 if iscell(PosChildren)% only one child
     PosLength=cellfun('length',PosChildren);% set of vector lengths for object positions

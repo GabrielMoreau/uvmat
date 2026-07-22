@@ -251,10 +251,10 @@ if CheckRelabel
         XmlData=imadoc2struct(XmlFileName);%read the time from XmlFileName
     end
     RootFileOut='frame';
-    [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),NbField_j);
+    [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
     FirstFileName=fullfile(RootPath,SubDir,RootFile);
 else
-    FirstFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
+    FirstFileName=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
     RootFileOut=RootFile;
 end
 [FileInfo,MovieObject]=get_file_info(FirstFileName);
@@ -315,15 +315,15 @@ for j_slice=1:NbSlice
         for ifield = iblock:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
-                [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),NbField_j);
+                [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),Param.IndexRange.last_j);
                 filename=fullfile(RootPath,SubDir,filename)
             else
-                filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_indices(ifile),[],j_indices(ifile))
+                filename=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,i_indices(ifile),[],j_indices(ifile))
                 FrameIndex=frame_index(ifile);
             end
             if ifield==iblock
-                filename_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
-                filename_extra=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.png',NomTypeOut,i_indices(ifile)-nbaver_ima,[],j_indices(ifile));
+                filename_out=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
+                filename_extra=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile)-nbaver_ima,[],j_indices(ifile));
             end
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
             if ndims(Aread)==3  %color images 

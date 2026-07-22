@@ -524,7 +524,7 @@ set(handles.OutputSubDir,'BackgroundColor',[1 0 1])% set edit box OutputSubDir t
 xx=double(get(handles.series,'CurrentCharacter')); % get the keyboard character
 if ~isempty(xx)
     switch xx
-        case 31 %downward arrow
+        case {31,65506} %downward arrow
             InputTable=get(handles.InputTable,'Data');
             iline=str2double(get(handles.InputLine,'String'));
             if isequal(iline,size(InputTable,1))% arrow downward

@@ -29,7 +29,7 @@
 %       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} )
 %         if ListVarName=[] or {}, no variable value is read (only global attributes and list of variables and dimensions)
 %         if ListVarName is absent, or = '*', ALL the variables of the NetCDF file are read.
-%         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority in the list,
+%         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority starting from the end of the  list,
 %            while output names will be set by the first line
 %       - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
 %       - the string 'TimeVarName', a string (the name of the variable considered as time), an integer or vector with integer values
@@ -142,11 +142,11 @@ for iatt=1:ngatts
     end
     try
         if ischar(valuestr) %& length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
-            eval(['Data.' keystr '=''' valuestr ''';'])
+            Data.(keystr)=valuestr;
         elseif isnumeric(valuestr)
-            eval(['Data.' keystr '=valuestr;'])
+            Data.(keystr)=valuestr;
         else
-            eval(['Data.' keystr '='';'])
+            Data.(keystr)='';
         end
         att_key{iatt}=keystr;
     catch ME
@@ -185,20 +185,13 @@ for ncvar=1:nvars %loop on the variables of the NetCDF file
     %get name, type, dimensions and attribute numbers of each variable
     [ListVarNameNetcdf{ncvar},xtype(ncvar),dimids{ncvar},nbatt(ncvar)] = netcdf.inqVar(nc,ncvar-1);
 end
-%     testmulti=0;
 if isequal(ListVarName,'*')||isempty(ListVarName)
     var_index=1:nvars; %all the variables are selected in the NetCDF file
     Data.ListVarName=ListVarNameNetcdf;
 else   %select input variables, if requested by the input ListVarName
-    check_keep=ones(1,size(ListVarName,2));
-    for ivar=1:size(ListVarName,2) % check redondancy of variable names
-        if ~isempty(find(strcmp(ListVarName{1,ivar},ListVarName(1:ivar-1)), 1))
-            check_keep(ivar)=0;% the variable #ivar is already in the list
-        end
-    end
-    ListVarName=ListVarName(:,logical(check_keep));
-    iline=size(ListVarName,1);    
-    %ListVarName=ListVarName(iline,:);% select the appropriate option for input variable (lin ein the input name matrix)
+    % check redondancy of variable names
+    [~,ind_var]=unique(ListVarName(1,:),'stable');
+    ListVarName=ListVarName(:,ind_var');
     if CheckTimeVar
         TimeVarIndex=find(strcmp(TimeVarName,ListVarNameNetcdf),1); %look for the index of the time variable in the netcdf list
         if isempty(TimeVarIndex)
@@ -209,10 +202,14 @@ else   %select input variables, if requested by the input ListVarName
         ListVarName=[ListVarName {TimeVarName}];
     end
     var_index=zeros(1,size(ListVarName,2));%default list of variable indices
+ 
     for ivar=1:size(ListVarName,2)
-        search_index=find(strcmp(ListVarName{iline,ivar},ListVarNameNetcdf),1);%look for the variable name in the list of NetCDF file
-        if ~isempty(search_index)
-            var_index(ivar)=search_index;%index of the netcdf list corresponding to the input list index ivar
+        for iline=size(ListVarName,1):-1:1
+            search_index=find(strcmp(ListVarName{iline,ivar},ListVarNameNetcdf),1);%look for the variable name in the list of NetCDF file
+            if ~isempty(search_index)
+                var_index(ivar)=search_index;%index of the netcdf list corresponding to the input list index ivar
+                break
+            end
         end
     end
     var_detect=(var_index~=0);%=1 for detected variables

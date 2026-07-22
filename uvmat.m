@@ -3620,6 +3620,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'FileSeries')
     [FileName,frame_index]=index2filename(UvData.XmlData{1}.FileSeries,num_i1,num_j1,NbField_j);
     FileName=fullfile(RootName,FileName);
 end
+
 switch UvData.FileInfo{1}.FieldType
     case {'civdata','civdata_3D','netcdf','mat'}
         list_fields=get(handles.FieldName,'String');% list menu fields
@@ -4691,12 +4692,12 @@ UvData=get(handles.uvmat,'UserData');
 list_fields=get(handles.FieldName,'String');% list menu fields
 index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-if isempty(regexp(RootPath,'^http://', 'once'))
-    FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-else
-    FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
-end
+[RootPath,SubDir,RootFile,~,FileExt]=read_file_boxes(handles);
+% if isempty(regexp(RootPath,'^http://', 'once'))
+%     FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+% else
+%     FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
+% end
 [~,~,~,i1,~,j1,~,~,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
 
 switch field
@@ -4742,103 +4743,104 @@ switch field
         %read selection from get_field
         [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
         if isempty(regexp(RootPath,'^http://', 'once'))
-        FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+            FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
         else
             FileName=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
         end
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
-            
+
         FieldList={};
         VecColorList={''};
         XName='';
         YName='';
         ZName='';
         if isfield(GetFieldData,'FieldOption')
-        switch GetFieldData.FieldOption
-            case 'vectors'
-                UName=GetFieldData.PanelVectors.vector_x;
-                VName=GetFieldData.PanelVectors.vector_y;
-                if isfield(GetFieldData,'Coordinates')
-                    YName=GetFieldData.Coordinates.Coord_y;
-                    if isfield(GetFieldData.Coordinates,'Coord_z')
-                        ZName=GetFieldData.Coordinates.Coord_z;
+            switch GetFieldData.FieldOption
+                case 'vectors'
+                    UName=GetFieldData.PanelVectors.vector_x;
+                    VName=GetFieldData.PanelVectors.vector_y;
+                    if isfield(GetFieldData,'Coordinates')
+                        YName=GetFieldData.Coordinates.Coord_y;
+                        if isfield(GetFieldData.Coordinates,'Coord_z')
+                            ZName=GetFieldData.Coordinates.Coord_z;
+                        end
                     end
-                end
-                CName=GetFieldData.PanelVectors.vec_color;
-                FieldList={['vec(' UName ',' VName ')'];...
-                    ['norm(' UName ',' VName ')'];...
-                    UName;VName};
-                VecColorList={['norm(' UName ',' VName ')'];...
-                    UName;VName};
-                if ~isempty(CName)
-                    VecColorList=[{CName};VecColorList];
-                end
-            case 'scalar'
-                AName=GetFieldData.PanelScalar.scalar;
-                if isfield(GetFieldData,'Coordinates')
-                    YName=GetFieldData.Coordinates.Coord_y;
-                    if isfield(GetFieldData.Coordinates,'Coord_z')
-                        ZName=GetFieldData.Coordinates.Coord_z;
+                    CName=GetFieldData.PanelVectors.vec_color;
+                    FieldList={['vec(' UName ',' VName ')'];...
+                        ['norm(' UName ',' VName ')'];...
+                        UName;VName};
+                    VecColorList={['norm(' UName ',' VName ')'];...
+                        UName;VName};
+                    if ~isempty(CName)
+                        VecColorList=[{CName};VecColorList];
                     end
+                case 'scalar'
+                    AName=GetFieldData.PanelScalar.scalar;
+                    if isfield(GetFieldData,'Coordinates')
+                        YName=GetFieldData.Coordinates.Coord_y;
+                        if isfield(GetFieldData.Coordinates,'Coord_z')
+                            ZName=GetFieldData.Coordinates.Coord_z;
+                        end
+                    end
+                    FieldList={AName};
+                case '1D plot'
+                    YName=GetFieldData.Coordinates.Coord_y;
+                    FieldList={''};
+                    set(handles.uvmat,'ToolBar','figure')
+                    set(handles.Coord_y,'Max',2)
+                case 'civdata...'%reinitiate input, return to automatic civ data reading
+                    UvData.FileInfo{1}.FieldType='netcdf';
+                    set(handles.uvmat,'UserData',UvData)
+                    display_file_name(handles,FileName,1)
+            end
+            % get time as file index, attribute, variable or matrix index
+            if ~strcmp(GetFieldData.FieldOption,'civdata...')
+                if isfield(GetFieldData,'Coordinates')
+                    XName=GetFieldData.Coordinates.Coord_x;
                 end
-                FieldList={AName};
-            case '1D plot'
-                YName=GetFieldData.Coordinates.Coord_y;
-                FieldList={''};  
-                set(handles.uvmat,'ToolBar','figure')
-                set(handles.Coord_y,'Max',2)
-            case 'civdata...'%reinitiate input, return to automatic civ data readingget_field
+                TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+                switch TimeNameStr
+                    case 'file index'
+                        set(handles.TimeName,'String','');
+                    case 'attribute'
+                        set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+                    case 'variable'
+                        set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+                        % set(handles.NomType,'String','*')
+                        set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% put file index in the root name
+                        set(handles.NomType,'String','')
+                        set(handles.num_i1,'String','1')% set counter to 1 (now the time index in the input matrix)
+                        MaxIndex_i=get(handles.MaxIndex_i,'String');
+                        MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
+                        set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
+                        UvData.TimeUnit=GetFieldData.Time.TimeUnit;
+                        set(handles.FileIndex,'String','')
+                        ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                    case 'matrix index'
+                        set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+                        set(handles.NomType,'String','*')
+                        set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                        set(handles.num_i1,'String','1')% set counter to 1 (now the time index in the input matrix)
+                        MaxIndex_i=get(handles.MaxIndex_i,'String');
+                        MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
+                        set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
+                        UvData.TimeUnit=GetFieldData.Time.TimeUnit;
+                        %                     set(handles.uvmat,'UserData',UvData);
+                        set(handles.FileIndex,'String','')
+                        ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+                end
+                set(handles.Coord_x,'String',XName)
+                set(handles.Coord_y,'String',YName)
+                set(handles.Coord_z,'String',ZName)
+                set(handles.FieldName,'Value',1)
+                set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+                set(handles.ColorScalar,'Value',1)
+                set(handles.ColorScalar,'String',VecColorList);
+                UvData.FileInfo{1}.FileType='netcdf';% the input file will not be treated as civdata
                 UvData.FileInfo{1}.FieldType='netcdf';
-            set(handles.uvmat,'UserData',UvData)
-                display_file_name(handles,FileName,1)
-        end
-        % get time as file index, attribute, variable or matrix index
-        if ~strcmp(GetFieldData.FieldOption,'civdata...')
-            if isfield(GetFieldData,'Coordinates')
-                XName=GetFieldData.Coordinates.Coord_x;
+                set(handles.uvmat,'UserData',UvData)
+                REFRESH_Callback(hObject, eventdata, handles)
             end
-            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-            switch TimeNameStr
-                case 'file index'
-                    set(handles.TimeName,'String','');
-                case 'attribute'
-                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
-                case 'variable'
-                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
-                   % set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% put file index in the root name
-                    set(handles.NomType,'String','')
-                    set(handles.num_i1,'String','1')% set counter to 1 (now the time index in the input matrix)
-                    MaxIndex_i=get(handles.MaxIndex_i,'String');
-                    MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
-                    set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
-                    UvData.TimeUnit=GetFieldData.Time.TimeUnit;
-                    set(handles.FileIndex,'String','')
-                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
-                case 'matrix index'
-                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
-                    set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
-                    set(handles.num_i1,'String','1')% set counter to 1 (now the time index in the input matrix)
-                    MaxIndex_i=get(handles.MaxIndex_i,'String');
-                    MaxIndex_i{1}=num2str(GetFieldData.Time.TimeDimension);
-                    set(handles.MaxIndex_i,'String',MaxIndex_i)%TODO: record time unit
-                    UvData.TimeUnit=GetFieldData.Time.TimeUnit;
-%                     set(handles.uvmat,'UserData',UvData);
-                    set(handles.FileIndex,'String','')
-                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
-            end
-            set(handles.Coord_x,'String',XName)
-            set(handles.Coord_y,'String',YName)
-            set(handles.Coord_z,'String',ZName)
-            set(handles.FieldName,'Value',1)
-            set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
-            set(handles.ColorScalar,'Value',1)
-            set(handles.ColorScalar,'String',VecColorList);
-            UvData.FileInfo{1}.FieldType='netcdf';
-            set(handles.uvmat,'UserData',UvData)
-            REFRESH_Callback(hObject, eventdata, handles)
-        end
         end
     case 'image'
         %% look for image corresponding to civ data

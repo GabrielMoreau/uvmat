@@ -119,7 +119,7 @@ if vardetect(1)==0
      errormsg=[ 'requested field not available in ' FileName '/' VelType ': need to run patch'];
      return
 end
-if strcmp(Data.Conventions,'uvmat/civdata/compress')
+if strcmp(Data.Conventions,'uvmat/civdata/compress')&&  isinteger( Field.X)% convention to store X,Y as integers (abandoned)
     Field.X=double(Field.X)-0.5+Field.U/2;% shift to the convected position
     Field.Y=double(Field.Y)-0.5+Field.V/2;
 end

@@ -27,7 +27,7 @@
 %                      .Patch2:
 
 %=======================================================================
-% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+% Copyright 2008-2024, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
 %   http://www.legi.grenoble-inp.fr
 %   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
 %
@@ -94,6 +94,7 @@ end
 
 inv_scale_factor=100; % scale factor of displacements for uin16 records in netcdf files (dx expressed in pixels)
 %inv_scale_factor=[];% no scale factor, displacements written as single precision real
+npsum=2; % number of images used for the sliding correlation
 
 %% input files and indexing
 hseries=findobj(allchild(0),'Tag','series');
@@ -115,6 +116,7 @@ if isfield(Param,'InputTable')
         ref_i_list=ref_i;
         ref_j_list=ones(size(ref_i));
     end
+    ref_i_list=[(ref_i_list(1)-nbsum+1:ref_i_list(1)-1) ref_i_list]; % adjust the series for correlation sum 
     iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
     if Param.ActionInput.CheckCiv1
         iview_A=1;% usual PIV, the image series is on the first line of the table
@@ -351,7 +353,7 @@ for ifield=1:NbField
         if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
             FieldName_A=Param.InputFields.FieldName;
             [DataIn,~,~,errormsg]=nc2struct(ImageName_A,{FieldName_A});
-            par_civ1.ImageA=DataIn.(FieldName_A);
+            ImageA=DataIn.(FieldName_A);
         else % usual image formats for image A
             if isempty(FileType_A)% open the image object if not already done in case of movie input
                 [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A);
@@ -377,7 +379,7 @@ for ifield=1:NbField
                 continue
             end
             tsart_input=tic;
-            [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
+            [ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A);
             time_input=toc(tsart_input);
         end
         if CheckRelabel
@@ -453,16 +455,23 @@ for ifield=1:NbField
                 background=par_civ1.Background;
                 backgroundoldname=backgroundname;% preserve the name for next iteration (to avoid reading the background image again)
             end
-            par_civ1.ImageA=uint16(par_civ1.ImageA)-par_civ1.Background;% it will be set to 0 if background > image
-            par_civ1.ImageB=uint16(par_civ1.ImageB)-par_civ1.Background;
+            ImageA=uint16(ImageA)-par_civ1.Background;% it will be set to 0 if background > image
+            ImageB=uint16(ImageB)-par_civ1.Background;
         end
         
         % case of image luminosity rescaling
         if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
-            par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
-            par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
+            ImageA =par_civ1.Maxtanh*tanh(double(ImageA)/par_civ1.Maxtanh);
+            ImageB=par_civ1.Maxtanh*tanh(double(ImageB)/par_civ1.Maxtanh);
         end    
-
+        index_rack=min(ifield,npsum);
+        if ifield==1
+           par_civ1.ImageA=repmat(ImageA,1,1,npsum);
+           par_civ1.ImageB=repmat(ImageB,1,1,npsum);
+        else
+           par_civ1.ImageA(:,:,index_rack)=ImageA;
+           par_civ1.ImageBV(:,:,index_rack)=ImageB;
+        end
         % case of mask
         if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
             if Check_j_Civ1
@@ -519,11 +528,11 @@ for ifield=1:NbField
         Data.CivStage=1;
         
         % caluclate velocity data
-        if strcmp(Param.RunMode,'cluster')
-            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
-        else
-            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop
-        end
+        % if strcmp(Param.RunMode,'cluster')
+            [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ_multi (par_civ1);% single processor used in cluster
+        % else
+        %     [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop
+        % end
         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         if ~isempty(errormsg)
