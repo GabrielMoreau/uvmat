@@ -33,6 +33,11 @@ if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is
 else
     hCurrentGUI=hObject; % handle of the current GUI: usual plot
 end
+if ~isprop(hCurrentGUI,'Units')
+    return
+else
+    set(hCurrentGUI,'Units','pixels')
+end
 if strcmp(get(hCurrentGUI,'Pointer'),'watch')
     return % no action if a calculation is running
 end
@@ -42,7 +47,6 @@ if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value')%test
     CheckZoom=1;
 end
 test_piv=isfield(FigData,'CivHandle');
-set(hCurrentGUI,'Units','pixels')
 GUI_pos=get(hCurrentGUI,'Position');%position of the GUI series on the screen (in pixels), used to position message boxes
 set(hCurrentGUI,'Units','normalized')% back to current unit for fig position
 
@@ -88,6 +92,9 @@ end
 hchildren=get(hObject,'Children');%handles of all objects in the current figure
 check_visible=strcmp(get(hchildren,'Visible'),'on')& ~strcmp(get(hchildren,'Type'),'uimenu');% if visible='on', =0 otherwise
 hchildren=hchildren(check_visible); %keep only the visible children
+if  ~all(isprop(hchildren,'Units'))% exit if the propery Units is not defined for all chidren 
+    return
+end
 set(hchildren,'Units','normalized');
 PosChildren=get(hchildren,'Position');% set of object positions
 if iscell(PosChildren)% only one child

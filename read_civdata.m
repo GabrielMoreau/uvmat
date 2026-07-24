@@ -147,6 +147,9 @@ switch VelTypeOut
         Field.Time=Field.Civ2_Time;
         end
 end
+if ~isfield (Field,'Dt')% case of displacement at the sme time (stereo shift), Dt set to 1 for phys transform
+    Field.Dt=1;
+end
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
 ivar_U_tps=[];
 ivar_V_tps=[];

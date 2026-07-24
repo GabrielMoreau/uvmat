@@ -28,17 +28,17 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function FieldOut=find_field_bounds(Field)
+function [FieldOut,errormsg]=find_field_bounds(Field)
 
 FieldOut=Field;%default
+
 %% analyse input field
 [CellInfo,NbDimArray,errormsg]=find_field_cells(Field);% analyse  the input field structure
 if isempty(CellInfo)
-    errormsg='bad input field'
-    return
+    errormsg='bad input field';
 end
 if ~isempty(errormsg)
-    errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg]% display error
+    errormsg=['find_field_cells / ' errormsg];% display error
     return
 end
 NbDim=max(NbDimArray);% spatial dimension of the input field

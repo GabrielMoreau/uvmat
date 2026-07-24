@@ -2435,11 +2435,15 @@ if isequal(ActionName,'more...')
 end
 
 %% check the current ActionPath to the selected function
+if ActionIndex <= numel(ActionPathList)
 ActionPath=ActionPathList{ActionIndex}; % current recorded path
 set(handles.ActionPath,'String',ActionPath); % show the path to the selected function
 
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
+else
+    ActionPath=''
+end
 
 %% Put the first line of the selected Action fct as tooltip help
 try
@@ -2492,13 +2496,19 @@ if isfield(ParamOut,'FieldName')
     FieldNameRequest_1=strcmp( ParamOut.FieldName,'two');
 end
 
-%% Detect the types of input files and set menus and default options in 'VelType'
-if ~isfield(SeriesData,'FileInfo')
-                   msgbox_uvmat('ERROR','input file serie(s) must be entered, press REFRESH')
-                   return
+%% Abort if an input data series has not been refreshed, bt store the input parameters possibly set by Action fct
+if ~isfield(SeriesData,'FileInfo')||~isequal(get(handles.REFRESH,'BackgroundColor'),[1 0 0])
+    if isfield(ParamOut,'ActionInput')
+        ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
+        SeriesData.ActionInput=ParamOut.ActionInput;
+        set(handles.series,'UserData',SeriesData)
+        set(handles.ActionInput,'BackgroundColor',[1 0 0])
+    end
+    msgbox_uvmat('ERROR','input file serie(s) must be entered, press REFRESH')
+    return
 end
-NbView=numel(SeriesData.FileInfo);
 
+NbView=numel(SeriesData.FileInfo);
 check_civ=false(1,NbView);
 check_netcdf=false(1,NbView);
 for iview=1:NbView

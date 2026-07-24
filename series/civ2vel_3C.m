@@ -168,6 +168,13 @@ else
     return
 end
 
+Plane_A=XmlData{1}.Slice.SliceCoord;
+Plane_B=XmlData{2}.Slice.SliceCoord;
+if ~isequal(Plane_A,Plane_B)
+    disp_uvmat('ERROR','the two views are not in the same reference plane',checkrun)
+    return
+end
+Zref=Plane_A(3); % reference z position (no tilt assumed)
 
 %% grid of physical positions (given by projection plane)
 if ~Param.CheckObject
@@ -240,7 +247,8 @@ for index=1:NbField
     
     %get Xphys,Yphys,Zphys from 1 or 2 stereo folders. Positions are taken
     %at the middle between to time step
-    ZItemp=zeros(size(XI,1),size(XI,2),2);
+
+    ZItemp=Zref*ones(size(XI,1),size(XI,2),2);
     CheckZ=0;
     
     if index==1
@@ -248,6 +256,8 @@ for index=1:NbField
     end
     
     idtemp=0;
+
+    %% get the Zshift field from stereo_piv (to check and update)
     for indextemp=index:index+1
         idtemp=idtemp+1;
         if NbView==3 % if there is only 1 stereo folder, extract directly Xphys,Yphys and Zphys

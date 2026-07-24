@@ -115,20 +115,20 @@ end
 checktransform_1=0;
 if ~isempty(DataOut_1)
     if isfield(DataIn_1,'ZIndex') && ~isequal(DataIn_1.ZIndex,ZIndex)
-        DataOut_1.Txt='different plane indices for the two input fields';
+        DataOut_1.errormsg='different plane indices for the two input fields';
         return
     end
     if isfield(Calib{2},'CalibrationType')&&isfield(Calib{2},'CoordUnit') && isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel')
         DataOut_1=phys_1(DataOut_1,Calib{2},Slice{2},ZIndex);
         if isfield(Slice{2},'SliceCoord')
-            if ~(isfield(Slice{2},'SliceCoord') && isequal(Slice{2}.SliceCoord,Slice{1}.SliceCoord))
-                DataOut_1.Txt='different plane positions for the two input fields';
+            if ~(isfield(Slice{1},'SliceCoord') && isequal(Slice{2}.SliceCoord,Slice{1}.SliceCoord))
+                DataOut_1.errormsg='different plane positions for the two input fields';
                 return
             end
             DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
             if isfield(Slice{1},'SliceAngle')
                 if ~(isfield(Slice{2},'SliceAngle') && isequal(Slice{2}.SliceAngle,Slice{1}.SliceAngle))
-                    DataOut_1.Txt='different plane angles for the two input fields';
+                    DataOut_1.errormsg='different plane angles for the two input fields';
                     return
                 end
                 DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields

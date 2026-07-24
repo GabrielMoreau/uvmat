@@ -65,7 +65,7 @@ if size(par_civ.CorrBoxSize,1)==1
 end
 
 shiftx=par_civ.SearchBoxShift(:,1);%use the input shift estimate, rounded to the next integer value
-shifty=par_civ.SearchBoxShift(:,2);% 
+shifty=par_civ.SearchBoxShift(:,2);%
 if isscalar(shiftx)% case of a unique shift for the whole field( civ1)
     shiftx=shiftx*ones(nbvec,1);
     shifty=shifty*ones(nbvec,1);
@@ -95,11 +95,9 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
         par_civ.Mask=imread(par_civ.Mask);% read the mask if not allready done
     end
 end
-check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
-check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 
 %% Apply mask
-% Convention for mask, IDEAS NOT IMPLEMENTED 
+% Convention for mask, IDEAS NOT IMPLEMENTED
 % mask >200 : velocity calculated
 %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
 % 150>=mask >100: velocity not calculated, nor interpolated
@@ -108,7 +106,7 @@ check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 checkmask=false;
 check_undefined_A=false(npy_ima, npx_ima);
 check_undefined_B=false(npy_ima, npx_ima);
-MinA=min(min(par_civ.ImageA));
+%MinA=min(min(par_civ.ImageA));
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
     par_civ.Mask_A=par_civ.Mask;
     par_civ.Mask_B=par_civ.Mask;
@@ -136,11 +134,11 @@ SearchRange_1=par_civ.SearchRange(1);
 SearchRange_2=par_civ.SearchRange(2);
 if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just input image and grid points given)
     for ivec=1:nbvec
-         iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
-         jref=ytable(ivec);%  j index  for the middle of the correlation box in the image A
-        % if jref==1062
-        %     'TEST'
-        % end
+        iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
+        jref=ytable(ivec);%  j index  for the middle of the correlation box in the image A
+%         if ivec==1012
+%             'TEST'
+%         end
         FF(ivec)=0;
         ibx2=floor(CorrBoxSizeX(ivec)/2);
         iby2=floor(CorrBoxSizeY(ivec)/2);
@@ -150,8 +148,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
         subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
         subrange2_y=jref-shifty(ivec)-isy2:jref-shifty(ivec)+isy2;%y indices defining the second subimage
-        image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
-        image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
+        image1_crop=zeros(numel(subrange1_y),numel(subrange1_x));% default value=0 of image A
+        image2_crop=zeros(numel(subrange2_y),numel(subrange2_x));% default value=0 of image A
         check1_x=subrange1_x>=1 & subrange1_x<=npx_ima;% check which points in the subimage 1 are contained in the initial image 1
         check1_y=subrange1_y>=1 & subrange1_y<=npy_ima;
         check2_x=subrange2_x>=1 & subrange2_x<=npx_ima;% check which points in the subimage 2 are contained in the initial image 2
@@ -159,103 +157,84 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
         image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
 
-        xtable(ivec)=(subrange1_x(1)+subrange1_x(2))/2;% adjust the mean position of the correlation box if close to the image edge
-        ytable(ivec)=(subrange1_y(1)+subrange1_y(2))/2;
+%         xtable(ivec)=(subrange1_x(1)+subrange1_x(2))/2;% adjust the mean position of the correlation box if close to the image edge
+%         ytable(ivec)=(subrange1_y(1)+subrange1_y(2))/2;
         if checkmask
-             mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
+            mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
             mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
             mask1_crop(check1_y,check1_x)=check_undefined_A(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
             mask2_crop(check2_y,check2_x)=check_undefined_B(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
-            sizemask=sum(sum(mask1_crop))/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
-            if sizemask > 1/2% eliminate point if more than half of the correlation box is masked
-                FF(ivec)=1; %
-                utable(ivec)=NaN;
-                vtable(ivec)=NaN;
-            else
-                image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
-                image2_crop=image2_crop.*~mask2_crop;
-                image1_mean=mean(image1_crop,'all')/(1-sizemask);
-                image2_mean=mean(image2_crop,'all')/(1-sizemask);
-                if sizemask ~= 0
-                [Xbias,Ybias] = mean_bias(~mask1_crop); % get the mean position of the unmasked part
-                xtable(ivec)=xtable(ivec)+Xbias;
-                ytable(ivec)=ytable(ivec)+Ybias;
-                end
-            end
-        else
-            image1_mean=mean(image1_crop,'all');
-            image2_mean=mean(image2_crop,'all');
+            image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
+            image2_crop=image2_crop.*~mask2_crop;
         end
+        check_active_px=image1_crop>0;
+        prop_active=sum(check_active_px,'all')/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
+        if prop_active<1/2 % eliminate point if more than half of the correlation box is masked
+            FF(ivec)=1; %
+            utable(ivec)=NaN;
+            vtable(ivec)=NaN;
+        else
+            image1_mean=mean(image1_crop,'all')/prop_active;
+            image2_mean=mean(image2_crop,'all')/prop_active;
+            [Xbias,Ybias] = mean_bias(check_active_px); % get the mean position of the unmasked part
+            xtable(ivec)=xtable(ivec)+Xbias;
+            ytable(ivec)=ytable(ivec)+Ybias;
+            image1_crop=(image1_crop-image1_mean);
+            image2_crop=(image2_crop-image2_mean);
+        end
+
         %threshold on image minimum
         if FF(ivec)==0
-            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                FF(ivec)=1;
-                %threshold on image maximum
-            elseif check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                FF(ivec)=1;
+            %deformation
+            if CheckDeformation
+                xi=(1:mesh:size(image1_crop,2));
+                yi=(1:mesh:size(image1_crop,1))';
+                [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
+                XIant=XI-par_civ.DUDX(ivec)*XI+par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
+                YIant=YI+par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                image1_crop=interp2(image1_crop,XIant,YIant);
+                image1_crop(isnan(image1_crop))=0;
+                xi=(1:mesh:size(image2_crop,2));
+                yi=(1:mesh:size(image2_crop,1))';
+                image2_crop=interp2(image2_crop,xi,yi,'*spline');
+                image2_crop(isnan(image2_crop))=0;
             end
-            if FF(ivec)==1
-                utable(ivec)=NaN;
-                vtable(ivec)=NaN;
-            else
-                %mask
-                if checkmask
-                    image1_crop=(image1_crop-image1_mean).*~mask1_crop;%substract the mean, put to zero the masked parts
-                    image2_crop=(image2_crop-image2_mean).*~mask2_crop;
-                else
-                    image1_crop=(image1_crop-image1_mean);
-                    image2_crop=(image2_crop-image2_mean);
-                end
-                %deformation
-                if CheckDeformation
-                    xi=(1:mesh:size(image1_crop,2));
-                    yi=(1:mesh:size(image1_crop,1))';
-                    [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
-                    XIant=XI-par_civ.DUDX(ivec)*XI+par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
-                    YIant=YI+par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
-                    image1_crop=interp2(image1_crop,XIant,YIant);
-                    image1_crop(isnan(image1_crop))=0;
-                    xi=(1:mesh:size(image2_crop,2));
-                    yi=(1:mesh:size(image2_crop,1))';
-                    image2_crop=interp2(image2_crop,xi,yi,'*spline');
-                    image2_crop(isnan(image2_crop))=0;
-                end
-                sum_square=sum(sum(image1_crop.*image1_crop));
-                %reference: Oliver Pust, PIV: Direct Cross-Correlation
-                %%%%%% correlation calculation
-                result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                corrmax= max(max(result_conv));
-                
-                %result_conv=(result_conv/corrmax); %normalize, peak=always 255
-                %Find the correlation max, at 255
-                [y,x] = find(result_conv==corrmax,1);
-                subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
-                sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
-                sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
-                if ~isempty(y) && ~isempty(x)
-                    try
-                        if par_civ.CorrSmooth==1
-                            [vector,FF(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                        elseif par_civ.CorrSmooth==2
-                            [vector,FF(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
-                        else
-                            [vector,FF(ivec)] = quadr_fit(result_conv,x,y);
-                        end
-                        utable(ivec)=vector(1)*mesh+shiftx(ivec);
-                        vtable(ivec)=-vector(2)*mesh+shifty(ivec);% vtable and shifty in image coordinates (opposite to pixel shift)
-                        ctable(ivec)=corrmax/sum_square;% correlation value
-                    catch ME
-                        FF(ivec)=1;
-                        disp(ME.message)
+            sum_square=sum(sum(image1_crop.*image1_crop));
+            %reference: Oliver Pust, PIV: Direct Cross-Correlation
+            %%%%%% correlation calculation
+            result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            corrmax= max(max(result_conv));
+
+            %result_conv=(result_conv/corrmax); %normalize, peak=always 255
+            %Find the correlation max, at 255
+            [y,x] = find(result_conv==corrmax,1);
+            subimage2_crop=image2_crop(y:y+2*iby2/mesh,x:x+2*ibx2/mesh);%subimage of image 2 corresponding to the optimum displacement of first image
+            sum_square=sum_square*sum(sum(subimage2_crop.*subimage2_crop));% product of variances of image 1 and 2
+            sum_square=sqrt(sum_square);% srt of the variance product to normalise correlation
+            if ~isempty(y) && ~isempty(x)
+                try
+                    if par_civ.CorrSmooth==1
+                        [vector,FF(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                    elseif par_civ.CorrSmooth==2
+                        [vector,FF(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                    else
+                        [vector,FF(ivec)] = quadr_fit(result_conv,x,y);
                     end
-                else
+                    utable(ivec)=vector(1)*mesh+shiftx(ivec);
+                    vtable(ivec)=-vector(2)*mesh+shifty(ivec);% vtable and shifty in image coordinates (opposite to pixel shift)
+                    ctable(ivec)=corrmax/sum_square;% correlation value
+                catch ME
                     FF(ivec)=1;
+                    disp(ME.message)
                 end
+            else
+                FF(ivec)=1;
             end
         end
     end
 end
+
 ytable=npy_ima-ytable+1;%reverse from j index to image coordinate y
 xtable=xtable-0.5+utable/2;% get the shifted positions at the middle of the displacement
 ytable=ytable-0.5+vtable/2;

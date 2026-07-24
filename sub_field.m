@@ -2,7 +2,7 @@
 %
 % the two fields are subtstracted when of the same nature (scalar or
 % vector), if the coordinates do not coincide, the second field is
-% interpolated on the cooridintes of the first one
+% interpolated on the coordinates of the first one
 %
 % when scalar and vectors are combined, the fields are just merged in a single matlab structure for common visualisation
 %-----------------------------------------------------------------------
@@ -35,42 +35,48 @@
 
 function SubData=sub_field(Field,XmlData,Field_1)
 
-SubData=[];
+SubData=[];%default
 if strcmp(Field,'*')
     return
 end
-if nargin<3
-    SubData=Field;
-    return
+if ~isfield(Field,'ListGlobalAttribute')
+    SubData.ListGlobalAttribute={};
 end
 if ~isfield(Field_1,'VarAttribute')
     Field_1.VarAttribute={};
 end
 
 %% global attributes
-SubData.ListGlobalAttribute={};%default
+%SubData.ListGlobalAttribute={};%default
 %transfer global attributes of Field
-if isfield(Field,'ListGlobalAttribute')
-    SubData.ListGlobalAttribute=Field.ListGlobalAttribute;
-    for ilist=1:numel(Field.ListGlobalAttribute)
-        AttrName=Field.ListGlobalAttribute{ilist};
-        SubData.(AttrName)=Field.(AttrName);
-    end
-end
-%transfer global attributes of Field_1
 if isfield(Field_1,'ListGlobalAttribute')
     for ilist=1:numel(Field_1.ListGlobalAttribute)
         AttrName=Field_1.ListGlobalAttribute{ilist};
-        AttrNameNew=AttrName;
-        while ~isempty(find(strcmp(AttrNameNew,SubData.ListGlobalAttribute)))&&~isequal(Field_1.(AttrNameNew),Field.(AttrNameNew))
-            AttrNameNew=[AttrNameNew '_1'];
-        end
-        if ~isfield(Field,AttrName) || ~isequal(Field_1.(AttrName),Field.(AttrName))
-            SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrNameNew}];
-            SubData.(AttrNameNew)=Field_1.(AttrName);
+        if isfield(Field,AttrName)% if the attributes also exist in Field
+            if ~isequal(Field.(AttrName),Field_1.(AttrName))
+               SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {[AttrName '_1']}];
+               SubData.([AttrName '_1'])=Field_1.(AttrName);
+            else
+                SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrName}];
+                SubData.(AttrName)=Field_1.(AttrName);
+            end
         end
     end
 end
+% %transfer global attributes of Field_1
+% if isfield(Field_1,'ListGlobalAttribute')
+%     for ilist=1:numel(Field_1.ListGlobalAttribute)
+%         AttrName=Field_1.ListGlobalAttribute{ilist};
+%         AttrNameNew=AttrName;
+%         while ~isempty(find(strcmp(AttrNameNew,SubData.ListGlobalAttribute)))&&~isequal(Field_1.(AttrNameNew),Field.(AttrNameNew))
+%             AttrNameNew=[AttrNameNew '_1'];
+%         end
+%         if ~isfield(Field,AttrName) || ~isequal(Field_1.(AttrName),Field.(AttrName))
+%             SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrNameNew}];
+%             SubData.(AttrNameNew)=Field_1.(AttrName);
+%         end
+%     end
+% end
 
 %% variables
 check_char=cellfun(@ischar,Field.VarDimName);% look for dimension name defined by a char strings in the list Data.VarDimName
@@ -86,31 +92,44 @@ ind_cell_scalar_1=find(cellfun(@(x) check_field_struct(x,'VarType','scalar'),Cel
 ind_cell_vector=find(cellfun(@(x) check_field_struct(x,'VarType','vector'),CellInfo));
 ind_cell_vector_1=find(cellfun(@(x) check_field_struct(x,'VarType','vector'),CellInfo_1));
 
-%% subtract vector fields
-if ~isempty(ind_cell_vector) && ~isempty(ind_cell_vector_1)
+%% check for vector fields
+check_vector=false;
+check_vector_1=false;
+if isscalar(ind_cell_vector) %unique vector index found
     Cellplus=CellInfo{ind_cell_vector};
-    Cellmin=CellInfo{ind_cell_vector_1};
     vector_x_name=Field.ListVarName{Cellplus.VarIndex_vector_x};
     vector_x=Field.(vector_x_name);
+    vector_y_name=Field.ListVarName{Cellplus.VarIndex_vector_y};
+    vector_y=Field.(vector_y_name);
+    check_vector=true;
+end
+if isscalar(ind_cell_vector_1)%unique index found
+    Cellmin=CellInfo_1{ind_cell_vector_1};
     vector_x_name_1=Field_1.ListVarName{Cellmin.VarIndex_vector_x};
     vector_x_1=Field_1.(vector_x_name_1);
-    if isequal(size(vector_x),size(vector_x_1))
-        vector_y_name=Field.ListVarName{Cellplus.VarIndex_vector_y};
+    vector_y_name_1=Field_1.ListVarName{Cellmin.VarIndex_vector_y};
+    vector_y_1=Field_1.(vector_y_name_1);
+    check_vector_1=true;
+end
+
+%% subtract vectors if their dimensions is the same
+if check_vector && check_vector_1
+    if isequal(size(vector_x),size(vector_x_1))&& isequal(size(vector_y),size(vector_y_1))
         vector_y_name_1=Field_1.ListVarName{Cellmin.VarIndex_vector_y};
         dim_name=Field.VarDimName{Cellplus.VarIndex_vector_x};
         coord_x=Field.(Cellplus.XName);
         coord_y=Field.(Cellplus.YName);
         coord_x_1=Field_1.(Cellmin.XName);
         coord_y_1=Field_1.(Cellmin.YName);
-        SubData.ListVarName={Cellplus.XName,Cellplus.YName,vector_x_name,vector_y_name}; 
+        SubData.ListVarName={Cellplus.XName,Cellplus.YName,vector_x_name,vector_y_name};
         SubData.VarAttribute{1}.Role='coord_x';
         ListRole={'coord_x','coord_y','vector_x','vector_y'};
         for ilist=1:numel(ListRole)
-             SubData.VarAttribute{ilist}.Role=ListRole{ilist};
+            SubData.VarAttribute{ilist}.Role=ListRole{ilist};
         end
         % scattered coordinates
         if isequal(size(coord_x),size(vector_x)) && isequal(size(coord_x_1),size(vector_x_1))
-        SubData.VarDimName={dim_name,dim_name,dim_name,dim_name};
+            SubData.VarDimName={dim_name,dim_name,dim_name,dim_name};
         else
             SubData.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'},{'coord_y','coord_x'}};
         end
@@ -118,19 +137,31 @@ if ~isempty(ind_cell_vector) && ~isempty(ind_cell_vector_1)
         SubData.(vector_y_name)=Field.(vector_y_name)-Field_1.(vector_y_name_1);
         SubData.(Cellplus.XName)=0.5*(coord_x+coord_x_1);
         SubData.(Cellplus.YName)=0.5*(coord_y+coord_y_1);
+    else
+        SubData.errormsg='try to subtract vector fields with different sizes, need to interpolate on a common grid';
+        return
     end
 end
 
-%% subtract scalars
-if ~isempty(ind_cell_scalar) && ~isempty(ind_cell_scalar_1)
+%% check for scalar fields
+check_scalar=false;
+check_scalar_1=false;
+if isscalar(ind_cell_scalar) %unique index found
     Cellplus=CellInfo{ind_cell_scalar};
-    Cellmin=CellInfo{ind_cell_scalar_1};
     scalar_name=Field.ListVarName{Cellplus.VarIndex_scalar};
     scalar=Field.(scalar_name);
+    check_scalar=true;
+end
+if isscalar(ind_cell_scalar_1) %unique index found
+    Cellmin=CellInfo_1{ind_cell_scalar_1};
     scalar_name_1=Field_1.ListVarName{Cellmin.VarIndex_scalar};
     scalar_1=Field_1.(scalar_name_1);
+    check_scalar_1=true;
+end
+
+%% subtract scalars if their dimensions is the same
+if check_scalar && check_scalar_1
     if isequal(size(scalar),size(scalar_1))
-        scalar_name=Field.ListVarName{Cellplus.VarIndex_scalar};
         dim_name=Field.VarDimName{Cellplus.VarIndex_scalar};
         coord_x=Field.(Cellplus.XName);
         coord_y=Field.(Cellplus.YName);
@@ -145,6 +176,59 @@ if ~isempty(ind_cell_scalar) && ~isempty(ind_cell_scalar_1)
         SubData.(scalar_name)=scalar-scalar_1;
         SubData.(Cellplus.XName)=0.5*(coord_x+coord_x_1);
          SubData.(Cellplus.YName)=0.5*(coord_y+coord_y_1);
+    else
+        SubData.errormsg='try to subtract scalar fields with different sizes, need to interpolate on a common grid';
+        return
+    end
+end
+
+check_scalar_vector=(check_vector && check_scalar_1); % check for the superposition of a scalar map and a vector field
+if (check_scalar && check_vector_1) %switch the order of Field and Field_1
+    Field_1_old=Field_1;
+    Field_1=Field;
+    Field=Field_1_old;
+    Cellmin_old=Cellmin;
+    Cellmin=Cellplus;
+    Cellplus=Cellmin_old;
+    check_scalar_vector=true;
+    vector_x_name=Field.ListVarName{Cellplus.VarIndex_vector_x};
+    vector_y_name=Field.ListVarName{Cellplus.VarIndex_vector_y};
+    scalar_name_1=Field_1.ListVarName{Cellmin.VarIndex_scalar};
+end  
+
+if check_scalar_vector
+    SubData.ListVarName={Cellplus.XName,Cellplus.YName,vector_x_name,vector_y_name,Cellmin.XName,Cellmin.YName,scalar_name_1};
+    dim_name=Field.VarDimName{Cellplus.VarIndex_vector_x};
+    dim_name_1=Field_1.VarDimName{Cellmin.VarIndex_scalar};
+    SubData.VarDimName={dim_name,dim_name,dim_name,dim_name,Cellmin.YName,Cellmin.XName,dim_name_1};
+    SubData.VarAttribute{1}.Role='coord_x';
+    SubData.VarAttribute{2}.Role='coord_y';
+    SubData.VarAttribute{3}.Role='vector_x';
+    SubData.VarAttribute{4}.Role='vector_y';
+    SubData.VarAttribute{5}.Role='coord_x';
+    SubData.VarAttribute{6}.Role='coord_y';
+    SubData.VarAttribute{7}.Role='scalar';
+    SubData.(Cellplus.XName)=Field.(Cellplus.XName);
+    SubData.(Cellplus.YName)=Field.(Cellplus.YName);
+    SubData.(vector_x_name)=Field.(vector_x_name);
+    SubData.(vector_y_name)=Field.(vector_y_name);
+    SubData.(Cellmin.XName)=Field_1.(Cellmin.XName);
+    SubData.(Cellmin.YName)=Field_1.(Cellmin.YName);
+    SubData.(scalar_name_1)=Field_1.(scalar_name_1);
+    if isfield(Cellplus,'VarIndex_ancillary')
+        AncillaryName=Field.ListVarName{Cellplus.VarIndex_ancillary};
+        SubData.VarDimName=[SubData.VarDimName {dim_name}];
+        SubData.ListVarName=[SubData.ListVarName {AncillaryName}];
+        SubData.VarAttribute{8}.Role='ancillary';
+        SubData.(AncillaryName)=Field.(AncillaryName);
+    end
+    nbvar=numel(SubData.ListVarName);
+    if isfield(Cellplus,'VarIndex_errorflag')
+        FlagName=Field.ListVarName{Cellplus.VarIndex_errorflag};
+        SubData.VarDimName=[SubData.VarDimName {dim_name}];
+        SubData.ListVarName=[SubData.ListVarName {FlagName}];
+        SubData.VarAttribute{nbvar+1}.Role='errorflag';
+        SubData.(FlagName)=Field.(FlagName);
     end
 end
 %reproduce variables of the first field and list its dimensions

@@ -4025,7 +4025,11 @@ else
             UvData.Field=transform(Field{1});
     end
 end
-
+if isfield (UvData.Field,'errormsg')
+    errormsg=['error in field transform: ' UvData.Field.errormsg];
+    return
+end
+    
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 
@@ -4059,10 +4063,12 @@ if strcmp(FieldName,'')
     set(handles.uvmat,'UserData',UvData)
     
 %% 2D or 3D fieldname are generally projected
-else
-    UvData.Field=find_field_bounds(UvData.Field);
-
-%% get bounds and dimensions of the input field
+else  % get bounds and dimensions of the input field
+    [UvData.Field,errormsg]=find_field_bounds(UvData.Field);
+    if ~isempty(errormsg)
+        errormsg=['uvmat/refresh_field/find_field_bounds/' errormsg];
+        return
+    end
 
 %% calculate tps coefficients if needed
     UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
@@ -4302,7 +4308,7 @@ else
     end
 end
 % open the set_object for interactive plane projection in 3D case
-if UvData.Field.NbDim==3
+if isfield(UvData.Field,'NbDim') && UvData.Field.NbDim==3
     set(handles.CheckEditObject,'Value',1)
     CheckEditObject_Callback(handles.uvmat, [], handles)
 end

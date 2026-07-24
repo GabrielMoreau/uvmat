@@ -158,28 +158,28 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
 ListGlobalAttribute={'Conventions','Program','CivStage','Time','Umoy','Vmoy','DUDX','DUDY','DVDX','DVDY'};
 %Data.ListVarName={'Xphys','Yphys','Zphys','C','DX','DY','Error'};%  cell array containing the names of the fields to record;
-Data.ListVarName={'C','DX','DY'};%
+Data.ListVarName={'C'};%
 % Data.VarAttribute{1}.Role='coord_x';
 % Data.VarAttribute{2}.Role='coord_y';
 Data.VarAttribute{1}.Role='scalar';
 %Data.VarAttribute{3}.scale_factor=1/inv_scale_factor;
-Data.VarAttribute{2}.Role='vector_x';
-%Data.VarAttribute{4}.scale_factor=1/inv_scale_factor;
-Data.VarAttribute{3}.Role='vector_y';
+% Data.VarAttribute{2}.Role='vector_x';
+% %Data.VarAttribute{4}.scale_factor=1/inv_scale_factor;
+% Data.VarAttribute{3}.Role='vector_y';
 %Data.VarAttribute{5}.scale_factor=1/inv_scale_factor;
 Data.VarAttribute{1}.scale_factor=1/100;%scla factor for correlation
 %Data.VarAttribute{7}.Role='scalar';
 
 % test for recording the smmoothed data
 CheckSmooth=(Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||(Param.ActionInput.CheckPatch2 && ~Param.ActionInput.CheckCiv3) || Param.ActionInput.CheckPatch3;
-if Param.ActionInput.CheckTest
+% if Param.ActionInput.CheckTest
     nbvar=numel(Data.ListVarName);
     Data.VarAttribute{nbvar+1}.Role='coord_x';
     Data.VarAttribute{nbvar+2}.Role='coord_y';
     Data.VarAttribute{nbvar+3}.Role='vector_x';
     Data.VarAttribute{nbvar+4}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='errorflag';
-    Data.ListVarName=[Data.ListVarName {'X','Y','U','V','FF'}];
+    Data.ListVarName=[Data.ListVarName {'X','Y','U','V','FF','Xphys','Yphys','Zphys','Error'}];
     if CheckSmooth
         nbvar=numel(Data.ListVarName);
         Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
@@ -188,7 +188,7 @@ if Param.ActionInput.CheckTest
         Data.VarAttribute{nbvar+2}.Role='vector_y';
         %  Data.VarAttribute{nbvar+2}.scale_factor=1/inv_scale_factor;
     end
-end
+% end
 Data.VarDimName=repmat({'nb_vec'},1,numel(Data.ListVarName));
 
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
@@ -238,9 +238,9 @@ for index_i=1:numel(i_indices)
         %%% record time
         Data.Time=Time{1}(j_indices(index_j),i_indices(index_i));
         Time2=Time{2}(j_indices(index_j),i_indices(index_i));
-        Data.Dt=Time2-Data.Time;
+        Dt=Time2-Data.Time;
         if Time2 ~= Data.Time
-            disp(['WARNING: the times of the two images differ by ' num2str(Data.Dt)])
+            disp(['WARNING: the times of the two images differ by ' num2str(Dt)])
         end
 
         %% case of image luminosity rescaling
@@ -383,7 +383,7 @@ for index_i=1:numel(i_indices)
 
             % perform Patch calculation using the UVMAT fct 'filter_tps'
             [SubRange,NbCentres,Coord_tps,U_tps,V_tps,~,Ures, Vres,~,FFres]=...
-                filter_tps([Civ_X(ind_good),Civ_Y(ind_good)],Data.U(ind_good),Data.V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
+                filter_tps([Data.X(ind_good),Data.Y(ind_good)],Data.U(ind_good),Data.V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
             Data.U_smooth=Data.U;% false vectors kept unchanged
             Data.V_smooth=Data.V;
             Data.U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
@@ -568,7 +568,7 @@ for index_i=1:numel(i_indices)
 
             % perform Patch calculation using the UVMAT fct 'filter_tps'
             [SubRange,NbCentres,Coord_tps,U_tps,V_tps,~,Ures, Vres,~,FFres]=...
-                filter_tps([Civ_X(ind_good),Civ_Y(ind_good)],Data.U(ind_good),Data.V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
+                filter_tps([Data.X(ind_good),Data.Y(ind_good)],Data.U(ind_good),Data.V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
             Data.U_smooth=Data.U;% false vectors kept unchanged
             Data.V_smooth=Data.V;
             Data.U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
@@ -716,21 +716,25 @@ for index_i=1:numel(i_indices)
             time_patch3=toc(tstart_patch3);
             disp('patch3 performed')
         end
-
-        % [Xmid, Ymid, Data.DX, Data.DY, Data.Zphys,Data.Yphys, Data.Xphys, Data.Error] =...
-        %     getPhysValues(Rangx,Rangy, Npx, Npy, Civ_X, Civ_Y, Data.U_smooth, Data.V_smooth, XmlData);
+           if CheckSmooth
+         [Xmid, Ymid, Data.DX, Data.DY, Data.Zphys,Data.Yphys, Data.Xphys, Data.Error] =...
+            getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U_smooth, Data.V_smooth, XmlData);
+           else
+                [Xmid, Ymid, Data.DX, Data.DY, Data.Zphys,Data.Yphys, Data.Xphys, Data.Error] =...
+            getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U, Data.V, XmlData);
+           end
 
         %rescale results from image mesh to phys coordinates
-        scale_x=(Rangx(2)-Rangx(1))/(Npx-1);
-        scale_y=(Rangy(1)-Rangy(2))/(Npy-1);
-        Data.X=Rangx(1)+scale_x*(Data.X-0.5);
-        Data.Y=Rangy(2)+scale_y*(Data.Y-0.5);
-        Data.U=scale_x*Data.U;
-        Data.V=scale_y*Data.V;
-        if CheckSmooth
-            Data.U_smooth=scale_x*Data.U_smooth;
-            Data.V_smooth=scale_y*Data.V_smooth;
-        end
+%         scale_x=(Rangx(2)-Rangx(1))/(Npx-1);
+%         scale_y=(Rangy(1)-Rangy(2))/(Npy-1);
+%         Data.X=Rangx(1)+scale_x*(Data.X-0.5);
+%         Data.Y=Rangy(2)+scale_y*(Data.Y-0.5);
+%         Data.U=scale_x*Data.U;
+%         Data.V=scale_y*Data.V;
+%         if CheckSmooth
+%             Data.U_smooth=scale_x*Data.U_smooth;
+%             Data.V_smooth=scale_y*Data.V_smooth;
+%         end
 
         Data.C=uint8(100*Data.C);% rescale to store as integer
 
@@ -738,21 +742,21 @@ for index_i=1:numel(i_indices)
         indgood=find(Data.FF==0);
         X = [Data.X(indgood), Data.Y(indgood), ones(length(indgood),1)];
         % Solve for coefficients
-         if CheckSmooth
-        BU = X \ Data.U_smooth(indgood);
-        BV = X \ Data.V_smooth(indgood);
-                Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
-        Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
-        Data.DX=Data.U_smooth-Ufit;
-        Data.DY=Data.V_smooth-Vfit;
-         else
-             BU = X \ Data.U(indgood);
-        BV = X \ Data.V(indgood);
-        Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
-        Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
-        Data.DX=Data.U-Ufit;
-        Data.DY=Data.V-Vfit;
-         end
+        if CheckSmooth
+            BU = X \ Data.U_smooth(indgood);
+            BV = X \ Data.V_smooth(indgood);
+            Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
+            Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
+            Data.DX=Data.U_smooth-Ufit;
+            Data.DY=Data.V_smooth-Vfit;
+        else
+            BU = X \ Data.U(indgood);
+            BV = X \ Data.V(indgood);
+            Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
+            Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
+            Data.DX=Data.U-Ufit;
+            Data.DY=Data.V-Vfit;
+        end
 
         Data.DX(Data.FF~=0)=NaN;
         Data.DY(Data.FF~=0)=NaN;
