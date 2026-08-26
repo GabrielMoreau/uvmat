@@ -73,7 +73,8 @@ else
     end
 end
 
-
+% -----------------------------------------------------------------------
+% --- 
 function out=convert_string(ss)
 info=whos('ss');
 switch info.class
@@ -95,6 +96,9 @@ switch info.class
                     end
                 else
                     out=ss; %reproduce the input string
+                    if strcmp(out,'NaN')
+                        out=NaN;
+                    end
                 end
             end
     case 'cell'
@@ -102,7 +106,8 @@ switch info.class
         check_numeric=zeros(size(ss));
         for ilist=1:numel(ss)
             if  find(isnan(str2double(strsplit(ss{ilist}))))
-                sep_ind=regexp(ss{ilist},'\s&\s');% check for separator ' & ' which indicates column separation in tables
+                ss{ilist}=regexprep(ss{ilist},'&\s&','&  &');% add a blank in case of blank column
+                sep_ind=regexp(ss{ilist},'\s&\s');% check for separator ' & ' (& between two white spaces) which indicates column separation in tables
                 if ~isempty(sep_ind)
                     sep_ind=[-2 sep_ind length(ss{ilist})+1];
                     for icolumn=1:length(sep_ind)-1

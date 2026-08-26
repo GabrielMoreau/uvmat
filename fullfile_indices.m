@@ -58,6 +58,7 @@ if ~exist('RootFile','var')
     test;
     return
 end
+NomType
 
 %% default input
 if iscell(NomType)

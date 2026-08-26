@@ -80,6 +80,9 @@ if isstruct(ParamIn)
 end
 
 %% distingush different input file types
+if ismember(FileType,{'civdata','civdata_compress','civdata_3D'}) && ~isfield(ParamIn,'VelType')% civ data file read as generic netcf file
+    FileType='netcdf';
+end
 switch FileType
     case {'civdata','civdata_compress','civdata_3D'}% format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType,frame_index);
@@ -97,7 +100,6 @@ switch FileType
         ProjModeRequest={};
         % scan the list InputField
         Operator=cell(1,numel(InputField));
-        %InputVar=cell(1,numel(InputField));
         for ilist=1:numel(InputField)
             % look for input variables to read
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');

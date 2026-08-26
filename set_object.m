@@ -542,11 +542,8 @@ else
 end
 
 %% refresh the field projected on the object
-hview_field=[];%default
 IndexObj_1=get(hhuvmat.ListObject_1,'Value');
-if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
-    PlotType='text';
-else
+if ~(strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none'))
     % create tps coeff if needed for ProjMode 'interp_tps'
     if strcmp(ObjectData.ProjMode,'interp_tps')&&~isfield(UvData.Field,'Coord_tps')
         %UvData.Field=calc_tps(UvData.Field,1);
@@ -564,14 +561,24 @@ else
         return
     end
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
-        PlotType=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(get(hhuvmat.PlotAxes,'parent')));%update the current uvmat plot
+        plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(get(hhuvmat.PlotAxes,'parent')));%update the current uvmat plot
     else  % if the projection is in view_field
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
             hview_field=view_field(ProjData); %open the view_field GUI for plot
         else
             hhview_field=guidata(hview_field);
-            [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
+            hview_fig=get(hhview_field.PlotAxes,'parent');
+
+            %put the GUI view_field on the lower right of the sceen
+            set(0,'Unit','pixel')
+            ScreenSize=get(0,'ScreenSize');
+            pos_view_field(3)=min(800,round(ScreenSize(3)/2));% put fig on the bottom side of the scree
+            pos_view_field(4)=min(500,round(ScreenSize(4)/2));% put fig on the bottom side of the scree
+            pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);% put fig on the right side of the screen
+            set(hview_fig,'Unit','pixels')
+            set(hview_fig,'Position',pos_view_field)
+            [~,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
             errormsg=fill_GUI(PlotParam,hview_field);
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',errormsg)
@@ -594,10 +601,8 @@ else
     end
 end
 
-%% update the object refresh 
-%hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
-% if we are editing the object used for projection in uvmat
-if isequal(IndexObj_1,IndexObj)
+%% update the object representation sketch
+if isequal(IndexObj_1,IndexObj)% if we are editing the object used for projection in uvmat
     %update the representation of the current object for projection field represented in view_field
     for iobj=1:numel(UvData.ProjObject)
         UvData.ProjObject{iobj}.DisplayHandle.uvmat=...

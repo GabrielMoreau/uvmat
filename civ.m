@@ -1,14 +1,13 @@
 %--------------------------------------------------------------------------
 %  'civ': key function  for image correlations (called by series/cvi_series.m)
-% function [xtable ytable utable vtable typevector] = civ (image1,image2,ibx,iby step, subpixfinder, mask, roi)
-%
+% function  [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ (par_civ)
 % OUTPUT:
 % xtable: set of x positions of the first image in integer image coordinates , the measurement position is xtable-0.5+utable/2
 % ytable: set of y coordinates of the first image in integer image coordinates (starting in the image bottom, image index= npy-ytable+1 , the measurement position is ytable-0.5+vtable/2
 % utable: set of u displacements (along x), in pixels
 % vtable: set of v displacements (along y)
 % ctable: max image correlation for each vector
-% typevector: set of flags, =1 for good, =0 for NaN vectors
+% FF: set of flags, =0 for good, =1 for false vectors
 %
 %INPUT:
 % par_civ: structure of input parameters, with fields:

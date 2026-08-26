@@ -99,11 +99,12 @@ if exist('Field','var')
 end
 
 %put the GUI on the lower right of the sceen
-pos_view_field=get(hObject,'Position');
 set(0,'Unit','pixel')
 ScreenSize=get(0,'ScreenSize');
-pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
-pos_view_field(2)=ScreenSize(2);
+pos_view_field(3)=min(800,round(ScreenSize(3)/2));% put fig on the bottom side of the scree
+pos_view_field(4)=min(500,round(ScreenSize(4)/2));% put fig on the bottom side of the scree
+pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);% put fig on the right side of the screen
+pos_view_field(2)=ScreenSize(2)+40;% put fig on the bottom of the scree
 set(hObject,'Position',pos_view_field)
 
 %------------------------------------------------------------------------

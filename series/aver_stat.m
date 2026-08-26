@@ -168,7 +168,7 @@ NbField_i=size(i1_series{1},2); %nb of fields for the i index
 NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file
-NcTypeOptions={'netcdf','civx','civdata'};
+NcTypeOptions={'netcdf','civx','civdata','civdata_compress'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
         disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
@@ -299,8 +299,8 @@ for islice=index_j
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         for iview=1:NbView
             % reading input file(s)
-            filecell{iview,index}
-            [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+            %filecell{iview,index}
+            [Data{iview},~,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['error of input reading: ' errormsg];
                 break% leave the loop on views in case of error
@@ -474,6 +474,7 @@ for islice=index_j
     RootPathOut=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
     OutputDir=[Param.OutputSubDir Param.OutputDirExt];
     OutputFile=fullfile_uvmat(RootPathOut,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j_out,last_j_out);
+    OutputFile=regexprep(OutputFile,[FileExtOut '$'],['$' FileExtOut])%add a character $ to avoid automatic index extraction by uvmat
     if strcmp(FileExtOut,'.png') %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);

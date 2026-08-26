@@ -656,23 +656,36 @@ for iview=1:nbview
 end
 
 %% suppress possible remaining data beyond nbview lines in MinIndex_i, MaxIndex_i ,MinIndex_j, MaxIndex_j,PairString,TimeTable
+
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
+if numel(MinIndex_i_table)>nbview
 set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview)); % save only the nbviews values, remove possible values beyond
+end
 
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+if numel(MinIndex_j_table)>nbview
 set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview));
+end
 
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the max indices in the table MinIndex
+if numel(MaxIndex_i_table)>nbview
 set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview));
+end
 
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
+if numel(MinIndex_j_table)>nbview
 set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview));
+end
 
 PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
+if numel(PairString)>nbview
 set(handles.PairString,'Data',PairString(1:nbview));
+end
 
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
+if numel(TimeTable)>nbview
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
+end
 
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
@@ -947,25 +960,16 @@ function update_rootinfo(handles,Param,iview)
 %------------------------------------------------------------------------
 %% determine the min and max indices for the whole file series
 if isnan(Param.ref_i_list)% no i index
-    MinIndex_j=1;MaxIndex_j=1;MinIndex_i=1;MaxIndex_i=1;
+    MinIndex_j=NaN;MaxIndex_j=NaN;MinIndex_i=NaN;MaxIndex_i=NaN;
 else
     MinIndex_i=min(Param.ref_i_list);
     MaxIndex_i=max(Param.ref_i_list);
     if isnan(Param.ref_j_list)
-        MinIndex_j=1;MaxIndex_j=1;
+        MinIndex_j=NaN;MaxIndex_j=NaN;%does not exist table line
     else
-    MinIndex_j=min(Param.ref_j_list); % min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
-    MaxIndex_j=max(Param.ref_j_list); % max ref index i detected in the series (corresponding to the last non-zero value of i1_series)
+        MinIndex_j=min(Param.ref_j_list);
+        MaxIndex_j=max(Param.ref_j_list);
     end
-end
-if isempty(Param.Relabel)
-    Param.Relabel=false;
-end
-% if ~Param.Relabel && isfield(Param,'FileInfo') && isfield(Param.FileInfo,'Software')&&~isempty(Param.FileInfo.Software) && ~isempty(regexp(Param.FileInfo.Software,'^pco.camware', 'once'))
-%     MinIndex_i=MinIndex_i-1;% case of PCO cameras, the first file without index is assumed i=0
-% end
-
-if iview==1% set the detected index increment for the first input table line
     diff_i_max=max(diff(Param.ref_i_list));
     diff_i_min=min(diff(Param.ref_i_list));
     if diff_i_max==diff_i_min
@@ -1012,15 +1016,15 @@ SeriesData=get(handles.series,'UserData');
 % i index, compare input to min index i
 ref_i=1;%default
 if isfield(SeriesData,'ref_i_input')
-    ref_i=SeriesData.ref_i_input;%take the value possibly selected by the input file 
+    ref_i=SeriesData.ref_i_input;%take the value possibly selected by the input file
 end
 first_i=str2double(get(handles.num_first_i,'String')); % retrieve previous first i by default
 if isnan(first_i)
     first_i=ref_i; % first_i updated by the input value
 elseif first_i < MinIndex_i
-    first_i=MinIndex_i; % first_i set to the min i index 
+    first_i=MinIndex_i; % first_i set to the min i index
 elseif first_i >MaxIndex_i
-    first_i=MaxIndex_i; % first_i set to the max i index 
+    first_i=MaxIndex_i; % first_i set to the max i index
 end
 
 % j index,  compare input to min index j
@@ -1104,7 +1108,9 @@ TimeMin=NaN;
 TimeFirst=NaN;
 TimeLast=NaN;
 TimeMax=NaN;
-
+if isempty(Param.Relabel)
+    Param.Relabel=false;
+end
 % read timing  from the current file (prioritary)
 if ~Param.Relabel && isfield(Param.FileInfo,'FrameRate') && isfield(Param.FileInfo,'NumberOfFrames') % case of movies
     if isnan(Param.j1_list) % frame index along i
@@ -1123,9 +1129,9 @@ elseif strcmp(Param.FileInfo.FieldType,'civdata')
     [i1,i2,j1,j2] = get_file_index(MinIndex_i,MinIndex_j,PairString);
     if isfield(Param,'InputFile')
         Param.FilePath=fullfile(Param.InputFile.RootPath,Param.InputFile.SubDir);
-    Param.RootFile=Param.InputFile.RootFile;
-    Param.FileExt=Param.InputFile.FileExt;
-    Param.NomType=Param.InputFile.NomType;
+        Param.RootFile=Param.InputFile.RootFile;
+        Param.FileExt=Param.InputFile.FileExt;
+        Param.NomType=Param.InputFile.NomType;
     end
     MinFullFileName=fullfile_indices(fullfile(Param.FilePath,Param.RootFile),Param.FileExt,Param.NomType,i1,i2,j1,j2);
     TimeMin=get_time(MinFullFileName,Param.FileInfo.FieldType,TimeName);
@@ -1170,14 +1176,16 @@ refresh_first_last_info(handles);
 
 %% display the set of existing files as an image with black bands for gaps showing gaps in the series
 nbview=numel(SeriesData.i1_list);
-MaxIndex_i=ones(nbview,1); % default
-MinIndex_i=ones(nbview,1); % default
+MaxIndex_iline=NaN(nbview,1); % default
+MinIndex_iline=NaN(nbview,1); % default
 for iline=1:nbview
-    MinIndex_i(iline)=min(SeriesData.ref_i_list{iline});
-    MaxIndex_i(iline)=max(SeriesData.ref_i_list{iline});
+    if ~isempty(SeriesData.ref_i_list{iline})
+        MinIndex_iline(iline)=min(SeriesData.ref_i_list{iline},[],'omitnan');
+        MaxIndex_iline(iline)=max(SeriesData.ref_i_list{iline},[],'omitnan');
+    end
 end
-MinIndex_i=min(MinIndex_i);% min index i for the whole list of input file series
-MaxIndex_i=max(MaxIndex_i);
+MinIndex_i=min(MinIndex_iline,[],'omitnan');% min index i for the whole list of input file series
+MaxIndex_i=max(MaxIndex_iline,[],'omitnan');
 set(handles.FileStatus,'Units','pixels')
 Position=get(handles.FileStatus,'Position');% get length of the status color bar in pixels
 range_y=max(1,floor(Position(4)/nbview));
@@ -1186,18 +1194,20 @@ CData=ones(nbview*range_y,npx); % initiate the image representing the existing f
 if MaxIndex_i>MinIndex_i
     CheckMissing=ones(1,MaxIndex_i-MinIndex_i+1);
     for iline=1:nbview
-        CheckMissing(SeriesData.ref_i_list{iline}-MinIndex_i+1)=0;% CheckMissing=false for detected files
-        if npx<MaxIndex_i-MinIndex_i
-            IndexMissing=find(CheckMissing);% indices of the missing files -1 (from 0 to end-1)
-            LineData=ones(1,npx);
-            NewIndexMissing=min(npx,ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i)));
-            LineData(NewIndexMissing)=0;
-        else
-            pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
-            LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
+        if ~isnan(SeriesData.ref_i_list{iline})
+            CheckMissing(SeriesData.ref_i_list{iline}-MinIndex_i+1)=0;% CheckMissing=false for detected files
+            if npx<MaxIndex_i-MinIndex_i
+                IndexMissing=find(CheckMissing);% indices of the missing files -1 (from 0 to end-1)
+                LineData=ones(1,npx);
+                NewIndexMissing=min(npx,ceil(npx*IndexMissing/(MaxIndex_i-MinIndex_i)));
+                LineData(NewIndexMissing)=0;
+            else
+                pix_renormalised=(npx/(MaxIndex_i-MinIndex_i))*(0.5:MaxIndex_i-MinIndex_i+0.5);
+                LineData=1-interp1(pix_renormalised,CheckMissing,0.5:npx-0.5,'nearest','extrap');
+            end
+            ind_y=1+(iline-1)*range_y:iline*range_y;
+            CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
         end
-        ind_y=1+(iline-1)*range_y:iline*range_y;
-        CData(ind_y,:)=ones(numel(ind_y),1)*LineData;%create an image band with width numel(ind_y)
     end
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData))); % make color images r=0,green,b=0
@@ -1332,7 +1342,7 @@ TimeTable=get(handles.TimeTable,'Data');
 for iview=1:size(TimeTable,1)
     time_first=[];
     time_last=[];
-    if ismember(SeriesData.TimeName{iview},{'Civ1_Time','Civ2_Time'})
+    if ischar(SeriesData.TimeName{iview}) && ismember(SeriesData.TimeName{iview},{'Civ1_Time','Civ2_Time'})
         MinFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_first,i2_first,j1_first,j2_first);
         time_first=get_time(MinFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
         MaxFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_last,i2_last,j1_last,j2_last);
@@ -2512,7 +2522,7 @@ NbView=numel(SeriesData.FileInfo);
 check_civ=false(1,NbView);
 check_netcdf=false(1,NbView);
 for iview=1:NbView
-    if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress','netcdf'})
+    if isfield(SeriesData.FileInfo{iview},'FileType') && ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress','netcdf'})
          check_netcdf(iview)=true;
          if ismember(SeriesData.FileInfo{iview}.FileType,{'civx','civdata','civdata_compress'})
              check_civ(iview)=true;
@@ -2526,13 +2536,15 @@ if ~iscell(FieldList),FieldList={FieldList};end
 %FieldList_1=get(handles.FieldName_1,'String'); % previous list as default
 % if ~iscell(FieldList_1),FieldList_1={FieldList_1};end
 CheckPivData_1=0; % indicate whether FieldName_1 has been updated with civ data, 0 by default
+CheckInputFields=false; %flag for panel InputFields
 handles_coord=[handles.Coord_x handles.Coord_y handles.Coord_z handles.Coord_x_title handles.Coord_y_title handles.Coord_z_title];
 if VelTypeRequest && ~isempty(iview_civ)% if civ data are in input
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileInfo{iview_civ(1)}.FileType);
     set(handles.VelType,'Value',1)% set first choice by default
-    set(handles.VelType,'String',[{'*'};menu])
+    set(handles.VelType,'String',menu)
     set(handles.VelType,'Visible','on')
     set(handles.VelType_title,'Visible','on')
+    CheckInputFields=true;
     FieldList=set_field_list('U','V'); % standard menu for civx data
     if max(get(handles.FieldName,'Value'))>numel(FieldList)
         set(handles.FieldName,'Value',1); % velocity vector choice by default
@@ -2540,7 +2552,7 @@ if VelTypeRequest && ~isempty(iview_civ)% if civ data are in input
     if  VelTypeRequest_1 && numel(iview_civ)>=2% if two civ data or more are in input
         menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileInfo{iview_civ(2)}.FileType);
         set(handles.VelType_1,'Value',1)% set first choice by default
-        set(handles.VelType_1,'String',[{'*'};menu])
+        set(handles.VelType_1,'String',menu)
         set(handles.VelType_1,'Visible','on')
         set(handles.VelType_title_1,'Visible','on')
         %FieldList_1=[set_field_list('U','V');{'C'};{'add_field...'}]; % standard menu for civx data
@@ -2556,11 +2568,12 @@ else
 end
 
 %% Detect the types of input files and set menus and default options in 'FieldName'
-if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1% if netcdf data are in input
+if (FieldNameRequest  && numel(iview_netcdf)>=1)% if netcdf data are in input
     set(handles.InputFields,'Visible','on')% set the frame InputFields visible
     if FieldNameRequest && isfield(SeriesData.FileInfo{iview_netcdf(1)},'ListVarName')
         set(handles.FieldName,'Visible','on')
         set(handles.Field_text,'Visible','on')
+         CheckInputFields=true;
         ListVarName=SeriesData.FileInfo{iview_netcdf(1)}.ListVarName;
         ind_var=get(handles.FieldName,'Value'); % indices of previously selected variables
         for ilist=1:numel(ind_var)
@@ -2633,6 +2646,13 @@ if (FieldNameRequest || VelTypeRequest) && numel(iview_netcdf)>=1% if netcdf dat
         set(handles.FieldName,'Visible','on')
         set(handles.FieldName,'String',FieldList)
     end
+ else
+        set(handles.FieldName,'Visible','off')
+        set(handles.Field_text,'Visible','off')
+        set(handles.RefreshField,'Visible','off')
+end
+if CheckInputFields
+    set(handles.InputFields,'Visible','on')
 else
     set(handles.InputFields,'Visible','off')
 end
@@ -2653,9 +2673,13 @@ if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& s
     MaxIndex_i=get(handles.MaxIndex_i,'Data');
     MaxIndex_j=get(handles.MaxIndex_j,'Data');
     set(handles.MinIndex_i,'Data',MinIndex_i(iview,:));
+    if ~isempty(MinIndex_j)
     set(handles.MinIndex_j,'Data',MinIndex_j(iview,:));
+    end
     set(handles.MaxIndex_i,'Data',MaxIndex_i(iview,:));
+     if ~isempty(MaxIndex_j)
     set(handles.MaxIndex_j,'Data',MaxIndex_j(iview,:));
+     end
     TimeTable=get(handles.TimeTable,'Data');
     if size(TimeTable,1)<size(Param.InputTable,1)%if the time table is not complete, copy the missing lines from the previous ones
         for iline=size(TimeTable,1)+1:size(Param.InputTable,1)
@@ -2899,7 +2923,7 @@ if strcmp(field,'add_field...')
     FieldListInit(field_index(1))=[];
     SeriesData=get(handles.series,'UserData');
     for iview=1:numel(SeriesData.FileInfo)
-    FileType{iview}=SeriesData.FileInfo{iview}.FileType;
+        FileType{iview}=SeriesData.FileInfo{iview}.FileType;
     end
     % input line for which the field choice is relevant
     iview=find(ismember(FileType,{'netcdf','civx','civdata','civdata_compress'})); % all nc files, icluding civ
@@ -2933,72 +2957,85 @@ if strcmp(field,'add_field...')
         GetFieldData=get_field(FirstFileName,ParamIn);
         FieldList={};
         if isfield(GetFieldData,'FieldOption')% if a field has been selected
-        switch GetFieldData.FieldOption
-            case 'vectors'
-                UName=GetFieldData.PanelVectors.vector_x;
-                VName=GetFieldData.PanelVectors.vector_y;
-                YName={GetFieldData.Coordinates.Coord_y};
-                FieldList={['vec(' UName ',' VName ')'];...
-                    ['norm(' UName ',' VName ')'];...
-                    UName;VName};
-                set(handles.VelType,'Visible','off')
-            case {'scalar'}
-                FieldList=GetFieldData.PanelScalar.scalar;
-                YName={GetFieldData.Coordinates.Coord_y};
-                if ischar(FieldList)
-                    FieldList={FieldList};
-                end
-                set(handles.VelType,'Visible','off')
-            case 'civdata...'
-                FieldList=[set_field_list('U','V') ;{'C'}];
-                set(handles.FieldName,'Value',1) % set menu to 'velocity
-                XName='X';
-                YName='y';
-                set(handles.VelType,'Visible','on')
-        end
-        set(handles.FieldName,'Value',1)
-        set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
-        if ~strcmp(GetFieldData.FieldOption,'civdata...')
-           if ~isempty(regexp(FieldList{1},'^vec', 'once'))
-                set(handles.FieldName,'Value',1)
-           else
-                set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
-           end
-            XName=GetFieldData.Coordinates.Coord_x;
-            YName=GetFieldData.Coordinates.Coord_y;
-            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-            % get the time info
-            TimeTable=get(handles.TimeTable,'Data');
-            switch TimeNameStr
-                case 'file index'
-                    TimeName='';
-                case 'attribute'
-                    TimeName=['att:' GetFieldData.Time.TimeName];
-                    % update the time table
-                    TimeTable{LineIndex,2}=get_time(Param.IndexRange.MinIndex_i(LineIndex),MinIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Min time
-                    TimeTable{LineIndex,3}=get_time(Param.IndexRange.first_i,first_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % first time
-                    TimeTable{LineIndex,4}=get_time(Param.IndexRange.last_i,last_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % last time
-                    TimeTable{LineIndex,5}=get_time(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString,InputTable,SeriesData.FileInfo{LineIndex},GetFieldData.Time.TimeName);  % Max time
-                case 'variable'
-                    TimeName=['var:' GetFieldData.Time.TimeName];
-                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
-                case 'matrix_index'
-                    TimeName=['dim:' GetFieldData.Time.TimeName];
-                    set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
-                    set(handles.FileIndex,'String','')
-                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+            switch GetFieldData.FieldOption
+                case 'vectors'
+                    UName=GetFieldData.PanelVectors.vector_x;
+                    VName=GetFieldData.PanelVectors.vector_y;
+                    YName={GetFieldData.Coordinates.Coord_y};
+                    FieldList={['vec(' UName ',' VName ')'];...
+                        ['norm(' UName ',' VName ')'];...
+                        UName;VName};
+                    set(handles.VelType,'Visible','off')
+                case {'scalar'}
+                    FieldList=GetFieldData.PanelScalar.scalar;
+                    YName={GetFieldData.Coordinates.Coord_y};
+                    if ischar(FieldList)
+                        FieldList={FieldList};
+                    end
+                    set(handles.VelType,'Visible','off')
+                case 'civdata...'
+                    FieldList=[set_field_list('U','V') ;{'C'}];
+                    set(handles.FieldName,'Value',1) % set menu to 'velocity
+                    XName='X';
+                    YName='y';
+                    set(handles.VelType,'Visible','on')
             end
-            TimeTable{LineIndex,1}=TimeName;
-            set(handles.TimeTable,'Data',TimeTable);
+            set(handles.FieldName,'Value',1)
+            set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
+            if ~strcmp(GetFieldData.FieldOption,'civdata...')
+                if ~isempty(regexp(FieldList{1},'^vec', 'once'))
+                    set(handles.FieldName,'Value',1)
+                else
+                    set(handles.FieldName,'Value',1:numel(FieldList))%select all input fields by default
+                end
+                XName=GetFieldData.Coordinates.Coord_x;
+                YName=GetFieldData.Coordinates.Coord_y;
+                TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+                % get the time info
+                TimeTable=get(handles.TimeTable,'Data');
+                switch TimeNameStr
+                    case 'file index'
+                        TimeName='';
+                    case 'attribute'%get_time(FullFileName,FieldType,TimeName)
+                        TimeName=GetFieldData.Time.TimeName;
+                        % update the time table
+                        FullRootFile=fullfile(Param.InputTable{LineIndex,1},Param.InputTable{LineIndex,2},Param.InputTable{LineIndex,3});
+                        FileExt=Param.InputTable{LineIndex,5};
+                        NomType=Param.InputTable{LineIndex,4};
+                        PairString=get(handles.PairString,'Data');
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MinIndex_i(LineIndex),Param.IndexRange.MinIndex_j(LineIndex),PairString);
+                        FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
+                        TimeTable{LineIndex,1}=get_time(FullFileName,'netcdf',TimeName);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,Param.IndexRange.first_j,PairString);
+                        FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
+                        TimeTable{LineIndex,2}=get_time(FullFileName,'netcdf',TimeName);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,Param.IndexRange.last_j,PairString);
+                        FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
+                        TimeTable{LineIndex,3}=get_time(FullFileName,'netcdf',TimeName);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MaxIndex_i(LineIndex),Param.IndexRange.MaxIndex_j(LineIndex),PairString);
+                        FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
+                        TimeTable{LineIndex,4}=get_time(FullFileName,'netcdf',TimeName);
+                        TimeName=['att:' TimeName];
+                    case 'variable'
+                        TimeName=['var:' GetFieldData.Time.TimeName];
+                        ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                    case 'matrix_index'
+                        TimeName=['dim:' GetFieldData.Time.TimeName];
+                        set(handles.NomType,'String','*')
+                        set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                        set(handles.FileIndex,'String','')
+                        ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+                end
+                TimeTable{LineIndex,1}=TimeName;
+                set(handles.TimeTable,'Data',TimeTable);
+            end
+            set(handles.Coord_x,'String',XName)
+            set(handles.Coord_y,'String',YName)
+            set(handles.Coord_x,'Visible','on')
+            set(handles.Coord_y,'Visible','on')
         end
-        set(handles.Coord_x,'String',XName)
-        set(handles.Coord_y,'String',YName)
-        set(handles.Coord_x,'Visible','on')
-        set(handles.Coord_y,'Visible','on')
-        end
-    else
-        msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
+%     else
+%         msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
     end
 end
 
@@ -3011,11 +3048,15 @@ switch FieldType
     case 'civdata'
         [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
         if isempty(errormsg)
-        if Data.CivStage<=3
-                TimeValue=Data.Civ1_Time;
-        else
-                TimeValue=Data.Civ2_Time;
-        end
+            if isfield(Data,'Time')
+                TimeValue=Data.Time;%new convention
+            else
+                if Data.CivStage<=3
+                    TimeValue=Data.Civ1_Time;%old convention
+                else
+                    TimeValue=Data.Civ2_Time;
+                end
+            end
         end
     case 'netcdf'
         [Data,~,~,errormsg]=nc2struct(FullFileName,[]);

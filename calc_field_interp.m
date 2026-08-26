@@ -104,7 +104,8 @@ end
 %% create interpolator for each variable to interpolate
 if exist('XI','var')
     for ilist=1:numel(InputVarList)
-        F.(InputVarList{ilist})=TriScatteredInterp(Coord,Data.(InputVarList{ilist}),'linear');
+        ind_good=find(isfinite(Data.(InputVarList{ilist})));
+        F.(InputVarList{ilist})=TriScatteredInterp(Coord(ind_good,:),Data.(InputVarList{ilist})(ind_good),'linear');
     end
 end
 

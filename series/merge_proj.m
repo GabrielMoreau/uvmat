@@ -341,8 +341,8 @@ for index_i=Index_i_series
         return
     end
     for index_j=Index_j_series
-        
-        OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,index_i,[],index_j);
+        OutputFile=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),FileExtOut,NomTypeOut,index_i,[],index_j);
+        %OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,index_i,[],index_j);
         if ~CheckOverwrite && exist(OutputFile,'file')
             disp(['existing output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists

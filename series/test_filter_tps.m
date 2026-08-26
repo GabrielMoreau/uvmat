@@ -113,7 +113,12 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if isfield(Param.IndexRange,'incr_j')&&~isempty(Param.IndexRange.incr_j)
         incr_j=Param.IndexRange.incr_j;
     end
-    if isempty(first_j)||isempty(last_j)
+    first_j=NaN;last_j=NaN;
+    if isfield(Param.IndexRange,'first_j')&&~isempty(Param.IndexRange.first_j)
+        first_j=Param.IndexRange.first_j;
+        last_j=Param.IndexRange.last_j;
+    end
+    if isnan(first_j)||isnan(last_j)
         nbfield_j=1;
     else
         nbfield_j=numel(first_j:incr_j:last_j);%nb of fields for the j index (bursts or volume slices)
@@ -251,11 +256,15 @@ for iter=1:NbSmooth
         end
         title('subdomains for thin shell splines (tps)')
         if CivStage==3
+            if isfield(Data,'Civ1_Dt')
             DataOut.Civ1_Dt=Data.Civ1_Dt;
             DataOut.Civ1_Time=Data.Civ1_Time;
+            end
         else
+            if isfield(Data,'Civ2_Dt')
             DataOut.Civ2_Dt=Data.Civ2_Dt;
             DataOut.Civ2_Time=Data.Civ2_Time;
+            end
         end
     end
     ind_good=find(FFres==0);

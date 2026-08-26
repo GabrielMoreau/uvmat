@@ -331,10 +331,6 @@ if ~isempty(GeometryCalib) % if calibration is not cancelled
             if ~isempty(find(endsWith(ListDataSeries,'.xml'), 1))
                 msgbox_uvmat('WARNING','select folders in browse_data, not xml files');
             end
-            if ~isempty(find(contains(ListDataSeries,'.'),1))
-                msgbox_uvmat('ERROR','select folders at the root, without dot (.) in the name');
-                return
-            end
             NbErrors=0;
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp

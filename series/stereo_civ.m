@@ -151,50 +151,51 @@ for iview=1:2
         BitDepth{iview}=FileInfo.BitDepth;
     end
 end
+% reference Z position from calibration
+if isfield(XmlData{1},'Slice')
+    Zref=XmlData{1}.Slice.SliceCoord(3);
+    if ~(isfield(XmlData{2},'Slice')&& isequal(XmlData{2}.Slice.SliceCoord(3),Zref))
+        disp('ERROR: inconcistent Z position from ImaDoc xml files')
+        return
+    end
+else
+    disp('ERROR: Z position in ImaDoc xml file')
+        return
+end
 
 
 %% Output directory and data preparation
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
-ListGlobalAttribute={'Conventions','Program','CivStage','Time','Umoy','Vmoy','DUDX','DUDY','DVDX','DVDY'};
-%Data.ListVarName={'Xphys','Yphys','Zphys','C','DX','DY','Error'};%  cell array containing the names of the fields to record;
-Data.ListVarName={'C'};%
-% Data.VarAttribute{1}.Role='coord_x';
-% Data.VarAttribute{2}.Role='coord_y';
-Data.VarAttribute{1}.Role='scalar';
-%Data.VarAttribute{3}.scale_factor=1/inv_scale_factor;
-% Data.VarAttribute{2}.Role='vector_x';
-% %Data.VarAttribute{4}.scale_factor=1/inv_scale_factor;
-% Data.VarAttribute{3}.Role='vector_y';
-%Data.VarAttribute{5}.scale_factor=1/inv_scale_factor;
-Data.VarAttribute{1}.scale_factor=1/100;%scla factor for correlation
-%Data.VarAttribute{7}.Role='scalar';
+ListGlobalAttribute={'Conventions','Program','CivStage','Time','Xshift_mean','Yshift_mean','Zshift_mean'};
+Data.ListVarName={'C','X','Y','U','V','FF','Xphys','Yphys','Zshift','Xshift','Yshift'};
 
 % test for recording the smmoothed data
 CheckSmooth=(Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||(Param.ActionInput.CheckPatch2 && ~Param.ActionInput.CheckCiv3) || Param.ActionInput.CheckPatch3;
-% if Param.ActionInput.CheckTest
+Data.VarAttribute{1}.Role='scalar';
+Data.VarAttribute{1}.scale_factor=1/100;%scla factor for correlation
+Data.VarAttribute{2}.Role='coord_x';
+Data.VarAttribute{3}.Role='coord_y';
+Data.VarAttribute{4}.Role='vector_x';
+Data.VarAttribute{5}.Role='vector_y';
+Data.VarAttribute{6}.Role='errorflag';
+Data.VarAttribute{7}.Role='vector_x';
+Data.VarAttribute{8}.Role='vector_y';
+Data.VarAttribute{9}.Role='scalar';
+Data.VarAttribute{10}.Role='vector_x';
+Data.VarAttribute{11}.Role='vector_y';
+if CheckSmooth
     nbvar=numel(Data.ListVarName);
-    Data.VarAttribute{nbvar+1}.Role='coord_x';
-    Data.VarAttribute{nbvar+2}.Role='coord_y';
-    Data.VarAttribute{nbvar+3}.Role='vector_x';
-    Data.VarAttribute{nbvar+4}.Role='vector_y';
-    Data.VarAttribute{nbvar+5}.Role='errorflag';
-    Data.ListVarName=[Data.ListVarName {'X','Y','U','V','FF','Xphys','Yphys','Zphys','Error'}];
-    if CheckSmooth
-        nbvar=numel(Data.ListVarName);
-        Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
-        Data.VarAttribute{nbvar+1}.Role='vector_x';
-        %   Data.VarAttribute{nbvar+1}.scale_factor=1/inv_scale_factor;
-        Data.VarAttribute{nbvar+2}.Role='vector_y';
-        %  Data.VarAttribute{nbvar+2}.scale_factor=1/inv_scale_factor;
-    end
-% end
+    Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
+    Data.VarAttribute{nbvar+1}.Role='vector_x';
+    Data.VarAttribute{nbvar+2}.Role='vector_y';
+end
 Data.VarDimName=repmat({'nb_vec'},1,numel(Data.ListVarName));
 
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program=mfilename;%gives the name of the current function;
 Data.CivStage=0;%default
-Data.Time=0; %default
+Data.Time=NaN; %default
 par_civ1.MaskName_A='';%default
 par_civ1.MaskName_B='';%default
 
@@ -236,8 +237,8 @@ for index_i=1:numel(i_indices)
         [Npy,Npx]=size(A{1});
 
         %%% record time
-        Data.Time=Time{1}(j_indices(index_j),i_indices(index_i));
-        Time2=Time{2}(j_indices(index_j),i_indices(index_i));
+        Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
+        Time2=Time{2}(j_indices(index_j)+1,i_indices(index_i)+1);
         Dt=Time2-Data.Time;
         if Time2 ~= Data.Time
             disp(['WARNING: the times of the two images differ by ' num2str(Dt)])
@@ -248,7 +249,9 @@ for index_i=1:numel(i_indices)
             A{1} =Param.ActionInput.Maxtanh*tanh(double(A{1})/Param.ActionInput.Maxtanh);
             A{2}=Param.ActionInput.Maxtanh*tanh(double(A{2})/Param.ActionInput.Maxtanh);
         end
-        A{1}=filter2(ones(3,3),A{1});% smoothes the particle images to favor correlations
+
+        %% smoothes the particle images to favor correlations
+        A{1}=filter2(ones(3,3),A{1});
         A{2}=filter2(ones(3,3),A{2});
 
         %% get mask if relevant
@@ -272,7 +275,8 @@ for index_i=1:numel(i_indices)
             end
            
         end
-
+        
+        %% save images in phys coordinates for test mode
         if Param.ActionInput.CheckTest % save images in phys coordinates for test mode
             PhysImageAName=[fullfile(RootPath{1},OutputDir,RootFile{1}) '_' num2str(i_indices(index_i)) '_' num2str(j_indices(index_j)) 'a.png'];
             PhysImageBName=[fullfile(RootPath{1},OutputDir,RootFile{1}) '_' num2str(i_indices(index_i)) '_' num2str(j_indices(index_j)) 'b.png'];
@@ -284,7 +288,7 @@ for index_i=1:numel(i_indices)
         time_patch1=0;
         time_civ2=0;
         time_patch2=0;
-        %%%%%%%%%%%%%%%%%  Civ1  %%%%%%%%%%%%%%%%%
+        %%  Civ1  %%%%%%%%%%%%%%%%%
         if Param.ActionInput.CheckCiv1 && isfield (Param.ActionInput,'Civ1')
             tstart_civ1=tic;
             disp('civ1 started')
@@ -324,7 +328,7 @@ for index_i=1:numel(i_indices)
             if strcmp(Param.RunMode,'cluster')
                 [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
             else
-                [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~,errormsg] = civ (par_civ1);%use parfor loop
+                [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~,errormsg] = parciv (par_civ1);%use parfor loop
             end
             if ~isempty(errormsg)
                 disp_uvmat('ERROR',errormsg,checkrun)
@@ -492,7 +496,7 @@ for index_i=1:numel(i_indices)
             if strcmp(Param.RunMode,'cluster')
                 [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~, errormsg] = civ (par_civ2);% single processor used in cluster
             else
-                [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~, errormsg] = civ (par_civ2);%use parfor loop
+                [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~, errormsg] = parciv (par_civ2);%use parfor loop
             end
             list_param=(fieldnames(Param.ActionInput.Civ2))';
             %list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
@@ -582,10 +586,26 @@ for index_i=1:numel(i_indices)
 
         if Param.ActionInput.CheckCiv3 && isfield (Param.ActionInput,'Civ3')
             par_civ3=Param.ActionInput.Civ3;
-            par_civ3.ImageA=par_civ1.ImageA;
-            par_civ3.ImageB=par_civ1.ImageB;
+            par_civ3.ImageA=A{1};
+            par_civ3.ImageB=A{2};
             par_civ3.ImageWidth=size(par_civ3.ImageA,2);
             par_civ3.ImageHeight=size(par_civ3.ImageA,1);
+
+% 
+%             else% automatic grid
+%                 nbinterv_x=floor((npx_ima-1)/par_civ2.Dx);
+%                 gridlength_x=nbinterv_x*par_civ2.Dx;
+%                 minix=ceil((npx_ima-gridlength_x)/2);
+%                 nbinterv_y=floor((npy_ima-1)/par_civ2.Dy);
+%                 gridlength_y=nbinterv_y*par_civ2.Dy;
+%                 miniy=ceil((npy_ima-gridlength_y)/2);
+%                 [GridX,GridY]=meshgrid(minix:par_civ2.Dx:npx_ima-1,miniy:par_civ2.Dy:npy_ima-1);
+%                 par_civ2.Grid=zeros(numel(GridX),2);
+%                 par_civ2.Grid(:,1)=reshape(GridX,[],1);
+%                 par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
+%             end
+% 
+
 
             % automatic grid
                 minix=floor(par_civ3.Dx/2)-0.5;
@@ -669,7 +689,7 @@ for index_i=1:numel(i_indices)
             for ilist=1:length(ListFixParam)
                 ParamName=ListFixParam{ilist};
                 ListName=['Fix3_' ParamName];
-                eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
+                Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];
                 Data.(ListName)=Param.ActionInput.Fix3.(ParamName);
             end
 
@@ -716,57 +736,24 @@ for index_i=1:numel(i_indices)
             time_patch3=toc(tstart_patch3);
             disp('patch3 performed')
         end
-           if CheckSmooth
-         [Xmid, Ymid, Data.DX, Data.DY, Data.Zphys,Data.Yphys, Data.Xphys, Data.Error] =...
-            getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U_smooth, Data.V_smooth, XmlData);
-           else
-                [Xmid, Ymid, Data.DX, Data.DY, Data.Zphys,Data.Yphys, Data.Xphys, Data.Error] =...
-            getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U, Data.V, XmlData);
-           end
 
-        %rescale results from image mesh to phys coordinates
-%         scale_x=(Rangx(2)-Rangx(1))/(Npx-1);
-%         scale_y=(Rangy(1)-Rangy(2))/(Npy-1);
-%         Data.X=Rangx(1)+scale_x*(Data.X-0.5);
-%         Data.Y=Rangy(2)+scale_y*(Data.Y-0.5);
-%         Data.U=scale_x*Data.U;
-%         Data.V=scale_y*Data.V;
-%         if CheckSmooth
-%             Data.U_smooth=scale_x*Data.U_smooth;
-%             Data.V_smooth=scale_y*Data.V_smooth;
-%         end
+          if CheckSmooth
+         [Xmid, Ymid, Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U_smooth, Data.V_smooth);% transform from pixels to phys coordinates in the ref pla
+           else
+                [Xmid, Ymid,Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U, Data.V);
+           end
+         [Data.Zshift,Data.Xphys,Data.Yphys,Data.Xshift,Data.Yshift]=shift2z(Xmid,Ymid,Uphys,Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytempy
 
         Data.C=uint8(100*Data.C);% rescale to store as integer
-
+ indgood=find(Data.FF==0);
+ indbad=find(Data.FF~=0);
+ Data.Zshift(indbad)=NaN;Data.Xphys(indbad)=NaN;Data.Yphys(indbad)=NaN;Data.Xshift(indbad)=NaN;Data.Yshift(indbad)=NaN;
         % get the best linear fit
-        indgood=find(Data.FF==0);
-        X = [Data.X(indgood), Data.Y(indgood), ones(length(indgood),1)];
-        % Solve for coefficients
-        if CheckSmooth
-            BU = X \ Data.U_smooth(indgood);
-            BV = X \ Data.V_smooth(indgood);
-            Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
-            Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
-            Data.DX=Data.U_smooth-Ufit;
-            Data.DY=Data.V_smooth-Vfit;
-        else
-            BU = X \ Data.U(indgood);
-            BV = X \ Data.V(indgood);
-            Ufit=BU(1)*Data.X+BU(2)*Data.Y+BU(3);
-            Vfit=BV(1)*Data.X+BV(2)*Data.Y+BV(3);
-            Data.DX=Data.U-Ufit;
-            Data.DY=Data.V-Vfit;
-        end
 
-        Data.DX(Data.FF~=0)=NaN;
-        Data.DY(Data.FF~=0)=NaN;
-        Data.Umoy=BU(3);Data.Vmoy=BV(3);
-        Data.DUDX=BU(1);Data.DUDY=BU(2);Data.DVDX=BV(1);Data.DVDY=BV(2);
-
-        % Data.X=uint16(Civ_X);
-        % Data.Y=uint16(Civ_Y);
-        % Data.U=int16(inv_scale_factor*Civ_U);
-        % Data.V=int16(inv_scale_factor*Civ_V);
+        Data.Xshift_mean=mean(Data.Xshift(indgood));
+Data.Yshift_mean=mean(Data.Yshift(indgood));
+Data.Zshift_mean=mean(Data.Zshift(indgood));
+        
 
         %% write result in a netcdf file
         errormsg=struct2nc(OutputFile,Data);
@@ -805,18 +792,34 @@ if isfield (Param,'MinCorr')
 end
 if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
     Umod= U.*U+V.*V;
-    if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
+    if isfield (Param,'MinVel')&&~isempty(Param.MinVel)&&~isnan(Param.MinVel)
         U2Min=Param.MinVel*Param.MinVel;
         FF(Umod<U2Min & FFIn==0)=3;
     end
-    if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
+    if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)&&~isnan(Param.MinVel)
          U2Max=Param.MaxVel*Param.MaxVel;
         FF(Umod>U2Max & FFIn==0)=3;
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% -----------------------------------------------------------------------
+% --- get phys coordinates in the reference plane from the coordinates in pixels
+function [Xmid, Ymid, Uphys, Vphys] ...
+    = getPhysValues(Rangx, Rangy, Npx, Npy, Data_Civ_X, Data_Civ_Y,Data_Civ_U, Data_Civ_V)
+    
+    % get z from u and v (displacements)     
+    Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data_Civ_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
+    Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data_Civ_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
+    Uphys=Data_Civ_U*(Rangx(2)-Rangx(1))/(Npx-1);
+    Vphys=Data_Civ_V*(Rangy(1)-Rangy(2))/(Npy-1);
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [z,Xphy,Yphy,Error]=shift2z(xmid, ymid, u, v,XmlData)
+
+% -----------------------------------------------------------------------
+% --- gives the z coordinate and consitency error from the apparent phys coordinates in the reference plane
+function [z,Xphy,Yphy,Xshift,Yshift]=shift2z(xmid, ymid, u, v,XmlData)
+% -----------------------------------------------------------------------
 z=0;
 error=0;
 
@@ -868,7 +871,7 @@ mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
 mtz=(XmlData{1}.GeometryCalib.Tx_Ty_Tz(1,3)+XmlData{2}.GeometryCalib.Tx_Ty_Tz(1,3))/2;
 
 %Error=(sqrt(mfx^2+mfy^2)/(2*sqrt(2)*mtz)).*(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./sqrt(Den));
-Error=(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./sqrt(Den));
+% Error=(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./sqrt(Den));
 z=((Dxb-Dxa).*(-u)+(Dyb-Dya).*(-v))./Den;
 
 xnew(1,:)=Dxa.*z+x_a;
@@ -877,16 +880,13 @@ ynew(1,:)=Dya.*z+y_a;
 ynew(2,:)=Dyb.*z+y_b;
 Xphy=mean(xnew,1);
 Yphy=mean(ynew,1);
+%%%%%%NEW
+lambda=(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den);
+Xshift=-lambda.*(Dyb-Dya);
+Yshift=lambda.*(Dxb-Dxa);
+ 
+            
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Xmid, Ymid, Uphys, Vphys, Zphys, Yphys, Xphys, Error] ...
-    = getPhysValues(Rangx, Rangy, Npx, Npy, Data_Civ_X, Data_Civ_Y, ...
-    Data_Civ_U_smooth, Data_Civ_V_smooth, XmlData)
-    
-    % get z from u and v (displacements)     
-    Xmid=Rangx(1)+(Rangx(2)-Rangx(1))*(Data_Civ_X-0.5)/(Npx-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-    Ymid=Rangy(2)+(Rangy(1)-Rangy(2))*(Data_Civ_Y-0.5)/(Npy-1);%temporary coordinate (velocity taken at the point middle from imgae 1 and 2)
-    Uphys=Data_Civ_U_smooth*(Rangx(2)-Rangx(1))/(Npx-1);
-    Vphys=Data_Civ_V_smooth*(Rangy(1)-Rangy(2))/(Npy-1);
-    [Zphys,Xphys,Yphys,Error]=shift2z(Xmid,Ymid,Uphys,Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytempy
+
+
 

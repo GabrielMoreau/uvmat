@@ -1344,10 +1344,10 @@ for icell=1:length(CellInfo)
                     coord_Z=coord_Z(indcut);
                 end
             end
-            
+
             % two cases of projection for scattered coordinates
             switch ProjMode{icell}
-                case 'projection'% ptoject scattered data without interpolation
+                case 'projection'% project scattered data without interpolation
                     nbvar=0;
                     %nbvar=numel(ProjData.ListVarName);
                     for ivar=[CellInfo{icell}.CoordIndex CellInfo{icell}.VarIndex] %transfer variables to the projection plane
@@ -1384,47 +1384,52 @@ for icell=1:length(CellInfo)
                         end
                     end
                     % interpolate and calculate field on the grid
-           
-                    [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
-                    if ~isempty(errormsg)
-                        return
-                    end
-                    % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
-                    if exist('scatteredInterpolant','file')%recent Matlab versions
-                        F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
-                        G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
-                    else
-                        F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
-                        G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
-                    end
-                    Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
-                    Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
-                    Dist=Distx.*Distx+Disty.*Disty;
-                    if ~isempty(thresh2)
-                        for ivar=1:numel(VarVal)
-                            VarVal{ivar}(Dist>thresh2)=NaN;% % put to NaN interpolated positions further than thresh2 from initial data
+                    FieldNames=FieldData.ListVarName(CellInfo{icell}.VarIndex_scalar);
+%                     for ilist_scalar=1:numel(FieldNames)
+                        [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,FieldNames,XI,YI);
+                        if ~isempty(errormsg)
+                            return
                         end
-                    end
-                    if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)% subtract from  the previous vector components if requested by CheckSub=true
-                        if isfield(ProjData,FieldData.ListVarName{vector_x_proj})
-                        ProjData.(FieldData.ListVarName{vector_x_proj})=ProjData.(FieldData.ListVarName{vector_x_proj})-VarVal{1};
+                        % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
+                        ind_good=find(isfinite(coord_X));
+                        coord_X=coord_X(ind_good);
+                        coord_Y=coord_Y(ind_good);
+                        if exist('scatteredInterpolant','file')%recent Matlab versions
+                            F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
+                            G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                        else
+                            F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
+                            G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
                         end
-                         if isfield(ProjData,FieldData.ListVarName{vector_y_proj})
-                        ProjData.(FieldData.ListVarName{vector_y_proj})=ProjData.(FieldData.ListVarName{vector_y_proj})-VarVal{2};
-                         end
-                        ListVarName={};% no new variable
-                        VarAttribute={};
-                    else
-                        VarDimName=cell(size(ListVarName));
-                        for ilist=1:numel(ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
-                            ListVarName{ilist}=regexprep(ListVarName{ilist},'(.+','');
-                            if ~isempty(find(strcmp(ListVarName{ilist},ProjData.ListVarName)))
-                                ListVarName{ilist}=[ListVarName{ilist} '_1'];
+                        Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+                        Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                        Dist=Distx.*Distx+Disty.*Disty;
+                        if ~isempty(thresh2)
+                            for ivar=1:numel(VarVal)
+                                VarVal{ivar}(Dist>thresh2)=NaN;% % put to NaN interpolated positions further than thresh2 from initial data
                             end
-                            ProjData.(ListVarName{ilist})=VarVal{ilist};
-                            VarDimName{ilist}={'coord_y','coord_x'};
                         end
-                    end
+                        if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)% subtract from  the previous vector components if requested by CheckSub=true
+                            if isfield(ProjData,FieldData.ListVarName{vector_x_proj})
+                                ProjData.(FieldData.ListVarName{vector_x_proj})=ProjData.(FieldData.ListVarName{vector_x_proj})-VarVal{1};
+                            end
+                            if isfield(ProjData,FieldData.ListVarName{vector_y_proj})
+                                ProjData.(FieldData.ListVarName{vector_y_proj})=ProjData.(FieldData.ListVarName{vector_y_proj})-VarVal{2};
+                            end
+                            ListVarName={};% no new variable
+                            VarAttribute={};
+                        else
+                            VarDimName=cell(size(ListVarName));
+                            for ilist=1:numel(ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
+                                ListVarName{ilist}=regexprep(ListVarName{ilist},'(.+','');
+                                if ~isempty(find(strcmp(ListVarName{ilist},ProjData.ListVarName)))
+                                    ListVarName{ilist}=[ListVarName{ilist} '_1'];
+                                end
+                                ProjData.(ListVarName{ilist})=VarVal{ilist};
+                                VarDimName{ilist}={'coord_y','coord_x'};
+                            end
+                        end
+%                     end
                     if isfield (CellInfo{icell},'VarIndex_vector_x')&& isfield (CellInfo{icell},'VarIndex_vector_y')
                         vector_x_proj=CellInfo{icell}.VarIndex_vector_x; %preserve for next cell
                         vector_y_proj=CellInfo{icell}.VarIndex_vector_y; %preserve for next cell
