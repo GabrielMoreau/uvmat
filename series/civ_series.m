@@ -51,13 +51,14 @@ GUIParam=[];
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
-    % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
-    %App=civ_input_App
-    %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
-    % if isempty(App)
-    %    GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
-    % end
+   % GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    AppData=civ_input_app(Param);% introduce the civ parameters using the GUI civ_input
+    GUIParam.ActionInput=read_app(AppData);
+
+    delete(AppData)
+    if isempty(GUIParam)
+        GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
+    end
     GUIParam.Program=mfilename;%gives the name of the current function
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
@@ -71,11 +72,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-        GUIParam.IndexRange_j='off';%no j index display in series
-    else
-        GUIParam.IndexRange_j='on';% j index display in series if relevant
-    end
+    % if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+    %     GUIParam.IndexRange_j='off';%no j index display in series
+    % else
+    %     GUIParam.IndexRange_j='on';% j index display in series if relevant
+    % end
     return
 end
 
@@ -84,6 +85,9 @@ checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
+else %interactive mode
+    RUNHandle=gcbo;
+    get(RUNHandle,'Tag')
 end
 
 %% test input
@@ -115,25 +119,31 @@ if isfield(Param,'InputTable')
         ref_i_list=ref_i;
         ref_j_list=ones(size(ref_i));
     end
-    iview_B=0;% series index (iview) for the second image series (only non zero for option 'shift' comparing two image series )
     if Param.ActionInput.CheckCiv1
         iview_A=1;% usual PIV, the image series is on the first line of the table
+        iview_nc=[];
     else % Civ1 has been already stored in a netcdf file input
-        iview_A=2;% the second line is used for the input images
+        if strcmp(Param.InputTable{1,5},'.nc')
+            iview_nc=1;
+            iview_A=2;% the second line is used for the input images
+        elseif size(Param.InputTable,1)>=2 && strcmp(Param.InputTable{2,5},'.nc')
+            iview_nc=2;
+            iview_A=1;% the second line is used for the input images
+        else
+            disp_uvmat('ERROR: civ1 result not available',checkrun)
+            return
+        end
     end
     RootPath_A=Param.InputTable{iview_A,1};
     RootFile_A=Param.InputTable{iview_A,3};
     SubDir_A=Param.InputTable{iview_A,2};
     NomType_A=Param.InputTable{iview_A,4};
     FileExt_A=Param.InputTable{iview_A,5};
-    if iview_B==0
-        iview_B=iview_A;% the second image series is the same as the first
-    end
-    RootPath_B=Param.InputTable{iview_B,1};
-    RootFile_B=Param.InputTable{iview_B,3};
-    SubDir_B=Param.InputTable{iview_B,2};
-    NomType_B=Param.InputTable{iview_B,4};
-    FileExt_B=Param.InputTable{iview_B,5};
+    RootPath_B=Param.InputTable{iview_A,1};
+    RootFile_B=Param.InputTable{iview_A,3};
+    SubDir_B=Param.InputTable{iview_A,2};
+    NomType_B=Param.InputTable{iview_A,4};
+    FileExt_B=Param.InputTable{iview_A,5};
     PairCiv2='';
     
     switch Param.ActionInput.ListCompareMode
@@ -229,7 +239,7 @@ end
 
 %% prepare output Data
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
-ListGlobalAttribute={'Conventions','Program','CivStage'};
+ListGlobalAttribute={'Conventions','Program','CivStage','Time','Dt'};
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 if isfield(Param,'UvmatRevision')
@@ -248,10 +258,7 @@ if ~isempty(XmlFileName)
     end
     if isfield(XmlData,'Camera')
         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
-            NbSlice_calib{iview}=XmlData.Camera.NbSlice;% Nbre of slices for Zindex in phys transform
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-            end
+            NbSlice_calib{iview_A}=XmlData.Camera.NbSlice;% Nbre of slices for Zindex in phys transform
         end
         if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
             TimeUnit=XmlData.Camera.TimeUnit;
@@ -290,16 +297,16 @@ for ifield=1:NbField
     else
         RootFileOut=RootFile_A;% reproduce the root name of the input files
     end
+    root_ncfile_out=fullfile(OutputPath,OutputDir,RootFileOut);
     if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+        ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     else
-        ncfile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+        ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
     end
-    ncfile_out=ncfile;% by default
     
-    if isfield (Param.ActionInput,'Civ2')% output ncfile then labeled by civ2 pair
+    if Param.ActionInput.CheckCiv2% output ncfile then labeled by civ2 pair
         i1_civ2=i1_series_Civ2(ifield);
         i2_civ2=i1_civ2;
         if ~isempty(i2_series_Civ2)
@@ -314,10 +321,23 @@ for ifield=1:NbField
             j2_civ2=j2_series_Civ2(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+            ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i1_civ2,i2_civ2,j1_civ2,j2_civ2);
         else % displacement
-            ncfile_out=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
+            ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i2_civ2,[],j2_civ2);
         end
+        if ~isempty(iview_nc)
+            if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+                rootncfile=fullfile(Param.InputTable{iview_nc,1},Param.InputTable{iview_nc,2},Param.InputTable{iview_nc,3});
+            ncfile_in=fullfile_indices(rootncfile,Param.InputTable{iview_nc,5},Param.InputTable{iview_nc,4},i1_civ2,i2_civ2,j1_civ2,j2_civ2);
+        else % displacement
+            ncfile_in=fullfile_indices(rootncfile,Param.InputTable{iview_nc,5},Param.InputTable{iview_nc,4},i2_civ2,[],j2_civ2);
+            end
+        end
+        RootPath_A=Param.InputTable{iview_A,1};
+    RootFile_A=Param.InputTable{iview_A,3};
+    SubDir_A=Param.InputTable{iview_A,2};
+    NomType_A=Param.InputTable{iview_A,4};
+    FileExt_A=Param.InputTable{iview_A,5};
     end
     if ~CheckOverwrite && exist(ncfile_out,'file')% check the existence and validity of the existing output file      
         [~,~,~,errormsg]=nc2struct(ncfile_out,'ListGlobalAttribute','CivStage');
@@ -345,7 +365,8 @@ for ifield=1:NbField
             [RootFile,FrameIndex_A]=index2filename(XmlData.FileSeries,i1_series_Civ1(ifield),j1_series_Civ1(ifield),MaxIndex_j);
             ImageName_A=fullfile(RootPath_A,SubDir_A,RootFile);
         else
-            ImageName_A=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
+            RootName_A=fullfile(RootPath_A,SubDir_A,RootFile_A);
+            ImageName_A=fullfile_indices(RootName_A,FileExt_A,NomType_A,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
             FrameIndex_A=FrameIndex_A_Civ1(ifield);
         end
         if strcmp(FileExt_A,'.nc')% case of input images in format netcdf
@@ -382,9 +403,9 @@ for ifield=1:NbField
         end
         if CheckRelabel
             [RootFile,FrameIndex_B]=index2filename(XmlData.FileSeries,i2_series_Civ1(ifield),j2_series_Civ1(ifield),MaxIndex_j);
-            ImageName_B=fullfile(RootPath_B,SubDir_B,RootFile);
+            ImageName_B=fullfile(RootPath_A,SubDir_A,RootFile);
         else
-            ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
+            ImageName_B=fullfile_indices(RootName_A,FileExt_A,NomType_A,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
             FrameIndex_B=FrameIndex_B_Civ1(ifield);
         end
         if isempty(FileType_B)% determine the image type for the first field
@@ -421,12 +442,13 @@ for ifield=1:NbField
             j2=j2_series_Civ1(ifield);
         end
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Data.Civ1_Time=Time(j2+1,i2_civ1+1);% the Time is the Time of the second image
-            Data.Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+            Data.Time=Time(j2+1,i2_civ1+1);% the Time is the Time of the second image
+            Civ1_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
         else
-            Data.Civ1_Time=(Time(j2+1,i2_civ1+1)+Time(j1+1,i1_civ1+1))/2;% the Time is the Time at the middle of the image pair
-            Data.Civ1_Dt=Time(j2+1,i2_civ1+1)-Time(j1+1,i1_civ1+1);
+            Data.Time=(Time(j2+1,i2_civ1+1)+Time(j1+1,i1_civ1+1))/2;% the Time is the Time at the middle of the image pair
+            Civ1_Dt=Time(j2+1,i2_civ1+1)-Time(j1+1,i1_civ1+1);
         end
+        Data.Dt=Civ1_Dt;% Dt to record in the outfile file, may be later overrid by Civ2 
 
         CheckVolumeScan= strcmp(NomTypeNc,'_1-2_1');
         
@@ -438,40 +460,37 @@ for ifield=1:NbField
         if isfield(Param.ActionInput.Civ1,'NbSlice')
             NbSlice=Param.ActionInput.Civ1.NbSlice;
         end
-        % case of background image to subtract
-        if par_civ1.CheckBackground &&~isempty(par_civ1.CheckBackground)
-            BkgndRootName=Param.ActionInput.Civ1.Background;
-             IndexPeriod=[];
-            if isfield(Param.ActionInput.Civ1,'BkgndPeriod')
-                 IndexPeriod=Param.ActionInput.Civ1.BkgndPeriod;
+
+        % subtract  background image if requested
+        if isfield(Param.ActionInput,'CheckBackground') && Param.ActionInput.CheckBackground
+            BkgndRootName=Param.ActionInput.Background;
+            IndexPeriod=[];
+            if isfield(Param.ActionInput,'BkgndPeriod')
+                 IndexPeriod=Param.ActionInput.BkgndPeriod;
             end
             backgroundname=get_background_name(BkgndRootName,floor((i1_civ1+i2_civ1)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
-            if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ1
-                par_civ1.Background=background; %use background already opened 
-            else          
-                par_civ1.Background=uint16(imread(backgroundname));%update the background, an store it for future use     
-                background=par_civ1.Background;
+            if ~strcmp(backgroundoldname,backgroundname)% background image needs to be read    
+                BackgroundImage=uint16(imread(backgroundname));%update the background, an store it for future use     
                 backgroundoldname=backgroundname;% preserve the name for next iteration (to avoid reading the background image again)
             end
-            par_civ1.ImageA=uint16(par_civ1.ImageA)-par_civ1.Background;% it will be set to 0 if background > image
-            par_civ1.ImageB=uint16(par_civ1.ImageB)-par_civ1.Background;
+            par_civ1.ImageA=uint16(par_civ1.ImageA)-BackgroundImage;% it will be set to 0 if background > image
+            par_civ1.ImageB=uint16(par_civ1.ImageB)-BackgroundImage;
         end
         
-        % case of image luminosity rescaling
-        if par_civ1.CheckRescale &&~isempty(par_civ1.Maxtanh)
-            par_civ1.ImageA =par_civ1.Maxtanh*tanh(double(par_civ1.ImageA)/par_civ1.Maxtanh);
-            par_civ1.ImageB=par_civ1.Maxtanh*tanh(double(par_civ1.ImageB)/par_civ1.Maxtanh);
+        % rescale image luminosity if requested
+        if isfield(Param.ActionInput,'CheckRescale') && Param.ActionInput.CheckRescale
+            par_civ1.ImageA =Param.ActionInput.Maxtanh*tanh(double(par_civ1.ImageA)/Param.ActionInput.Maxtanh);
+            par_civ1.ImageB=Param.ActionInput.Maxtanh.*tanh(double(par_civ1.ImageB)/Param.ActionInput.Maxtanh);
         end    
 
-        % case of mask
-        if par_civ1.CheckMask&&~isempty(par_civ1.Mask)
+        % apply a mask if requested
+        if isfield(Param.ActionInput,'CheckMask') && Param.ActionInput.CheckMask
             if Check_j_Civ1
                 j1=j1_series_Civ1(ifield);
             else
                 j1=[];
-            end
-            
-             MaskRootName=Param.ActionInput.Civ1.Mask;
+            end            
+             MaskRootName=Param.ActionInput.Mask;
             NbSlice=[];
             if isfield(par_civ1,'NbSlice')
                 NbSlice=par_civ1.NbSlice;
@@ -512,20 +531,20 @@ for ifield=1:NbField
         for ilist=1:length(list_param)
             Data.(Civ1_param{5+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
-          if isfield( Data,'Civ1_Background')
-                Data.Civ1_Background=backgroundname;% update with the relevant background used
-            end
+        if isfield( Data,'Civ1_Background')
+            Data.Civ1_Background=backgroundname;% update with the relevant background used
+        end
         Data.ListGlobalAttribute=[ListGlobalAttribute Civ1_param];
         Data.CivStage=1;
-        
-        % caluclate velocity data
+
+        % calculate velocity data
         if strcmp(Param.RunMode,'cluster')
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = civ (par_civ1);% single processor used in cluster
         else
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop
         end
-        Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
-        Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
+        % Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
+        % Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return
@@ -535,7 +554,7 @@ for ifield=1:NbField
     
     
     %% Fix1
-    if isfield (Param.ActionInput,'Fix1')
+    if Param.ActionInput.CheckFix1
         disp('detect_false1 started')
         if ~isfield (Param.ActionInput,'Civ1')% if we use existing Civ1, remove previous data beyond Civ1
             Fix1_attr=find(strcmp('Fix1',Data.ListGlobalAttribute));
@@ -556,7 +575,7 @@ for ifield=1:NbField
         Data.CivStage=2;
     end
     %% Patch1
-    if Param.ActionInput.CheckPatch1 && isfield (Param.ActionInput,'Patch1')
+    if Param.ActionInput.CheckPatch1 
         disp('patch1 started')
         tstart_patch1=tic;
         
@@ -582,7 +601,7 @@ for ifield=1:NbField
         
         % perform Patch calculation using the UVMAT fct 'filter_tps'
         [SubRange,NbCentres,Coord_tps,U_tps,V_tps,~,Ures, Vres,~,FFres]=...
-            filter_tps([Civ_X_shifted(ind_good),Civ_Y_shifted(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
+            filter_tps([Civ_X(ind_good),Civ_Y(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
         Civ_U_smooth=Civ_U;% false vectors kept unchanged
         Civ_V_smooth=Civ_V;
         Civ_U_smooth(ind_good)=Ures;% take the interpolated (smoothed) velocity values for good vectors, keep civ1 data for the other
@@ -593,7 +612,7 @@ for ifield=1:NbField
     end
     
     %% Civ2
-    if isfield (Param.ActionInput,'Civ2')
+    if Param.ActionInput.CheckCiv2
         disp('civ2 started')
         tstart_civ2=tic;
         par_civ2=Param.ActionInput.Civ2;
@@ -605,7 +624,7 @@ for ifield=1:NbField
             [RootFile,FrameIndex_A_2]=index2filename(XmlData.FileSeries,i1_series_Civ2(ifield),j1_series_Civ2(ifield),MaxIndex_j);
             ImageName_A_Civ2=fullfile(RootPath_A,SubDir_A,RootFile);
         else
-            ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
+            ImageName_A_Civ2=fullfile_indices(RootName_A,FileExt_A,NomType_A,i1_civ2,[],j1_civ2);
             FrameIndex_A_2=FrameIndex_A_Civ2(ifield);
         end
         if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A,FrameIndex_A_2)
@@ -619,7 +638,7 @@ for ifield=1:NbField
             [RootFile,FrameIndex_B_2]=index2filename(XmlData.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
             ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,RootFile);
         else
-            ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_civ2,[],j2_civ2);
+            ImageName_B_Civ2=fullfile_indices(RootName_A,FileExt_A,NomType_A,i2_civ2,[],j2_civ2);
             FrameIndex_B_2=FrameIndex_B_Civ2(ifield);
         end
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_2,FrameIndex_B)
@@ -629,7 +648,6 @@ for ifield=1:NbField
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B_Civ2,FileType_B,VideoObject_B,FrameIndex_B_2);
             CheckDuplicate_1to2B=false;
         end
-        %  [FileInfo_A,VideoObject_A]=get_file_info(ImageName_A_Civ2);
         npy_ima=size(par_civ2.ImageA,1);
         npx_ima=size(par_civ2.ImageA,2);
         if par_civ2.CheckGrid &&~isempty(par_civ2.Grid) % case of input grid
@@ -650,16 +668,16 @@ for ifield=1:NbField
         end
         
         %% case of background image to subtract, if images civ2 different from civ1
-        if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && par_civ2.CheckBackground &&~isempty(par_civ2.Background)
+        if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && Param.ActionInput.CheckBackground &&~isempty(Param.ActionInput.Background)
             j1=1;
             if ~isempty(j1_series_Civ2)
                 j1=j1_series_Civ2(ifield);
             end
 
-             BkgndRootName=Param.ActionInput.Civ2.Background;
+             BkgndRootName=Param.ActionInput.Background;
              IndexPeriod=[];
-            if isfield(Param.ActionInput.Civ2,'BkgndPeriod')
-                 IndexPeriod=Param.ActionInput.Civ2.BkgndPeriod;
+            if isfield(Param.ActionInput,'BkgndPeriod')
+                 IndexPeriod=Param.ActionInput.BkgndPeriod;
             end
             NbSlice=[];
             if isfield(par_civ2,'NbSlice')
@@ -668,11 +686,10 @@ for ifield=1:NbField
             CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');
             backgroundname=get_background_name(BkgndRootName,floor((i1_civ2+i2_civ2)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
             
-            if strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
-                par_civ2.Background=background; %use background already opened
-            else
+            if ~strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2              
                 try
-                    par_civ2.Background=uint16(imread(backgroundname));%update the background, an store it for future use
+                    BackgroundImage=uint16(imread(backgroundname));%update the background, an store it for future use
+                    backgroundoldname=backgroundname;
                 catch ME
                     if ~isempty(ME.message)
                         errormsg=['error reading input image: ' ME.message];
@@ -680,30 +697,37 @@ for ifield=1:NbField
                         return
                     end
                 end
-                background=par_civ2.Background;
-                backgroundoldname=backgroundname;
             end
             if ~CheckDuplicate_1to2A
-                par_civ2.ImageA=uint16(par_civ2.ImageA)-par_civ2.Background;
+                par_civ2.ImageA=uint16(par_civ2.ImageA)-BackgroundImage;
             end
             if ~CheckDuplicate_1to2B
-                par_civ2.ImageB=uint16(par_civ2.ImageB)-par_civ2.Background;
+                par_civ2.ImageB=uint16(par_civ2.ImageB)-BackgroundImage;
             end
         end
         
         %% case of image luminosity rescaling
-        if  par_civ2.CheckRescale && ~isempty(par_civ2.Maxtanh)
+        if  Param.ActionInput.CheckRescale && ~isempty(Param.ActionInput.Maxtanh)
             if ~CheckDuplicate_1to2A %if the image A is different from civ1
-                par_civ2.ImageA =par_civ2.Maxtanh*tanh(double(par_civ2.ImageA)/par_civ2.Maxtanh);
+                par_civ2.ImageA =Param.ActionInput.Maxtanh*tanh(double(par_civ2.ImageA)/Param.ActionInput.Maxtanh);
             end
             if ~CheckDuplicate_1to2B % if the image B is different from civ1
-                par_civ2.ImageB=par_civ2.Maxtanh*tanh(double(par_civ2.ImageB)/par_civ2.Maxtanh);
+                par_civ2.ImageB=Param.ActionInput.Maxtanh*tanh(double(par_civ2.ImageB)/Param.ActionInput.Maxtanh);
             end
         end
         
         % get the guess from patch1 or patch2 (case 'CheckCiv3')
-        if iview_A==2 && isfield (par_civ2,'CheckCiv3') && strcmp(par_civ2.CheckCiv3,'iterate(civ3)') %get the guess from  patch2% Civ1 data read in a netcdf file
-            [DataIn,~,~,errormsg]=nc2struct(filecell{1,ifield});%TO UPDATE*******!!!
+        if ~isempty(iview_nc) %get the guess from  patch2% Civ1 data read in a netcdf file
+            PairString='';
+            if isfield(Param.IndexRange,'PairString')
+                PairString=Param.IndexRange.PairString{iview_nc};
+            end
+            [i1,i2,j1,j2] = get_file_index(ref_i_list(ifield),ref_j_list{ifield},PairString);
+            NomType=Param.InputTable{iview_nc,4};
+            FullRootFile=fullfile(Param.InputTable{iview_nc,1},Param.InputTable{iview_nc,2},Param.InputTable{iview_nc,3});
+            FullInputFile=fullfile_indices(FullRootFile,Param.InputTable{iview_nc,5},NomType,i1,i2,j1,j2);
+
+            [DataIn,~,~,errormsg]=nc2struct(FullInputFile);
             if ~isempty(errormsg)
                 disp(errormsg)
                 return
@@ -713,20 +737,20 @@ for ifield=1:NbField
             Coord_tps=DataIn.Civ2_Coord_tps;
             U_tps=DataIn.Civ2_U_tps;
             V_tps=DataIn.Civ2_V_tps;
-            Civ1_Dt=DataIn.Civ2_Dt;
+            Civ1_Dt=DataIn.Dt;
             Data=[];%reinitialise the result structure Data
             Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
             Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
             Data.Program='civ_series';
             Data.ListVarName={};
             Data.VarDimName={};
-        else % get the guess from patch1
-            %             SubRange= Data.Civ_SubRange;
-            %             NbCentres=Data.Civ_NbCentres;
-            %             Coord_tps=Data.Civ_Coord_tps;
-            %             U_tps=Data.Civ_U_tps;
-            %             V_tps=Data.Civ_V_tps;
-            Civ1_Dt=Data.Civ1_Dt;
+            % else % get the guess from patch1
+            %     %             SubRange= Data.Civ_SubRange;
+            %     %             NbCentres=Data.Civ_NbCentres;
+            %     %             Coord_tps=Data.Civ_Coord_tps;
+            %     %             U_tps=Data.Civ_U_tps;
+            %     %             V_tps=Data.Civ_V_tps;
+            %     Civ1_Dt=Data.Civ1_Dt;
         end
         Data.CivStage=4;
         Shiftx=zeros(size(par_civ2.Grid,1),1);% initialise the shift expected from civ1 data
@@ -770,9 +794,9 @@ for ifield=1:NbField
         Shifty(nbval>0)=Shifty(nbval>0)./nbval(nbval>0);
         
         % introduce mask
-        if par_civ2.CheckMask && ~isempty(par_civ2.Mask)
+        if Param.ActionInput.CheckMask && ~isempty(Param.ActionInput.Mask)
             
-             MaskRootName=Param.ActionInput.Civ2.Mask;
+             MaskRootName=Param.ActionInput.Mask;
             NbSlice=[];
             if isfield(par_civ2,'NbSlice')
                 NbSlice=par_civ2.NbSlice;
@@ -805,11 +829,11 @@ for ifield=1:NbField
         
         %% get civ2 correlation parameters
         if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-            Civ1_Dt=1;
             Civ2_Dt=1;
         else
             Civ2_Dt=Time(j2_civ2+1,i2_civ2+1)-Time(j1_civ2+1,i1_civ2+1);
         end
+        Data.Dt=Civ2_Dt; %record Civ2_Dt as Data.Dt
         par_civ2.SearchBoxShift=zeros(size(par_civ2.Grid));
         par_civ2.SearchBoxShift(:,1)=(Civ2_Dt/Civ1_Dt)*Shiftx;%rescale the shift in case of Dt different for Civ1 and Civ2
         par_civ2.SearchBoxShift(:,2)=(Civ2_Dt/Civ1_Dt)*Shifty;
@@ -827,12 +851,12 @@ for ifield=1:NbField
         else
             [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~, errormsg] = parciv (par_civ2);%use parfor loop
         end
-        Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
-        Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
+        % Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
+        % Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         list_param=(fieldnames(Param.ActionInput.Civ2))';
         list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
         Civ2_param1=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
-        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_FrameIndexA','Civ2_FrameIndexB','Civ2_Time','Civ2_Dt'} Civ2_param1]; %insert the names of the two input images
+        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_FrameIndexA','Civ2_FrameIndexB'} Civ2_param1]; %insert the names of the two input images
         %indicate the values of all the global attributes in the output data
         if exist('ImageName_A','var')
             Data.Civ2_ImageA=ImageName_A;
@@ -840,15 +864,15 @@ for ifield=1:NbField
             Data.Civ2_FrameIndexA=FrameIndex_A_2;
             Data.Civ2_FrameIndexB=FrameIndex_B_2;
             if strcmp(Param.ActionInput.ListCompareMode,'displacement')
-                Data.Civ2_Time=Time(j2_civ2+1,i2_civ2+1);% the Time is the Time of the secodn image
-                Data.Civ2_Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
+                Data.Time=Time(j2_civ2+1,i2_civ2+1);% the Time is the Time of the secodn image
+                Data.Dt=1;% Time interval is 1, to yield displacement instead of velocity=displacement/Dt at reading
             else
-                Data.Civ2_Time=(Time(j2_civ2+1,i2_civ2+1)+Time(j1_civ2+1,i1_civ2+1))/2;
-                Data.Civ2_Dt=Civ2_Dt;
+                Data.Time=(Time(j2_civ2+1,i2_civ2+1)+Time(j1_civ2+1,i1_civ2+1))/2;
+                % Data.Civ2_Dt=Civ2_Dt;
             end
         end
         for ilist=1:length(list_param)
-            Data.(Civ2_param{6+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
+            Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
          if isfield( Data,'Civ2_Background')
@@ -869,7 +893,7 @@ for ifield=1:NbField
     end
     
     %% Fix2
-    if (Param.ActionInput.CheckFix2 && isfield (Param.ActionInput,'Fix2'))||(Param.ActionInput.CheckPatch2 && isfield (Param.ActionInput,'Patch2'))%% if Fix2 computation is requested
+    if Param.ActionInput.CheckFix2 % if Fix2 computation is requested
         disp('detect_false2 started')
         list_param=fieldnames(Param.ActionInput.Fix2)';
         Fix2_param=regexprep(list_param,'^.+','Fix2_$0');% insert 'Fix1_' before  each string in ListFixParam
@@ -883,7 +907,7 @@ for ifield=1:NbField
     end
     
     %% Patch2
-    if Param.ActionInput.CheckPatch2 && isfield (Param.ActionInput,'Patch2')% if Patch2 computation is requested
+    if Param.ActionInput.CheckPatch2 % if Patch2 computation is requested
         
         disp('patch2 started')
         tstart_patch2=tic;
@@ -907,7 +931,7 @@ for ifield=1:NbField
         end
         
         [Civ_SubRange,Civ_NbCentres,Civ_Coord_tps,Civ_U_tps,Civ_V_tps,~,Ures,Vres,~,FFres]=...
-            filter_tps([Civ_X_shifted(ind_good) Civ_Y_shifted(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
+            filter_tps([Civ_X(ind_good) Civ_Y(ind_good)],Civ_U(ind_good),Civ_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
         Civ_U_smooth=Civ_U;% keep the false vectors unchanged
         Civ_V_smooth=Civ_V;
         Civ_U_smooth(ind_good)=Ures;

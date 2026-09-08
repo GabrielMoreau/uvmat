@@ -95,14 +95,14 @@ switch FileExt
             FileInfo.Height=size(Image,2);
             FileInfo.Width=size(Image,1);
             FileInfo.TimeName='timestamp';
-%             for ilist=1:numel(Input.Attributes)
-                % if strcmp(Input.Attributes{ilist}.Name,'_Date')
-                %     DateString=Input.Attributes{ilist}.Value;
-                % end
-                % if strcmp(Input.Attributes{ilist}.Name,'_Time')
-                %     TimeString=Input.Attributes{ilist}.Value;
-                % end
-%             end
+            %             for ilist=1:numel(Input.Attributes)
+            % if strcmp(Input.Attributes{ilist}.Name,'_Date')
+            %     DateString=Input.Attributes{ilist}.Value;
+            % end
+            % if strcmp(Input.Attributes{ilist}.Name,'_Time')
+            %     TimeString=Input.Attributes{ilist}.Value;
+            % end
+            %             end
         catch ME
             msgbox_uvmat('ERROR',{ME.message;'reading image from DaVis is not possible with this Matlab version and system'})
             return
@@ -154,14 +154,14 @@ switch FileExt
         FileInfo.NumberOfFrames=1;
         FileInfo.BitDepth=8;
         %pyenv('Version', '/usr/bin/python3')
-system('pip install rawpy')
-pyrun('import rawpy')
-pyrun('print ("python loaded")')
-%pyrun('importlib.import_module(''rawpy'')')
-pyrun(['filename=''' FileName '''' ])
-resu=pyrun('siz=rawpy.imread(filename).sizes','siz');
-FileInfo.Width=double(resu.width);
-FileInfo.Height=double(resu.height);
+        system('pip install rawpy')
+        pyrun('import rawpy')
+        pyrun('print ("python loaded")')
+        %pyrun('importlib.import_module(''rawpy'')')
+        pyrun(['filename=''' FileName '''' ])
+        resu=pyrun('siz=rawpy.imread(filename).sizes','siz');
+        FileInfo.Width=double(resu.width);
+        FileInfo.Height=double(resu.height);
     otherwise
         if ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
@@ -185,7 +185,7 @@ FileInfo.Height=double(resu.height);
                     catch ME
                         FileInfo.error=ME.message;
                     end
-                    
+
                 else
                     error_nc=0;
                     try %try netcdf file
@@ -198,6 +198,15 @@ FileInfo.Height=double(resu.height);
                                     FileInfo.FileType='civdata_compress'; % test for civ velocity fields
                                 end
                                 FileInfo.CivStage=Data.CivStage;
+                                if isfield(Data,'Time')% new convention
+                                    FileInfo.TimeName='Time';
+                                else
+                                    if Data.CivStage<=3
+                                        FileInfo.TimeName='Civ1_Time';
+                                    else
+                                        FileInfo.TimeName='Civ2_Time';
+                                    end
+                                end
                                 MaskFile='';
                                 if isfield(Data,'Civ2_Mask')
                                     MaskFile=Data.Civ2_Mask;
@@ -269,7 +278,7 @@ FileInfo.FieldType=FileInfo.FileType;%default
 switch FileInfo.FileType
     case {'image','multimage','video','rdvision','image_DaVis','cine_phantom','telopsIR','iiq'}
         FileInfo.FieldType='image';
-    case {'civdata','civdata_compress','pivdata_fluidimage'}
+    case {'civdata','civdata_compress','civdata_3D','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';
 end
 

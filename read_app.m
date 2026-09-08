@@ -39,35 +39,45 @@ for ilist=1:numel(ListProperties)
     UIType=get(AppData.(ListProperties{ilist}),'Type');
     if ~isempty(UIType) && strcmp(AppData.(ListProperties{ilist}).Visible,'on')% scan the visible GUI elements
         UITag=get(AppData.(ListProperties{ilist}),'Tag');
-        if (strcmp(UIType,'uieditfield')||strcmp(UIType,'uinumericeditfield')||strcmp(UIType,'uicheckbox'))...
-                && ~isempty(UITag)
-            UIValue=get(AppData.(ListProperties{ilist}),'Value');% input string
-             num_index=[];
-            if ~isempty(regexp(UITag,'^num_', 'once'))% numerical input
-                UIValue=str2double(UIValue);
-                UITag=regexprep(UITag,'^num_','');%remove the prefix 'num_'
-                % detect tag name ending by an index: then interpret the input as array(index)      
-                r=regexp(UITag,'_(?<index>\d+)$','names');% detect tag name ending by an index
-                if ~isempty(r)
-                    UITag=regexprep(UITag,['_' r.index '$'],'');
-                    num_index=str2double(r.index);
-                end
+        if ~isempty(UITag)
+            UIValue=[];
+            num_index=[];
+            switch UIType
+                case {'uieditfield','uinumericeditfield','uicheckbox','uilistbox','uidropdown'}
+
+                    UIValue=get(AppData.(ListProperties{ilist}),'Value');% input string
+                    if ~isempty(regexp(UITag,'^num_', 'once'))% numerical input
+                        UIValue=str2double(UIValue);
+                        UITag=regexprep(UITag,'^num_','');%remove the prefix 'num_'
+                        % detect tag name ending by an index: then interpret the input as array(index)
+                        r=regexp(UITag,'_(?<index>\d+)$','names');% detect tag name ending by an index
+                        if ~isempty(r)
+                            UITag=regexprep(UITag,['_' r.index '$'],'');
+                            num_index=str2double(r.index);
+                        end
+                    end
+                     % case {'uilistbox','uidropdown'}
+                     %     AppData.(ListProperties{ilist})
+                otherwise
+                    UIType;
             end
             parent_object=get(AppData.(ListProperties{ilist}),'Parent');
-            if strcmp(get( parent_object,'Type'),'uipanel')
-                if strcmp(get(parent_object,'Visible'),'on')
-                    PanelTag=get(parent_object,'Tag');
-                    if isempty(num_index)
-                        Data.(PanelTag).(UITag)=UIValue;
-                    else
-                        Data.(PanelTag).(UITag)(num_index)=UIValue;
+            if ~isempty(UIValue)
+                if strcmp(get( parent_object,'Type'),'uipanel')
+                    if strcmp(get(parent_object,'Visible'),'on')
+                        PanelTag=get(parent_object,'Tag');
+                        if isempty(num_index)
+                            Data.(PanelTag).(UITag)=UIValue;
+                        else
+                            Data.(PanelTag).(UITag)(num_index)=UIValue;
+                        end
                     end
-                end
-            else
-                if isempty(num_index)
-                    Data.(UITag)=UIValue;
                 else
-                    Data.(UITag)(num_index)=UIValue;
+                    if isempty(num_index)
+                        Data.(UITag)=UIValue;
+                    else
+                        Data.(UITag)(num_index)=UIValue;
+                    end
                 end
             end
         end

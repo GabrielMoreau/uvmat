@@ -687,6 +687,20 @@ if numel(TimeTable)>nbview
 set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
 end
 
+SeriesData=get(handles.series,'UserData');
+if numel(SeriesData.ref_i_list)>nbview
+    SeriesData.ref_i_list= SeriesData.ref_i_list(1:nbview);
+    SeriesData.ref_i_list= SeriesData.ref_i_list(1:nbview);
+    SeriesData.i1_list= SeriesData.i1_list(1:nbview);
+    SeriesData.i2_list= SeriesData.i2_list(1:nbview);
+    SeriesData.j1_list= SeriesData.j1_list(1:nbview);
+    SeriesData.j2_list= SeriesData.j2_list(1:nbview);
+    SeriesData.FileInfo= SeriesData.FileInfo(1:nbview);
+    SeriesData.Time= SeriesData.Time(1:nbview);
+    SeriesData.TimeName= SeriesData.TimeName(1:nbview);
+    set(handles.series,'UserData',SeriesData)
+end
+
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
@@ -816,7 +830,7 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
-if isfield(SeriesData,'i1_series')% remove the irrelevant data lines beyond iview in SeriesData
+if isfield(SeriesData,'ref_i_list')% remove the irrelevant data lines beyond iview in SeriesData
     SeriesData.ref_i_list(iview+1:end)=[];
     SeriesData.i1_list(iview+1:end)=[];
     SeriesData.i2_list(iview+1:end)=[];
@@ -909,7 +923,7 @@ end
 
 %update the output path if needed
 if ~(isfield(SeriesData,'InputPath') && strcmp(SeriesData.InputPath,InputPath))
-    if get(handles.OutputPathBrowse,'Value')==1  % fix the output path in manual modei1_series
+    if get(handles.OutputPathBrowse,'Value')==1  % fix the output path in manual mode
         OutputPathOld=get(handles.OutputPath,'String');
         OutputPath=uigetdir(OutputPathOld,'pick a root folder for output data');
         set(handles.OutputPath,'String',OutputPath)
@@ -1121,11 +1135,11 @@ if ~Param.Relabel && isfield(Param.FileInfo,'FrameRate') && isfield(Param.FileIn
     end
     TimeName='video';
 elseif strcmp(Param.FileInfo.FieldType,'civdata')
-    if Param.FileInfo.CivStage<=3
-        TimeName='Civ1_Time';
-    else
-        TimeName='Civ2_Time';
-    end
+    TimeName=Param.FileInfo.TimeName;
+    %     TimeName='Civ1_Time';
+    % else
+    %     TimeName='Civ2_Time';
+    % end
     [i1,i2,j1,j2] = get_file_index(MinIndex_i,MinIndex_j,PairString);
     if isfield(Param,'InputFile')
         Param.FilePath=fullfile(Param.InputFile.RootPath,Param.InputFile.SubDir);
@@ -3045,20 +3059,20 @@ function TimeValue=get_time(FullFileName,FieldType,TimeName)
 %------------------------------------------------------------------------
 TimeValue=NaN;
 switch FieldType
-    case 'civdata'
-        [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
-        if isempty(errormsg)
-            if isfield(Data,'Time')
-                TimeValue=Data.Time;%new convention
-            else
-                if Data.CivStage<=3
-                    TimeValue=Data.Civ1_Time;%old convention
-                else
-                    TimeValue=Data.Civ2_Time;
-                end
-            end
-        end
-    case 'netcdf'
+    % case 'civdata'
+    %     [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
+    %     if isempty(errormsg)
+    %         if isfield(Data,'Time')
+    %             TimeValue=Data.Time;%new convention
+    %         else
+    %             if Data.CivStage<=3
+    %                 TimeValue=Data.Civ1_Time;%old convention
+    %             else
+    %                 TimeValue=Data.Civ2_Time;
+    %             end
+    %         end
+    %     end
+    case { 'civdata','netcdf'}
         [Data,~,~,errormsg]=nc2struct(FullFileName,[]);
         if isempty(errormsg) && ~isempty(TimeName)&& isfield(Data,TimeName)
             TimeValue=Data.(TimeName);
@@ -3477,6 +3491,7 @@ else
     set(handles.DeleteObject,'Visible','off')
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magenta to indicate that it should be activated
+msgbox_uvmat('CONFIMATION','Processing parameters entered, now REFRESH the input file series')
 
 
 %------------------------------------------------------------------------
@@ -3823,7 +3838,6 @@ end
 
 %% update the menu ListPair
 Menu=update_listpair(SeriesData.i1_list{iview},SeriesData.i2_list{iview},SeriesData.j1_list{iview},SeriesData.j2_list{iview},mode);
-%Menu=update_listpair(i1_series,i2_series,j1_series,j2_series,mode,SeriesData.Time{iview},TimeUnit,ref_i,ref_j,SeriesData.FileInfo);
 hlist_pairs=findobj(get(hObject,'parent'),'Tag','ListPair');
 set(hlist_pairs,'Value',1)% set the first choice by default in ListPair
 set(hlist_pairs,'String',Menu)% set the menu in ListPair
@@ -3876,7 +3890,7 @@ clear_table(handles.MinIndex_i,iline)
 clear_table(handles.MaxIndex_i,iline)
 clear_table(handles.MinIndex_j,iline)
 clear_table(handles.MaxIndex_j,iline)
-set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refr
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate the need for input refresh
 
 %------------------------------------------------------------------------
 function clear_table(handle,iline)

@@ -72,7 +72,9 @@ if isfield(FigData,'CivHandle')% look for handle of the civ_input GUI
         set(hCurrentFig,'Pointer','arrow');
         return
     end
-    hhciv=guidata(FigData.CivHandle);% list of handles in the GUI civ_input
+  %get(FigData.CivHandle)
+   % hhciv=guidata(FigData.CivHandle);% list of handles in the GUI civ_input
+   CivParam=read_app(get(FigData.CivHandle,'RunningAppInstance'));
     test_piv=1;
 end
 %find the current axe 'CurrentAxes' and display the current mouse position or uicontrol tag
@@ -241,7 +243,7 @@ if strcmp(htype,'axes')
             if test_piv
                [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
                    Param.CheckCiv2=0;
-                   par_civ=read_GUI(hhciv.Civ1);%read the Civ1 panel in civ_input
+                   par_civ=CivParam.Civ1;%read the Civ1 panel in civ_input
                    shiftx=par_civ.SearchBoxShift(1);
                    shifty=par_civ.SearchBoxShift(2);
                 xround=Field.X(ind_pt);
