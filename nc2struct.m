@@ -141,7 +141,7 @@ for iatt=1:ngatts
         keystr(1)=[];
     end
     try
-        if ischar(valuestr) %& length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
+        if ischar(valuestr) 
             Data.(keystr)=valuestr;
         elseif isnumeric(valuestr)
             Data.(keystr)=valuestr;

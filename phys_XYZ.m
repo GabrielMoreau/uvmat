@@ -156,4 +156,10 @@ else
     Xphys=-Calib.Tx_Ty_Tz(1)+X/Calib.fx_fy(1);
     Yphys=-Calib.Tx_Ty_Tz(2)+Y/Calib.fx_fy(2);
 end
-
+%make polynomial correction if relevant
+if isfield(Calib,'Polyfit_y')
+   Yphys= Yphys-polyval(Calib.Polyfit_y,Xphys);
+end
+if isfield(Calib,'Polyfit_x')
+   Xphys= Xphys-polyval(Calib.Polyfit_x,Xphys);
+end

@@ -1,4 +1,6 @@
 %'civ2vel_3C': combine the civ velocity fields from two cameras to get three velocity components
+% if a file from stereo_civ is introduced at the second line, a correction
+% to the calibration is applied to insure optimal image matching
 %------------------------------------------------------------------------
 % function GUIParam=civ2vel_3C(Param)
 %
@@ -109,14 +111,13 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 GUIParam=[]; %default output
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    checkrun=0;
+    checkrun=false;
+else
+     checkrun=true;
+     RUNHandle=gcbo; %handle of the button RUN in GUI series
 end
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-
 
 %% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
@@ -190,10 +191,10 @@ CheckZ=(NbView>2);% check the existence of a Z field
 OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 RootFileOut='field';
-if ~(isfield(Param.IndexRange,'MaxIndex_j') && (Param.IndexRange.MaxIndex_j-Param.IndexRange.MinIndex_j>0))
-    NomTypeOut='_1';
-else
+if isfield(Param.IndexRange,'MaxIndex_j') && (Param.IndexRange.MaxIndex_j(1)-Param.IndexRange.MinIndex_j(1)>0)
     NomTypeOut='_1_1';
+else
+    NomTypeOut='_1';
 end
 
 %% Prepare the output field structure
@@ -252,7 +253,7 @@ end
 
 %%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
 for index_i=Index_i_series
-    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end

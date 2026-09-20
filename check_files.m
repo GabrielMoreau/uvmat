@@ -206,8 +206,7 @@ if CheckSeries
         'calc_background';... %calculate image background by sorting luminosity in sub-series blocks
         'check_data_files';...% check the existence, type and status of the input data files selected by the GUI series
         'civ2vel_3C';... %combine the civ velocity fields from two cameras to get three velocity components
-        'civ_input.fig';...
-        'civ_input';...%function associated with the GUI 'civ_input.fig' to set the input parameters for civ_series
+        'civ_input_app.mlapp';...%function associated with the GUI 'civ_input.fig' to set the input parameters for civ_series
         'merge_proj';...% concatene several fields from series, can project them on a regular grid in phys coordinates
         'time_series'...% extract a time series after projection on an object (points , line..)
         };

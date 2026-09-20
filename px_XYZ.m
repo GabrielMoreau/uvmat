@@ -39,6 +39,14 @@ if ~isfield(Calib,'Tx_Ty_Tz')
      Calib.Tx_Ty_Tz=[0 0 1];
 end
 
+%make polynomial correction on phys coordinates if relevant
+if isfield(Calib,'Polyfit_y')
+   Yphys= Yphys+polyval(Calib.Polyfit_y,Xphys);
+end
+if isfield(Calib,'Polyfit_x')
+   Xphys= Xphys+polyval(Calib.Polyfit_x,Xphys);
+end
+
 %%%%%%%%%%%%%
 if isempty(Slice)
     Slice=Calib;% old convention (< 2022)

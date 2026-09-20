@@ -131,15 +131,12 @@ end
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
 ParamOut=[];%default output
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
-    WaitbarHandle=[];
-else
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+else %interactive mode
+    RUNHandle=gcbo;%handler of the button RUN in the GUI series
+    checkrun=1;
 end
 
 %% define the directory for result file (with path=RootPath{1})
@@ -291,7 +288,7 @@ for islice=index_j
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_series+index_j(islice)-index_j(1)
-        if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        if checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             break
         end

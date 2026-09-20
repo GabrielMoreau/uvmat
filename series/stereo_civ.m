@@ -236,6 +236,8 @@ for index_i=1:numel(i_indices)
         [A,Rangx,Rangy]=phys_ima(A,XmlData,Param.ActionInput.resolution);%transform images A{1} and A{2} in phys coordinates on a common pixel grid
         [Npy,Npx]=size(A{1});
 
+        
+
         %%% record time
         Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
         Time2=Time{2}(j_indices(index_j)+1,i_indices(index_i)+1);
@@ -887,6 +889,24 @@ Yshift=lambda.*(Dxb-Dxa);
  
             
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function iy=get_max(a)% get the max with sub pixel resolution
+a_max=max(a);
+[Nby,Nbx]=size(a);
+iy=zeros(1,Nbx);
+for ind_x=1:Nbx
+    iy_range=find(a(:,ind_x)==a_max(ind_x));
+    iy(ind_x)=0.5*(iy_range(1)+iy_range(end));
+    iy_min=iy_range(1)-1;
+    iy_plus=iy_range(end)+1;
+    if iy_min>=1 && iy_plus<=Nby
+        a_plus=a(iy_plus,ind_x);
+        a_min=a(iy_min,ind_x);
+        denom=2*a_max(ind_x)-a_plus-a_min;
+        if denom >0
+            iy(ind_x)=iy(ind_x)+0.5*(a_plus-a_min)/denom;%adjust the position of the max with a quadratic fit of the three points around the max
+        end
+    end
+end
 
 
