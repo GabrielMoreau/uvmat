@@ -281,8 +281,11 @@ if  ~isempty(ListVarName)
 %            xtype(var_index(ivar))
             Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
         end   
-        %rescale according to scale factor
+        %rescale according to scale factor iin case of storage as integer
         if isfield(Data,'VarAttribute') && numel(Data.VarAttribute)>=ivar && isfield(Data.VarAttribute{ivar},'scale_factor')
+           if xtype(var_index)==3 %(in16 array)
+               detect_nan=find(Data.(VarName)==intmax('int16'));
+           end
             Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
         end
         if xtype(var_index(ivar))==5 %single precision
@@ -290,7 +293,7 @@ if  ~isempty(ListVarName)
         end
     end
 end
-Data.VarType=xtype(var_index);
+Data.VarType=xtype(var_index);%=1 for int8 data, 2 for uint8 data, 3 for int16 data, 4 for uint16 data, 5 for single precision (16 bit) float
 
 %%  -------- close fle-----------
 if testfile==1

@@ -100,7 +100,7 @@ else
 end
 
 %% File relabeling documented by the xml file
-CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO);
+CheckRelabel_GUI=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO);
 
 %% Input file info
 for iview=1:2
@@ -120,12 +120,14 @@ for iview=1:2
         end
     end
 
-    if CheckRelabel
-        [FileName,frame_index]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
+    if CheckRelabel_GUI && isfield(XmlData{iview},'FileSeries')
+        [FileName,frame_index{iview}]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
         FirstFileName=fullfile(RootPath{iview},SubDir{iview},FileName);
         FileInfo=get_file_info(FirstFileName);
         FileType{iview}=FileInfo.FileType;
+        CheckRelabel{iview}=true;
     else
+        CheckRelabel{iview}=false;
         FirstFileName=fullfile_indices(fullfile(RootPath{iview},SubDir{iview},RootFile{iview}),FileExt{iview},NomType{iview},Param.IndexRange.first_i,[],j_indices(1));%get first file name
         [FileInfo,MovieObject{iview}]=get_file_info(FirstFileName);
         FileType{iview}=FileInfo.FileType;
@@ -218,14 +220,17 @@ for index_i=1:numel(i_indices)
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
         tstart=tic;
-        if CheckRelabel
+        if CheckRelabel{1}
             [ImageName_A,FrameIndex_A]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
             ImageName_A=fullfile(RootPath{1},SubDir{1},ImageName_A);% include path
-            [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
-            ImageName_B=fullfile(RootPath{2},SubDir{2},ImageName_B);% include path
         else
             ImageName_A=fullfile_indices(fullfile(RootPath{1},SubDir{1},RootFile{1}),FileExt{1},NomType{1},i_indices(index_i),[],j_indices(index_j))
-            FrameIndex_A=frame_index{1}(index_j,index_i);
+            FrameIndex_A=frame_index{1}(index_j,index_i); 
+        end
+        if CheckRelabel{2}  
+              [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
+            ImageName_B=fullfile(RootPath{1},SubDir{1},ImageName_B);% include path
+        else
             ImageName_B=fullfile_indices(fullfile(RootPath{2},SubDir{2},RootFile{2}),FileExt{2},NomType{2},i_indices(index_i),[],j_indices(index_j))
             FrameIndex_B=frame_index{2}(index_j,index_i);
         end

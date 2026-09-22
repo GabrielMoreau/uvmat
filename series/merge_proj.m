@@ -115,13 +115,12 @@ GUIParam=[]; %default output
 RUNHandle=[];
 
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    checkrun=0;
+    checkrun=false;
 else
-    hseries=findobj(allchild(0),'Tag','series');
-    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+    RUNHandle=gcbo; % handle of the button RUN in the GUI series
+    checkrun='true';
 end
 
 %% Input file info
@@ -328,13 +327,15 @@ OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Dev
 CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO)
 
 
-%% MAIN LOOP ON FIELDS INDICES
+%% List of field indices
 Index_i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 if isfield(Param.IndexRange,'last_j')
     Index_j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 else
     Index_j_series=1;
 end
+
+%% MAIN LOOP ON FIELDS INDICES
 for index_i=Index_i_series
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')

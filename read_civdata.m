@@ -111,6 +111,8 @@ else
         [Field,vardetect,~,errormsg]=nc2struct(FileName,varlist);%read the variables in the netcdf file
     end
 end
+Field.X=double(Field.X);
+Field.Y=double(Field.Y);
 if ~isempty(errormsg)
      errormsg=['read_civdata: ' errormsg];
     return

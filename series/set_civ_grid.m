@@ -172,17 +172,19 @@ PosWall2=PosWall2/NbFile;% mean  position variance of the laser impact
 PosStd=sqrt(PosWall2-PosMean.*PosMean); % standard deviation of the laser impact
 
 %% PIV grid
-corr_box_area=500;% area of the correlation boxes in pixel^2
+
 Dy=[2:10 repmat(10,1,100)];% set of y intervals between correlation boxes
-corr_box_y=2*Dy-1;% correlation box size along y 
-corr_box_area=corr_box_area*ones(size(corr_box_y));% corr_box area repeated as a vector array
+ycentr=cumsum(Dy);% set of y positions for the box centres with respect to the laser impact
+corr_box_area=500+(30/Npy)*(30/Npy)*ycentr.*ycentr;% area of the correlation boxes in pixel^2, increasing with distance to the wall
+corr_box_y=2*Dy-1+floor((15/Npy)*ycentr);% correlation box size along y 
+%corr_box_area=corr_box_area*ones(size(corr_box_y));% corr_box area repeated as a vector array
 corr_box_x=round(corr_box_area./corr_box_y);% size along x of the correlation boxes
 Dx=10;
 nbinterv_x=floor((Npx-1)/Dx);%expected number of intervals Dx
 gridlength_x=nbinterv_x*Dx;
 minix=ceil((Npx-gridlength_x)/2);
 x_ctre=minix+1:Dx:Npx;% ctres of the corrbox along x
-GridY=cumsum(Dy')*ones(1,numel(x_ctre))+ones(numel(Dy),1)*PosMean(x_ctre);% position in y of the box centres
+GridY=ycentr'*ones(1,numel(x_ctre))+ones(numel(Dy),1)*PosMean(x_ctre);% position in y of the box centres
 GridX=ones(numel(Dy),1)*x_ctre;
 GridX=reshape(GridX,[],1);
 GridY=reshape(GridY,[],1);
@@ -220,7 +222,10 @@ figure(4)
 plot(Data.CorrBoxSize(:,2),Data.Grid(:,2),'.')
 ylabel('y (pixels)')
 xlabel('CorrBoxSize along y (pixels)')
-
+figure(5)
+plot(Data.CorrBoxSize(:,2)./Data.CorrBoxSize(:,1),Data.Grid(:,2),'.')
+ylabel('y (pixels)')
+xlabel('aspect ratio corr box')
 %% make the calibration correction
 XmlFileName=find_imadoc(Param.InputTable{1,1},Param.InputTable{1,2});
 if ~isempty(XmlFileName)
@@ -231,7 +236,7 @@ if ~isempty(XmlFileName)
     end
 end
 [Xphys,Yphys]=phys_XYZ(XmlData.GeometryCalib,XmlData.Slice,1:Npx,PosMean);
-figure(5)
+figure(6)
 plot(Xphys,Yphys)
 P= polyfit(Xphys,Yphys,3);
 hold on

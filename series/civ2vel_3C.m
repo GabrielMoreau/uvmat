@@ -11,7 +11,8 @@
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
 % In batch mode, Param is the name of the corresponding xml file containing the same information
 % when Param.Action.RUN=0 (as activated when the current Action is selected
-% in series), the function ouput paramOut set the activation of the needed GUI elements
+% in series), the function ouput paramOut set the activation of the needed
+% GUI elementcale
 %
 % Param contains the elements:(use the menu bar command 'export/GUI config' in series to
 % see the current structure Param)
@@ -126,7 +127,6 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
-%[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 NbView=size(Param.InputTable,1);
 for iview=1:NbView
     XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2});
@@ -216,7 +216,7 @@ MergeData.VarAttribute{4}.Role='vector_y';
 MergeData.VarAttribute{5}.Role='vector_z';
 MergeData.VarAttribute{6}.Role='ancillary';
 MergeData.VarAttribute{6}.units='pixel'; %error estimate expressed in pixel
-MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 10000 to get an integer
+MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 1000 to get an integer
 if CheckZ
     nbvar=numel(MergeData.ListVarName);
     MergeData.ListVarName=[MergeData.ListVarName {'Z'}];
@@ -260,7 +260,6 @@ for index_i=Index_i_series
     for index_j=Index_j_series
         %% generating the name of the merged field
         OutputFile=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.nc',NomTypeOut,index_i,[],index_j);
-        % OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,'.nc',NomTypeOut,index_i,[],index_j);
         if ~CheckOverwrite && exist(OutputFile,'file')
             disp(['existing output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
@@ -300,12 +299,7 @@ for index_i=Index_i_series
             end
         end
 
-        %get Xphys,Yphys,Zphys from 1 or 2 stereo folders. Positions are taken
-        %at the middle between to time step
-
         ZI=Zref*ones(size(XI,1),size(XI,2));
-
-
 
         %% get the Zshift field from stereo_piv (to check and update)
 
@@ -344,33 +338,33 @@ for index_i=Index_i_series
         end
         MergeData.Z=ZI;
 
-        %remove wrong vector
+        %remove wrong vector from first field
         if isfield(Data{1},'FF') % FF is present, remove wrong vector
-                ind_good=find(Data{1}.FF==0);
-            else
-                ind_good=1:numel(Data{1}.X);
+            ind_good=find(Data{1}.FF==0);
+        else
+            ind_good=1:numel(Data{1}.X);
         end
-            X1=Data{1}.X(ind_good);
-            Y1=Data{1}.Y(ind_good);
-            U1=Data{1}.U(ind_good);
-            V1=Data{1}.V(ind_good);
-        
+        X1=Data{1}.X(ind_good);
+        Y1=Data{1}.Y(ind_good);
+        U1=Data{1}.U(ind_good);
+        V1=Data{1}.V(ind_good);
+
         Ua=griddata(X1,Y1,U1,Xa,Ya);% interpolate PIV data positions to the common grid Xa,Ya
         Va=griddata(X1,Y1,V1,Xa,Ya);
         [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
         [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A~
 
-        %remove wrong vector
+        %remove wrong vector from fsecond field
         if isfield(Data{2},'FF') % FF is present, remove wrong vector
-                ind_good=find(Data{2}.FF==0);
-            else
-                ind_good=1:numel(Data{2}.X);
+            ind_good=find(Data{2}.FF==0);
+        else
+            ind_good=1:numel(Data{2}.X);
         end
-            X2=Data{2}.X(ind_good);
-            Y2=Data{2}.Y(ind_good);
-            U2=Data{2}.U(ind_good);
-            V2=Data{2}.V(ind_good);
-     
+        X2=Data{2}.X(ind_good);
+        Y2=Data{2}.Y(ind_good);
+        U2=Data{2}.U(ind_good);
+        V2=Data{2}.V(ind_good);
+
         Ub=griddata(X2,Y2,U2,Xb,Yb);
         Vb=griddata(X2,Y2,V2,Xb,Yb);
         [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to X
@@ -409,33 +403,37 @@ for index_i=Index_i_series
 
 
         %% recording the merged field
-       
         MergeData.Time=Time;
         MergeData.Dt=Dt;
         MergeData.U=U/Dt;
         MergeData.V=V/Dt;
         MergeData.W=W/Dt;
-        if ~isempty(scale_factor_inv_uv)
-            MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
-            MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
-            MergeData.W=int16(scale_factor_inv_uv*MergeData.W);
+     
+        mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+        mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+        Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
+        MergeData.U(Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
+        MergeData.V(Error>1)=NaN;
+        MergeData.W(Error>1)=NaN;
+      
+      if ~isnan(scale_factor_inv_uv)
+          MergeData.U(isnan(MergeData.U))=intmax('int16');% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+          MergeData.V(isnan(MergeData.V))=intmax('int16');
+          MergeData.W(isnan(MergeData.W))=intmax('int16');
+            MergeData.U(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.U);
+            MergeData.V(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.V);
+            MergeData.W(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.W);
             MergeData.VarAttribute{3}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{4}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{5}.scale_factor=1/scale_factor_inv_uv;
-        end
-
-        mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
-        mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
-        MergeData.Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
-        MergeData.U(MergeData.Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
-        MergeData.V(MergeData.Error>1)=NaN;
-        MergeData.W(MergeData.Error>1)=NaN;
-      MergeData.Error=reshape(MergeData.Error,Npy,Npx);
+      end
+      MergeData.Error=uint16(1000*Error);% transform to integers
+   %   MergeData.Error(isnan(Error))=intmax('uint16');% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+        MergeData.Error=reshape(MergeData.Error,Npy,Npx);
       MergeData.U=reshape(MergeData.U,Npy,Npx);
       MergeData.V=reshape(MergeData.V,Npy,Npx);
       MergeData.W=reshape(MergeData.W,Npy,Npx);
       MergeData.Z=reshape(MergeData.Z,Npy,Npx);
-        MergeData.Error=uint16(1000*MergeData.Error);% transform to integers
         errormsg=struct2nc(OutputFile,MergeData);%save result file
         if isempty(errormsg)
             disp(['output file ' OutputFile ' written'])

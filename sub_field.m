@@ -39,8 +39,10 @@ SubData=[];%default
 if strcmp(Field,'*')
     return
 end
-if ~isfield(Field,'ListGlobalAttribute')
-    SubData.ListGlobalAttribute={};
+if isfield(Field,'ListGlobalAttribute')
+    SubData.ListGlobalAttribute=Field.ListGlobalAttribute;%first reproduce the list of the first field
+else
+SubData.ListGlobalAttribute={};
 end
 if ~isfield(Field_1,'VarAttribute')
     Field_1.VarAttribute={};
@@ -54,12 +56,12 @@ if isfield(Field_1,'ListGlobalAttribute')
         AttrName=Field_1.ListGlobalAttribute{ilist};
         if isfield(Field,AttrName)% if the attributes also exist in Field
             if ~isequal(Field.(AttrName),Field_1.(AttrName))
-               SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {[AttrName '_1']}];
-               SubData.([AttrName '_1'])=Field_1.(AttrName);
-            else
-                SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrName}];
-                SubData.(AttrName)=Field_1.(AttrName);
+                SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {[AttrName '_1']}];
+                SubData.([AttrName '_1'])=Field_1.(AttrName);
             end
+        else
+            SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrName}];
+            SubData.(AttrName)=Field_1.(AttrName);
         end
     end
 end
@@ -168,7 +170,13 @@ if check_scalar && check_scalar_1
          coord_x_1=Field_1.(Cellmin.XName);
          coord_y_1=Field_1.(Cellmin.YName);
         SubData.ListVarName={Cellplus.XName,Cellplus.YName,scalar_name};
+        if isvector(coord_x)% 2D matrix
+            SubData.VarDimName{1}=Cellplus.YName;
+             SubData.VarDimName{2}=Cellplus.XName;
+             SubData.VarDimName{3}=dim_name;
+        else % unstructured coordinates
         SubData.VarDimName={dim_name,dim_name,dim_name};
+        end
         ListRole={'coord_x','coord_y','scalar'};
         for ilist=1:numel(ListRole)
              SubData.VarAttribute{ilist}.Role=ListRole{ilist};
