@@ -1,11 +1,11 @@
 %'aver_stat': calculate field average over a time series
 %------------------------------------------------------------------------
-% function ParamOut=aver_stat(Param)
+% function GUIParam=aver_stat(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %OUTPUT
-% ParamOut: sets options in the GUI series.fig needed for the function
+% GUIParam: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
@@ -56,20 +56,21 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=aver_stat(Param)
+function GUIParam=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
-    ParamOut.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'on';%can use a transform function
-    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.stat';%set the output dir extension
-    ParamOut.OutputFileMode='NbSlice';% '=NbInput': one output file per input file index, '=NbInput_i': one file per input file index i, '=NbSlice': one file per slice
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    GUIParam.NbSlice='on'; %nbre of slices ('off' by default)
+    GUIParam.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    GUIParam.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.FieldTransform = 'on';%can use a transform function
+    GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.OutputDirExt='.stat';%set the output dir extension
+    GUIParam.OutputFileMode='NbSlice';% '=NbInput': one output file per input file index, '=NbInput_i': one file per input file index i, '=NbSlice': one file per slice
     % check for selection of a projection object
     hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
     if  ~isfield(Param,'ProjObject')
@@ -87,7 +88,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         SeriesData=get(hseries,'UserData');
         if ismember(SeriesData.ProjObject.ProjMode,{'inside','outside'})
             answer=msgbox_uvmat('INPUT_TXT','set bin size for histograms (or keep ''auto'' by default)?','auto');
-            ParamOut.ActionInput.VarMesh=str2num(answer);
+            GUIParam.ActionInput.VarMesh=str2num(answer);
         end
     end
     % check the existence of the first and last file in the series
@@ -122,14 +123,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     end
     %check input consistency
     if strcmp(answer,'Yes')
-        ParamOut.NbSlice=1;% set NbSlice to 1 ( for i index)
-        ParamOut.ActionInput.CheckVolume=1;
+        GUIParam.NbSlice=1;% set NbSlice to 1 ( for i index)
+        GUIParam.ActionInput.CheckVolume=1;
     end
     return
 end
 
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
-ParamOut=[];%default output
+GUIParam=[];%default output
 %% read input parameters from an xml file if input is a file name (batch mode)
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
@@ -218,6 +219,9 @@ end
 if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
     disp_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
+end
+if isfield(Param,'ProjObject') && ~isfield(Param.ProjObject,'Type') %case of empty or invalid ProjObject 
+    Param=rmfield(Param,'ProjObject');% 
 end
 if isfield(Param,'ProjObject') && ~strcmp(Param.ProjObject.Type,'plane')
     FileExtOut='.nc';% write result as .nc files (even for image input)

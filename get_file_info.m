@@ -61,8 +61,8 @@ function [FileInfo,VideoObject]=get_file_info(FileName)
 VideoObject=[];
 FileInfo.FileName='';% file doe not exist, defautlt
 FileInfo.FileType='';% input file type not detected
-FileInfo.FieldType=''; %default output
 if ~ischar(FileName)
+    FileInfo.FieldType='';
     return
 end
 
@@ -207,6 +207,11 @@ switch FileExt
                                         FileInfo.TimeName='Civ2_Time';
                                     end
                                 end
+                                if isfield(Data,'Civ2_ImageA')
+                                    FileInfo.CivImageA=Data.Civ2_ImageA;
+                                elseif isfield(Data,'Civ1_ImageA')
+                                     FileInfo.CivImageA=Data.Civ1_ImageA;
+                                end
                                 MaskFile='';
                                 if isfield(Data,'Civ2_Mask')
                                     MaskFile=Data.Civ2_Mask;
@@ -281,12 +286,11 @@ switch FileInfo.FileType
     case {'civdata','civdata_compress','civdata_3D','pivdata_fluidimage'}
         FileInfo.FieldType='civdata';
 end
-
+FileInfo.FileIndexing='off';
 if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','netcdf','civdata','civdata_compress'})
     FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
-else
-    FileInfo.FileIndexing='off';
 end
-P=1:numel(fieldnames(FileInfo));
-FileInfo=orderfields(FileInfo,[P(1) P(2) P(end-1) P(end) P(3:end-2)]);% reorder for clarity to put the main info in first
 
+%reorder fields for clarity
+P=1:numel(fieldnames(FileInfo));
+FileInfo=orderfields(FileInfo,[P(1) P(2) P(end-1) P(end) P(3:end-2)]);

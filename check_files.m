@@ -35,6 +35,15 @@ dir_uvmat=which('uvmat');% full name of uvmat.m, including its detected path
 pathuvmat=fileparts(dir_uvmat);% path to the folder containing uvmat.m
 
 %% check the info about git 
+UpdateFile=fullfile(pathuvmat,'updates.txt');
+msg_update='';
+try
+    fid=fopen(UpdateFile);
+    InputText=textscan(fid,'%s',1,'delimiter','\n');
+    msg_update=InputText{1};
+    fclose(fid);
+end
+
 HeadFile=fullfile(pathuvmat,'.git','FETCH_HEAD');
 if exist(HeadFile,'file')~=2
     HeadFile=fullfile(pathuvmat,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
@@ -197,7 +206,7 @@ for ilist=1:numel(list_fct_uvmat)
     end
 end
 msg_path=msg_path(check_path);
-msg_checklist=[msg_checklist;msg_path];
+msg_checklist=[msg_update;{};msg_checklist;msg_path];
 
 %% check functions in series
 if CheckSeries

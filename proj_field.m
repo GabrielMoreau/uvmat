@@ -1383,8 +1383,10 @@ for icell=1:length(CellInfo)
                             FieldData.(VarName)=FieldData.(VarName)(indsel);
                         end
                     end
-                    % interpolate and calculate field on the grid
-                    FieldNames=FieldData.ListVarName(CellInfo{icell}.VarIndex_scalar);
+                    % interpolate a
+                    FieldNames=CellInfo{icell}.FieldName;
+
+             %       FieldNames=FieldData.ListVarName(CellInfo{icell}.VarIndex_scalar);
 %                     for ilist_scalar=1:numel(FieldNames)
                         [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,FieldNames,XI,YI);
                         if ~isempty(errormsg)

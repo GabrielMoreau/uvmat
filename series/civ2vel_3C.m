@@ -57,6 +57,7 @@ function GUIParam=civ2vel_3C(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
     GUIParam.NbSlice='off'; %nbre of slices ('off' by default) !!VERIFIER
     GUIParam.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)!!VERIFIER
     GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -316,8 +317,7 @@ for index_i=Index_i_series
                 disp(errormsg)
             end
            
-            ind_good=find(~isnan(Data{3}.Zshift));
-            Zshift=Data{3}.Zshift(ind_good);
+            ind_good=find(~isnan(Data{3}.Xshift));
             Yphys=Data{3}.Yphys(ind_good);
             Xphys=Data{3}.Xphys(ind_good);
             Xshift=Data{3}.Xshift(ind_good);
@@ -329,7 +329,11 @@ for index_i=Index_i_series
             XIb=XI+0.5*Xshift;% uncorrected phys coordinates in view b corresponding to XI
             YIa=YI-0.5*Yshift; % uncorrected phys coordinates in view a corresponding to YI
             YIb=YI+0.5*Yshift;% uncorrected phys coordinates in view b corresponding to YI
+                        if isfield (Data{3},'Zshift')
+            Zshift=Data{3}.Zshift(ind_good);
             ZI=ZI+griddata(Xphys,Yphys,Zshift,XI,YI);% Z position at points XI, YI
+                        end
+     
             [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XIa,YIa,ZI);% set of image coordinates on view a
             [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XIb,YIb,ZI);% set of image coordinates on view b
         else
@@ -415,14 +419,18 @@ for index_i=Index_i_series
         MergeData.U(Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
         MergeData.V(Error>1)=NaN;
         MergeData.W(Error>1)=NaN;
+
       
       if ~isnan(scale_factor_inv_uv)
-          MergeData.U(isnan(MergeData.U))=intmax('int16');% set NaN to the maximal 16 bit integer (NaN not handled for integers)
-          MergeData.V(isnan(MergeData.V))=intmax('int16');
-          MergeData.W(isnan(MergeData.W))=intmax('int16');
-            MergeData.U(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.U);
-            MergeData.V(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.V);
-            MergeData.W(~isnan(MergeData.U))=int16(scale_factor_inv_uv*MergeData.W);
+          ind_FF=(isnan(MergeData.U));% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+%           MergeData.V(isnan(MergeData.V))=intmax('int16');
+%           MergeData.W(isnan(MergeData.W))=intmax('int16');
+            MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+            MergeData.U(ind_FF)=intmax('int16');
+            MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+            MergeData.V(ind_FF)=intmax('int16');
+            MergeData.W=int16(scale_factor_inv_uv*MergeData.W);
+            MergeData.W(ind_FF)=intmax('int16');
             MergeData.VarAttribute{3}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{4}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{5}.scale_factor=1/scale_factor_inv_uv;

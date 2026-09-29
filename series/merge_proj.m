@@ -60,6 +60,7 @@ function GUIParam=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
@@ -563,24 +564,32 @@ for index_i=Index_i_series
                 index_U=find(strcmp(MergeData.ListVarName,'U'));
                 if ~isempty(index_U)
                     MergeData.VarAttribute{index_U}.scale_factor=1/scale_factor_inv_uv;
+                    ind_NaN=isnan(MergeData.U);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
                     MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+                    MergeData.U(ind_NaN)=intmax('int16');
                 end
                 index_V=find(strcmp(MergeData.ListVarName,'V'));
                 if ~isempty(index_V)
                     MergeData.VarAttribute{index_V}.scale_factor=1/scale_factor_inv_uv;
+                    ind_NaN=isnan(MergeData.V);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
                     MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+                    MergeData.V(ind_NaN)=intmax('int16');
                 end
             end
             if ~isempty(scale_factor_inv_dudv)
                 index_var=find(strcmp(MergeData.ListVarName,'curl'));
                 if ~isempty(index_var)
                     MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                    ind_NaN=isnan(MergeData.curl);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
                     MergeData.curl=int16(scale_factor_inv_uv*MergeData.curl);
+                    MergeData.curl(ind_NaN)=intmax('int16');
                 end
                 index_var=find(strcmp(MergeData.ListVarName,'div'));
                 if ~isempty(index_var)
                     MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                    ind_NaN=isnan(MergeData.div);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
                     MergeData.div=int16(scale_factor_inv_dudv*MergeData.div);
+                    MergeData.div(ind_NaN)=intmax('int16');
                 end
             end
             error=struct2nc(OutputFile,MergeData);%save result file

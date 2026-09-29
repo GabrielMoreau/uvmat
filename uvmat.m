@@ -2158,7 +2158,12 @@ if isempty(RootFile)% open the file browser if the input file is not defined
         end
     end
 else      % initiate the input file series and refresh the current field view:
-    [FileInfo,VideoObject]=get_file_info(fullfile(RootPath,SubDir,[RootFile FileIndices FileExt]));
+    InfoFileName=fullfile(RootPath,SubDir,[RootFile FileIndices FileExt]);
+    if ~exist(InfoFileName,'file')
+        msgbox_uvmat('ERROR',[InfoFileName ' does not exist'])
+        return
+    end
+    [FileInfo,VideoObject]=get_file_info(InfoFileName);
     errormsg=update_rootinfo(handles,RootPath,SubDir,[RootFile FileIndices FileExt],FileInfo,VideoObject,1);
 end
 

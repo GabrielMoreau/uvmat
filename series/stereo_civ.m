@@ -43,19 +43,27 @@ errormsg='';
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-    if size(Param.InputTable,1)<2
-        msgbox_uvmat('WARNING','two input file series must be entered')
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    if size(Param.InputTable,1)~=2
+        msgbox_uvmat('ERROR','two input image series must be entered')
         return
+    end
+    if isfield(Param.SeriesData,'FileInfo')&& numel(Param.SeriesData.FileInfo)==2
+        if ~strcmp(Param.SeriesData.FileInfo{1}.FieldType,'image')|| ~strcmp(Param.SeriesData.FileInfo{2}.FieldType,'image')
+            msgbox_uvmat('ERROR','two input image series must be entered')
+            return
+        end
     end
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
     AppData=stereo_input(Param);% introduce the civ parameters using the GUI stereo_input
-    GUIParam.ActionInput=read_app(AppData);
-    %Data.num_SearchBoxSize_2
-    delete(AppData)
-    if isempty(GUIParam)
-        GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
+    if isvalid(AppData)
+        GUIParam.ActionInput=read_app(AppData);% read the input parameters from the GUI civ_input
+        delete(AppData)
+    else
+        GUIParam=Param;% if  civ_input has been closed without OK, keep previous parameters
     end
+
     GUIParam.Program=mfilename;%gives the name of the current function
     GUIParam.AllowInputSort='on';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
@@ -73,21 +81,17 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
 end
 
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    checkrun=0;
+    checkrun=false;
+else %interactive mode
+    RUNHandle=gcbo;
+    checkrun=true;
 end
 if ~isfield(Param,'ActionInput')
     disp_uvmat('ERROR','no parameter set for PIV',checkrun)
     return
 end
-hseries=findobj(allchild(0),'Tag','series');
-RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-
-inv_scale_factor=100; % scale factor of displacements for uin16 records in netcdf files (dx expressed in pixels)
-NbView=size(Param.InputTable,1);
-XmlData=cell(1,NbView);
 
 %% List of input indices i and j
 i_indices=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
@@ -103,6 +107,13 @@ end
 CheckRelabel_GUI=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO);
 
 %% Input file info
+RootPath=Param.InputTable(:,1);
+SubDir=Param.InputTable(:,2);
+RootFile=Param.InputTable(:,3);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+Time=cell(1,2);FileType=cell(1,2);frame_index=cell(1,2);CheckRelabel=cell(1,2);MovieObject=cell(1,2);XmlData=cell(1,2);
+BitDepth=[16 16];
 for iview=1:2
     RootPath{iview}=Param.InputTable{iview,1};
     RootFile{iview}=Param.InputTable{iview,3};
@@ -119,7 +130,6 @@ for iview=1:2
             TimeSource{iview}='xml';
         end
     end
-
     if CheckRelabel_GUI && isfield(XmlData{iview},'FileSeries')
         [FileName,frame_index{iview}]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
         FirstFileName=fullfile(RootPath{iview},SubDir{iview},FileName);
@@ -147,10 +157,8 @@ for iview=1:2
             Time{iview}(2,:)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
         end
     end
-    if isfield(FileInfo,'ColorType') && strcmp(FileInfo.ColorType,'truecolor')
-        BitDepth{iview}=16;
-    else
-        BitDepth{iview}=FileInfo.BitDepth;
+    if ~(isfield(FileInfo,'ColorType') && strcmp(FileInfo.ColorType,'truecolor'))
+        BitDepth(iview)=FileInfo.BitDepth;
     end
 end
 % reference Z position from calibration
@@ -162,40 +170,50 @@ if isfield(XmlData{1},'Slice')
     end
 else
     disp('ERROR: Z position in ImaDoc xml file')
-        return
+    return
 end
 
 
 %% Output directory and data preparation
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
-
-ListGlobalAttribute={'Conventions','Program','CivStage','Time','Xshift_mean','Yshift_mean','Zshift_mean'};
-Data.ListVarName={'C','X','Y','U','V','FF','Xphys','Yphys','Zshift','Xshift','Yshift'};
-
+inv_scale_factor=100; % scale factor of displacements for uin16 records in netcdf files (dx expressed in pixels)
+ListGlobalAttribute={'Conventions','Program','UvmatRevision','CivStage','Time','Xshift_mean','Yshift_mean','Zshift_mean'};
+if Param.ActionInput.CheckTest
+    Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
+    Data.ListVarName={'X','Y','U','V','FF','C','Xphys','Yphys','Xshift','Yshift'};
+    Data.VarAttribute{1}.Role='coord_x';
+    Data.VarAttribute{2}.Role='coord_y';
+    Data.VarAttribute{3}.Role='vector_x';
+    Data.VarAttribute{4}.Role='vector_y';
+    Data.VarAttribute{5}.Role='errorflag';
+    ind_start=1;
+else
+    Data.Conventions='uvmat';% states the conventions used for the description of field variables and attributes
+    Data.ListVarName={'C','Xphys','Yphys','Xshift','Yshift'};
+    ind_start=6;
+end
 % test for recording the smmoothed data
 CheckSmooth=(Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||(Param.ActionInput.CheckPatch2 && ~Param.ActionInput.CheckCiv3) || Param.ActionInput.CheckPatch3;
-Data.VarAttribute{1}.Role='scalar';
-Data.VarAttribute{1}.scale_factor=1/100;%scla factor for correlation
-Data.VarAttribute{2}.Role='coord_x';
-Data.VarAttribute{3}.Role='coord_y';
-Data.VarAttribute{4}.Role='vector_x';
-Data.VarAttribute{5}.Role='vector_y';
-Data.VarAttribute{6}.Role='errorflag';
-Data.VarAttribute{7}.Role='vector_x';
-Data.VarAttribute{8}.Role='vector_y';
-Data.VarAttribute{9}.Role='scalar';
-Data.VarAttribute{10}.Role='vector_x';
-Data.VarAttribute{11}.Role='vector_y';
-if CheckSmooth
+Data.VarAttribute{ind_start+1}.Role='ancillary';
+Data.VarAttribute{ind_start+1}.scale_factor=1/100;%scla factor for correlation
+Data.VarAttribute{ind_start+2}.Role='coord_x';
+Data.VarAttribute{ind_start+3}.Role='coord_y';
+Data.VarAttribute{ind_start+4}.Role='vector_x';
+Data.VarAttribute{ind_start+5}.Role='vector_y';
+if Param.ActionInput.CheckZField
+    Data.ListVarName=[Data.ListVarName 'Zshift'];
+    Data.VarAttribute{ind_start+6}.Role='scalar';
+end
+
+if CheckSmooth && Param.ActionInput.CheckTest
     nbvar=numel(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'U_smooth','V_smooth'}];
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
 end
 Data.VarDimName=repmat({'nb_vec'},1,numel(Data.ListVarName));
-
-Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program=mfilename;%gives the name of the current function;
+Data.UvmatRevision=Param.UvmatRevision;
 Data.CivStage=0;%default
 Data.Time=NaN; %default
 par_civ1.MaskName_A='';%default
@@ -210,7 +228,7 @@ end
 %%%%% MAIN LOOP %%%%%%
 for index_i=1:numel(i_indices)
     for index_j=1:numel(j_indices)
-        if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        if checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
             disp('program stopped by user')
             return
         end
@@ -220,16 +238,16 @@ for index_i=1:numel(i_indices)
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
         tstart=tic;
-        if CheckRelabel{1}
+        if CheckRelabel{1}% case of index relabelling for first image series
             [ImageName_A,FrameIndex_A]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
             ImageName_A=fullfile(RootPath{1},SubDir{1},ImageName_A);% include path
         else
             ImageName_A=fullfile_indices(fullfile(RootPath{1},SubDir{1},RootFile{1}),FileExt{1},NomType{1},i_indices(index_i),[],j_indices(index_j))
-            FrameIndex_A=frame_index{1}(index_j,index_i); 
+            FrameIndex_A=frame_index{1}(index_j,index_i);
         end
-        if CheckRelabel{2}  
-              [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
-            ImageName_B=fullfile(RootPath{1},SubDir{1},ImageName_B);% include path
+        if CheckRelabel{2}  % case of index relabelling for secondimage series
+            [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
+            ImageName_B=fullfile(RootPath{2},SubDir{2},ImageName_B);% include path
         else
             ImageName_B=fullfile_indices(fullfile(RootPath{2},SubDir{2},RootFile{2}),FileExt{2},NomType{2},i_indices(index_i),[],j_indices(index_j))
             FrameIndex_B=frame_index{2}(index_j,index_i);
@@ -240,8 +258,6 @@ for index_i=1:numel(i_indices)
 
         [A,Rangx,Rangy]=phys_ima(A,XmlData,Param.ActionInput.resolution);%transform images A{1} and A{2} in phys coordinates on a common pixel grid
         [Npy,Npx]=size(A{1});
-
-        
 
         %%% record time
         Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
@@ -280,9 +296,9 @@ for index_i=1:numel(i_indices)
                     return
                 end
             end
-           
+
         end
-        
+
         %% save images in phys coordinates for test mode
         if Param.ActionInput.CheckTest % save images in phys coordinates for test mode
             PhysImageAName=[fullfile(RootPath{1},OutputDir,RootFile{1}) '_' num2str(i_indices(index_i)) '_' num2str(j_indices(index_j)) 'a.png'];
@@ -306,7 +322,7 @@ for index_i=1:numel(i_indices)
             if isfield(Param.ActionInput,'MaxIma')&&~isnan(Param.ActionInput.MaxIma)
                 par_civ1.MaxIma=Param.ActionInput.MaxIma;
             end
-          
+
             par_civ1.ImageA=A{1};
             par_civ1.ImageB=A{2};
             par_civ1.ImageWidth=size(par_civ1.ImageA,2);%FileInfo_A.Width;
@@ -413,10 +429,6 @@ for index_i=1:numel(i_indices)
             par_civ2.ImageB=A{2};
             par_civ2.ImageWidth=size(par_civ2.ImageA,2);%FileInfo_A.Width;
             par_civ2.ImageHeight=size(par_civ2.ImageA,1);%FileInfo_A.Height;
-            % list_param=(fieldnames(Param.ActionInput.Civ2))';
-            % Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
-            %Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
-            %indicate the values of all the global attributes in the output data
 
             npy_ima=size(par_civ2.ImageA,1);
             npx_ima=size(par_civ2.ImageA,2);
@@ -506,24 +518,12 @@ for index_i=1:numel(i_indices)
                 [Data.X,Data.Y,Data.U,Data.V,Data.C,Data.FF,~, errormsg] = parciv (par_civ2);%use parfor loop
             end
             list_param=(fieldnames(Param.ActionInput.Civ2))';
-            %list_param(strcmp('TestCiv2',list_param))=[];% remove the parameter TestCiv2 from the list
             Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
-            %Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_FrameIndexA','Civ2_FrameIndexB','Civ2_Time','Civ2_Dt'} Civ2_param1]; %insert the names of the two input images
-            %indicate the values of all the global attributes in the output data
-            % if exist('ImageName_A','var')
-            %     Data.Civ2_ImageA=ImageName_A;
-            %     Data.Civ2_ImageB=ImageName_B;
-            %     Data.Civ2_FrameIndexA=FrameIndex_A;
-            %     Data.Civ2_FrameIndexB=FrameIndex_B;
-            %
-            % end
+
             for ilist=1:length(list_param)
                 Data.(Civ2_param{ilist})=Param.ActionInput.Civ2.(list_param{ilist});
             end
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
-            % if isfield( Data,'Civ2_Background')
-            %     Data.Civ2_Background=backgroundname;% update with the relevant background used
-            % end
 
             disp('civ2 performed')
             time_civ2=toc(tstart_civ2);
@@ -546,7 +546,6 @@ for index_i=1:numel(i_indices)
                 Data.(Fix1_param{ilist})=Param.ActionInput.Fix1.(list_param{ilist});
             end
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute Fix1_param];
-            % Data.Civ1_FF=uint8(detect_false(Param.ActionInput.Fix1,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V,Data.Civ1_FF));
             Data.FF=uint8(detect_false(Param.ActionInput.Fix1,Data.C,Data.U,Data.V,Data.FF));
             Data.CivStage=4;
 
@@ -598,31 +597,31 @@ for index_i=1:numel(i_indices)
             par_civ3.ImageWidth=size(par_civ3.ImageA,2);
             par_civ3.ImageHeight=size(par_civ3.ImageA,1);
 
-% 
-%             else% automatic grid
-%                 nbinterv_x=floor((npx_ima-1)/par_civ2.Dx);
-%                 gridlength_x=nbinterv_x*par_civ2.Dx;
-%                 minix=ceil((npx_ima-gridlength_x)/2);
-%                 nbinterv_y=floor((npy_ima-1)/par_civ2.Dy);
-%                 gridlength_y=nbinterv_y*par_civ2.Dy;
-%                 miniy=ceil((npy_ima-gridlength_y)/2);
-%                 [GridX,GridY]=meshgrid(minix:par_civ2.Dx:npx_ima-1,miniy:par_civ2.Dy:npy_ima-1);
-%                 par_civ2.Grid=zeros(numel(GridX),2);
-%                 par_civ2.Grid(:,1)=reshape(GridX,[],1);
-%                 par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
-%             end
-% 
+            %
+            %             else% automatic grid
+            %                 nbinterv_x=floor((npx_ima-1)/par_civ2.Dx);
+            %                 gridlength_x=nbinterv_x*par_civ2.Dx;
+            %                 minix=ceil((npx_ima-gridlength_x)/2);
+            %                 nbinterv_y=floor((npy_ima-1)/par_civ2.Dy);
+            %                 gridlength_y=nbinterv_y*par_civ2.Dy;
+            %                 miniy=ceil((npy_ima-gridlength_y)/2);
+            %                 [GridX,GridY]=meshgrid(minix:par_civ2.Dx:npx_ima-1,miniy:par_civ2.Dy:npy_ima-1);
+            %                 par_civ2.Grid=zeros(numel(GridX),2);
+            %                 par_civ2.Grid(:,1)=reshape(GridX,[],1);
+            %                 par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
+            %             end
+            %
 
 
             % automatic grid
-                minix=floor(par_civ3.Dx/2)-0.5;
-                maxix=minix+par_civ3.Dx*floor((par_civ3.ImageWidth-1)/par_civ3.Dx);
-                miniy=floor(par_civ3.Dy/2)-0.5;
-                maxiy=minix+par_civ3.Dy*floor((par_civ3.ImageHeight-1)/par_civ3.Dy);
-                [GridX,GridY]=meshgrid(minix:par_civ3.Dx:maxix,miniy:par_civ3.Dy:maxiy);
-                par_civ3.Grid(:,1)=reshape(GridX,[],1);
-                par_civ3.Grid(:,2)=reshape(GridY,[],1);
-        
+            minix=floor(par_civ3.Dx/2)-0.5;
+            maxix=minix+par_civ3.Dx*floor((par_civ3.ImageWidth-1)/par_civ3.Dx);
+            miniy=floor(par_civ3.Dy/2)-0.5;
+            maxiy=minix+par_civ3.Dy*floor((par_civ3.ImageHeight-1)/par_civ3.Dy);
+            [GridX,GridY]=meshgrid(minix:par_civ3.Dx:maxix,miniy:par_civ3.Dy:maxiy);
+            par_civ3.Grid(:,1)=reshape(GridX,[],1);
+            par_civ3.Grid(:,2)=reshape(GridY,[],1);
+
             Shiftx=zeros(size(par_civ3.Grid,1),1);% shift expected from civ2 data
             Shifty=zeros(size(par_civ3.Grid,1),1);
             nbval=zeros(size(par_civ3.Grid,1),1);
@@ -744,23 +743,38 @@ for index_i=1:numel(i_indices)
             disp('patch3 performed')
         end
 
-          if CheckSmooth
-         [Xmid, Ymid, Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U_smooth, Data.V_smooth);% transform from pixels to phys coordinates in the ref pla
-           else
-                [Xmid, Ymid,Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U, Data.V);
-           end
-         [Data.Zshift,Data.Xphys,Data.Yphys,Data.Xshift,Data.Yshift]=shift2z(Xmid,Ymid,Uphys,Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytempy
+        if CheckSmooth
+            [Xmid, Ymid, Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U_smooth, Data.V_smooth);% transform from pixels to phys coordinates in the ref pla
+        else
+            [Xmid, Ymid,Uphys, Vphys] =getPhysValues(Rangx,Rangy, Npx, Npy, Data.X, Data.Y, Data.U, Data.V);
+        end
+
+     
+        %% Z determination suppressed %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if Param.ActionInput.CheckZField
+            [Data.Zshift,Data.Xphys,Data.Yphys,Data.Xshift,Data.Yshift]=shift2z(Xmid,Ymid,Uphys,Vphys,XmlData); %Data.Xphys and Data.Xphys are real coordinate (geometric correction more accurate than xtemp/ytempy
+        else
+            Data.Xphys=Xmid;
+            Data.Yphys=Ymid;
+            Data.Xshift=Uphys;
+            Data.Yshift=Vphys;
+        end
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ùù
 
         Data.C=uint8(100*Data.C);% rescale to store as integer
- indgood=find(Data.FF==0);
- indbad=find(Data.FF~=0);
- Data.Zshift(indbad)=NaN;Data.Xphys(indbad)=NaN;Data.Yphys(indbad)=NaN;Data.Xshift(indbad)=NaN;Data.Yshift(indbad)=NaN;
+        indgood=find(Data.FF==0);
+        indbad=find(Data.FF~=0);
+        Data.Xphys(indbad)=NaN;Data.Yphys(indbad)=NaN;Data.Xshift(indbad)=NaN;Data.Yshift(indbad)=NaN;
         % get the best linear fit
 
         Data.Xshift_mean=mean(Data.Xshift(indgood));
-Data.Yshift_mean=mean(Data.Yshift(indgood));
-Data.Zshift_mean=mean(Data.Zshift(indgood));
-        
+        Data.Yshift_mean=mean(Data.Yshift(indgood));
+        if Param.ActionInput.CheckZField
+        Data.Zshift(indbad)=NaN;
+        Data.Zshift_mean=mean(Data.Zshift(indgood));
+        end
+
 
         %% write result in a netcdf file
         errormsg=struct2nc(OutputFile,Data);
@@ -892,26 +906,4 @@ lambda=(((Dyb-Dya).*(-u)-(Dxb-Dxa).*(-v))./Den);
 Xshift=-lambda.*(Dyb-Dya);
 Yshift=lambda.*(Dxb-Dxa);
  
-            
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function iy=get_max(a)% get the max with sub pixel resolution
-a_max=max(a);
-[Nby,Nbx]=size(a);
-iy=zeros(1,Nbx);
-for ind_x=1:Nbx
-    iy_range=find(a(:,ind_x)==a_max(ind_x));
-    iy(ind_x)=0.5*(iy_range(1)+iy_range(end));
-    iy_min=iy_range(1)-1;
-    iy_plus=iy_range(end)+1;
-    if iy_min>=1 && iy_plus<=Nby
-        a_plus=a(iy_plus,ind_x);
-        a_min=a(iy_min,ind_x);
-        denom=2*a_max(ind_x)-a_plus-a_min;
-        if denom >0
-            iy(ind_x)=iy(ind_x)+0.5*(a_plus-a_min)/denom;%adjust the position of the max with a quadratic fit of the three points around the max
-        end
-    end
-end
-
 

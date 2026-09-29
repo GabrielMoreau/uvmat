@@ -283,10 +283,13 @@ if  ~isempty(ListVarName)
         end   
         %rescale according to scale factor iin case of storage as integer
         if isfield(Data,'VarAttribute') && numel(Data.VarAttribute)>=ivar && isfield(Data.VarAttribute{ivar},'scale_factor')
-           if xtype(var_index)==3 %(in16 array)
-               detect_nan=find(Data.(VarName)==intmax('int16'));
+           if xtype(var_index(ivar))==3 %(in16 array)
+                detect_nan=find(Data.(VarName)==intmax('int16'));
+               Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
+               Data.(VarName)(detect_nan)=NaN;
+           else
+               Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
            end
-            Data.(VarName)=Data.VarAttribute{ivar}.scale_factor *double(Data.(VarName));
         end
         if xtype(var_index(ivar))==5 %single precision
              Data.(VarName)=double(Data.(VarName)); %transform all single precision variables to double  pecision

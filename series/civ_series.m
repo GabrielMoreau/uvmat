@@ -49,15 +49,45 @@ errormsg='';
 GUIParam=[];
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-    path_series=fileparts(which('series'));
-    addpath(fullfile(path_series,'series'))
-   % GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
-    AppData=civ_input_app(Param);% introduce the civ parameters using the GUI civ_input
-    GUIParam.ActionInput=read_app(AppData);
 
-    delete(AppData)
-    if isempty(GUIParam)
-        GUIParam=Param;% if  civ_input has been cancelled, keep previous parameters
+    %% input file info
+    iview_image=[];
+    iview_nc=[];
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    if isfield(Param.SeriesData,'FileInfo')&& ~isempty(Param.SeriesData.FileInfo)
+        for iview=1:numel(Param.SeriesData.FileInfo)
+            FieldType{iview}=Param.SeriesData.FileInfo{iview}.FieldType;
+        end
+        iview_image=find(strcmp('image',FieldType));
+        iview_nc=find(strcmp('civdata',FieldType));
+        if numel(iview_image)>1
+            msgbox_uvmat('ERROR','only one input image series must be used as input')
+            return
+        end
+        if numel(iview_nc)>1
+            msgbox_uvmat('ERROR','more than one civdata file used as input')
+            return
+        end
+    end
+    if ~isempty(iview_nc)&& isempty(iview_image)% %civdata introduced as sole input
+        if isfield(Param.SeriesData.FileInfo{iview_nc},'CivImageA')
+            ImageName=Param.SeriesData.FileInfo{iview_nc}.CivImageA;
+            hseries=get(gcbo,'parent');
+            hhseries=guidata(hseries);
+            series('display_file_name',hhseries,ImageName,'append');%append the image series to the input list
+        else
+            msgbox_uvmat('ERROR','an input image series needs to be introduced')
+        end
+        return
+    end
+     path_series=fileparts(which('series'));
+    addpath(fullfile(path_series,'series')) 
+    AppData=civ_input_app(Param);% introduce the civ parameters using the GUI civ_input
+    if isvalid(AppData)
+        GUIParam.ActionInput=read_app(AppData);% read the input parameters from the GUI civ_input
+        delete(AppData)
+    else
+        GUIParam=Param;% if  civ_input has been closed without OK, keep previous parameters
     end
     GUIParam.Program=mfilename;%gives the name of the current function
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -72,11 +102,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    % if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
-    %     GUIParam.IndexRange_j='off';%no j index display in series
-    % else
-    %     GUIParam.IndexRange_j='on';% j index display in series if relevant
-    % end
+    if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+        GUIParam.IndexRange_j='off';%no j index display in series
+    end
     return
 end
 
@@ -443,6 +471,10 @@ for ifield=1:NbField
         %% subtract  background image if requested
         if isfield(Param.ActionInput,'CheckBackground') && Param.ActionInput.CheckBackground
             BkgndRootName=Param.ActionInput.Background;
+            [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
+            if isempty(fileparts(BackgroundExt))% relative path defined
+                BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
+            end
             IndexPeriod=[];
             if isfield(Param.ActionInput,'BkgndPeriod')
                 IndexPeriod=Param.ActionInput.BkgndPeriod;
@@ -658,7 +690,7 @@ for ifield=1:NbField
         end
         if CheckRelabel
             [RootFile,FrameIndex_B_2]=index2filename(XmlData.FileSeries,i2_civ2,j2_civ2,MaxIndex_j);
-            ImageName_B_Civ2=fullfile(RootPath_B,SubDir_B,RootFile);
+            ImageName_B_Civ2=fullfile(RootPath_A,SubDir_A,RootFile);
         else
             ImageName_B_Civ2=fullfile_indices(RootName_A,FileExt_A,NomType_A,i2_civ2,[],j2_civ2);
             FrameIndex_B_2=FrameIndex_B_Civ2(ifield);
@@ -857,14 +889,7 @@ for ifield=1:NbField
         if isfield( Data,'Civ2_Background')
             Data.Civ2_Background=backgroundname;% update with the relevant background used
         end
-        % update output file name with the indices of the Civ2 image pair
-%         if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-%             ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
-%                 j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-%         else
-%             ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
-%                 j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-%         end
+
         disp('civ2 performed')
         time_civ2=toc(tstart_civ2);  
     end

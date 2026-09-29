@@ -1,0 +1,22 @@
+version 26.1
+- check_files: version number displayed by reading the current file updates.txt when uvmat is opening, year.1,2...
+- civ2vel_3C: GUIParam.ActionParam='on' added as a check of valid input.
+- civ_input app: simplified to avoid search of series figure handle, j index display avoided if not needed
+         case of a single background image repaired
+         call to hseries moved to civ_series
+- civ_series: case of deleted civ_input handled
+          handling of background images with relative path with respect to the image series (avoid changes for each series)
+          small bug corrected in relabel mode
+- fill_app: unrecognized object handled no more diplayed
+- get_field: interface bug repaired
+- get_file_info: info 'CivImage' added
+- merge_proj: GUIParam.ActionParam='on' added as a check of valid input.
+- nc2struct: modified to read as NaN the integer variables reaching the upper bound (coding of NaN for integers)
+- series: check GUIParam.ActionParam='on' for all series functions which need specific additional parameters, (to check valid input). 
+              TO ADD IN ALL FUNCTIONS with input parameters like in civ_series
+       adjust the proposed job number in mode 'replicate'
+       bug repaired in mode 'replicate'
+- stereo_civ: GUIParam.ActionParam='on' added as a check of valid input.
+            : bug corrected for mode 'relabel'
+            : raw data in pixels remove from the netcdf files when mode Test is not selected
+- uvmat: bug repair display of norm(u,v) and other scalars 

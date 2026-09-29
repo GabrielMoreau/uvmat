@@ -20,7 +20,7 @@ GUIParam=[];
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     GUIParam.OutputSubDirMode='auto'; %(options 'none'/'custom'/'auto'/'first'/'last','auto' by default)  
     GUIParam.OutputDirExt='.check_fields';%set the output dir extension
-     msgbox_uvmat('CONFIMATION','This function will check the series of input fields')
+     msgbox_uvmat('CONFIMATION','This function will increment the image index by 9999')
     return
 end
 %------------------------------------------------------------------------
@@ -40,10 +40,10 @@ FileExt=Param.InputTable{1,5};
 %% scans the series indexed with i and j
 i_index=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 j_index=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
-FileCell=cell(numel(j_index),numel(i_index));%initiate cell array of input file names
 for ifile=1:numel(i_index)
         FullFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i_index(ifile),[],1);
-        NewFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,'_1',i_index(ifile))
+       % NewFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,'_00001',i_index(ifile)+9999)
+       NewFileName=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,'_00001',i_index(ifile)+9999)
        movefile(FullFileName,NewFileName)       
 end
 

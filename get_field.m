@@ -676,21 +676,32 @@ if isempty(coord_val)% structured coordinates
             coord_val(3)=ind_select3;
         end
     end
-    ind_select1=find(strcmp(dim_var{2},ListCoord));
-    if ~isempty(ind_select1)
-        coord_val(1)=ind_select1;
-    end
-    ind_select2=find(strcmp(dim_var{1},ListCoord));
-    if ~isempty(ind_select2)
-        coord_val(2)=ind_select2;
+    if numel(dim_var)>=2
+        ind_select1=find(strcmp(dim_var{2},ListCoord));
+        if ~isempty(ind_select1)
+            coord_val(1)=ind_select1;
+        end
+        ind_select2=find(strcmp(dim_var{1},ListCoord));
+        if ~isempty(ind_select2)
+            coord_val(2)=ind_select2;
+        end
     end
 end
 
 %% set menu and default selection for coordinates
-set(handles.Coord_x,'Value',coord_val(1))
 set(handles.Coord_x,'String',ListCoord)
-set(handles.Coord_y,'Value',coord_val(2))
 set(handles.Coord_y,'String',ListCoord)
+if isempty(coord_val)
+    set(handles.Coord_x,'Value',1)
+    set(handles.Coord_y,'Value',1)
+elseif numel(coord_val)>=1
+    set(handles.Coord_x,'Value',coord_val(1))
+    if numel(coord_val)>=2
+        set(handles.Coord_y,'Value',coord_val(2))
+    else
+        set(handles.Coord_y,'Value',1)
+    end
+end
 if numel(dim_var)>=3
     set(handles.Coord_z,'Value',coord_val(3))
     set(handles.Coord_z,'String',ListCoord)

@@ -105,8 +105,8 @@ for ifield=1:numel(fields)
             if ~isempty(hh{ibox})&& ~check_done && ~isequal(hh{ibox},0)
                 set(hh{ibox},'Visible','on')% make the filled GUI element visible
                 if isfield(get(hh{ibox}),'Type')
-                    % get(hh{ibox},'Type')
-                    switch get(hh{ibox},'Type')
+                    %get(hh{ibox},'Type')
+                    switch get(hh{ibox},'Type')    
                         case {'uicheckbox','uiradiobutton','uitogglebutton'}
                             if isnumeric(input_data)||islogical(input_data)
                                 set(hh{ibox},'Value',input_data(ibox))
@@ -125,26 +125,29 @@ for ifield=1:numel(fields)
                                 input_string=input_data;
                             end
                             set(hh{ibox},'Value',input_string)
-                        case {'listbox','popupmenu'}
+                        case {'uilistbox','uidropdown'}
                             if isnumeric(input_data)
                                 input_data=num2str(input_data,4);
                             end
-                            menu=get(hh{ibox},'String');
+                            menu=get(hh{ibox},'Items');
                             if ischar(input_data)
                                 input_data={input_data};
                             end
                             values=zeros(size(input_data));
                             for idata=1:numel(input_data)
                                 iline=find(strcmp(input_data{idata},menu));
-                                if isempty(iline)
-                                    values(idata)=1;
-                                    menu=[input_data(idata);menu];
-                                else
+                                if ~isempty(iline)
+%                                     values(idata)=1;
+%                                     menu=[input_data(idata);menu];
+%                                 else
                                     values(idata)=iline(1);
+                                    set(hh{ibox},'Value',menu{iline(1)})
                                 end
                             end
-                            set(hh{ibox},'String',menu)
-                            set(hh{ibox},'Value',values)
+ %                           set(hh{ibox},'Items',menu)
+%                             set(hh{ibox},'Value',menu{values(idata)})
+%                         otherwise
+%                             disp([get(hh{ibox},'Type') ' not handled'])
                     end
                 end
             end

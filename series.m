@@ -659,32 +659,32 @@ end
 
 MinIndex_i_table=get(handles.MinIndex_i,'Data'); % retrieve the min indices in the table MinIndex
 if numel(MinIndex_i_table)>nbview
-set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview)); % save only the nbviews values, remove possible values beyond
+    set(handles.MinIndex_i,'Data',MinIndex_i_table(1:nbview)); % save only the nbviews values, remove possible values beyond
 end
 
 MinIndex_j_table=get(handles.MinIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 if numel(MinIndex_j_table)>nbview
-set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview));
+    set(handles.MinIndex_j,'Data',MinIndex_j_table(1:nbview));
 end
 
 MaxIndex_i_table=get(handles.MaxIndex_i,'Data'); % retrieve the max indices in the table MinIndex
 if numel(MaxIndex_i_table)>nbview
-set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview));
+    set(handles.MaxIndex_i,'Data',MaxIndex_i_table(1:nbview));
 end
 
 MaxIndex_j_table=get(handles.MaxIndex_j,'Data'); % retrieve the min indices in the table MinIndex
 if numel(MinIndex_j_table)>nbview
-set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview));
+    set(handles.MaxIndex_j,'Data',MaxIndex_j_table(1:nbview));
 end
 
 PairString=get(handles.PairString,'Data'); % retrieve the min indices in the table MinIndex
 if numel(PairString)>nbview
-set(handles.PairString,'Data',PairString(1:nbview));
+    set(handles.PairString,'Data',PairString(1:nbview));
 end
 
 TimeTable=get(handles.TimeTable,'Data'); % retrieve the min indices in the table MinIndex
 if numel(TimeTable)>nbview
-set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
+    set(handles.TimeTable,'Data',TimeTable(1:nbview,:));
 end
 
 SeriesData=get(handles.series,'UserData');
@@ -986,13 +986,22 @@ else
     end
     diff_i_max=max(diff(Param.ref_i_list));
     diff_i_min=min(diff(Param.ref_i_list));
-    if diff_i_max==diff_i_min
-        set(handles.num_incr_i,'String',num2str(diff_i_max))
+    if diff_i_max==diff_i_min%perioricity in the input data
+        incr_displayed=str2double(get(handles.num_incr_i,'String'));
+        incr_round=ceil(incr_displayed/diff_i_max);
+        if incr_round~=incr_displayed/diff_i_max
+        set(handles.num_incr_i,'String',num2str(incr_round))
+        end
     end
     diff_j_max=max(diff(Param.ref_j_list));
     diff_j_min=min(diff(Param.ref_j_list));
     if diff_j_max==diff_j_min
-        set(handles.num_incr_j,'String',num2str(diff_j_max))
+        incr_displayed=str2double(get(handles.num_incr_j,'String'));
+        incr_round=ceil(incr_displayed/diff_j_max);
+        if incr_round~=incr_displayed/diff_j_max
+            set(handles.num_incr_j,'String',num2str(incr_round))
+        end
+        %         set(handles.num_incr_j,'String',num2str(diff_j_max))
     end
     % make the j indices visible if relevant
     if all(isnan(Param.ref_j_list))% no j series
@@ -1501,18 +1510,29 @@ if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequ
 end
 
 %% check the info about git 
+% path_series=fileparts(which('series'));
+% HeadFile=fullfile(path_series,'.git','FETCH_HEAD');
+% if exist(HeadFile,'file')~=2
+%     HeadFile=fullfile(path_series,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
+% end
+% if exist(HeadFile,'file')% check the existence of GIT info
+%     datfile=dir(HeadFile);
+%     if isfield(datfile,'datenum')
+%         dathead= datfile.datenum;
+%         Param.UvmatRevision=datestr(dathead);%string for date display
+%     end
+% end
+%% check the info about current version
 path_series=fileparts(which('series'));
-HeadFile=fullfile(path_series,'.git','FETCH_HEAD');
-if exist(HeadFile,'file')~=2
-    HeadFile=fullfile(path_series,'.git','HEAD');% case of first git clone, FETCH_HEAD created only during update (command git pull)
+UpdateFile=fullfile(path_series,'updates.txt');
+msg_update='';
+try
+    fid=fopen(UpdateFile);
+    InputText=textscan(fid,'%s',1,'delimiter','\n');
+    Param.UvmatRevision=InputText{1};
+    fclose(fid);
 end
-if exist(HeadFile,'file')% check the existence of GIT info
-    datfile=dir(HeadFile);
-    if isfield(datfile,'datenum')
-        dathead= datfile.datenum;
-        Param.UvmatRevision=datestr(dathead);%string for date display
-    end
-end
+
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local'; % default (needed for first opening of the GUI series)
@@ -1632,45 +1652,9 @@ if get(handles.Replicate,'Value')
         set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
          BrowseData=guidata(hbrowse);  %TODO: use the fct read_browsedata ?    
          
-          [ListPath, ListSubdir]=read_browsedata (hbrowse)
+          [ListPath, ListSubdir]=read_browsedata (hbrowse);
          NbExp=numel(ListPath);
-         
-         
-%         SourceDir=get(BrowseData.SourceDir,'String');
-%         ListExp=get(BrowseData.ListExperiments,'String');
-%         ExpIndices=get(BrowseData.ListExperiments,'Value');
-%         ListExp=ListExp(ExpIndices);
-%         ListDevices=get(BrowseData.ListDevices,'String');
-%         DeviceIndices=get(BrowseData.ListDevices,'Value');
-%         ListDevices=ListDevices(DeviceIndices);
-%         ListDataSeries=get(BrowseData.DataSeries,'String');
-%         DataSeriesIndices=get(BrowseData.DataSeries,'Value');
-%         ListDataSeries=ListDataSeries(DataSeriesIndices);
-%         NbExp=0; % counter of the number of experiments set by the GUI browse_data
-%         for iexp=1:numel(ListExp)
-%             if ~isempty(regexp(ListExp{iexp},'^\+/', 'once'))% if it is a folder
-%                 for idevice=1:numel(ListDevices)
-%                     if ~isempty(regexp(ListDevices{idevice},'^\+/', 'once'))% if it is a folder
-%                         for isubdir=1:numel(ListDataSeries)
-%                             if ~isempty(regexp(ListDataSeries{isubdir},'^\+/', 'once'))% if it is a folder
-%                                 lpath= fullfile(SourceDir,regexprep(ListExp{iexp},'^\+/',''),...
-%                                     regexprep(ListDevices{idevice},'^\+/',''));
-%                                 ldir= regexprep(ListDataSeries{isubdir},'^\+/','');
-%                                 if exist(fullfile(lpath,ldir),'dir')
-%                                     NbExp=NbExp+1;
-%                                     ExpIndex(NbExp)=ExpIndices(iexp);
-%                                     DeviceIndex(NbExp)=DeviceIndices(idevice);
-%                                     ListPath{NbExp}=lpath;
-%                                     ListDeviceOut{NbExp}=regexprep(ListDevices{idevice},'^\+/','');
-%                                     ListExpOut{NbExp}=regexprep(ListExp{iexp},'^\+/','');
-%                                     ListSubdir{NbExp}=ldir;
-%                                 end
-%                             end
-%                         end
-%                     end
-%                 end
-%             end
-%         end
+        
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
         if strcmp(answer,'Cancel')||strcmp(answer,'No')
             return
@@ -1713,8 +1697,8 @@ for iexp=1:NbExp
             set(handles.OutputPath,'String',PathOut);
         end
         if get(handles.Replicate,'Value')
-        PathExpOut=fileparts(ListPath{iexp});
-        PathExpDeviceOut=ListPath{iexp};
+            PathExpOut=fileparts(ListPath{iexp});
+            PathExpDeviceOut=ListPath{iexp};
         else
             PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
             PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
@@ -1787,19 +1771,16 @@ for iexp=1:NbExp
         set(handles.OutputDirExt,'String',Param.OutputDirExt)
         drawnow
     end
-    % if isfield(Param,'FileInfo') && ~isempty(Param.FileInfo) && strcmp(Param.FileInfo.FileType,'rdvision')
-    %     set(handles.OutputSubDir,'String','/im')
-    % end
+
     if get(handles.Replicate,'Value')%reset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
-        set(handles.OutputPath,'String',OutputPath)
-        %regexprep(ListExp{iexp},'^\+/','')
-%         set(handles.Experiment,'String',ListExpOut{iexp})
+        set(handles.OutputPath,'String',fileparts(fileparts(ListPath{1})))
         set(handles.Experiment,'String',ExpName)
-        %set(handles.Device,'String',ListDeviceOut{iexp})
         set(handles.Device,'String',DeviceName)
+
         Param.Experiment=ExpName;
         Param.Device=DeviceName;
+        Param.OutputPath=fileparts(fileparts(ListPath{1}));
         check_input_file_series(handles)
     end
     DirXml=fullfile(OutputDir,'0_XML');
@@ -1885,7 +1866,7 @@ for iexp=1:NbExp
                 JobNumberMax=SeriesData.ClusterParam.JobNumberMax;
             else
                 disp('ClusterParam.JobNumberMax not documented in series.xml, set to 500 by default')
-                JobNumberMax=500;
+                JobNumberMax=round(500/NbExp);
             end
             if isfield(SeriesData.ClusterParam,'JobCPUTimeAdvised')
                 JobCPUTimeAdvised=SeriesData.ClusterParam.JobCPUTimeAdvised;
@@ -1893,6 +1874,7 @@ for iexp=1:NbExp
                 disp('ClusterParam.JobCPUTimeAdvised not documented in series.xml, set to 120 minutes by default')
                 JobCPUTimeAdvised=120;
             end
+            JobCPUTimeAdvised=JobCPUTimeAdvised*NbExp;
             if isempty(Param.IndexRange.NbSlice)% if NbSlice is not defined
                 BlockLength= ceil(JobCPUTimeAdvised/(CPUTime*nbfield_j)); % iterations are grouped in sets with length BlockLength  such that the typical CPU time of a job is JobCPUTimeAdvised.
                 BlockLength=max(BlockLength,ceil(numel(ref_i)*NbExp/JobNumberMax)); % possibly increase the BlockLength to have less than MaxJobNumber jobs
@@ -1926,10 +1908,12 @@ for iexp=1:NbExp
                 else
                     warning_string=')';
                 end
-                answer=msgbox_uvmat('INPUT_TXT',['Number of cores (limited to ' num2str(NbCoreMax) warning_string],num2str(NbCoreAdvised));
-                if isempty(answer)||strcmp(answer,'Cancel')
-                    errormsg='Action launch interrupted by user';
-                    return
+                if iexp==1
+                    answer=msgbox_uvmat('INPUT_TXT',['Number of cores (limited to ' num2str(NbCoreMax) warning_string],num2str(NbCoreAdvised));
+                    if isempty(answer)||strcmp(answer,'Cancel')
+                        errormsg='Action launch interrupted by user';
+                        return
+                    end
                 end
                 NbCore=str2double(answer);
                 if NbCore > NbCoreMax
@@ -2133,7 +2117,9 @@ for iexp=1:NbExp
                                 return
                         end
                     end
+                    if iexp==NbExp
                     msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched in background for ' ExpName ': press STATUS to see results'])
+                    end
             end
 
         case 'cluster' % option 'oar-parexec' used
@@ -2191,7 +2177,10 @@ for iexp=1:NbExp
                 return
             end
             oar_command=feval(LaunchCmdFcn,ListProcess,ActionFullName,DirLog,NbProcess, NbCore,CPUTimeProcess)
-            [status,result]=system(oar_command)% execute system command and show the result (ID number of the launched job) on the Matlab command window
+            [status,result]=system(oar_command);% execute system command and show the result (ID number of the launched job) on the Matlab command window
+            if status~=0 %error detection
+                disp(result)
+            end
             filename_oarcommand=fullfile(DIR_CLUSTER,'0_cluster_command.txt'); % keep track of the command in file '0-OAR/0_cluster_command'
             [fid,errormsg]=fopen(filename_oarcommand,'w');
             if ~isempty(errormsg)
@@ -2201,10 +2190,12 @@ for iexp=1:NbExp
             fprintf(fid,oar_command); % store the command
             fprintf(fid,result); % store the result (job ID number)
             fclose(fid);
-            if status==0
-                msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
-            else
-                msgbox_uvmat('ERROR',result)
+            if iexp==NbExp
+                if status==0
+                    msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
+                else
+                    msgbox_uvmat('ERROR',result)
+                end
             end
             %     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct
 
@@ -2505,6 +2496,10 @@ Param=read_GUI_series(handles); % read the parameters from the GUI series
 Param.Action.RUN=0;% indicate that we are in the mode of parameter input, not program run
 Param.SeriesData=SeriesData;% info stored in 'UserData' of the fig 'series'
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
+if isfield(ParamOut,'ActionParam') && strcmp(ParamOut.ActionParam,'on') && ~isfield(ParamOut,'ActionInput')
+    disp('specific parameter input aborted')
+    return
+end
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
 VelTypeRequest=1; % VelType requested by default
@@ -2520,7 +2515,7 @@ if isfield(ParamOut,'FieldName')
     FieldNameRequest_1=strcmp( ParamOut.FieldName,'two');
 end
 
-%% Abort if an input data series has not been refreshed, bt store the input parameters possibly set by Action fct
+%% Abort if an input data series has not been refreshed, store the input parameters possibly set by Action fct
 if ~isfield(SeriesData,'FileInfo')||~isequal(get(handles.REFRESH,'BackgroundColor'),[1 0 0])
     if isfield(ParamOut,'ActionInput')
         ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
@@ -2747,15 +2742,7 @@ num_first_j_Callback(hObject, eventdata, handles)
 if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
     enable_j(handles,'off',true)
 else% show j index if relevant in the input series
-%     if isfield(SeriesData,'j1_list')
-%     j1_list=SeriesData.j1_list;
-%     for iview=1:size(j1_list,1)
-%         if ~isempty(j1_list{iview})
-            enable_j(handles,'on',true)
-%             break
-%         end
-%     end
-%     end
+    enable_j(handles,'on',true)
 end
 
 %% NbSlice visibility
@@ -3955,7 +3942,7 @@ function OutputPathBrowse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 CheckValue=get(handles.OutputPathBrowse,'Value');
 if CheckValue
-OutputPath=uigetdir(get(handles.OutputPath,'String'));
+OutputPath=uigetdir(get(handles.OutputPath,'String'));ActionInput_Callback
 set(handles.OutputPath,'String',OutputPath)
 else
     InputTable=get(handles.InputTable,'Data');
