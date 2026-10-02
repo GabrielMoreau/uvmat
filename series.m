@@ -586,7 +586,7 @@ if ~isempty(empty_lines)
 end
 nbview=size(InputTable,1);% number of lines filled in the Input file table after this cleaning of empty lines
 
-%% get info on each line of the input table
+%% get info on each line #iview of the input table
 CheckRelabelQuest=true;% will ask for relabeling if relevant
 for iview=1:nbview
     Param.FilePath=fullfile(InputTable{iview,1},InputTable{iview,2});% path of the input file series
@@ -641,8 +641,8 @@ for iview=1:nbview
         [Param.RootFile,Param.ref_i_list,Param.ref_j_list,Param.i1_list,Param.i2_list,Param.j1_list,Param.j2_list,Param.NomType,Param.FileInfo]=...
             scan_file_series(Param.FilePath,InputFile);
     end
-    % if no file is found on line #iview, open a browser
-    if ~Param.Relabel && all(isnan(Param.ref_i_list))
+    %if ~Param.Relabel && all(isnan(Param.ref_i_list)) % if no file is found on line #iview, open a browser
+    if isempty(Param.FileInfo.FileName) % if no file is found on line #iview, open a browser
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],Param.FilePath);
         if isempty(fileinput)
             errormsg='no input file entered';
@@ -651,6 +651,15 @@ for iview=1:nbview
             display_file_name(handles,fileinput,iview)% update the table of input file series #iview, then will call update_rootinfo
         end
     else
+        % define the path for the output files
+        [InputPath,Device,DeviceExt]=fileparts(InputTable{1,1});
+        [OutputPath,Experiment,ExperimentExt]=fileparts(InputPath);
+        set(handles.Device,'String',[Device DeviceExt])
+        set(handles.Experiment,'String',[Experiment ExperimentExt])
+        set(handles.OutputPath,'String',OutputPath)
+        if ~isempty(regexp(InputTable{1,1},'(^http://)|(^https://)', 'once'))
+            set(handles.OutputPathBrowse,'Value',1)% an output folder needs to be specified for OpenDAP data
+        end
         update_rootinfo(handles,Param,iview)
     end
 end
@@ -989,8 +998,8 @@ else
     if diff_i_max==diff_i_min%perioricity in the input data
         incr_displayed=str2double(get(handles.num_incr_i,'String'));
         incr_round=ceil(incr_displayed/diff_i_max);
-        if incr_round~=incr_displayed/diff_i_max
-        set(handles.num_incr_i,'String',num2str(incr_round))
+        if incr_round~=incr_displayed/diff_i_max % if the displayed increment is not a multiple of the detected index increment
+        set(handles.num_incr_i,'String',num2str(diff_i_max))% display the detected increment
         end
     end
     diff_j_max=max(diff(Param.ref_j_list));
@@ -1005,9 +1014,9 @@ else
     end
     % make the j indices visible if relevant
     if all(isnan(Param.ref_j_list))% no j series
-        enable_j(handles,'off',false);
+        enable_j(handles,'off')
     else
-        enable_j(handles,'on',false)
+        enable_j(handles,'on')
     end
 end
 
@@ -1089,11 +1098,11 @@ set(handles.num_last_i,'String',num2str(last_i));
 set(handles.num_last_j,'String',num2str(last_j));
 
 %% number of slices set by default
-NbSlice=[]; % default
-% read  value set by the first series for the append mode (iwiew >1)
-if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
-    NbSlice=str2double(get(handles.num_NbSlice,'String'));
-end
+% NbSlice=[]; % default
+% % read  value set by the first series for the append mode (iwiew >1)
+% if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
+%     NbSlice=str2double(get(handles.num_NbSlice,'String'));
+% end
 
 %% update pair menus
 hset_pair=findobj(allchild(0),'Tag','set_pairs');%look for the GUI set_pairs
@@ -1166,11 +1175,17 @@ end
 if isempty(TimeName)&& isfield(Param,'XmlData') && isfield(Param.XmlData,'Time')
     TimeName='xml';
     Time=Param.XmlData.Time;
-    if size(Time)<[MaxIndex_j+1 MaxIndex_i+1]
+    if isnan(MaxIndex_j)|| isempty(MaxIndex_j)%case of no j index
+        MaxIndex_j_timematrix=2;MinIndex_j_timematrix=2;
+    else
+        MinIndex_j_timematrix=MinIndex_j+1;
+        MaxIndex_j_timematrix=MaxIndex_j+1;
+    end
+    if size(Time)<[MaxIndex_j_timematrix MaxIndex_i+1]
         msgbox_uvmat('WARNING','incomplete time info in xml file');
-    elseif size(Time)>=[MaxIndex_j+1 MaxIndex_i+1]
-         TimeMin=Time(MinIndex_j+1,MinIndex_i+1);
-         TimeMax=Time(MaxIndex_j+1,MaxIndex_i+1);
+    elseif size(Time)>=[MaxIndex_j_timematrix MaxIndex_i+1]
+         TimeMin=Time(MinIndex_j_timematrix,MinIndex_i+1);
+         TimeMax=Time(MaxIndex_j_timematrix,MaxIndex_i+1);
     end
 end
 
@@ -1425,16 +1440,16 @@ end
 %------------------------------------------------------------------------
 % make the series of j indices visible or not if relevant
 % if keepminmax=true, do not change the visibility of the min and max indices, (as needed to get the time matrix)
-function enable_j(handles,state,keepminmax)
+function enable_j(handles,state)
 %------------------------------------------------------------------------
 set(handles.j_txt,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
-if ~keepminmax
-    set(handles.MinIndex_j,'Visible',state)
-    set(handles.MaxIndex_j,'Visible',state)
-end
+% if ~keepminmax
+%     set(handles.MinIndex_j,'Visible','off')
+%     set(handles.MaxIndex_j,'Visible','off')
+% end
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -1476,14 +1491,16 @@ set(handles.RUN, 'Value',0)
 % RunMode='local': calculation on the local Matlab session, will prevent other actions during that time.
 % RunMode='background': calculation on the local computer, but in a new Matlab session (with no graphic output).
 % RunMode='cluster': calculations dispatched in a cluster, using a managing system, 'oar, 'sge, or 'sgb'.
-% In the latter case, the calculation is split in 'packets' of i index (all j indices are contained in a single packet).
+
+% With the cluster, the calculation is split in 'packets' of i index (all j indices are contained in a single packet).
 % This splitting is possible only if the different calculations in the series are independent. Otherwise the action
 % function imposes a number of processes NbSlice in input, for instance NbSlice=1 for a time series.
-% If NbSlice is not imposed, the splitting in packets (jobs) is determined
-% so that a job is optimum length AdvisedJobCPUTime), and the total job number in any case smaller
-% than MaxJobNumber (these parameters are defined in the file series.xml in
-% accordance with the management strategy for the cluster). The jobs are
-% dispatched in parallel into NbCore processors by the cluster managing system.
+%
+% If NbSlice is not imposed, the splitting in packets (jobs) is determined by parameters  defined in the file series.xml in
+% accordance with the management strategy for the cluster:
+% a job is of optimum length set by the parameter AdvisedJobCPUTime, and the total job number in any case smaller
+% than MaxJobNumber . The jobs are dispatched by the cluster managing system in parallel as 
+% NbProcess independent processes into NbCore processors 
 
 function errormsg=launch_action(handles)
 %------------------------------------------------------------------------
@@ -1508,6 +1525,7 @@ if isfield(Param,'InputFields')&& isfield(Param.InputFields,'FieldName')&& isequ
     errormsg='input field name(s) not defined, select add_field...';
     return
 end
+errormsg=''; % default error message
 
 %% check the info about git 
 % path_series=fileparts(which('series'));
@@ -1522,7 +1540,7 @@ end
 %         Param.UvmatRevision=datestr(dathead);%string for date display
 %     end
 % end
-%% check the info about current version
+%% check the info about current version using the file 'updates.txt' instead of .git 
 path_series=fileparts(which('series'));
 UpdateFile=fullfile(path_series,'updates.txt');
 msg_update='';
@@ -1532,7 +1550,6 @@ try
     Param.UvmatRevision=InputText{1};
     fclose(fid);
 end
-
 
 %% select the Action mode, 'local', 'background' or 'cluster' (if available)
 RunMode='local'; % default (needed for first opening of the GUI series)
@@ -1548,7 +1565,7 @@ if isfield(Param.Action,'ActionExt')
 end
 ActionName=Param.Action.ActionName;
 ActionPath=Param.Action.ActionPath;
-
+ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 
 %% create the Action fct handle if RunMode option = 'local'
 if strcmp(RunMode,'local')
@@ -1563,10 +1580,6 @@ if strcmp(RunMode,'local')
     end
     cd(current_dir)
 end
-
-%% Get  parameters from series.xml
-errormsg=''; % default error message
-ActionFullName=fullfile(get(handles.ActionPath,'String'),ActionName);
 
 %% If a compiled version has been selected (ext .sh) check wether it needs to be recompiled
 if strcmp(ActionExt,'.sh')
@@ -1634,13 +1647,12 @@ if strcmp(ActionExt,'.sh')
     set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
 
-%% set nbre of cluster cores and processes:
-% NbCore is the number of computer processors used
-% NbProcess is the number of independent processes in which the required calculation is split.
+%% set the list of field indices for the processing
+Param.IndexRange.first_i=str2double(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
+Param.IndexRange.last_i=str2double(get(handles.num_last_i,'String'));
 if ~isfield(Param.IndexRange,'NbSlice')
     Param.IndexRange.NbSlice=[];
 end
-OutputPath=get(handles.OutputPath,'String');
 
 %% Look for processing on multiple experiments set by the GUI browse_data
 NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
@@ -1650,11 +1662,8 @@ if get(handles.Replicate,'Value')
         set(handles.Replicate,'Value',0)
     else
         set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
-         BrowseData=guidata(hbrowse);  %TODO: use the fct read_browsedata ?    
-         
-          [ListPath, ListSubdir]=read_browsedata (hbrowse);
-         NbExp=numel(ListPath);
-        
+        [ListPath, ListSubdir]=read_browsedata (hbrowse);
+        NbExp=numel(ListPath);
         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
         if strcmp(answer,'Cancel')||strcmp(answer,'No')
             return
@@ -1684,8 +1693,7 @@ for iexp=1:NbExp
     end
     [RootPath,DeviceName]=fileparts(Param.InputTable{1,1});
     [~,ExpName]=fileparts(RootPath);
-    Param.IndexRange.first_i=str2double(get(handles.num_first_i,'String'));%reset the firrst_i and last_i for multiple experiments, modified by the splitting into NbProcess
-    Param.IndexRange.last_i=str2double(get(handles.num_last_i,'String'));
+
 
     %% create the output data directory if needed, after checking its existence
     OutputDir='';
@@ -2475,6 +2483,9 @@ set(handles.num_CPUTime,'String','')
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+if isequal(get(handles.REFRESH,'BackgroundColor'),[1 1 0])||isequal(get(handles.RUN,'BackgroundColor'),[1 1 0])
+return % do not start before RUN or REFRESH are finished
+end
 set(handles.ActionInput,'BackgroundColor',[1 1 0])
 SeriesData=get(handles.series,'UserData'); % info on the input file series
 
@@ -2496,9 +2507,9 @@ Param=read_GUI_series(handles); % read the parameters from the GUI series
 Param.Action.RUN=0;% indicate that we are in the mode of parameter input, not program run
 Param.SeriesData=SeriesData;% info stored in 'UserData' of the fig 'series'
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
+check_aborted=false;
 if isfield(ParamOut,'ActionParam') && strcmp(ParamOut.ActionParam,'on') && ~isfield(ParamOut,'ActionInput')
-    disp('specific parameter input aborted')
-    return
+    check_aborted=true;
 end
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
@@ -2574,6 +2585,8 @@ if VelTypeRequest && ~isempty(iview_civ)% if civ data are in input
 else
     set(handles.VelType,'Visible','off')
     set(handles.VelType_title,'Visible','off')
+    set(handles.VelType_1,'Visible','off')
+    set(handles.VelType_title_1,'Visible','off')
 end
 
 %% Detect the types of input files and set menus and default options in 'FieldName'
@@ -2723,9 +2736,11 @@ end
 if strcmp(ParamOut.WholeIndexRange,'on')||strcmp(ParamOut.IndexRange_j,'whole')
     MinIndex_j=get(handles.MinIndex_j,'Data');
     MaxIndex_j=get(handles.MaxIndex_j,'Data');
+    if ~isempty(MinIndex_j) && ~isempty(MaxIndex_j)
     set(handles.num_first_j,'String',num2str(MinIndex_j(1)))% set first as the min index (for the first line)
     set(handles.num_last_j,'String',num2str(MaxIndex_j(1)))% set last as the max index (for the first line)
     set(handles.num_incr_j,'String','1')
+    end
 else  % check index ranges
     first_j=1;last_j=1;
     if isfield(Param.IndexRange,'first_j')
@@ -2740,9 +2755,9 @@ num_first_j_Callback(hObject, eventdata, handles)
 
 %% enable or desable j index visibility
 if strcmp(ParamOut.IndexRange_j,'off')%do not show the j index
-    enable_j(handles,'off',true)
-else% show j index if relevant in the input series
-    enable_j(handles,'on',true)
+    enable_j(handles,'off')
+% else% show j index if relevant in the input series
+%     enable_j(handles,'on',true)
 end
 
 %% NbSlice visibility
@@ -2901,7 +2916,11 @@ else
     end
 end
 set(handles.series,'UserData',SeriesData)
+if check_aborted
+    set(handles.ActionInput,'BackgroundColor',[1 0 1])%color the ActionInput button in magenta to indicate that input is incomplete 
+else
 set(handles.ActionInput,'BackgroundColor',[1 0 0])
+end
 
 
 %------------------------------------------------------------------------
@@ -2982,7 +3001,10 @@ if strcmp(field,'add_field...')
                     set(handles.VelType,'Visible','on')
             end
             set(handles.FieldName,'Value',1)
-            set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
+            ListUpdated=unique([ FieldList;FieldListInit;'add_field...'],'stable');
+            set(handles.FieldName,'String',ListUpdated)
+            set(handles.FieldName,'Value',1:numel(FieldList))
+          % set(handles.FieldName,'String',[FieldListInit; FieldList; {'add_field...'}]);
             if ~strcmp(GetFieldData.FieldOption,'civdata...')
                 if ~isempty(regexp(FieldList{1},'^vec', 'once'))
                     set(handles.FieldName,'Value',1)
@@ -3004,16 +3026,24 @@ if strcmp(field,'add_field...')
                         FileExt=Param.InputTable{LineIndex,5};
                         NomType=Param.InputTable{LineIndex,4};
                         PairString=get(handles.PairString,'Data');
-                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MinIndex_i(LineIndex),Param.IndexRange.MinIndex_j(LineIndex),PairString);
+                        if numel(Param.IndexRange.MinIndex_j)>=LineIndex
+                            MinIndex_j=Param.IndexRange.MinIndex_j(LineIndex);
+                            first_j=Param.IndexRange.first_j;
+                            last_j=Param.IndexRange.last_j;
+                            MaxIndex_j=Param.IndexRange.MaxIndex_j(LineIndex);
+                        else
+                            MinIndex_j=1;first_j=1;last_j=1;MaxIndex_j=1;
+                        end
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MinIndex_i(LineIndex),MinIndex_j,PairString);
                         FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
                         TimeTable{LineIndex,1}=get_time(FullFileName,'netcdf',TimeName);
-                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,Param.IndexRange.first_j,PairString);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
                         FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
                         TimeTable{LineIndex,2}=get_time(FullFileName,'netcdf',TimeName);
-                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,Param.IndexRange.last_j,PairString);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
                         FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
                         TimeTable{LineIndex,3}=get_time(FullFileName,'netcdf',TimeName);
-                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MaxIndex_i(LineIndex),Param.IndexRange.MaxIndex_j(LineIndex),PairString);
+                        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.MaxIndex_i(LineIndex),MaxIndex_j,PairString);
                         FullFileName=fullfile_indices(FullRootFile,FileExt,NomType,i1,i2,j1,j2);
                         TimeTable{LineIndex,4}=get_time(FullFileName,'netcdf',TimeName);
                         TimeName=['att:' TimeName];
@@ -3035,8 +3065,6 @@ if strcmp(field,'add_field...')
             set(handles.Coord_x,'Visible','on')
             set(handles.Coord_y,'Visible','on')
         end
-%     else
-%         msgbox_uvmat('ERROR',[FirstFileName ' does not exist'])
     end
 end
 
@@ -3448,11 +3476,13 @@ Param.Action.RUN=0; % desactivate the input RUN=1
 fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
 SeriesData=get(handles.series,'UserData');
 if isfield(Param,'InputFields')
-    ListField=Param.InputFields.FieldName;
-    if ischar(ListField),ListField={ListField}; end
-    set(handles.FieldName,'String',[ListField;{'add_field...'}])
-     set(handles.FieldName,'Value',1:numel(ListField))
-     set(handles.FieldName,'Visible','on')
+    if isfield(Param.InputFields,'FieldName')
+        ListField=Param.InputFields.FieldName;
+        if ischar(ListField),ListField={ListField}; end
+        set(handles.FieldName,'String',[ListField;{'add_field...'}])
+        set(handles.FieldName,'Value',1:numel(ListField))
+        set(handles.FieldName,'Visible','on')
+    end
 end
 if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
     Param.ActionInput.ConfigSource=filexml; % record the source of config for future info
@@ -3478,7 +3508,7 @@ else
     set(handles.DeleteObject,'Visible','off')
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magenta to indicate that it should be activated
-msgbox_uvmat('CONFIMATION','Processing parameters entered, now REFRESH the input file series')
+msgbox_uvmat('CONFIMATION','Processing parameters entered, now REFRESH or change the input file series')
 
 
 %------------------------------------------------------------------------
@@ -3808,7 +3838,7 @@ if strcmp(mode,'series(Dj)')
 else
        status_j='off'; % no j index needed for burst case
 end
-enable_j(hhseries,status_j,true) % no j index needed
+enable_j(hhseries,status_j) % no j index needed
 
 %% get the reference indices for the time interval Dt
 href_i=findobj(get(hObject,'parent'),'Tag','ref_i');
@@ -3925,15 +3955,23 @@ function Replicate_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.Replicate,'Value')
     InputTable=get(handles.InputTable,'Data');
-    for ilist=1:size(InputTable,1)
-        InputDir{ilist}=fullfile(InputTable{ilist,1},InputTable{ilist,2});
-    end
+    %for ilist=1:size(InputTable,1)
+        InputDir{1}=fullfile(InputTable{1,1},InputTable{1,2});
+    %end
     browse_data(InputDir)
+%     if size(InputTable,1)>=2
+%         InputDir{1}=fullfile(InputTable{2,1},InputTable{2,2});
+%          browse_data_2(InputDir)
+%     end
 else
     hh=findobj(allchild(0),'Tag','browse_data');
     if ~isempty(hh)
         delete(hh)
     end
+%     hh=findobj(allchild(0),'Tag','browse_data_2');
+%     if ~isempty(hh)
+%         delete(hh)
+%     end
 end
 
 %------------------------------------------------------------------------
@@ -3942,7 +3980,7 @@ function OutputPathBrowse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 CheckValue=get(handles.OutputPathBrowse,'Value');
 if CheckValue
-OutputPath=uigetdir(get(handles.OutputPath,'String'));ActionInput_Callback
+OutputPath=uigetdir(get(handles.OutputPath,'String'));
 set(handles.OutputPath,'String',OutputPath)
 else
     InputTable=get(handles.InputTable,'Data');

@@ -170,12 +170,8 @@ end
 
 GUIParam=[];
 %% read input parameters from an xml file if input is a file name (batch mode)
-RUNHandle=[];
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-else
-    hseries=findobj(allchild(0),'Tag','series');
-    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series (to allow for run interruption by the button STOP
 end
 
 %% input preparation
@@ -199,8 +195,10 @@ FileExt=Param.InputTable{1,5};
 % nbaver_ima: nbre of the images in the sliding sequence used for the background
 % nbaver=nbaver_ima/step: nbre of bursts corresponding to nbaver_ima images. It has been adjusted so that nbaver is an odd integer
 if isfield(Param.IndexRange,'last_j')
+    last_j=Param.IndexRange.last_j;
     j_indices=1:Param.IndexRange.incr_j:Param.IndexRange.last_j;
 else
+    last_j=1;
     j_indices=1;
 end
 NbField_j=numel(j_indices); %nb of fields for the j index
@@ -218,11 +216,7 @@ else
     %nbfield_series=nbfield_i*NbField_j;
 end
 [nbaver_ima,nbaver,step]=adjust_slidinglength(Param.ActionInput.SlidingSequenceLength,step);
-if isfield(Param.IndexRange,'first_j')
-    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
-else
-    j_indices=1;
-end
+
 first_i= floor((Param.IndexRange.first_i-1)/nbaver_ima)*nbaver_ima+1;% adjust the first i index to get an interger number of nbaver_ima
 i_indices=first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 nbfield_i=numel(i_indices); %nb of fields for the i index (bursts or volume slices)
@@ -251,7 +245,7 @@ if CheckRelabel
         XmlData=imadoc2struct(XmlFileName);%read the time from XmlFileName
     end
     RootFileOut='frame';
-    [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
+    [RootFile,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),last_j);
     FirstFileName=fullfile(RootPath,SubDir,RootFile);
 else
     FirstFileName=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,Param.IndexRange.first_i,[],j_indices(1));%get first file name
@@ -315,7 +309,7 @@ for j_slice=1:NbSlice
         for ifield = iblock:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
-                [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),Param.IndexRange.last_j);
+                [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),last_j);
                 filename=fullfile(RootPath,SubDir,filename)
             else
                 filename=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,i_indices(ifile),[],j_indices(ifile))

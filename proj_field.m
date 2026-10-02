@@ -1396,15 +1396,12 @@ for icell=1:length(CellInfo)
                         ind_good=find(isfinite(coord_X));
                         coord_X=coord_X(ind_good);
                         coord_Y=coord_Y(ind_good);
-                        if exist('scatteredInterpolant','file')%recent Matlab versions
-                            F=scatteredInterpolant(coord_X, coord_Y,coord_X,'nearest');
-                            G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
-                        else
-                            F=TriScatteredInterp([coord_X coord_Y],coord_X,'nearest');
-                            G=TriScatteredInterp([coord_X coord_Y],coord_Y,'nearest');
-                        end
+                        F=scatteredInterpolant([coord_X coord_Y],coord_X,'nearest');
                         Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
-                        Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+                        F.Values=coord_Y;
+                        %G=scatteredInterpolant(coord_X, coord_Y,coord_Y,'nearest');
+                        
+                        Disty=F(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                         Dist=Distx.*Distx+Disty.*Disty;
                         if ~isempty(thresh2)
                             for ivar=1:numel(VarVal)

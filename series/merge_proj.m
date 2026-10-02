@@ -500,8 +500,12 @@ for index_i=Index_i_series
                 imwrite(uint16(MergeData.A),OutputFile,'BitDepth',16)
             end
         else   %output as netcdf files
-            MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','NbCoord','NbDim'};
+            MergeData.ListGlobalAttribute={'Conventions','Program','InputFile_1','InputFile_end','NbCoord','NbDim'};
             MergeData.Conventions='uvmat';
+            MergeData.Program=mfilename;
+            if isfield(Param,'UvmatRevision')
+                MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision{1}];
+            end
             MergeData.NbCoord=2;
             MergeData.NbDim=2;
             % time interval of PIV

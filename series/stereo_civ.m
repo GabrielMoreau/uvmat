@@ -96,9 +96,11 @@ end
 %% List of input indices i and j
 i_indices=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 if isfield(Param.IndexRange,'first_j')
+    last_j=Param.IndexRange.last_j;
     j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
     NomTypeOut='_1_1'; %i and j indices for outdput
 else
+    last_j=1;
     j_indices=1;
     NomTypeOut='_1';% Only i indices for output
 end
@@ -131,7 +133,7 @@ for iview=1:2
         end
     end
     if CheckRelabel_GUI && isfield(XmlData{iview},'FileSeries')
-        [FileName,frame_index{iview}]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
+        [FileName,frame_index{iview}]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,j_indices(1),last_j);
         FirstFileName=fullfile(RootPath{iview},SubDir{iview},FileName);
         FileInfo=get_file_info(FirstFileName);
         FileType{iview}=FileInfo.FileType;
@@ -177,7 +179,7 @@ end
 %% Output directory and data preparation
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 inv_scale_factor=100; % scale factor of displacements for uin16 records in netcdf files (dx expressed in pixels)
-ListGlobalAttribute={'Conventions','Program','UvmatRevision','CivStage','Time','Xshift_mean','Yshift_mean','Zshift_mean'};
+ListGlobalAttribute={'Conventions','Program','CivStage','Time','Xshift_mean','Yshift_mean','Zshift_mean'};
 if Param.ActionInput.CheckTest
     Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
     Data.ListVarName={'X','Y','U','V','FF','C','Xphys','Yphys','Xshift','Yshift'};
@@ -186,23 +188,23 @@ if Param.ActionInput.CheckTest
     Data.VarAttribute{3}.Role='vector_x';
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{5}.Role='errorflag';
-    ind_start=1;
+    ind_start=6;
 else
     Data.Conventions='uvmat';% states the conventions used for the description of field variables and attributes
     Data.ListVarName={'C','Xphys','Yphys','Xshift','Yshift'};
-    ind_start=6;
+    ind_start=1;
 end
 % test for recording the smmoothed data
 CheckSmooth=(Param.ActionInput.CheckPatch1 && ~Param.ActionInput.CheckCiv2) ||(Param.ActionInput.CheckPatch2 && ~Param.ActionInput.CheckCiv3) || Param.ActionInput.CheckPatch3;
-Data.VarAttribute{ind_start+1}.Role='ancillary';
-Data.VarAttribute{ind_start+1}.scale_factor=1/100;%scla factor for correlation
-Data.VarAttribute{ind_start+2}.Role='coord_x';
-Data.VarAttribute{ind_start+3}.Role='coord_y';
-Data.VarAttribute{ind_start+4}.Role='vector_x';
-Data.VarAttribute{ind_start+5}.Role='vector_y';
+Data.VarAttribute{ind_start}.Role='ancillary';
+Data.VarAttribute{ind_start}.scale_factor=1/100;%scla factor for correlation
+Data.VarAttribute{ind_start+1}.Role='coord_x';
+Data.VarAttribute{ind_start+2}.Role='coord_y';
+Data.VarAttribute{ind_start+3}.Role='vector_x';
+Data.VarAttribute{ind_start+4}.Role='vector_y';
 if Param.ActionInput.CheckZField
     Data.ListVarName=[Data.ListVarName 'Zshift'];
-    Data.VarAttribute{ind_start+6}.Role='scalar';
+    Data.VarAttribute{ind_start+5}.Role='scalar';
 end
 
 if CheckSmooth && Param.ActionInput.CheckTest
@@ -213,7 +215,10 @@ if CheckSmooth && Param.ActionInput.CheckTest
 end
 Data.VarDimName=repmat({'nb_vec'},1,numel(Data.ListVarName));
 Data.Program=mfilename;%gives the name of the current function;
-Data.UvmatRevision=Param.UvmatRevision;
+if isfield(Param,'UvmatRevision')
+   Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision{1}];
+end
+%Data.UvmatRevision=Param.UvmatRevision;
 Data.CivStage=0;%default
 Data.Time=NaN; %default
 par_civ1.MaskName_A='';%default
@@ -239,14 +244,14 @@ for index_i=1:numel(i_indices)
         end
         tstart=tic;
         if CheckRelabel{1}% case of index relabelling for first image series
-            [ImageName_A,FrameIndex_A]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
+            [ImageName_A,FrameIndex_A]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),last_j);
             ImageName_A=fullfile(RootPath{1},SubDir{1},ImageName_A);% include path
         else
             ImageName_A=fullfile_indices(fullfile(RootPath{1},SubDir{1},RootFile{1}),FileExt{1},NomType{1},i_indices(index_i),[],j_indices(index_j))
             FrameIndex_A=frame_index{1}(index_j,index_i);
         end
         if CheckRelabel{2}  % case of index relabelling for secondimage series
-            [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
+            [ImageName_B,FrameIndex_B]=index2filename(XmlData{2}.FileSeries,i_indices(index_i),j_indices(index_j),last_j);
             ImageName_B=fullfile(RootPath{2},SubDir{2},ImageName_B);% include path
         else
             ImageName_B=fullfile_indices(fullfile(RootPath{2},SubDir{2},RootFile{2}),FileExt{2},NomType{2},i_indices(index_i),[],j_indices(index_j))

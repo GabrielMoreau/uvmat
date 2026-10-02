@@ -262,18 +262,20 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
                     open(FullSelectName)
                 else
                     uvmat(FullSelectName);
+                    delete(fig_struct)
                 end
         end
     end
 end
-set(hObject,'backgroundColor',[0 1 0])% indicate end button activatio
-fig_struct=get(hObject,'parent');
-if isstruct(fig_struct)%recent Matlab
-    uiresume(fig_struct.Number)
-else
-    uiresume(fig_struct)
+if isvalid(fig_struct)
+    set(hObject,'backgroundColor',[0 1 0])% indicate end button activatio
+    fig_struct=get(hObject,'parent');
+    if isstruct(fig_struct)%recent Matlab
+        uiresume(fig_struct.Number)
+    else
+        uiresume(fig_struct)
+    end
 end
-
 
 %------------------------------------------------------------------------
 % --- launched by selecting an item on the file list

@@ -86,11 +86,11 @@ for ilist=1:numel(FieldName)
                     UName{ilist}='strain';
                     Data.strain=Data.DjUi(:,1,2)+Data.DjUi(:,2,1);
             end
-            InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if iTriScatteredInterpt is not already in the list
+            InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
         else % case 'norm' for instance
             UName{ilist}=r.UName;
             VName{ilist}=r.VName;
-            if isempty(find(strcmp(r.UName,InputVarList)))
+            if isempty(find(strcmp(r.UName,InputVarList), 1))
                 InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
             end
             if isempty(find(strcmp(r.VName,InputVarList), 1))
@@ -105,7 +105,9 @@ end
 if exist('XI','var')
     for ilist=1:numel(InputVarList)
         ind_good=find(isfinite(Data.(InputVarList{ilist})));
-        F.(InputVarList{ilist})=TriScatteredInterp(Coord(ind_good,:),Data.(InputVarList{ilist})(ind_good),'linear');
+         % linear intepolation with linear extrapolation beyond the convex hull
+         F.(InputVarList{ilist})= scatteredInterpolant(Coord(ind_good,:),Data.(InputVarList{ilist})(ind_good),'linear','linear');
+        %F.(InputVarList{ilist})=TriScatteredInterp(Coord(ind_good,:),Data.(InputVarList{ilist})(ind_good),'linear');
     end
 end
 

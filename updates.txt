@@ -1,22 +1,14 @@
-version 26.1
-- check_files: version number displayed by reading the current file updates.txt when uvmat is opening, year.1,2...
-- civ2vel_3C: GUIParam.ActionParam='on' added as a check of valid input.
-- civ_input app: simplified to avoid search of series figure handle, j index display avoided if not needed
-         case of a single background image repaired
-         call to hseries moved to civ_series
-- civ_series: case of deleted civ_input handled
-          handling of background images with relative path with respect to the image series (avoid changes for each series)
-          small bug corrected in relabel mode
-- fill_app: unrecognized object handled no more diplayed
-- get_field: interface bug repaired
-- get_file_info: info 'CivImage' added
-- merge_proj: GUIParam.ActionParam='on' added as a check of valid input.
-- nc2struct: modified to read as NaN the integer variables reaching the upper bound (coding of NaN for integers)
-- series: check GUIParam.ActionParam='on' for all series functions which need specific additional parameters, (to check valid input). 
-              TO ADD IN ALL FUNCTIONS with input parameters like in civ_series
-       adjust the proposed job number in mode 'replicate'
-       bug repaired in mode 'replicate'
-- stereo_civ: GUIParam.ActionParam='on' added as a check of valid input.
-            : bug corrected for mode 'relabel'
-            : raw data in pixels remove from the netcdf files when mode Test is not selected
-- uvmat: bug repair display of norm(u,v) and other scalars 
+version 26.2
+- browse_data_2: added as a copy of browse_data, ot allow replicate mode of series.m with two input field series
+- calc_field_interp: change TriScatteredInterp to the advised fct scatteredInterpolant, introduce extrapolation (within RangeInterp)
+- series: improve the index increment display, and the time table display
+          bug repaired in the reinitialisation of Outputpath after REFRESH
+          bug repaired for using get_field
+- uigetfield_uvmat: close figure after OK when uvamt is opened 
+- series/aver_stat: improve input mode, suppress automatic opening of uvmat at the end, change the automatic output dir extension to .mean
+- series/calc_bacground: dealing with the absence of j indices in mode relabel
+- series/civ_series: bug repaired for mask civ2
+- series/civ2vel_3C: griddata replacedby ScatterInterpolant (providing extrapolation at the edge of shift field) 
+- series/set_civ_grid: dealing with the absence of j indices in mode relabel 
+- series/stereo_civ: corrected bug in record of variabl Y in test mode
+                     dealing with the absence of j indices in mode relabel

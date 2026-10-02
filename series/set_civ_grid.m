@@ -86,9 +86,11 @@ i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_
 %% List of input indices i and j
 i_indices=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 if isfield(Param.IndexRange,'first_j')
-    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+    last_j=Param.IndexRange.last_j;
+    j_indices=Param.IndexRange.first_j:Param.IndexRange.incr_j:last_j;
     NomTypeOut='_1_1'; %i and j indices for outdput
 else
+    last_j=1;
     j_indices=1;
     NomTypeOut='_1';% Only i indices for output
 end
@@ -108,7 +110,7 @@ end
 
 %% get file info
 if CheckRelabel
-    [FileName,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),Param.IndexRange.last_j);
+    [FileName,frame_index]=index2filename(XmlData.FileSeries,Param.IndexRange.first_i,j_indices(1),last_j);
     FirstFileName=fullfile(RootPath,SubDir,FileName);
     FileInfo=get_file_info(FirstFileName);
 else
@@ -149,7 +151,7 @@ PosWall2=zeros(1,Npx);% initialise variance of y position of the wall in px coor
 for index_i=1:numel(i_indices)
     for index_j=1:numel(j_indices)
         if CheckRelabel
-            [ImageName,FrameIndex]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),Param.IndexRange.last_j);
+            [ImageName,FrameIndex]=index2filename(XmlData{1}.FileSeries,i_indices(index_i),j_indices(index_j),last_j);
             ImageName=fullfile(RootPath{1},SubDir{1},ImageName);% include path
         else
             ImageName=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,i_indices(index_i),[],j_indices(index_j));

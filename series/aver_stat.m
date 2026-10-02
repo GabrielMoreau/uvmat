@@ -60,7 +60,7 @@ function GUIParam=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+   % GUIParam.ActionParam='on';% indicate that specific parameter input is expected
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     GUIParam.NbSlice='on'; %nbre of slices ('off' by default)
@@ -69,7 +69,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.FieldTransform = 'on';%can use a transform function
     GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
     GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    GUIParam.OutputDirExt='.stat';%set the output dir extension
+    GUIParam.OutputDirExt='.mean';%set the output dir extension
     GUIParam.OutputFileMode='NbSlice';% '=NbInput': one output file per input file index, '=NbInput_i': one file per input file index i, '=NbSlice': one file per slice
     % check for selection of a projection object
     hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
@@ -111,22 +111,21 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
         end
     end
-    % determine volume scan mode
-    prompt = {'volume scan mode (Yes/No)'};
-    dlg_title = 'determine volume scan';
-    num_lines= 1;
-    def     = { 'No'};
-    answer=msgbox_uvmat('INPUT_Y-N','volume scan mode (OK/No)?');
-    %     answer = inputdlg(prompt,dlg_title,num_lines,def);
-    if isempty(answer)
-        return
-    end
-    %check input consistency
-    if strcmp(answer,'Yes')
-        GUIParam.NbSlice=1;% set NbSlice to 1 ( for i index)
-        GUIParam.ActionInput.CheckVolume=1;
-    end
-    return
+    % determine volume scan mode %TO CHECK WHEN NEEDED
+%     prompt = {'volume scan mode (Yes/No)'};
+%     dlg_title = 'determine volume scan';
+%     num_lines= 1;
+%     def     = { 'No'};
+%     answer=msgbox_uvmat('INPUT_Y-N','volume scan mode (OK/No)?');
+%     if isempty(answer)
+%         return
+%     end
+%     %check input consistency
+%     if strcmp(answer,'Yes')
+%         GUIParam.NbSlice=1;% set NbSlice to 1 ( for i index)
+%         GUIParam.ActionInput.CheckVolume=1;
+%     end
+     return
 end
 
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
@@ -495,7 +494,3 @@ for islice=index_j
     end  % end averaging  loop
 end
 
-%% open the result file with uvmat (in RUN mode)
-if checkrun
-    uvmat(OutputFile)% open the last result file with uvmat
-end

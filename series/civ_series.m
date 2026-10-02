@@ -285,7 +285,7 @@ ListGlobalAttribute={'Conventions','Program','CivStage','Time','Dt'};
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
 if isfield(Param,'UvmatRevision')
-    Data.Program=[Data.Program ', uvmat r' Param.UvmatRevision];
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision{1}];
 end
 Data.CivStage=0;%default
 
@@ -298,7 +298,7 @@ for ifield=1:NbField
     time_civ2=0;
     time_patch2=0;
 
-    if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')% allow for interactive kill
+    if  checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')%allow for interactive kill
         disp('program stopped by user')
         break
     end
@@ -728,6 +728,10 @@ for ifield=1:NbField
         if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && Param.ActionInput.CheckBackground &&~isempty(Param.ActionInput.Background)
 
             BkgndRootName=Param.ActionInput.Background;
+             [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
+            if isempty(fileparts(BackgroundExt))% relative path defined
+                BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
+            end
             IndexPeriod=[];
             if isfield(Param.ActionInput,'BkgndPeriod')
                 IndexPeriod=Param.ActionInput.BkgndPeriod;
@@ -736,14 +740,13 @@ for ifield=1:NbField
             if isfield(par_civ2,'NbSlice')
                 NbSlice=par_civ2.NbSlice;
             end
-            CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');
+            CheckVolumeScan=strcmp(NomTypeNc,'_1-2_1');           
             backgroundname=get_background_name(BkgndRootName,floor((i1_civ2+i2_civ2)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
-
             if ~strcmp(backgroundoldname,backgroundname)% background exist, not already read in civ2
                 try
                     BackgroundImage=uint16(imread(backgroundname));%update the background, an store it for future use
                     backgroundoldname=backgroundname;
-                catch ME
+                catch
                     if ~isempty(ME.message)
                         errormsg=['error reading input image: ' ME.message];
                         disp_uvmat('ERROR',errormsg,checkrun)
