@@ -60,7 +60,7 @@ function GUIParam=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
-   % GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+  %  GUIParam.ActionParam='on';% indicate that specific parameter input is expected
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     GUIParam.NbSlice='on'; %nbre of slices ('off' by default)
@@ -73,16 +73,26 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.OutputFileMode='NbSlice';% '=NbInput': one output file per input file index, '=NbInput_i': one file per input file index i, '=NbSlice': one file per slice
     % check for selection of a projection object
     hseries=findobj(allchild(0),'Tag','series');% handles of the GUI series
-    if  ~isfield(Param,'ProjObject')
+    if isfield(Param,'CheckObject') && Param.CheckObject% a projection object has been introduced
+        answer=msgbox_uvmat('INPUT_Y-N',['project fields on ' Param.ProjObjectName '?']);
+        if ~strcmp(answer,'Yes')
+            set(gcbo,'BackgroundColor',[1 0 1])% color the calling INPUT button of series in magenta to indicate failure of the input process 
+            return % abort input
+        end
+    else
         answer=msgbox_uvmat('INPUT_Y-N','use a projection object?');
-        if strcmp(answer,'Yes')
-            hhseries=guidata(hseries);
-            set(hhseries.CheckObject,'Visible','on')
-            set(hhseries.CheckObject,'Value',1)
-            Param.CheckObject=1;
-            series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+        if ~strcmp(answer,'No')
+             set(gcbo,'BackgroundColor',[1 0 1])% color the calling INPUT button of series in magenta to indicate failure of the input process 
+            return % abort input
         end
     end
+    %             hhseries=guidata(hseries);
+%             set(hhseries.CheckObject,'Visible','on')
+%             set(hhseries.CheckObject,'Value',1)
+%             Param.CheckObject=1;
+%             series('CheckObject_Callback',hseries,[],hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+%         end
+%     end
     % introduce bin size for histograms
     if isfield(Param,'CheckObject') && Param.CheckObject
         SeriesData=get(hseries,'UserData');
@@ -125,6 +135,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
 %         GUIParam.NbSlice=1;% set NbSlice to 1 ( for i index)
 %         GUIParam.ActionInput.CheckVolume=1;
 %     end
+set(gcbo,'BackgroundColor',[1 0 0])% color the INPUT button of series in red to indicate achievement of the input process 
      return
 end
 

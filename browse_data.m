@@ -217,8 +217,7 @@ if exist(SourceDir,'dir')
     end
     set(handles.ListExperiments,'String',[{'*'};ExpName'])
     set(handles.ListExperiments,'Value',1)
-    update_experiments(handles,[{'*'};ExpName'],SourceDir,MirrorDir)
-    % ListExperiments_Callback(hObject, eventdata, handles) % list the content of the experiment
+    update_experiments(handles,[{'*'};ExpName'],SourceDir,MirrorDir)% list the content of the experiment
 else
     msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
 end
@@ -298,48 +297,6 @@ check_fix=strcmp(get(handles.DataSeries,'enable'),'off');
 set(handles.DataSeries,'String',ListFiles)
 set(handles.DataSeries,'Value',indices)% initialise the menu selection with the folder defined by the input
 
-%------------------------------------------------------------------------
-% --- List the DataSeries when a set of experiments is selected
-%------------------------------------------------------------------------
-% function list_dataseries(handles,ListExperiments,MirrorPath)
-% 
-% DataSeries={};
-% for iexp=1:numel(ListExperiments)
-% if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
-% ListExperiments{iexp}(1)=[];%remove the first char '+' used to mark folders
-% ListStruct=dir(fullfile(MirrorPath,ListExperiments{iexp})); %list files and dir in the source experiment directory
-% ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
-% ListFiles=ListCells(1,:);%list of dir and file  names
-% cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
-% cell_remove_tild=regexp(ListFiles,'~$');% detect tild the end of file nqme (do not list)
-% check_keep=cellfun('isempty', cell_remove) & cellfun('isempty', cell_remove_tild);
-% check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-% for ilist=1:numel(ListFiles)
-%     if check_keep(ilist)% loop on eligible DataSeries folders
-%         mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});%source folder
-%         if ~exist(mirror,'file') && ~exist(mirror,'dir')% if the name is a broken link
-%             delete(mirror)% delete broken link
-%         else %update the list of dataSeries
-%             [tild,msg]=fileattrib(mirror);
-%             if check_dir(ilist)
-%                 ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
-%             end
-%             if isempty(find(strcmp(ListFiles{ilist},DataSeries), 1))% if the item is not already in DataSeries
-%                 DataSeries=[DataSeries;ListFiles{ilist}]; %append the item to the list
-%             end
-%         end
-%     end
-% end
-% end
-% end
-% if get(handles.CheckDevices,'Value')
-% set(handles.ListDevices,'Value',1)
-% set(handles.ListDevices,'String',sort(DataSeries))
-% CheckDevices_Callback([],[], handles)
-% else
-% set(handles.DataSeries,'Value',1)
-% set(handles.DataSeries,'String',sort(DataSeries))
-% end
 
 %------------------------------------------------------------------------
 % Provide a list to display
@@ -601,39 +558,7 @@ set(handles.ListExperiments,'Value',1)
 outputdir=get(handles.SourceDir,'String');
 [path,dirname]=fileparts(outputdir);
 outputfile=fullfile(outputdir,[dirname '.xml']);
-%campaigndoc(t);
 save(t,outputfile)
-
-
-
-% %------------------------------------------------------------------------
-% % --- Executes on button press in OK.
-% %------------------------------------------------------------------------
-% function OK_Callback(hObject, eventdata, handles)
-% 
-% if strcmp(get(handles.MirrorDir,'Visible'),'on')
-%     Campaign=get(handles.MirrorDir,'String');
-% else
-%     Campaign=get(handles.SourceDir,'String');
-% end
-% handles.output=[];
-% handles.output.Campaign=Campaign;
-% Experiment=get(handles.ListExperiments,'String');
-% IndicesExp=get(handles.ListExperiments,'Value');
-% if ~isequal(IndicesExp,1)% if first element ('*') selected all the experiments are selected
-%     Experiment=Experiment(IndicesExp);% use the selection of the list of experiments
-% end
-% Experiment=regexprep(Experiment,'^\+/','');% remove the +/ used to mark dir
-% Device=get(handles.DataSeries,'String');
-% Value=get(handles.DataSeries,'Value');
-% Device=Device(Value);
-% Device=regexprep(Device,'^\+/','');% remove the +/ used to mark dir
-% Device=regexprep(Device,'^~','');% remove the ~ used to mark symbolic link
-% handles.output.Experiment=Experiment;
-% handles.output.DataSeries=Device;
-% guidata(hObject, handles);% Update handles structure
-% uiresume(handles.browse_data);
-% drawnow
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
@@ -661,26 +586,6 @@ if ~isempty(hcalib)
     hreplicate=findobj(hcalib,'Tag','Replicate');
     set(hreplicate,'Value',0)
 end
-
-% %------------------------------------------------------------------------
-% % --- Executes on key press over figure1 with no controls selected.
-% %------------------------------------------------------------------------
-% function browse_data_KeyPressFcn(hObject, eventdata, handles)
-    
-% % Check for "enter" or "escape"
-% if isequal(get(hObject,'CurrentKey'),'escape')
-%     % User said no by hitting escape
-%     handles.output = 'Cancel';
-%     
-%     % Update handles structure
-%     guidata(hObject, handles);
-%     
-%     uiresume(handles.browse_data);
-% end
-% if isequal(get(hObject,'CurrentKey'),'return')
-%     uiresume(handles.browse_data);
-% end 
-
 
 % --- Executes on button press in Up.
 function Down_Callback(hObject, eventdata, handles)
@@ -715,10 +620,6 @@ SourceDir=get(handles.SourceDir,'String');
 [SourceDir,Exp]=fileparts(SourceDir);
 set(handles.SourceDir,'String',SourceDir)
 
-% set(handles.ListExperiments,'Value',indices)
-%[ListFiles,indices]=list_dir_1(SourceDir,Exp);
-% set(handles.ListExperiments,'String',ListFiles)
-% set(handles.ListExperiments,'Value',indices)
 ListDevices=get(handles.ListDevices,'String');
 DeviceIndices=get(handles.ListDevices,'Value');
 set(handles.DataSeries,'String',ListDevices);%transfer list of devices to DataSeries
@@ -732,23 +633,12 @@ set(handles.ListDevices,'Value',ExpIndices);
 set(handles.ListExperiments,'String',{['+/' Exp]})
 set(handles.ListExperiments,'Value',1)
 
-% ListExperiments=get(handles.ListExperiments,'String');
-% list_val=get(handles.ListExperiments,'Value');
-% SourceFolder=regexprep(ListExperiments{list_val(1)},'+','');
-% set(handles.SourceDir,'String',fullfile(SourceDir,SourceFolder))
-% DataSeries=get(handles.DataSeries,'String');
-% ValueDevice=get(handles.DataSeries,'Value');
-% set(handles.ListExperiments,'String',DataSeries)
-% set(handles.ListExperiments,'Value',ValueDevice)
+
 ListExperiments_Callback(hObject, [], handles)
 SourceDir_Callback(hObject, [], handles)
 
 
 % --- Executes when user attempts to close browse_data.
 function browse_data_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to browse_data (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: delete(hObject) closes the figure
 delete(hObject);

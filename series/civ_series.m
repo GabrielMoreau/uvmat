@@ -53,7 +53,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     %% input file info
     iview_image=[];
     iview_nc=[];
-    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    GUIParam.aborted=true;% prescribe input abortion by the GUI series if this is not changed 
     if isfield(Param.SeriesData,'FileInfo')&& ~isempty(Param.SeriesData.FileInfo)
         for iview=1:numel(Param.SeriesData.FileInfo)
             FieldType{iview}=Param.SeriesData.FileInfo{iview}.FieldType;
@@ -87,7 +87,8 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
         GUIParam.ActionInput=read_app(AppData);% read the input parameters from the GUI civ_input
         delete(AppData)
     else
-        GUIParam=Param;% if  civ_input has been closed without OK, keep previous parameters
+        return
+%        GUIParam=Param;% if  civ_input has been closed without OK, keep previous parameters
     end
     GUIParam.Program=mfilename;%gives the name of the current function
     GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -105,6 +106,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     if isfield(GUIParam,'ActionInput') && isfield(GUIParam.ActionInput,'PairIndices') && isequal(GUIParam.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
         GUIParam.IndexRange_j='off';%no j index display in series
     end
+    GUIParam.aborted=false;% allow continuation by the GUI series 
     return
 end
 
@@ -284,8 +286,8 @@ root_ncfile_out=fullfile(Param.OutputPath,Param.Experiment,Param.Device,[Param.O
 ListGlobalAttribute={'Conventions','Program','CivStage','Time','Dt'};
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
-if isfield(Param,'UvmatRevision')
-    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision{1}];
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
 Data.CivStage=0;%default
 

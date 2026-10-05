@@ -224,8 +224,8 @@ end
 MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit'};
 MergeData.Conventions='uvmat';
 MergeData.Program='civ2vel_3C';
-if isfield(Param,'UvmatRevision')
-    MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision{1}];
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision];
 end
 if isfield (XmlData{1}.GeometryCalib,'CoordUnit') && isfield (XmlData{2}.GeometryCalib,'CoordUnit') && strcmp(XmlData{1}.GeometryCalib.CoordUnit, XmlData{2}.GeometryCalib.CoordUnit)
     MergeData.CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;

@@ -169,10 +169,8 @@ OutputPath=fullfile(Param.OutputPath,Param.Experiment,Param.Device);
 %% Prepare the structure of output netcdf file
 DataOut.ListGlobalAttribute={'Conventions','Program','CivStage'};
 DataOut.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-if isfield(Param,'UvmatRevision')
-    DataOut.Program=['test_subpixel, uvmat r' Param.UvmatRevision];
-else
-    DataOut.Program='test_subpixel';
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    DataOut.Program=[mfilename ', uvmat ' Param.UvmatRevision];
 end
 DataOut.CivStage=1;
 DataOut.CoordUnit='pixel';

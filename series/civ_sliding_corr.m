@@ -234,8 +234,8 @@ OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_series';
-if isfield(Param,'UvmatRevision')
-    Data.Program=[Data.Program ', uvmat r' Param.UvmatRevision];
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
 Data.CivStage=0;%default
 

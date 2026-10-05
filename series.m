@@ -563,6 +563,10 @@ set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow co
 drawnow
 errormsg='';%default
 
+%% desactivate Replicate to reinitialise it if needed
+set(handles.Replicate,'Value',false)
+Replicate_Callback([],[], handles)
+
 %% removes possible  empty lines in the tables documenting the files index series
 check_empty_line=false(size(InputTable,1),1);
 for iline=1:size(InputTable,1)
@@ -1545,9 +1549,8 @@ path_series=fileparts(which('series'));
 UpdateFile=fullfile(path_series,'updates.txt');
 msg_update='';
 try
-    fid=fopen(UpdateFile);
-    InputText=textscan(fid,'%s',1,'delimiter','\n');
-    Param.UvmatRevision=InputText{1};
+    fid=fopen(UpdateFile,'r','n','UTF-8');
+    Param.UvmatRevision=fgetl(fid);
     fclose(fid);
 end
 
@@ -1657,19 +1660,50 @@ end
 %% Look for processing on multiple experiments set by the GUI browse_data
 NbExp=1;% initiate the number of experiments set by the GUI browse_data, =1 otherwise
 if get(handles.Replicate,'Value')
-    hbrowse=findobj(allchild(0),'Tag','browse_data');
-    if isempty(hbrowse)
-        set(handles.Replicate,'Value',0)
-    else
-        set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
-        [ListPath, ListSubdir]=read_browsedata (hbrowse);
-        NbExp=numel(ListPath);
-        answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
-        if strcmp(answer,'Cancel')||strcmp(answer,'No')
+    InputList=get_input_table;
+    ListPath{1}=InputList.InputTable_1.Data(:,1);
+    ListSubdir{1}=InputList.InputTable_1.Data(:,2);
+    NbExp=numel(ListPath{1});
+    if size(Param.InputTable,1)>3
+        errormsg='replicate not available beyond 3 input lines';
+        return
+    end
+    if size(Param.InputTable,1)>=2
+        ListPath{2}=InputList.InputTable_2.Data(:,1);
+        ListSubdir{2}=InputList.InputTable_2.Data(:,2);
+        if numel(ListPath{2})==1 % repeat the line in case of a unique line
+            ListPath{2}=repmat(ListPath{2},numel(ListPath{1}),1);
+            ListSubdir{2}=repmat(ListSubdir{2},numel(ListPath{1}),1);
+        elseif numel(ListPath{2})~= numel(ListPath{1})
+            errormsg='inconsitent numbers of input lines';
+            return
+        end
+    end
+    if size(Param.InputTable,1)>=3
+        ListPath{3}=InputList.InputTable_3.Data(:,1);
+        ListSubdir{3}=InputList.InputTable_3.Data(:,2);
+        if numel(ListPath{3})==1 % repeat the line in case of a unique line
+            ListPath{3}=repmat(ListPath{3},numel(ListPath{1}),1);
+            ListSubdir{3}=repmat(ListSubdir{3},numel(ListPath{1}),1);
+        elseif numel(ListPath{3})~= numel(ListPath{1})
+            errormsg='inconsitent numbers of input lines';
             return
         end
     end
 end
+    %     hbrowse=findobj(allchild(0),'Tag','browse_data');
+    %     if isempty(hbrowse)
+    %         set(handles.Replicate,'Value',0)
+    %     else
+    %         set(handles.Replicate,'BackgroundColor',[1 1 0])%paint Relicate button in yellow
+    %         [ListPath, ListSubdir]=read_browsedata (hbrowse);
+    %         NbExp=numel(ListPath);
+    %         answer=msgbox_uvmat('INPUT_Y-N-Cancel',['replicate the processing on ' num2str(NbExp) ' data series']);
+    %         if strcmp(answer,'Cancel')||strcmp(answer,'No')
+    %             return
+    %         end
+    %     end
+
 
 %%%%%%%%%%%%%%%%%%% LOOP ON EXPERIMENTS POSSIBLY SET BY THE GUI browse_data, NbExp=1 otherwise %%%%%%%%%
 
@@ -1679,17 +1713,18 @@ for iexp=1:NbExp
             disp('program stopped by user')
             return
         end
-%         set(BrowseData.ListExperiments,'Value',ExpIndex(iexp))
-%         set(BrowseData.ListDevices,'Value',DeviceIndex(iexp))
-        Param.InputTable(:,1)=ListPath(:,iexp);
-        Param.InputTable(:,2)=ListSubdir(:,iexp);
-        OutputSubDir=unique(ListSubdir(:,iexp));
-        Param.OutputSubDir=OutputSubDir{1};
-        if numel(OutputSubDir)>1% case of several input lines
-            for iout=2:numel(OutputSubDir)
-                Param.OutputSubDir=[Param.OutputSubDir '-' OutputSubDir{iout}];
-            end
+        for iview=1:size(Param.InputTable,1)
+        Param.InputTable(iview,1)=ListPath{iview}(iexp);
+        Param.InputTable(iview,2)=ListSubdir{iview}(iexp);        
+        InputList.InputTable_1.Selection=iexp;% mark the current line of processing in the GUI get_input_table
         end
+        Param.OutputSubDir=ListSubdir{1}{iexp};
+%         Param.OutputSubDir=OutputSubDir;
+%         if numel(OutputSubDir)>1% case of several input lines
+%             for iout=2:numel(OutputSubDir)
+%                 Param.OutputSubDir=[Param.OutputSubDir '-' OutputSubDir{iout}];
+%             end
+%         end
     end
     [RootPath,DeviceName]=fileparts(Param.InputTable{1,1});
     [~,ExpName]=fileparts(RootPath);
@@ -1705,8 +1740,8 @@ for iexp=1:NbExp
             set(handles.OutputPath,'String',PathOut);
         end
         if get(handles.Replicate,'Value')
-            PathExpOut=fileparts(ListPath{iexp});
-            PathExpDeviceOut=ListPath{iexp};
+            PathExpOut=fileparts(ListPath{1}{iexp});
+            PathExpDeviceOut=ListPath{1}{iexp};
         else
             PathExpOut=fullfile(PathOut,get(handles.Experiment,'String'));
             PathExpDeviceOut=fullfile(PathExpOut,get(handles.Device,'String'));
@@ -1782,13 +1817,13 @@ for iexp=1:NbExp
 
     if get(handles.Replicate,'Value')%reset the input file settings in case of replicated processing
         set(handles.InputTable,'Data',Param.InputTable)
-        set(handles.OutputPath,'String',fileparts(fileparts(ListPath{1})))
+        set(handles.OutputPath,'String',fileparts(fileparts(ListPath{1}{iexp})))
         set(handles.Experiment,'String',ExpName)
         set(handles.Device,'String',DeviceName)
 
         Param.Experiment=ExpName;
         Param.Device=DeviceName;
-        Param.OutputPath=fileparts(fileparts(ListPath{1}));
+        Param.OutputPath=fileparts(fileparts(ListPath{1}{iexp}));
         check_input_file_series(handles)
     end
     DirXml=fullfile(OutputDir,'0_XML');
@@ -2065,7 +2100,7 @@ for iexp=1:NbExp
         filelog_global=fullfile_uvmat('','',Param.InputTable{1,3},'.log',OutputNomType,...
             first_i,last_i,first_j,last_j);
         filelog_global=fullfile(OutputDir,'0_LOG',filelog_global);
-
+        filelog=cell(NbProcess,1);
         for iprocess=1:NbProcess
             batch_file_list{iprocess}=fullfile(OutputDir,'0_EXE',regexprep(extxml{iprocess},'.xml$',ExeExt)); % executable file names
             filelog{iprocess}=fullfile(OutputDir,'0_LOG',regexprep(extxml{iprocess},'.xml$','.log'));% corresponding log file names
@@ -2198,12 +2233,14 @@ for iexp=1:NbExp
             fprintf(fid,oar_command); % store the command
             fprintf(fid,result); % store the result (job ID number)
             fclose(fid);
-            if iexp==NbExp
-                if status==0
+            if status==0
+                if NbExp==1
                     msgbox_uvmat('CONFIRMATION',[ActionFullName ' launched for ' ExpName ' as ' num2str(NbProcess) ' processes in cluster: press STATUS to see results'])
-                else
-                    msgbox_uvmat('ERROR',result)
+                elseif iexp==NbExp
+                    msgbox_uvmat('CONFIRMATION',[num2str(NbExp) ' series processed: press STATUS to see results'])
                 end
+            else
+                msgbox_uvmat('ERROR',result)
             end
             %     case 'cluster_pbs' % for LMFA Kepler machine:  trqnsferred to fct
 
@@ -2483,11 +2520,28 @@ set(handles.num_CPUTime,'String','')
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if isequal(get(handles.REFRESH,'BackgroundColor'),[1 1 0])||isequal(get(handles.RUN,'BackgroundColor'),[1 1 0])
+
+%% Abort if the input parameter is prematurate 
+if isequal(get(handles.REFRESH,'BackgroundColor'),[1 1 0])
+      msgbox_uvmat('ERROR','File input process still active ');
 return % do not start before RUN or REFRESH are finished
 end
-set(handles.ActionInput,'BackgroundColor',[1 1 0])
 SeriesData=get(handles.series,'UserData'); % info on the input file series
+
+if ~isfield(SeriesData,'FileInfo')||~isequal(get(handles.REFRESH,'BackgroundColor'),[1 0 0])
+%     if isfield(ParamOut,'ActionInput')
+%         ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
+%         SeriesData.ActionInput=ParamOut.ActionInput;
+%         set(handles.series,'UserData',SeriesData)
+%         set(handles.ActionInput,'BackgroundColor',[1 0 0])
+%     end
+    msgbox_uvmat('ERROR','input file serie(s) must be entered, press REFRESH')
+    return
+elseif isequal(get(handles.RUN,'BackgroundColor'),[1 1 0])
+    msgbox_uvmat('ERROR','stop current RUN action before entering parameters');
+    return
+end
+set(handles.ActionInput,'BackgroundColor',[1 1 0])
 
 %% create the function handle for Action
 ActionPath=get(handles.ActionPath,'String');
@@ -2507,9 +2561,9 @@ Param=read_GUI_series(handles); % read the parameters from the GUI series
 Param.Action.RUN=0;% indicate that we are in the mode of parameter input, not program run
 Param.SeriesData=SeriesData;% info stored in 'UserData' of the fig 'series'
 ParamOut=h_fun(Param); % run the selected Action function to get the relevant input
-check_aborted=false;
-if isfield(ParamOut,'ActionParam') && strcmp(ParamOut.ActionParam,'on') && ~isfield(ParamOut,'ActionInput')
-    check_aborted=true;
+if isfield(ParamOut,'aborted') && ParamOut.aborted
+    set(handles.ActionInput,'BackgroundColor',[1 0 1])% input operation needs to be repeated
+    return %abort if the input parameter function did not end correctly
 end
 
 %% Visibility of VelType and VelType_1 menus asked by ActionName
@@ -2526,17 +2580,6 @@ if isfield(ParamOut,'FieldName')
     FieldNameRequest_1=strcmp( ParamOut.FieldName,'two');
 end
 
-%% Abort if an input data series has not been refreshed, store the input parameters possibly set by Action fct
-if ~isfield(SeriesData,'FileInfo')||~isequal(get(handles.REFRESH,'BackgroundColor'),[1 0 0])
-    if isfield(ParamOut,'ActionInput')
-        ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
-        SeriesData.ActionInput=ParamOut.ActionInput;
-        set(handles.series,'UserData',SeriesData)
-        set(handles.ActionInput,'BackgroundColor',[1 0 0])
-    end
-    msgbox_uvmat('ERROR','input file serie(s) must be entered, press REFRESH')
-    return
-end
 
 NbView=numel(SeriesData.FileInfo);
 check_civ=false(1,NbView);
@@ -2916,11 +2959,11 @@ else
     end
 end
 set(handles.series,'UserData',SeriesData)
-if check_aborted
-    set(handles.ActionInput,'BackgroundColor',[1 0 1])%color the ActionInput button in magenta to indicate that input is incomplete 
-else
-set(handles.ActionInput,'BackgroundColor',[1 0 0])
-end
+% if check_aborted
+%     set(handles.ActionInput,'BackgroundColor',[1 0 1])%color the ActionInput button in magenta to indicate that input is incomplete 
+% else
+ set(handles.ActionInput,'BackgroundColor',[1 0 0])
+% end
 
 
 %------------------------------------------------------------------------
@@ -3507,6 +3550,7 @@ else
     set(handles.EditObject,'Visible','off')
     set(handles.DeleteObject,'Visible','off')
 end
+set(handles.Replicate,'Value',false)% desactivate the option replicate by default
 set(handles.REFRESH,'BackgroundColor',[1 0 1]); % paint REFRESH button in magenta to indicate that it should be activated
 msgbox_uvmat('CONFIMATION','Processing parameters entered, now REFRESH or change the input file series')
 
@@ -3955,17 +3999,24 @@ function Replicate_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.Replicate,'Value')
     InputTable=get(handles.InputTable,'Data');
-    %for ilist=1:size(InputTable,1)
-        InputDir{1}=fullfile(InputTable{1,1},InputTable{1,2});
-    %end
-    browse_data(InputDir)
+%     %for ilist=1:size(InputTable,1)
+%         InputDir{1}=fullfile(InputTable{1,1},InputTable{1,2});
+%     %end
+%         if size(InputTable,1)>=2
+           get_input_table(InputTable);
+%         else
+%     browse_data(InputDir)
 %     if size(InputTable,1)>=2
 %         InputDir{1}=fullfile(InputTable{2,1},InputTable{2,2});
 %          browse_data_2(InputDir)
-%     end
+%      end
 else
     hh=findobj(allchild(0),'Tag','browse_data');
-    if ~isempty(hh)
+    if isvalid(hh)
+        delete(hh)
+    end
+    hh=findobj(allchild(0),'Tag','InputTableApp');
+    if isvalid(hh)
         delete(hh)
     end
 %     hh=findobj(allchild(0),'Tag','browse_data_2');

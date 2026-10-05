@@ -1,14 +1,7 @@
-version 26.2
-- browse_data_2: added as a copy of browse_data, ot allow replicate mode of series.m with two input field series
-- calc_field_interp: change TriScatteredInterp to the advised fct scatteredInterpolant, introduce extrapolation (within RangeInterp)
-- series: improve the index increment display, and the time table display
-          bug repaired in the reinitialisation of Outputpath after REFRESH
-          bug repaired for using get_field
-- uigetfield_uvmat: close figure after OK when uvamt is opened 
-- series/aver_stat: improve input mode, suppress automatic opening of uvmat at the end, change the automatic output dir extension to .mean
-- series/calc_bacground: dealing with the absence of j indices in mode relabel
-- series/civ_series: bug repaired for mask civ2
-- series/civ2vel_3C: griddata replacedby ScatterInterpolant (providing extrapolation at the edge of shift field) 
-- series/set_civ_grid: dealing with the absence of j indices in mode relabel 
-- series/stereo_civ: corrected bug in record of variabl Y in test mode
-                     dealing with the absence of j indices in mode relabel
+version 26.3
+- browse_data: cleaned 
+- browse_data_2: suppressed
+- get_input_table_mlapp: introduced for replicate launch in series
+- series.fig: reduce the character size of some display, use 'pixel' units instead of 'points' (nicer on the screen)
+- series/aver_stat: improve the input process
+- series/... : display 'UvmatRevision' as attribute in output data

@@ -215,8 +215,8 @@ if CheckSmooth && Param.ActionInput.CheckTest
 end
 Data.VarDimName=repmat({'nb_vec'},1,numel(Data.ListVarName));
 Data.Program=mfilename;%gives the name of the current function;
-if isfield(Param,'UvmatRevision')
-   Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision{1}];
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
 %Data.UvmatRevision=Param.UvmatRevision;
 Data.CivStage=0;%default

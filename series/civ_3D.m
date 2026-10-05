@@ -170,8 +170,8 @@ NbSlice=size(i1_series_Civ1,1);
 ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata_3D';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_3D';
-if isfield(Param,'UvmatRevision')
-    Data.Program=[Data.Program ', uvmat r' Param.UvmatRevision];
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
 Data.CivStage=0;%default
 if Param.ActionInput.CheckCiv1
