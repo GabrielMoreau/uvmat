@@ -564,8 +564,8 @@ drawnow
 errormsg='';%default
 
 %% desactivate Replicate to reinitialise it if needed
-set(handles.Replicate,'Value',false)
-Replicate_Callback([],[], handles)
+% set(handles.Replicate,'Value',false)
+% Replicate_Callback([],[], handles)
 
 %% removes possible  empty lines in the tables documenting the files index series
 check_empty_line=false(size(InputTable,1),1);
@@ -3768,7 +3768,7 @@ if ismember(FileType, {'civdata','civdata_compress'})
             imax=4;
         end
         if strcmp(FileType,'civdata_compress') && CivStage>=4
-            imin=CivStage-3;
+            imin=min(CivStage-2,3);
         else
             imin=1;
         end

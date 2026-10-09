@@ -215,9 +215,10 @@ else
     NbSlice_j=1;
     %nbfield_series=nbfield_i*NbField_j;
 end
-[nbaver_ima,nbaver,step]=adjust_slidinglength(Param.ActionInput.SlidingSequenceLength,step);
+nbaver_ima=adjust_slidinglength(Param.ActionInput.SlidingSequenceLength,step);
+nbaver_index_i=nbaver_ima/NbField_j;
 
-first_i= floor((Param.IndexRange.first_i-1)/nbaver_ima)*nbaver_ima+1;% adjust the first i index to get an interger number of nbaver_ima
+first_i= floor((Param.IndexRange.first_i-1)/nbaver_index_i)*nbaver_index_i+1;% adjust the first i index to get an interger number of nbaver_ima
 i_indices=first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
 nbfield_i=numel(i_indices); %nb of fields for the i index (bursts or volume slices)
 j_indices=j_indices'*ones(1,nbfield_i);
@@ -304,9 +305,11 @@ end
 for j_slice=1:NbSlice
      %%%%%%%  LOOP ON BLOCKS OF nbaver_ima files %%%%%%%
     for iblock=1:nbaver_ima:nbfield_series
-        last_index=min(iblock+nbaver_ima-1,nbfield_series);
+        last_index=min(iblock+nbaver_ima-1,nbfield_series);% do not exceed the last frame index
+        first_index=min(iblock,nbfield_series-nbaver_ima);% use a range of nbaver_ima frames, even for the last block
         Ak=zeros(FileInfo.Height,FileInfo.Width,nbaver_ima,['uint' num2str(BitDepth)]); %prealocate memory
-        for ifield = iblock:last_index
+        
+        for ifield = first_index:last_index
             ifile=indselect(j_slice,ifield);
             if CheckRelabel
                 [filename,FrameIndex]=index2filename(XmlData.FileSeries,i_indices(ifile),j_indices(ifile),last_j);
@@ -315,27 +318,27 @@ for j_slice=1:NbSlice
                 filename=fullfile_indices(fullfile(RootPath,SubDir,RootFile),FileExt,NomType,i_indices(ifile),[],j_indices(ifile))
                 FrameIndex=frame_index(ifile);
             end
-            if ifield==iblock
-                filename_out=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile),[],j_indices(ifile));
-                filename_extra=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile)-nbaver_ima,[],j_indices(ifile));
-            end
+           
             Aread=read_image(filename,FileType,MovieObject,FrameIndex);
             if ndims(Aread)==3  %color images 
                 Aread=sum(uint16(Aread),3);% take the sum of color components
             end
-            Ak(:,:,ifield-iblock+1)=Aread;
+            Ak(:,:,ifield-first_index+1)=Aread;
         end
         
         B=mink(Ak,rank,3);%sort the luminosity of images at each point, keeping the smallest values (nbre given by rank)
         B=squeeze(B(:,:,rank));%background image
         
         %write result file
+        ifile_out=indselect(j_slice,iblock);
+         filename_out=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile_out),[],j_indices(ifile_out));
         imwrite(B,filename_out,'BitDepth',BitDepth); % save the new image  
         disp([filename_out ' written'])
-        if iblock==1 && i_indices(ifile)-nbaver_ima>=1% duplicate the first bakground image with index preceding the firt index in the serie
-            imwrite(B,filename_extra,'BitDepth',BitDepth);
-            disp([filename_extra ' written'])
-        end
+%         if iblock==1 && i_indices(ifile_out)-nbaver_index_i>=1% if the first image is not 1, duplicate the first bakground image with index preceding the first index 
+%              filename_extra=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.png',NomTypeOut,i_indices(ifile_out)-nbaver_index_i,[],j_indices(ifile_out));
+%             imwrite(B,filename_extra,'BitDepth',BitDepth);
+%             disp([filename_extra ' written'])
+%         end
     end
 end
 

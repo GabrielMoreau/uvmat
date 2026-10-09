@@ -67,14 +67,17 @@ for icell=1:numel(CellInfo)
     if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
         for ivar=1:numel(CellInfo{icell}.VarIndex)
             VarName=DataIn.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-            Atype=class(DataIn.(VarName));% detect integer 8 or 16 bits
-            if numel(size(DataIn.(VarName)))==3
-                DataOut.(VarName)=filter2(Mfiltre,sum(DataIn.(VarName),3));%filter the input image, after summation on the color component (for color images)
-                DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+            if isfloat(DataIn.(VarName))
+                DataOut.(VarName)=filter2_uvmat(Mfiltre,DataIn.(VarName));
             else
-                DataOut.(VarName)=filter2(Mfiltre,DataIn.(VarName));
-               %DataOut.(VarName)=filter2_uvmat(Param.TransformInput.FilterBoxSize_x,Param.TransformInput.FilterBoxSize_y,DataIn.(VarName));
-                DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+                Atype=class(DataIn.(VarName));% detect integer 8 or 16 bits
+                if numel(size(DataIn.(VarName)))==3% color images
+                    DataOut.(VarName)=filter2(Mfiltre,sum(DataIn.(VarName),3));%filter the input image, after summation on the color component (for color images)
+                    DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+                else
+                    DataOut.(VarName)=filter2(Mfiltre,DataIn.(VarName));
+                    DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+                end
             end
         end
     end
@@ -85,17 +88,27 @@ if exist('DataIn_1','var')
         if isfield(CellInfo{icell},'CoordType')&& strcmp(CellInfo{icell}.CoordType,'grid')
             for ivar=1:numel(CellInfo{icell}.VarIndex)
                 VarName=DataIn_1.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                Atype=class(DataIn_1.(VarName));% detect integer 8 or 16 bits
-                if numel(size(DataIn_1.(VarName)))==3
-                    DataOut.(VarName)=filter2(Mfiltre,sum(DataIn_1.(VarName),3));%filter the input image, after summation on the color component (for color images)
-                    DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+                if isfloat(DataIn_1.(VarName))
+                    DataOut.(VarName)=filter2_uvmat(Mfiltre,DataIn_1.(VarName));
                 else
-                    DataOut.(VarName)=filter2(Mfiltre,DataIn_1.(VarName));
-                    DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+                    Atype=class(DataIn_1.(VarName));% detect integer 8 or 16 bits
+                    if numel(size(DataIn_1.(VarName)))==3
+                        DataOut.(VarName)=filter2(Mfiltre,sum(DataIn_1.(VarName),3));%filter the input image, after summation on the color component (for color images)
+                        DataOut.(VarName)=uint16(DataOut.(VarName)); %transform to 16 bit images
+                    else
+                        DataOut.(VarName)=filter2(Mfiltre,DataIn_1.(VarName));
+                        DataOut.(VarName)=feval(Atype,DataOut.(VarName));%transform to the initial image format
+                    end
                 end
             end
         end
     end
 end
 
- 
+function B=filter2_uvmat(Mfiltre,A)
+%B=filter2(Mfiltre,A);
+A0=A;A0(isnan(A))=0;
+s=filter2(Mfiltre,A0);
+wsum=filter2(Mfiltre,~isnan(A));
+B=s./wsum;
+B(wsum==0)=NaN;

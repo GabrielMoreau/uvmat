@@ -1,7 +1,10 @@
-version 26.3
-- browse_data: cleaned 
-- browse_data_2: suppressed
-- get_input_table_mlapp: introduced for replicate launch in series
-- series.fig: reduce the character size of some display, use 'pixel' units instead of 'points' (nicer on the screen)
-- series/aver_stat: improve the input process
-- series/... : display 'UvmatRevision' as attribute in output data
+version 26.4
+- browse_data_App: created to replace browse_data and the file browser 
+- cal_field_tps: bug repaire FieldName={FieldName}
+- series: problem with Replicate mode interaction solved
+- series/calc_bacground: bug of black last image corrected
+- series/merge_proj: bug repaired in case of NaN input for integer storage
+- series/civ_series: bug repaired in case of undetermined Max j index
+- series/merge_proj_polar updated
+- series/sub_bacground: put in series/usr_fct as obsolete
+- transform_field/ima_filter: changed to skip NaN values, transform_field/filter2_omitnan suppressed

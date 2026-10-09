@@ -564,7 +564,7 @@ for index_i=Index_i_series
                     MergeData.TimeUnit=TimeUnit;
                 end
             end
-            if ~isempty(scale_factor_inv_uv)
+            if ~isempty(scale_factor_inv_uv)&&  ~isnan(scale_factor_inv_uv)
                 index_U=find(strcmp(MergeData.ListVarName,'U'));
                 if ~isempty(index_U)
                     MergeData.VarAttribute{index_U}.scale_factor=1/scale_factor_inv_uv;
@@ -580,7 +580,7 @@ for index_i=Index_i_series
                     MergeData.V(ind_NaN)=intmax('int16');
                 end
             end
-            if ~isempty(scale_factor_inv_dudv)
+            if ~isempty(scale_factor_inv_dudv)&& ~isnan(scale_factor_inv_dudv)
                 index_var=find(strcmp(MergeData.ListVarName,'curl'));
                 if ~isempty(index_var)
                     MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;

@@ -129,13 +129,6 @@ inv_scale_factor=100; % scale factor of displacements for uin16 records in netcd
 %inv_scale_factor=[];% no scale factor, displacements written as single precision real
 
 %% input files and indexing
-MaxIndex_i=Param.IndexRange.MaxIndex_i;
-MinIndex_i=Param.IndexRange.MinIndex_i;
-MaxIndex_j=ones(size(MaxIndex_i));MinIndex_j=ones(size(MinIndex_i));
-if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j')
-    MaxIndex_j=Param.IndexRange.MaxIndex_j;
-    MinIndex_j=Param.IndexRange.MinIndex_j;
-end
 
 %[filecell,,i2_series,j1_series,j2_series]=get_file_series(Param);
 ref_i=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
@@ -162,6 +155,16 @@ else % Civ1 has been already stored in a netcdf file input
         PairString=Param.IndexRange.PairString{iview_nc};
     end
 end
+MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_A);
+MinIndex_i=Param.IndexRange.MinIndex_i(iview_A);
+MaxIndex_j=1;MinIndex_j=1;
+if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j')&& numel(Param.IndexRange.MinIndex_j)>=iview_A
+    MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_A);
+    MinIndex_j=Param.IndexRange.MinIndex_j(iview_A);
+end
+
+
+
 switch Param.ActionInput.ListCompareMode
     case 'PIV'
 
@@ -191,8 +194,10 @@ switch Param.ActionInput.ListCompareMode
             NomTypeNc=Param.InputTable{iview_nc,4};
         end
         if ~isempty(PairCiv2)
+     
+
             [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                find_pair_indices(PairCiv2,ref_i_list,ref_j_list,MinIndex_i(iview_A),MaxIndex_i(iview_A),MinIndex_j(iview_A),MaxIndex_j(iview_A));
+                find_pair_indices(PairCiv2,ref_i_list,ref_j_list,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
         end
         if Param.ActionInput.CheckCiv2
 
