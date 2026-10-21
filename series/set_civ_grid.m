@@ -1,4 +1,4 @@
-%'set_civ_grid': detect the lower fluid boundary (assumed straight)by the laser impact 
+%'set_civ_grid': detect the lower fluid boundary (assumed straight)by the laser impact, MODEL TO ADAPT TO EACH CASE 
 % with a series of input images and provide a polynomial fit of the mean. 
 % Create a PIV grid file with increased resolution near the boundary
 % To use in interactive mode only
@@ -50,7 +50,7 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=bed_position(Param)
+function ParamOut=set_civ_grid(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
@@ -135,11 +135,18 @@ end
 % EDIT FROM HERE
 
 %% prepare output netcdf file
+Data.ListGlobalAttribute={'Conventions','Program','CoordUnit'};
+Data.Conventions='uvmat'; % states the conventions used for the description of field variables and attributes
+Data.Program=mfilename;
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
+end
+Data.CoordUnit='pixel';
 Data.ListVarName={'Grid','CorrBoxSize'};
 Data.VarDimName={{'NbVec','NbDim'},{'NbVec','NbDim'}};
-Data.ListGlobalAttribute={'Conventions','CoordUnit'};
-Data.Conventions='uvmat';
-Data.CoordUnit='pixel';
+Data.VarAttribute{1}.long_name='x,y image coordinates of the grid points (two columns)';
+Data.VarAttribute{2}.long_name='correlation box size along x,y in pixels(two columns)';
+
 
 %% main loop
 Npy=FileInfo.Height;
@@ -158,6 +165,7 @@ for index_i=1:numel(i_indices)
             FrameIndex=frame_index(index_j,index_i);
         end
         A=flipud(read_image(ImageName,'image'));
+        disp([ImageName ' read'])
         A=filter2(Mfiltre,A);%smoothed image
         Amean=mean(A,2);
         [~,ind_max]=max(Amean);% get the max of the image averaged along x, to restrict the search region
@@ -166,7 +174,6 @@ for index_i=1:numel(i_indices)
         y_ima=(smooth(y_ima,100,'rloess'))';%smooth the image index of max luminosity (dependning on x)
         PosWall=PosWall+y_ima;
         PosWall2=PosWall2+y_ima.*y_ima;
-
     end
 end
 PosMean=PosWall/NbFile;% mean y position of the laser impact
@@ -175,25 +182,34 @@ PosStd=sqrt(PosWall2-PosMean.*PosMean); % standard deviation of the laser impact
 
 %% PIV grid
 
-Dy=[2:10 repmat(10,1,100)];% set of y intervals between correlation boxes
-ycentr=cumsum(Dy);% set of y positions for the box centres with respect to the laser impact
+Dy=[4:0.5:10 repmat(10,1,100)];% set of y intervals between correlation boxes
+ycentr=cumsum(Dy)+5;% set of y positions for the box centres with respect to the laser impact
+ycentr=ycentr(ycentr<Npy);
+Dy=Dy(ycentr<Npy);
 corr_box_area=500+(30/Npy)*(30/Npy)*ycentr.*ycentr;% area of the correlation boxes in pixel^2, increasing with distance to the wall
 corr_box_y=2*Dy-1+floor((15/Npy)*ycentr);% correlation box size along y 
+corr_box_y(corr_box_y>31)=31;%limitate the width to 31
 %corr_box_area=corr_box_area*ones(size(corr_box_y));% corr_box area repeated as a vector array
 corr_box_x=round(corr_box_area./corr_box_y);% size along x of the correlation boxes
+corr_box_x(corr_box_x>31)=31;%limitate the width to 31
 Dx=10;
 nbinterv_x=floor((Npx-1)/Dx);%expected number of intervals Dx
 gridlength_x=nbinterv_x*Dx;
-minix=ceil((Npx-gridlength_x)/2);
-x_ctre=minix+1:Dx:Npx;% ctres of the corrbox along x
+minix=ceil((Npx-gridlength_x)/2)+10;
+x_ctre=minix+1:Dx:Npx;% ctres of the corrbox along x, shifted by 10 from the left edge
 GridY=ycentr'*ones(1,numel(x_ctre))+ones(numel(Dy),1)*PosMean(x_ctre);% position in y of the box centres
 GridX=ones(numel(Dy),1)*x_ctre;
 GridX=reshape(GridX,[],1);
 GridY=reshape(GridY,[],1);
-Data.Grid=[GridX GridY];
-corr_box_y=reshape(corr_box_y'*ones(1,numel(x_ctre)),[],1);
-corr_box_x=reshape(corr_box_x'*ones(1,numel(x_ctre)),[],1);
-Data.CorrBoxSize=[corr_box_x corr_box_y];
+check_edge=(GridY>Npy-10);
+GridY(check_edge)=[];%suppress points reaching the upper edge
+GridX(check_edge)=[];
+Data.Grid=uint16([GridX GridY]);
+corr_box_y_array=reshape(corr_box_y'*ones(1,numel(x_ctre)),[],1);
+corr_box_x_array=reshape(corr_box_x'*ones(1,numel(x_ctre)),[],1);
+corr_box_x_array(check_edge)=[];
+corr_box_y_array(check_edge)=[];
+Data.CorrBoxSize=uint16([corr_box_x_array corr_box_y_array]);
 OutputRoot=fullfile(Param.OutputPath,Param.Experiment,Param.Device,[Param.OutputSubDir Param.OutputDirExt],'grid');
 OutputFile=fullfile_indices(OutputRoot,'$.nc','_1-2',i_indices(1),i_indices(end));
 error=struct2nc(OutputFile,Data);%save result file
@@ -209,6 +225,11 @@ P= polyfit(1:Npx,PosMean,3)
 hold on
 f=polyval(P,1:Npx);
 plot(1:Npx,f,'r')
+xlabel('x(pixels)')
+ylabel('y(pixels)')
+grid on
+title('position of the laser impact versus x')
+
 figure(2)
 plot(1:Npx,PosMean,1:Npx,PosMean+PosStd,1:Npx,PosMean-PosStd)% plot mean position versus x with error bar estiamted from the variance
 hold on
@@ -216,18 +237,31 @@ plot(Data.Grid(:,1),Data.Grid(:,2),'.','MarkerSize',2)
 xlabel('x(pixel)')
 ylabel('y(pixel)')
 axis equal
+title('grid point positions')
+
 figure(3)
-plot(Data.CorrBoxSize(:,1),Data.Grid(:,2),'.')
+plot(ycentr,1:numel(ycentr),'+')
 ylabel('y (pixels)')
-xlabel('CorrBoxSize along x (pixels)')
+xlabel('grid index')
+grid on
+title('set of y distances from the laser impact')
+
 figure(4)
-plot(Data.CorrBoxSize(:,2),Data.Grid(:,2),'.')
+plot(corr_box_x.*corr_box_y,ycentr)
 ylabel('y (pixels)')
-xlabel('CorrBoxSize along y (pixels)')
+xlabel('CorrBox area (pixel*pixel)')
+xlim([0 max(corr_box_area)])
+grid on
+
 figure(5)
-plot(Data.CorrBoxSize(:,2)./Data.CorrBoxSize(:,1),Data.Grid(:,2),'.')
+plot(corr_box_x,ycentr,corr_box_y,ycentr,'+')
 ylabel('y (pixels)')
-xlabel('aspect ratio corr box')
+xlabel('CorrBoxSize (pixels)')
+legend({'along x';'along_y'})
+grid on
+
+
+
 %% make the calibration correction
 XmlFileName=find_imadoc(Param.InputTable{1,1},Param.InputTable{1,2});
 if ~isempty(XmlFileName)

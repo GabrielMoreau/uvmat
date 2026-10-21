@@ -74,6 +74,7 @@ check_der=0;
 check_vec=0;
 check_remove=false(size(FieldName));
 VarAttribute={};
+if ischar(FieldName); FieldName={FieldName}; end
 for ilist=1:length(FieldName)
     FieldNameType=regexprep(FieldName{ilist},'(.+','');% detect the char string before the parenthesis
     VarAttributeNew={};
@@ -107,7 +108,6 @@ end
 FieldName(check_remove)=[];
 
 %% loop on subdomains
-NbSubDomain
 for isub=1:NbSubDomain
     nbvec_sub=NbCentre(isub);
     check_range=(Coord_interp >=ones(nb_sites,1)*SubRange(:,1,isub)' & Coord_interp<=ones(nb_sites,1)*SubRange(:,2,isub)');

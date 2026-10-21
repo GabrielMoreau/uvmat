@@ -72,7 +72,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     GUIParam.FieldTransform = 'off';%can use a transform function (use it by force, no input option)
     GUIParam.ProjObject='off';%can use projection object(option 'off'/'on',
-    GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.Mask='off';%can use mask option  (option 'off'/'on', 'off' by default) (mask is set by civ_input.app, not by the GUI series)
     GUIParam.OutputDirExt='.stereo';%set the output dir extension
     GUIParam.OutputSubDirMode='auto'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     GUIParam.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
@@ -218,11 +218,13 @@ Data.Program=mfilename;%gives the name of the current function;
 if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
     Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
-%Data.UvmatRevision=Param.UvmatRevision;
+
 Data.CivStage=0;%default
 Data.Time=NaN; %default
-par_civ1.MaskName_A='';%default
-par_civ1.MaskName_B='';%default
+backgroundoldname_A='';
+backgroundoldname_B='';
+MaskName_A_previous='';
+MaskName_B_previous='';
 
 %% overwrite or skip when the output file already exists
 CheckOverwrite=1;%default
@@ -261,16 +263,52 @@ for index_i=1:numel(i_indices)
         [A{1},MovieObject{1}] = read_image(ImageName_A,FileType{1},MovieObject{1},FrameIndex_A);
         [A{2},MovieObject{2}] =read_image(ImageName_B,FileType{2},MovieObject{2},FrameIndex_B);
 
+        %% subtract background if requested
+         if Param.ActionInput.CheckBackground
+             BkgndRootName_A=Param.ActionInput.Background_A;
+             BkgndRootName_B=Param.ActionInput.Background_B;
+            [BackgroundExt,BackgroundName_A]=fileparts(BkgndRootName_A);
+            if isempty(fileparts(BackgroundExt))% relative path defined
+                BkgndRootName_A=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName_A);
+            end
+            [BackgroundExt,BackgroundName_B]=fileparts(BkgndRootName_B);
+            if isempty(fileparts(BackgroundExt))% relative path defined
+                BkgndRootName_B=fullfile([fileparts(ImageName_B) BackgroundExt],BackgroundName_B);
+            end
+            IndexPeriod=[];
+            if isfield(Param.ActionInput,'BkgndPeriod')
+                IndexPeriod=Param.ActionInput.BkgndPeriod;
+            end
+            BackgroundName_A=get_background_name(BkgndRootName_A,i_indices(index_i),j_indices(index_j),1,false,IndexPeriod);
+            if ~strcmp(backgroundoldname_A,BackgroundName_A)% background image needs to be read
+                BackgroundImage_A=uint16(imread(BackgroundName_A));%update the background, an store it for future use
+                backgroundoldname_A=BackgroundImage_A;% preserve the name for next iteration (to avoid reading the background image again)
+            end
+            BackgroundName_B=get_background_name(BkgndRootName_B,i_indices(index_i),j_indices(index_j),1,false,IndexPeriod);
+            if ~strcmp(backgroundoldname_B,BackgroundName_B)% background image needs to be read
+                BackgroundImage_B=uint16(imread(BackgroundName_B));%update the background, an store it for future use                
+                backgroundoldname_B=BackgroundName_B;% preserve the name for next iteration (to avoid reading the background image again)
+            end
+            A{1}=uint16(A{1})-BackgroundImage_A;% it will be set to 0 if background > image
+            A{2}=uint16(A{2})-BackgroundImage_B;
+             ListGlobalAttribute=[ListGlobalAttribute {'BackgroundName_A','BackgroundName_B'}];
+             Data.BackgroundName_A=BackgroundName_A;
+             Data.BackgroundName_B=BackgroundName_B;
+         end
+
+        %% transform the two images in phys coordinates with a common pixel grid
         [A,Rangx,Rangy]=phys_ima(A,XmlData,Param.ActionInput.resolution);%transform images A{1} and A{2} in phys coordinates on a common pixel grid
         [Npy,Npx]=size(A{1});
 
-        %%% record time
+        %% record time
         Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
         Time2=Time{2}(j_indices(index_j)+1,i_indices(index_i)+1);
         Dt=Time2-Data.Time;
         if Time2 ~= Data.Time
             disp(['WARNING: the times of the two images differ by ' num2str(Dt)])
         end
+
+        
 
         %% case of image luminosity rescaling
         if Param.ActionInput.CheckRescale &&~isempty(Param.ActionInput.Maxtanh)
@@ -290,18 +328,20 @@ for index_i=1:numel(i_indices)
             if isfield(Param.ActionInput,'NbSlice')
                 NbSlice_i=Param.ActionInput.num_NbSlice;
             end
-            maskname_A=get_mask_name(MaskRootName_A,i_indices(index_i),j_indices(index_j),NbSlice_i,0);
-            maskname_B=get_mask_name(MaskRootName_B,i_indices(index_i),j_indices(index_j),NbSlice_i,0);
-            if ~strcmp(par_civ1.MaskName_A,maskname_A)||~strcmp(par_civ1.MaskName_B,maskname_B)%% mask image not already read
-                Mask{1}=imread(maskname_A);%update the mask, an store it for future use
-                Mask{2}=imread(maskname_B);%update the mask, an store it for future use
+            MaskName_A=get_mask_name(MaskRootName_A,i_indices(index_i),j_indices(index_j),NbSlice_i,0);
+            MaskName_B=get_mask_name(MaskRootName_B,i_indices(index_i),j_indices(index_j),NbSlice_i,0);
+            if ~strcmp(MaskName_A_previous,MaskName_A)||~strcmp(MaskName_B_previous,MaskName_B)%% mask image not already read
+                Mask{1}=imread(MaskName_A);%update the mask, an store it for future use
+                Mask{2}=imread(MaskName_B);%update the mask, an store it for future use
                 [Mask,Rangx_mask,Rangy_mask]=phys_ima(Mask,XmlData,Param.ActionInput.resolution);
                 if ~isequal(Rangx_mask,Rangx) || ~isequal(Rangy_mask,Rangy)
                     disp('mask bounds inconsitent with images')
                     return
                 end
             end
-
+            ListGlobalAttribute=[ListGlobalAttribute {'MaskName_A','MaskName_B'}];
+            Data.MaskName_A=MaskName_A;
+            Data.MaskName_B=MaskName_B;
         end
 
         %% save images in phys coordinates for test mode
@@ -339,13 +379,9 @@ for index_i=1:numel(i_indices)
             Data.Civ1_ImageA=ImageName_A;
             Data.Civ1_ImageB=ImageName_B;
             if Param.ActionInput.CheckMask
-                Civ1_param=[{'Civ1_MaskName_A','Civ1_MaskName_B'} Civ1_param]; %insert the names of the two input images
-                par_civ1.MaskName_A=maskname_A;
-                par_civ1.MaskName_B=maskname_B;
-                par_civ1.Mask_A=Mask{1};
-                par_civ1.Mask_B=Mask{2};
+                 par_civ1.Mask_A=Mask{1};
+                 par_civ1.Mask_B=Mask{2};
             end
-
             for ilist=1:length(list_param)
                 Data.(Civ1_param{2+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
             end
@@ -437,11 +473,11 @@ for index_i=1:numel(i_indices)
 
             npy_ima=size(par_civ2.ImageA,1);
             npx_ima=size(par_civ2.ImageA,2);
-            if par_civ2.CheckGrid &&~isempty(par_civ2.Grid) % case of input grid
-                GridData=nc2struct(Param.ActionInput.Civ2.Grid);
-                par_civ2.Grid=GridData.Grid;
-                par_civ2.CorrBoxSize=GridData.CorrBox;
-            else% automatic grid
+%             if par_civ2.CheckGrid &&~isempty(par_civ2.Grid) % case of input grid
+%                 GridData=nc2struct(Param.ActionInput.Civ2.Grid);
+%                 par_civ2.Grid=GridData.Grid;
+%                 par_civ2.CorrBoxSize=GridData.CorrBox;
+%             else% automatic grid
                 nbinterv_x=floor((npx_ima-1)/par_civ2.Dx);
                 gridlength_x=nbinterv_x*par_civ2.Dx;
                 minix=ceil((npx_ima-gridlength_x)/2);
@@ -452,7 +488,7 @@ for index_i=1:numel(i_indices)
                 par_civ2.Grid=zeros(numel(GridX),2);
                 par_civ2.Grid(:,1)=reshape(GridX,[],1);
                 par_civ2.Grid(:,2)=reshape(GridY,[],1);% increases with array index
-            end
+%             end
 
             Data.CivStage=4;
             Shiftx=zeros(size(par_civ2.Grid,1),1);% initialise the shift expected from civ1 data
@@ -508,13 +544,10 @@ for index_i=1:numel(i_indices)
                 par_civ2.DVDX(nbval>0)=DVDX(nbval>0)./nbval(nbval>0);
                 par_civ2.DVDY(nbval>0)=DVDY(nbval>0)./nbval(nbval>0);
             end
-            if Param.ActionInput.CheckMask
-                Civ2_param=[{'Civ2_MaskName_A','Civ2_MaskName_B'} Civ1_param]; %insert the names of the two input images
-                par_civ2.MaskName_A=maskname_A;
-                par_civ2.MaskName_B=maskname_B;
-                par_civ2.Mask_A=Mask{1};
-                par_civ2.Mask_B=Mask{2};
-            end
+             if Param.ActionInput.CheckMask
+                 par_civ2.Mask_A=Mask{1};
+                 par_civ2.Mask_B=Mask{2};
+             end
 
             % calculate velocity data
             if strcmp(Param.RunMode,'cluster')
@@ -657,9 +690,10 @@ for index_i=1:numel(i_indices)
                 end
             end
             mask='';
-            if par_civ3.CheckMask&&~isempty(par_civ3.Mask)&& ~strcmp(maskname,par_civ3.Mask)% mask exist, not already read in Civ2
-                mask=imread(par_civ3.Mask);
-            end
+            if par_civ3.CheckMask
+                 par_civ3.Mask_A=Mask{1};
+                 par_civ3.Mask_B=Mask{2};
+             end
             par_civ3.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
             par_civ3.Grid=[par_civ3.Grid(nbval>=1,1)-par_civ3.SearchBoxShift(:,1)/2 par_civ3.Grid(nbval>=1,2)-par_civ3.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
             if par_civ3.CheckDeformation

@@ -82,10 +82,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     end
      path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series')) 
-    AppData=civ_input_app(Param);% introduce the civ parameters using the GUI civ_input
+    AppData=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     if isvalid(AppData)
         GUIParam.ActionInput=read_app(AppData);% read the input parameters from the GUI civ_input
         delete(AppData)
+%        close(AppData)
     else
         return
 %        GUIParam=Param;% if  civ_input has been closed without OK, keep previous parameters
@@ -162,9 +163,7 @@ if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j
     MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_A);
     MinIndex_j=Param.IndexRange.MinIndex_j(iview_A);
 end
-
-
-
+PairCiv2=[];%default
 switch Param.ActionInput.ListCompareMode
     case 'PIV'
 
@@ -175,7 +174,10 @@ switch Param.ActionInput.ListCompareMode
                PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
             [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
                 find_pair_indices(PairCiv1,ref_i_list,ref_j_list,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
-
+            if i1_series_Civ1(1)<1
+                disp_uvmat('ERROR', ['first frame index smaller than 1 in ' PairCiv1],checkrun) 
+                    return 
+            end
             %determine frame indices for input with movie or other multiframe input file
             if isempty(j1_series_Civ1)% simple movie with index i
                 FrameIndex_A_Civ1=i1_series_Civ1;
@@ -194,10 +196,12 @@ switch Param.ActionInput.ListCompareMode
             NomTypeNc=Param.InputTable{iview_nc,4};
         end
         if ~isempty(PairCiv2)
-     
-
             [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
                 find_pair_indices(PairCiv2,ref_i_list,ref_j_list,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+            if i1_series_Civ2(1)<1
+                disp_uvmat('ERROR', ['first frame index smaller than 1 in ' PairCiv2],checkrun)
+                return
+            end
         end
         if Param.ActionInput.CheckCiv2
 
@@ -279,6 +283,11 @@ end
 CheckStage=[Param.ActionInput.CheckCiv1  Param.ActionInput.CheckFix1 Param.ActionInput.CheckPatch1...
     Param.ActionInput.CheckCiv2  Param.ActionInput.CheckFix2 Param.ActionInput.CheckPatch2];
 CivStageStart=find(CheckStage,1);
+RootPath_A=Param.InputTable{iview_A,1};
+RootFile_A=Param.InputTable{iview_A,3};
+SubDir_A=Param.InputTable{iview_A,2};
+NomType_A=Param.InputTable{iview_A,4};
+FileExt_A=Param.InputTable{iview_A,5};
 
 
 %% prepare output Data
@@ -290,7 +299,7 @@ end
 root_ncfile_out=fullfile(Param.OutputPath,Param.Experiment,Param.Device,[Param.OutputSubDir Param.OutputDirExt],RootFileOut);
 ListGlobalAttribute={'Conventions','Program','CivStage','Time','Dt'};
 Data.Conventions='uvmat/civdata/compress';% states the conventions used for the description of field variables and attributes
-Data.Program='civ_series';
+Data.Program=mfilename;
 if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
     Data.Program=[Data.Program ', uvmat ' Param.UvmatRevision];
 end
@@ -309,7 +318,19 @@ for ifield=1:NbField
         disp('program stopped by user')
         break
     end
-
+    
+    if Param.ActionInput.CheckCiv1% output ncfile then labeled by civ2 pair
+        i1_civ1=i1_series_Civ1(ifield);
+        i2_civ1=i1_civ1;
+        if ~isempty(i2_series_Civ1)
+            i2_civ1=i2_series_Civ1(ifield);
+        end
+        j1_civ1=j1_series_Civ1(ifield);
+        j2_civ1=j1_civ1;
+        if Check_j_Civ1
+            j2_civ1=j2_series_Civ1(ifield);
+        end
+    end
     if Param.ActionInput.CheckCiv2% output ncfile then labeled by civ2 pair
         i1_civ2=i1_series_Civ2(ifield);
         i2_civ2=i1_civ2;
@@ -338,11 +359,6 @@ for ifield=1:NbField
                 ncfile_in=fullfile_indices(rootncfile,Param.InputTable{iview_nc,5},Param.InputTable{iview_nc,4},i2_civ2,[],j2_civ2);
             end
         end
-        RootPath_A=Param.InputTable{iview_A,1};
-        RootFile_A=Param.InputTable{iview_A,3};
-        SubDir_A=Param.InputTable{iview_A,2};
-        NomType_A=Param.InputTable{iview_A,4};
-        FileExt_A=Param.InputTable{iview_A,5};
     elseif Param.ActionInput.CheckCiv1 % Civ1 done without Civ2
         if strcmp(Param.ActionInput.ListCompareMode,'PIV')
             ncfile_out=fullfile_indices(root_ncfile_out,'.nc',NomTypeNc,i1_civ1,i2_civ1,j1_civ1,j2_civ1);
@@ -367,6 +383,19 @@ for ifield=1:NbField
     ImageName_A='';ImageName_B='';%default
     VideoObject_A=[];VideoObject_B=[];
     Data.FF=[];%default
+    %%%%% image preprocessing
+    if Param.ActionInput.CheckBackground  && (Param.ActionInput.CheckCiv1 ||  Param.ActionInput.CheckCiv2)  % if PIV  computation is requested
+            BkgndRootName=Param.ActionInput.Background;
+            [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
+            if isempty(fileparts(BackgroundExt))% relative path defined
+                RootName=fullfile(RootPath_A,SubDir_A);
+                BkgndRootName=fullfile([RootName BackgroundExt],BackgroundName);
+            end
+            IndexPeriod=[];
+            if isfield(Param.ActionInput,'BkgndPeriod')
+                IndexPeriod=Param.ActionInput.BkgndPeriod;
+            end
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%% Civ1 %%%%%%%%%%%%%%%%%%%%%%%%   
     if CivStageStart==1 % if Civ1 computation is requested
@@ -477,15 +506,15 @@ for ifield=1:NbField
 
         %% subtract  background image if requested
         if isfield(Param.ActionInput,'CheckBackground') && Param.ActionInput.CheckBackground
-            BkgndRootName=Param.ActionInput.Background;
-            [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
-            if isempty(fileparts(BackgroundExt))% relative path defined
-                BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
-            end
-            IndexPeriod=[];
-            if isfield(Param.ActionInput,'BkgndPeriod')
-                IndexPeriod=Param.ActionInput.BkgndPeriod;
-            end
+%             BkgndRootName=Param.ActionInput.Background;
+%             [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
+%             if isempty(fileparts(BackgroundExt))% relative path defined
+%                 BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
+%             end
+%             IndexPeriod=[];
+%             if isfield(Param.ActionInput,'BkgndPeriod')
+%                 IndexPeriod=Param.ActionInput.BkgndPeriod;
+%             end
             backgroundname=get_background_name(BkgndRootName,floor((i1_civ1+i2_civ1)/2),j1,NbSlice,CheckVolumeScan,IndexPeriod);
             if ~strcmp(backgroundoldname,backgroundname)% background image needs to be read
                 BackgroundImage=uint16(imread(backgroundname));%update the background, an store it for future use
@@ -542,7 +571,7 @@ for ifield=1:NbField
         if par_civ1.CheckGrid &&~isempty(par_civ1.Grid)
             GridData=nc2struct(Param.ActionInput.Civ1.Grid);
             par_civ1.Grid=GridData.Grid;
-            par_civ1.CorrBoxSize=GridData.CorrBox;
+            par_civ1.CorrBoxSize=GridData.CorrBoxSize;
         end
 
         %% write global attributes
@@ -570,7 +599,7 @@ for ifield=1:NbField
 
 
     %%%%%%%%%%%%%%%%%%%%%%%% Fix1 %%%%%%%%%%%%%%%%%%%%%%%%
-    if CivStageStart<=2 % if Fix1 is requested
+    if Param.ActionInput.CheckFix1% if Fix1 is requested
         disp('detect_false1 started')
         list_param=fieldnames(Param.ActionInput.Fix1)';
         Fix1_param=regexprep(list_param,'^.+','Fix1_$0');% insert 'Fix1_' before  each string in ListFixParam
@@ -596,7 +625,7 @@ for ifield=1:NbField
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%% Patch1 %%%%%%%%%%%%%%%%%%%%%%%%
-    if CivStageStart<=3  % if Patch1 is requested
+    if Param.ActionInput.CheckPatch1 % if Patch1 is requested
         disp('patch1 started')
         tstart_patch1=tic;
         Data.CivStage=3;% record the new state of processing
@@ -641,7 +670,7 @@ for ifield=1:NbField
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%% Civ2 %%%%%%%%%%%%%%%%%%%%%%%%
-    if CivStageStart<=4 %if Civ2 is requested
+    if Param.ActionInput.CheckCiv2%if Civ2 is requested
         disp('civ2 started')
         tstart_civ2=tic;
         Data.CivStage=4;
@@ -713,8 +742,8 @@ for ifield=1:NbField
         npx_ima=size(par_civ2.ImageA,2);
         if par_civ2.CheckGrid &&~isempty(par_civ2.Grid) % case of input grid
             GridData=nc2struct(Param.ActionInput.Civ2.Grid);
-            par_civ2.Grid=GridData.Grid;
-            par_civ2.CorrBoxSize=GridData.CorrBoxSize;
+            par_civ2.Grid=double(GridData.Grid);
+            par_civ2.CorrBoxSize=double(GridData.CorrBoxSize);
         else% automatic grid
             nbinterv_x=floor((npx_ima-1)/par_civ2.Dx);
             gridlength_x=nbinterv_x*par_civ2.Dx;
@@ -734,15 +763,15 @@ for ifield=1:NbField
         %% case of background image to subtract, if images civ2 different from civ1
         if (~CheckDuplicate_1to2A || ~CheckDuplicate_1to2B) && Param.ActionInput.CheckBackground &&~isempty(Param.ActionInput.Background)
 
-            BkgndRootName=Param.ActionInput.Background;
-             [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
-            if isempty(fileparts(BackgroundExt))% relative path defined
-                BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
-            end
-            IndexPeriod=[];
-            if isfield(Param.ActionInput,'BkgndPeriod')
-                IndexPeriod=Param.ActionInput.BkgndPeriod;
-            end
+%             BkgndRootName=Param.ActionInput.Background;
+%              [BackgroundExt,BackgroundName]=fileparts(BkgndRootName);
+%             if isempty(fileparts(BackgroundExt))% relative path defined
+%                 BkgndRootName=fullfile([fileparts(ImageName_A) BackgroundExt],BackgroundName);
+%             end
+%             IndexPeriod=[];
+%             if isfield(Param.ActionInput,'BkgndPeriod')
+%                 IndexPeriod=Param.ActionInput.BkgndPeriod;
+%             end
             NbSlice=[];
             if isfield(par_civ2,'NbSlice')
                 NbSlice=par_civ2.NbSlice;
@@ -753,7 +782,7 @@ for ifield=1:NbField
                 try
                     BackgroundImage=uint16(imread(backgroundname));%update the background, an store it for future use
                     backgroundoldname=backgroundname;
-                catch
+                catch ME
                     if ~isempty(ME.message)
                         errormsg=['error reading input image: ' ME.message];
                         disp_uvmat('ERROR',errormsg,checkrun)

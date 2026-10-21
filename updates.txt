@@ -1,10 +1,22 @@
-version 26.4
-- browse_data_App: created to replace browse_data and the file browser 
-- cal_field_tps: bug repaire FieldName={FieldName}
-- series: problem with Replicate mode interaction solved
-- series/calc_bacground: bug of black last image corrected
-- series/merge_proj: bug repaired in case of NaN input for integer storage
-- series/civ_series: bug repaired in case of undetermined Max j index
-- series/merge_proj_polar updated
-- series/sub_bacground: put in series/usr_fct as obsolete
-- transform_field/ima_filter: changed to skip NaN values, transform_field/filter2_omitnan suppressed
+version 26.5
+- browse_data_app: created to replace browse_data and the file browser 
+- cal_field_tps: bug repaired FieldName={FieldName}
+- civ: cleaning of comments, no change in the code
+- fill_app: bugs repaired. Tag of elements used instead of names
+- mouse_motion: interactive civ display moved to fct mouse_motion_civtest
+- mouse_motion_civtest: added to improve the interactive mode TestCiv of civ_input
+- proj_field: list global attribute cleaned 
+- scan_folder: added to replace dir_uvmat eventually
+- series.fig: 'Device' edit box callback suppressed
+- true2on: function introduced to simplify codes: transform true/false to 'on'/'off'
+- uvmat: minor cleaning
+- view_field: bug repaired, minor cleaning
+- series/civ_input_app.app renamed to series/civ_input.app and improved
+- series/civ2vel_3C: elimination of Error data reintroduced (bug repaired)
+- series/civ_series: bugs repaired
+- series/set_civ_grid: updated to create civ grids
+- series_sliding_corr: work in progress
+- series/merge_proj_polar: updated, still not ready for vort div
+- series/stereo_input and stereo_civ:  introduce background image subtraction, global attributes complemented in result files
+
+

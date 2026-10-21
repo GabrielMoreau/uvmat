@@ -35,67 +35,79 @@ if ~isstruct(Param)
     errormsg='first input parameter of fill_app must be a structure';
     return
 end
-fields=fieldnames(Param);%list of fields in Param
-if isa(app,'matlab.ui.control.internal.model.ComponentModel')% case of panel sub-elements
-    ListTag=cell(numel(app),1);
-    for ilist=1:numel(ListTag)
-        ListTag{ilist}=app(ilist).Tag;
-    end
+fields=fieldnames(Param);%list of fields in the input structure Param
+%if isa(app,'matlab.ui.control.internal.model.ComponentModel')% case of panel sub-elements
+if  isa(app, 'matlab.ui.container.Panel')
+    hchildren=get(app,'children');
 else
-    ListTag={};
+    ListElements=properties(app);
+    hchildren=get(app.(ListElements{1}),'children');
 end
+ListTag=cell(numel(hchildren),1);
+for ilist=1:numel(hchildren)
+        ListTag{ilist}=get(hchildren(ilist),'Tag');%list of element tags in the app
+end
+% ListPanel=ListElements(CheckPanel);
+% ListTag=ListTag(~CheckPanel)
+
+% else
+%     ListTag={};
+
 
 %--------------------------------------------------------------------------------------
 %----------------- loop on the elements of the input structure Param ------------------
 %--------------------------------------------------------------------------------------
-for ifield=1:numel(fields)
-    if isstruct(Param.(fields{ifield}))% case of a sub-structure
+for ifield=1:numel(fields)% fields = names of the elements of the input structure
+    if isstruct(Param.(fields{ifield}))% case of a input sub-structure
         %% case of a sub-structure
-        % if a panel in the GUI has the tag fields{ifield}, fill it with the sub-structure content
-        if isprop(app,fields{ifield})
-            set(app.(fields{ifield}),'Visible','on')
-            errormsg=fill_app(Param.(fields{ifield}),get(app.(fields{ifield}),'children'));% recursively apply the function to the substructure
+        % if a panel in the GUI has the name fields{ifield}, fill it with the sub-structure content
+       % if isprop(app,fields{ifield})
+       ObjIndex=find(strcmp(fields{ifield},ListTag), 1);
+       if ~isempty(ObjIndex)
+           set(hchildren(ObjIndex),'Visible','on');
+        %    set(app.(fields{ifield}),'Visible','on')
+            errormsg=fill_app(Param.(fields{ifield}),hchildren(ObjIndex));% recursively apply the function to the substructure
         end
     else
         %% case of an element
-        input_data=Param.(fields{ifield});
+        input_data=Param.(fields{ifield});% input value correponding to the input field fields{ifield} 
         check_done=0;
-        % detect GUI element with a tag name equal to the key name in the element of Param
+        % detect GUI element with a name equal to the key name in the element of Param
+       
+        hh_index=find(strcmp(fields{ifield},ListTag));% the name fields{ifield} of the current input element is sought among the app Tags
         hh={};
-        hh_index=find(strcmp(fields{ifield},ListTag));
-        if ~isempty(hh_index)
-            hh{1}=app(hh_index);
-        elseif isprop(app,fields{ifield})
-            hh{1}=app.(fields{ifield});
+        if ~isempty(hh_index)% a corresponding app Tag is found
+            hh{1}=hchildren(hh_index); % handle of the corresponding  app Tag
+%         elseif isprop(app,fields{ifield})
+%             hh{1}=app.(fields{ifield});
         end
-        if ~isempty(hh)
-            if strcmp(get(hh{1},'Type'),'uitable')
-                % case of a table
-                set(hh{1},'Visible','on')
+        if ~isempty(hh)% fill the app element found
+            if strcmp(get(hh{1},'Type'),'uitable')% case of a table
+                set(hh{1},'Visible','on')% make it visible
                 if ischar(input_data)
                     input_data={input_data};% transform string to a single cell if needed
                 end
-                set(hh{1},'Data',input_data)
+                set(hh{1},'Data',input_data)% fill the app element with table input_data
                 check_done=1;
             end
             % for numeric input element, detect GUI element(s) with the same tag name preceded by 'num_'
-        elseif isnumeric(input_data)
+        elseif isnumeric(input_data)% numeric input
             if numel(input_data)>1 % deals with array displayed in multiple boxes labeled by an index
                 hh=cell(numel(input_data),1);
                 for ibox=1:numel(input_data)
-                    hh_index=find(strcmp(['num_' fields{ifield} '_' num2str(ibox)],ListTag));
+                    hh_index=find(strcmp(['num_' fields{ifield} '_' num2str(ibox)],ListTag));% seerch app element with tag beginning by 'num_'
                     if ~isempty(hh_index)
-                        hh{ibox}=app(hh_index);
-                    elseif isprop(app,['num_' fields{ifield} '_' num2str(ibox)])
-                        hh{ibox}=app.(['num_' fields{ifield} '_' num2str(ibox)]);
+                        hh{ibox}=hchildren(hh_index);
+%                     elseif isprop(app,['num_' fields{ifield} '_' num2str(ibox)])
+%                         hh{ibox}=app.(['num_' fields{ifield} '_' num2str(ibox)]);
                     end
                 end
             else % single box (usual case)
                 hh_index=find(strcmp(['num_' fields{ifield}],ListTag));
                 if ~isempty(hh_index)
-                    hh{1}=app(hh_index);
-                elseif isprop(app,['num_' fields{ifield}])
-                    hh{1}=app.(['num_' fields{ifield}]);
+                    hh={hchildren(hh_index)};
+%                 elseif isprop(app,['num_' fields{ifield}])
+%                     hh{1}=app.(['num_' fields{ifield}]);
                 end
             end
         end
@@ -105,7 +117,6 @@ for ifield=1:numel(fields)
             if ~isempty(hh{ibox})&& ~check_done && ~isequal(hh{ibox},0)
                 set(hh{ibox},'Visible','on')% make the filled GUI element visible
                 if isfield(get(hh{ibox}),'Type')
-                    %get(hh{ibox},'Type')
                     switch get(hh{ibox},'Type')    
                         case {'uicheckbox','uiradiobutton','uitogglebutton'}
                             if isnumeric(input_data)||islogical(input_data)

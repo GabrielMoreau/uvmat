@@ -198,17 +198,14 @@ Ymin=Ymid-ObjectData.RangeInterp;
 Xsquare=[Xmin Xplus Xplus Xmin];
 Ysquare=[Ymin Ymin Yplus Yplus];
 Area_phys= 4*ObjectData.RangeInterp*ObjectData.RangeInterp;
-%Xsquare=[ObjectData.RangeX(1) ObjectData.RangeX(2) ObjectData.RangeX(2) ObjectData.RangeX(1)];
-%Ysquare=[ObjectData.RangeY(1) ObjectData.RangeY(1) ObjectData.RangeY(2) ObjectData.RangeY(2)];
-%Area_phys= abs((Xsquare(1)-Xsquare(3))*(Ysquare(2)-Xsquare(3)));
 [Xsquare_a,Ysquare_a]=px_XYZ(XmlData{1}.GeometryCalib,[],Xsquare,Ysquare,Zref);% image coordinates on view a
 Area_px=polyarea(Xsquare_a,Ysquare_a);
-pxcm=sqrt(Area_px/Area_phys);
-Range_px_a=pxcm*ObjectData.RangeInterp;
+pxcm_a=sqrt(Area_px/Area_phys);
+Range_px_a=pxcm_a*ObjectData.RangeInterp;
 [Xsquare_b,Ysquare_b]=px_XYZ(XmlData{2}.GeometryCalib,[],Xsquare,Ysquare,Zref);% image coordinates on view a
 Area_px=polyarea(Xsquare_b,Ysquare_b);
-pxcm=sqrt(Area_px/Area_phys);
-Range_px_b=pxcm*ObjectData.RangeInterp;
+pxcm_b=sqrt(Area_px/Area_phys);
+Range_px_b=pxcm_b*ObjectData.RangeInterp;
 
 %% define the directory for result file (with path=RootPath{1})
 OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
@@ -221,7 +218,7 @@ else
 end
 
 %% Prepare the output field structure
-MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit'};
+MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit','Range_px_a','Range_px_b'};
 MergeData.Conventions='uvmat';
 MergeData.Program='civ2vel_3C';
 if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
@@ -233,6 +230,8 @@ else
     disp_uvmat('ERROR','inconsistent coord units in the two input velocity series',checkrun)
     return
 end
+MergeData.Range_px_a=Range_px_a;
+MergeData.Range_px_b=Range_px_b;
 MergeData.ListVarName={'coord_x','coord_y','U','V','W','Error'};
 MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
     {'coord_y','coord_x'},{'coord_y','coord_x'}};
@@ -357,20 +356,20 @@ for index_i=Index_i_series
 
         ZI=Zref*ones(size(XI,1),size(XI,2));
 
-        %% get the image coordinates of the input physical grid on each view 
+        %% get the image coordinates of the input physical grid on each view
 
-         if NbView==3 % introduce corrections obtained from series/stereo_civ
+        if NbView==3 % introduce corrections obtained from series/stereo_civ
             XIa=XI-0.5*Xshift;% uncorrected phys coordinates in view a corresponding to XI
             XIb=XI+0.5*Xshift;% uncorrected phys coordinates in view b corresponding to XI
             YIa=YI-0.5*Yshift; % uncorrected phys coordinates in view a corresponding to YI
             YIb=YI+0.5*Yshift;% uncorrected phys coordinates in view b corresponding to YI
-                        if isfield (Data_shift,'Zshift')
-            ZI=ZI+Zshift;% Z position at points XI, YI
-                        end
-     
+            if isfield (Data_shift,'Zshift')
+                ZI=ZI+Zshift;% Z position at points XI, YI
+            end
+
             [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XIa,YIa,ZI);% set of image coordinates on view a
             [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XIb,YIb,ZI);% set of image coordinates on view b
-         else % get the image coordinates directly using calibration of each view
+        else % get the image coordinates directly using calibration of each view
             [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view a
             [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view b
         end
@@ -398,32 +397,38 @@ for index_i=Index_i_series
         Uciv_b=Data{2}.U(ind_good);
         Vciv_b=Data{2}.V(ind_good);
 
-   %% interpolate PIV data (in pixel displacement) to the common grid translated in image coordinates
-        F=scatteredInterpolant([Xciv_a Yciv_a],Uciv_a,'linear','linear');
+        %% interpolate PIV data (in pixel displacement) to the common grid translated in image coordinates
+        F=scatteredInterpolant([Xciv_a Yciv_a],Uciv_a,'linear','linear');% linear interpolation with linear extrapolation
         Ua=F(Xa,Ya);% U interpolated on the grid image of the physical grid
-        F.Values=Vciv_a;% switch the interpolent to Vciv_a
-        Va=F(Xa,Ya);% V interpolated on the grid image of the physical grid
-        F.Values=Xciv_a;
-        F.Method='nearest';
-        F.ExtrapolationMethod='nearest';
-        Distx=F(Xa,Ya)-Xa;%separation  of the X position of the nearest grid point to (Xa,Ya)
-        F.Values=Yciv_a;
-        Disty=F(Xa,Ya)-Ya;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        G=scatteredInterpolant([Xciv_a Yciv_a],Vciv_a,'linear','linear');% linear interpolation with linear extrapolation
+        %F.Values=Vciv_a;% switch the interpolent to Vciv_a
+        Va=G(Xa,Ya);% V interpolated on the grid image of the physical grid
+        %F.Values=Xciv_a;
+        HX=scatteredInterpolant([Xciv_a Yciv_a],Xciv_a,'nearest','nearest');%  nearest value
+        %F.Method='nearest';
+        %F.ExtrapolationMethod='nearest';
+        Distx=HX(Xa,Ya)-Xa;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        %F.Values=Yciv_a;
+        HY=scatteredInterpolant([Xciv_a Yciv_a],Yciv_a,'nearest','nearest');%  nearest value
+        Disty=HY(Xa,Ya)-Ya;%separation  of the X position of the nearest grid point to (Xa,Ya)
         ind_bad=find((Distx.*Distx+Disty.*Disty)>Range_px_a*Range_px_a);
         Ua(ind_bad)=NaN;Va(ind_bad)=NaN;Xa(ind_bad)=NaN;Ya(ind_bad)=NaN;
         [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
         [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A of the pinhole model
-% 
-        F=scatteredInterpolant([Xciv_b Yciv_b],Uciv_b,'linear','linear');
+        %
+        F=scatteredInterpolant([Xciv_b Yciv_b],Uciv_b,'linear','linear');% linear interpolation with linear extrapolation
         Ub=F(Xb,Yb);% U interpolated on the grid image of the physical grid
-        F.Values=Vciv_b;% switch the interpolent to Vciv_a
-        Vb=F(Xb,Yb);% V interpolated on the grid image of the physical grid
-        F.Values=Xciv_b;
-        F.Method='nearest';
-        F.ExtrapolationMethod='nearest';
-        Distx=F(Xb,Yb)-Xb;%separation  of the X position of the nearest grid point to (Xb,Yb)
-        F.Values=Yciv_b;
-        Disty=F(Xb,Yb)-Yb;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        G=scatteredInterpolant([Xciv_b Yciv_b],Vciv_b,'linear','linear');% linear interpolation with linear extrapolation
+     %   F.Values=Vciv_b;% switch the interpolent to Vciv_b
+        Vb=G(Xb,Yb);% V interpolated on the grid image of the physical grid
+         HX=scatteredInterpolant([Xciv_b Yciv_b],Xciv_b,'nearest','nearest');%  nearest value
+%         F.Values=Xciv_b;
+%         F.Method='nearest';
+%         F.ExtrapolationMethod='nearest';
+        Distx=HX(Xb,Yb)-Xb;%separation  of the X position of the nearest grid point to (Xb,Yb)
+     %   H.Values=Yciv_b;
+         HY=scatteredInterpolant([Xciv_b Yciv_b],Yciv_b,'nearest','nearest');% nearest value
+        Disty=HY(Xb,Yb)-Yb;%separation  of the X position of the nearest grid point to (Xa,Ya)
         ind_bad=find((Distx.*Distx+Disty.*Disty)>Range_px_b*Range_px_b);
         Ub(ind_bad)=NaN;Vb(ind_bad)=NaN;Xb(ind_bad)=NaN;Yb(ind_bad)=NaN;
         [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to the undistorted coordinates of the pinhole model
@@ -460,24 +465,25 @@ for index_i=Index_i_series
         Error(:,:,4)=B(:,:,2,1).*U+B(:,:,2,2).*V+B(:,:,2,3).*W-Vb;
 
 
-        %% recording the merged field
+        %% rescaling with time
         MergeData.Time=Time;
         MergeData.Dt=Dt;
         MergeData.U=U/Dt;
         MergeData.V=V/Dt;
         MergeData.W=W/Dt;
-     
+
+
+        %% suppress vectors which are not with reasonable error range estimated as 1 pixel
         mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
         mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
         Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
-        % TEST, REMETRRE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       % MergeData.U(Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
-       % MergeData.V(Error>1)=NaN;
-      %  MergeData.W(Error>1)=NaN;
+        MergeData.U(Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
+        MergeData.V(Error>1)=NaN;
+        MergeData.W(Error>1)=NaN;
 
-      
-      if ~isnan(scale_factor_inv_uv)
-          ind_FF=(isnan(MergeData.U));% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+        %% rescale the data for storage as integers
+        if ~isnan(scale_factor_inv_uv) && ~isempty(scale_factor_inv_uv)
+            ind_FF=(isnan(MergeData.U));% set NaN to the maximal 16 bit integer (NaN not handled for integers)
             MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
             MergeData.U(ind_FF)=intmax('int16');
             MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
@@ -487,13 +493,15 @@ for index_i=Index_i_series
             MergeData.VarAttribute{3}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{4}.scale_factor=1/scale_factor_inv_uv;
             MergeData.VarAttribute{5}.scale_factor=1/scale_factor_inv_uv;
-      end
-      MergeData.Error=uint16(1000*Error);% transform to integers
+        end
+        MergeData.Error=uint16(1000*Error);% transform to integers
+
+        %% reshape the data as matrices and save them in netcdf file
         MergeData.Error=reshape(MergeData.Error,Npy,Npx);
-      MergeData.U=reshape(MergeData.U,Npy,Npx);
-      MergeData.V=reshape(MergeData.V,Npy,Npx);
-      MergeData.W=reshape(MergeData.W,Npy,Npx);
-      MergeData.Z=reshape(MergeData.Z,Npy,Npx);
+        MergeData.U=reshape(MergeData.U,Npy,Npx);
+        MergeData.V=reshape(MergeData.V,Npy,Npx);
+        MergeData.W=reshape(MergeData.W,Npy,Npx);
+        MergeData.Z=reshape(MergeData.Z,Npy,Npx);
         errormsg=struct2nc(OutputFile,MergeData);%save result file
         if isempty(errormsg)
             disp(['output file ' OutputFile ' written'])

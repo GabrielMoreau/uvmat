@@ -65,18 +65,6 @@ if ~isempty(huvmat)
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
     test_transform=~isequal(get(hhuvmat.TransformName,'Value'),1);
 end
-test_piv=0;
-if isfield(FigData,'CivHandle')% look for handle of the civ_input GUI
-    if ~ishandle(FigData.CivHandle)
-        delete(hObject)
-        set(hCurrentFig,'Pointer','arrow');
-        return
-    end
-  %get(FigData.CivHandle)
-   % hhciv=guidata(FigData.CivHandle);% list of handles in the GUI civ_input
-   CivParam=read_app(get(FigData.CivHandle,'RunningAppInstance'));
-    test_piv=1;
-end
 %find the current axe 'CurrentAxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
 text_displ_2='';
@@ -238,87 +226,6 @@ if strcmp(htype,'axes')
                 end
                 pos(3)=pos(3)+Field.ProjObjectCoord(3);
                 text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
-            end
-            % case of PIV correlation display
-            if test_piv
-               [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
-                   Param.CheckCiv2=0;
-                   par_civ=CivParam.Civ1;%read the Civ1 panel in civ_input
-                   shiftx=par_civ.SearchBoxShift(1);
-                   shifty=par_civ.SearchBoxShift(2);
-                xround=Field.X(ind_pt);
-                yround=Field.Y(ind_pt);
-                
-                % mark the correlation box with a rectangle in view_field
-                ibx2=floor((par_civ.CorrBoxSize(1)-1)/2);
-                iby2=floor((par_civ.CorrBoxSize(2)-1)/2);
-                isx2=par_civ.SearchRange(1);
-                isy2=par_civ.SearchRange(2);
-                hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
-                hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
-                if isempty(hhh)
-                    set(0,'CurrentFigure',hCurrentFig)
-                    set(hCurrentFig,'CurrentAxes',CurrentAxes)
-                    rectangle('Curvature',[0 0],...
-                        'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
-                        'LineStyle','-','Tag','PIV_box_marker');
-                    rectangle('Curvature',[0 0],...
-                        'Position',[xround-isx2-ibx2+shiftx yround-isy2-iby2+shifty 2*isx2+2*ibx2 2*isy2+2*iby2],'EdgeColor','m',...
-                        'LineStyle','- -','Tag','PIV_search_marker');
-                else
-                    set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
-                    set(hhhh,'Position',[xround-isx2-ibx2+shiftx yround-isy2-iby2+shifty 2*isx2+2*ibx2 2*isy2+2*iby2])
-                end
-                
-                % perform the PIV calculation as the single point xround yround
-                par_civ.ImageA=Field.A;
-                par_civ.ImageB=Field.B;
-                par_civ.ImageHeight=size(par_civ.ImageA,1);
-                par_civ.ImageWidth=size(par_civ.ImageA,2);
-                par_civ.Grid=[xround yround];% PIV calculation with a single point 
-                [~,~,utable,vtable,~,~,result_conv,errormsg]= civ(par_civ);
-                if ~isempty(errormsg)
-                    text_displ_5=errormsg;
-                else
-                    rangx(1)=-isx2+shiftx;
-                    rangx(2)=isx2+shiftx;
-                    rangy(1)=-isy2-shifty;
-                    rangy(2)=isy2-shifty;
-                    hcorr=[];
-                    if isfield(AxeData,'CurrentCorrImage')
-                        hcorr=AxeData.CurrentCorrImage;
-                        if ~ishandle(hcorr)
-                            hcorr=[];
-                        end
-                    end
-                    if isempty(hcorr)
-                        corrfig=findobj(allchild(0),'tag','corrfig');
-                        if ~isempty(corrfig)
-                            set(0,'CurrentFigure',corrfig(1))
-                            AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);% plot the correlation map, with full colormap from 0 to 1
-                            AxeData.CurrentVector=line([0 utable],[0 vtable],'Tag','vector');
-                            AxeData.TitleHandle=title(['[x,y]= ' num2str(par_civ.Grid) ' px']);
-                            colorbar
-                            set(CurrentAxes,'UserData',AxeData)
-                            ParentAxe=get(AxeData.CurrentCorrImage,'parent');
-                            set(ParentAxe,'YDir','normal')
-                             set(ParentAxe,'DataAspectRatio',[1 1 1]); %equal axis scale
-                        end
-                    else
-                        set(AxeData.CurrentCorrImage,'CData',result_conv)
-                        set(AxeData.CurrentCorrImage,'XData',rangx)
-                        set(AxeData.CurrentCorrImage,'YData',-rangy)
-                        ParentAxe=get(AxeData.CurrentCorrImage,'parent');
-                        rangx(1)=min(rangx(1),0);
-                        rangx(2)=max(rangx(2),0);
-                        rangy(2)=max(rangy(2),0);
-                        rangy(1)=min(rangy(1),0);
-                         set(ParentAxe,'XLim',rangx)
-                         set(ParentAxe,'YLim',[-rangy(2) -rangy(1)])
-                        set(AxeData.CurrentVector,'XData',[0 utable],'YData',[0 vtable]);
-                        set(AxeData.TitleHandle,'String',['[x,y]= ' num2str(par_civ.Grid) ' px'])
-                    end
-                end
             end
         end
     end

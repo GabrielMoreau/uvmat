@@ -1463,13 +1463,10 @@ for icell=1:length(CellInfo)
                 % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
                 Coord=permute(Coord,[1 3 2]);
                 Coord=reshape(Coord,size(Coord,1)*size(Coord,2),2);
-                if exist('scatteredInterpolant','file')%recent Matlab versions
-                    F=scatteredInterpolant(Coord,Coord(:,1),'nearest');
-                    G=scatteredInterpolant(Coord,Coord(:,2),'nearest');
-                else
-                    F=TriScatteredInterp(Coord,Coord(:,1),'nearest');
-                    G=TriScatteredInterp(Coord,Coord(:,2),'nearest');
-                end
+
+                F=scatteredInterpolant(Coord,Coord(:,1),'nearest');
+                G=scatteredInterpolant(Coord,Coord(:,2),'nearest');
+
                 Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
                 Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
                 Dist=Distx.*Distx+Disty.*Disty;
@@ -2405,18 +2402,18 @@ if isfield(FieldData,'Txt')
     return;
 end
 
-%% transfer global attributes
-if ~isfield(FieldData,'ListGlobalAttribute')
-    ProjData.ListGlobalAttribute={};
-else
-    ProjData.ListGlobalAttribute=FieldData.ListGlobalAttribute;
-end
-for iattr=1:length(ProjData.ListGlobalAttribute)
-    AttrName=ProjData.ListGlobalAttribute{iattr};
-    if isfield(FieldData,AttrName)
-        ProjData.(AttrName)=FieldData.(AttrName);
-    end
-end
+% %% transfer global attributes
+% if ~isfield(FieldData,'ListGlobalAttribute')
+%     ProjData.ListGlobalAttribute={};
+% else
+%     ProjData.ListGlobalAttribute=FieldData.ListGlobalAttribute;
+% end
+% for iattr=1:length(ProjData.ListGlobalAttribute)
+%     AttrName=ProjData.ListGlobalAttribute{iattr};
+%     if isfield(FieldData,AttrName)
+%         ProjData.(AttrName)=FieldData.(AttrName);
+%     end
+% end
 
 %% transfer coordinate unit
 if isfield(ProjData,'CoordUnit')
@@ -2432,6 +2429,7 @@ if isfield(FieldData,'CoordUnit')
 end
 
 %% store the properties of the projection object
+ProjData.ListGlobalAttribute={};
 ListObject={'Name','Type','ProjMode','angle','RangeX','RangeY','RangeZ','DX','DY','DZ','Coord'};
 for ilist=1:length(ListObject)
     if isfield(ObjectData,ListObject{ilist})

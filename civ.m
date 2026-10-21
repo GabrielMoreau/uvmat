@@ -58,7 +58,7 @@ nbvec=size(par_civ.Grid,1);
 %% prepare correlation and search boxes
 CorrBoxSizeX=par_civ.CorrBoxSize(:,1);
 CorrBoxSizeY=par_civ.CorrBoxSize(:,2);
-if size(par_civ.CorrBoxSize,1)==1
+if size(par_civ.CorrBoxSize,1)==1% single size of correlation box, no Grid 
     CorrBoxSizeX=par_civ.CorrBoxSize(1)*ones(nbvec,1);
     CorrBoxSizeY=par_civ.CorrBoxSize(2)*ones(nbvec,1);
 end
@@ -135,9 +135,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
     for ivec=1:nbvec
         iref=xtable(ivec);% xindex on the image A for the middle of the correlation box
         jref=ytable(ivec);%  j index  for the middle of the correlation box in the image A
-%         if ivec==1012
-%             'TEST'
-%         end
         FF(ivec)=0;
         ibx2=floor(CorrBoxSizeX(ivec)/2);
         iby2=floor(CorrBoxSizeY(ivec)/2);
@@ -155,9 +152,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         check2_y=subrange2_y>=1 & subrange2_y<=npy_ima;
         image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
         image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-
-%         xtable(ivec)=(subrange1_x(1)+subrange1_x(2))/2;% adjust the mean position of the correlation box if close to the image edge
-%         ytable(ivec)=(subrange1_y(1)+subrange1_y(2))/2;
         if checkmask
             mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
             mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
@@ -218,7 +212,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
                     elseif par_civ.CorrSmooth==2
                         [vector,FF(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                     else
-                        [vector,FF(ivec)] = quadr_fit(result_conv,x,y);
+                        [vector,FF(ivec)] = quadr_fit(result_conv,x,y);%NOT IMPLEMENTED
                     end
                     utable(ivec)=vector(1)*mesh+shiftx(ivec);
                     vtable(ivec)=-vector(2)*mesh+shifty(ivec);% vtable and shifty in image coordinates (opposite to pixel shift)
@@ -282,7 +276,6 @@ vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 % --- Find the maximum of the correlation function after interpolation
 function [vector,FF] = SUBPIX2DGAUSS (result_conv,x,y)
 %------------------------------------------------------------------------
-% vector=[0 0]; %default
 FF=true;
 peaky=y;
 peakx=x;
@@ -324,7 +317,7 @@ end
 vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 %------------------------------------------------------------------------
-% --- Find the maximum of the correlation function after quadratic interpolation
+% --- Find the maximum of the correlation function after quadratic interpolation (NOT IMPLEMENTED)
 function [vector,F] = quadr_fit(result_conv,x,y)
 [npy,npx]=size(result_conv);
 if x<4 || y<4 || npx-x<4 ||npy-y <4
@@ -339,11 +332,6 @@ else
     [X,Y]=meshgrid(x_vec,y_vec);
     coord=[reshape(X,[],1) reshape(Y,[],1)];
     result_conv=reshape(result_conv(y_ind,x_ind),[],1);        
-    % n=numel(X);
-    % x=[X Y];
-    % X=X-0.5;
-    % Y=Y+0.5;
-    % y = (X.*X+2*Y.*Y+X.*Y+6) + 0.1*rand(n,1);
     p = polyfitn(coord,result_conv,2);
     A(1,1)=2*p.Coefficients(1);
     A(1,2)=p.Coefficients(2);
@@ -351,12 +339,6 @@ else
     A(2,2)=2*p.Coefficients(4);
     vector=[x y]'-A\[p.Coefficients(3) p.Coefficients(5)]';
     vector=vector'-[floor(npx/2) floor(npy/2)]-1 ;
-    % zg = polyvaln(p,coord);
-    % figure
-    % surf(x_vec,y_vec,reshape(zg,9,9))
-    % hold on
-    % plot3(X,Y,reshape(result_conv,9,9),'o')
-    % hold off
 end
 
 %------------------------------------------------------------------------

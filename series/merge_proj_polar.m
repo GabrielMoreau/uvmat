@@ -1,11 +1,11 @@
-%'merge_proj': concatene several fields from series, project on a polar grid
+%'merge_proj_polar': project on a polar grid, can concatene several fields from multiple input lines 
 %------------------------------------------------------------------------
-% function ParamOut=merge_proj(Param)
+% function ParamOut=merge_proj_polar(Param)
 %------------------------------------------------------------------------
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %OUTPUT
-% ParamOut: sets options in the GUI series.fig needed for the function
+% GUIParam: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
@@ -56,480 +56,503 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function ParamOut=merge_proj_polar(Param)
+function GUIParam=merge_proj_polar(Param)
 
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='on';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
-    ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'on';%can use a transform function
-    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
-    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
-    ParamOut.OutputDirExt='.polar';%set the output dir extension
-    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-      %check the input files
-    ParamOut.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
-    first_j=[];
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    GUIParam.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    GUIParam.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    GUIParam.NbSlice='off'; %nbre of slices ('off' by default)
+    GUIParam.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    GUIParam.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.FieldTransform = 'off';%cdo not request a transform function
+    %%%%% list of possible transform functions (needed only for compilation)
+    if 0==1 %never satisfied but trigger compilation with the appropriate transform functions ('eval' inactive for compilation)
+        phys_polar
+    end
+    GUIParam.ActionInput.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform function phys_polar
+   
+    GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
+    GUIParam.OutputDirExt='.mproj_polar';%set the output dir extension
+    GUIParam.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    %check the input files
+    GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
-    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
-    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
-        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
-    if ~exist(FirstFileName,'file')
-        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
+    FileInfo=Param.SeriesData.FileInfo{1};
+    VelocityRange=[];%default
+    VelGradientRange=[];%default
+    
+    if ~strcmp(FileInfo.FieldType,'image')
+        if isfield(Param,'ActionInput')
+            if isfield(Param.ActionInput,'VelocityRange')
+                VelocityRange= Param.ActionInput.VelocityRange;
+            end
+            if isfield(Param.ActionInput,'VelGradientRange')
+                VelGradientRange= Param.ActionInput.VelGradientRange;
+            end
+        end
+        prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)';...
+            'range (max modulus) for vel derivatives (curl, div...) for 16 bit integer records (32 bit reals if empty)'};
+        dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
+        num_lines= 2;
+        def     = { num2str(VelocityRange),num2str(VelGradientRange)};
+        answer = inputdlg(prompt,dlg_title,num_lines,def);
+        if isempty(answer)
+            return
+        end
+        GUIParam.ActionInput.VelocityRange=str2double(answer{1});
+        GUIParam.ActionInput.VelGradientRange=str2double(answer{2});
+         prompt = {'origin [x y] of polar coordinates';'reference radius';'reference angle(degrees)';'angle direction and switch x y(+/-)'};
+    dlg_title = 'set the parameters for the polar coordinates';
+    num_lines= 2;
+    def     = { '[0 0]';'';'0';'+'};
+    if isfield(Param,'ActionInput')
+        if isfield(Param.ActionInput,'PolarCentre')
+            def{1}=num2str(Param.ActionInput.PolarCentre);
+        end
+        if isfield(Param.ActionInput,'PolarReferenceRadius')
+            def{2}=num2str(Param.ActionInput.PolarReferenceRadius);
+        end
+        if isfield(Param.ActionInput,'PolarReferenceAngle')
+            def{3}=num2str(Param.ActionInput.PolarReferenceAngle);
+        end
+        if isfield(Param.ActionInput,'PolarAngleDirection')
+            def{4}=Param.ActionInput.PolarAngleDirection;
+        end
+    end
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    GUIParam.ActionInput.PolarCentre=str2num(answer{1}); 
+    GUIParam.ActionInput.PolarReferenceRadius=str2double(answer{2}); 
+    GUIParam.ActionInput.PolarReferenceAngle=str2double(answer{3}); 
+    GUIParam.ActionInput.PolarAngleDirection=answer{4};
     end
     return
 end
-
-%%%% specific input parameters
-% calculate the positions on which to interpolate
-radius_ref=450;% radius of the mountain top
-radius_shifted=-130:2:130;% radius shifted by the radius of the origin at the topography summit
-radius=radius_ref+radius_shifted;%radius from centre of the tank
-azimuth_arclength=(-150:2:400);%azimuth in arc length at origin position
-azimuth=pi/2-azimuth_arclength/radius_ref;%azimuth in radian
-[Radius,Azimuth]=meshgrid(radius,azimuth);
-XI=Radius.*cos(Azimuth);% set of x axis of the points where interpolqtion needs to be done
-YI=Radius.*sin(Azimuth)-radius_ref;% set of y axis of the points where interpolqtion needs to be done
-FieldNames={'vec(U,V)';'curl(U,V)';'div(U,V)'};
-HeadData.ListVarName= {'radius','azimuth'} ;
-HeadData.VarDimName={'radius','azimuth'};
-HeadData.VarAttribute{1}.Role='coord_y';
-HeadData.VarAttribute{2}.Role='coord_x';
-HeadData.radius=radius_shifted;
-HeadData.azimuth=azimuth_arclength;    
-thresh2=16; % square of the interpolation range
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-ParamOut=[]; %default output
+GUIParam=[]; %default output
 RUNHandle=[];
-WaitbarHandle=[];
+
 %% read input parameters from an xml file if input is a file name (batch mode)
-checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
-    checkrun=0;
+    checkrun=false;
 else
-    hseries=findobj(allchild(0),'Tag','series');
-    RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
-    WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
-end
-
-%% root input file type
-RootPath=Param.InputTable(:,1);
-RootFile=Param.InputTable(:,3);
-SubDir=Param.InputTable(:,2);
-%NomType=Param.InputTable(:,4);
-FileExt=Param.InputTable(:,5);
-[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-%%%%%%%%%%%%
-% The cell array filecell is the list of input file names, while
-% filecell{iview,fileindex}:
-%        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
-% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-%%%%%%%%%%%%
-% NbSlice=1;%default
-% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-%     NbSlice=Param.IndexRange.NbSlice;
-% end
-NbView=numel(i1_series);%number of input file series (lines in InputTable)
-NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
-NbField_i=size(i1_series{1},2); %nb of fields for the i index
-NbField=NbField_j*NbField_i; %total number of fields
-
-%% define the name for result file (with path=RootPath{1})
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-% OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},'.nc','_1',i1_series{1}(1));
-% CheckOverwrite=1;%default
-% if isfield(Param,'CheckOverwrite')
-%     CheckOverwrite=Param.CheckOverwrite;
-% end
-% if ~CheckOverwrite && exist(OutputFile,'file')
-%     disp(['existing output file ' OutputFile ' already exists, skip to next field'])
-%     return% skip iteration if the mode overwrite is desactivated and the result file already exists
-% end
-
-if ~isfield(Param,'InputFields')
-    Param.InputFields.FieldName='';
+    RUNHandle=gcbo; % handle of the button RUN in the GUI series
+    checkrun='true';
 end
 
 
-%% determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video','cine_phantom'};
-NcTypeOptions={'netcdf','civx','civdata'};
+%% Input file info
+NbView=size(Param.InputTable,1);%number of input file series (lines in InputTable)
+CheckRelabel=false;
+if isfield(Param.IndexRange,'Relabel')
+    CheckRelabel=Param.IndexRange.Relabel;
+end
+NbSlice=[];
+if isfield(Param.IndexRange,'NbSlice')
+    NbSlice=Param.IndexRange.NbSlice;
+end
+XmlData=cell(NbView,1);
+PairString=cell(NbView,1);
+CheckImage=false(NbView,1);
+FileInfo=cell(NbView,1);
+FileType=cell(NbView,1);
+BitDepth=zeros(NbView,1);
+NbSlice_calib=ones(NbView,1);%nbre of slices for Zindex in phys transform, =1 by default
+
+%% get info on the input file series
+        if ~isfield(Param.IndexRange,'first_j')
+            Param.IndexRange.first_j=1;
+        end
 for iview=1:NbView
-    if ~exist(filecell{iview,1}','file')
-        disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
-        return
+    XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2});
+    if isempty(XmlFileName)
+        disp('xml file for geometric calibration parameters missing');
+    else
+        [XmlData{iview},errormsg]=imadoc2struct(XmlFileName);%read the time from XmlFileName
+        if ~isempty(errormsg)
+            disp(errormsg)
+            return
+        end
     end
-    [FileInfo{iview},MovieObject{iview}]=get_file_info(filecell{iview,1});
+    XmlData{iview}.TransformInput.PolarCentre=Param.ActionInput.PolarCentre; 
+    XmlData{iview}.TransformInput.PolarReferenceRadius=Param.ActionInput.PolarReferenceRadius; 
+    XmlData{iview}.TransformInput.PolarReferenceAngle=Param.ActionInput.PolarReferenceAngle; 
+    XmlData{iview}.TransformInput.PolarAngleDirection=Param.ActionInput.PolarAngleDirection;
+    if CheckRelabel && isfield(XmlData{iview},'FileSeries')% case relabel
+        NbField_j=1;
+        if isfield(XmlData{iview},'Time')
+            NbField_j=size(XmlData{iview}.Time,1)-1;
+        end
+        [RootFile]=index2filename(XmlData{iview}.FileSeries,Param.IndexRange.first_i,Param.IndexRange.first_j,NbField_j);
+        FirstFileName=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},RootFile);
+    else
+        FullRootFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3});
+        if isfield(Param.IndexRange,'PairString')
+            PairString{iview}=Param.IndexRange.PairString;
+        end
+
+        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,Param.IndexRange.first_j,PairString{iview});
+        FirstFileName=fullfile_indices(FullRootFile,Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);%get first file name
+    end
+    FileInfo{iview}=get_file_info(FirstFileName);
+    CheckImage(iview,1)=strcmp(FileInfo{iview}.FieldType,'image');
+    if CheckImage(iview,1)
+        BitDepth(iview)=FileInfo{iview}.BitDepth;
+    end
     FileType{iview}=FileInfo{iview}.FileType;
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
-    if CheckImage{iview}
-        ParamIn{iview}=MovieObject{iview};
-    else
-        ParamIn{iview}=Param.InputFields;
-    end
-    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
-    if ~isempty(j1_series{iview})
-        frame_index{iview}=j1_series{iview};
-    else
-        frame_index{iview}=i1_series{iview};
+    if isfield(XmlData{iview},'SliceCoord')
+    NbSlice_calib(iview)=size(XmlData{iview}.SliceCoord,1);%nbre of slices for Zindex in phys transform
     end
 end
-if NbView >1 && max(cell2mat(CheckImage))>0 && ~isfield(Param,'ProjObject')
-    disp_uvmat('ERROR','projection on a common grid is needed to concatene images: use a Projection Object of type ''plane'' with ProjMode=''interp_lin''',checkrun)
+if min(NbSlice_calib)~=max(NbSlice_calib)
+    disp_uvmat('ERROR',' inconsitent numbers of slices',checkrun)
     return
 end
-
-%% calibration data and timing: read the ImaDoc files
-[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
-if size(time,1)>1
-    diff_time=max(max(diff(time)));
-    if diff_time>0 
-        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time) ': the mean time is chosen in result'],checkrun)
-    end   
-end
-if ~isempty(errormsg)
-    disp_uvmat('WARNING',errormsg,checkrun)
-end
-time=mean(time,1); %averaged time taken for the merged field
-
-%% height z
-    % position of projection plane
-    
-ProjObjectCoord=XmlData{1}.GeometryCalib.SliceCoord;
-CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
-for iview =2:numel(XmlData)
-    if ~(isfield(XmlData{iview},'GeometryCalib')&& isequal(XmlData{iview}.GeometryCalib.SliceCoord,ProjObjectCoord))...
-        disp('error: geometric calibration missing or inconsistent plane positions')
-        return
-    end
+if min(CheckImage)==0
+    CheckImage=false; %only Netcdf input files
+    ParamIn=Param.InputFields;
+elseif min(CheckImage)==1
+    CheckImage=true;
+    ParamIn=[];
+    BitDepth=max(BitDepth);
+else
+    disp_uvmat('ERROR',' netcdf or  image series needed as input',checkrun)
 end
 
+%% get the handle of the functon transform/phys_polar
+currentdir=pwd;
+cd(Param.ActionInput.TransformPath)
+transform_fct=str2func('phys_polar');
+cd (currentdir)
 
-%% coordinate transform or other user defined transform
-transform_fct='';%default fct handle
-if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-        currentdir=pwd;
-        cd(Param.FieldTransform.TransformPath)
-        transform_fct=str2func(Param.FieldTransform.TransformName);
-        cd (currentdir)
-        if isfield(Param,'TransformInput')
-            for iview=1:NbView
-            XmlData{iview}.TransformInput=Param.TransformInput;
-            end
-        end       
+
+%% output file type
+if CheckImage
+    FileExtOut='.png'; %image output (input and proj result = image)
+    RootFileOut='img';
+else
+    FileExtOut='.nc'; %netcdf output
+    RootFileOut='field';
 end
-%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
- % EDIT FROM HERE
-
-%% check the validity of  input file types
-for iview=1:NbView
-    if ~isequal(CheckNc{iview},1)
-        disp_uvmat('ERROR','input files needs to be in netcdf (extension .nc)',checkrun)
-        return
-    end
-end
-
-% %% output file type
-if isempty(j1_series{1})
+if ~(isfield(Param.IndexRange,'MaxIndex_j') && (Param.IndexRange.MaxIndex_j-Param.IndexRange.MinIndex_j>0))
     NomTypeOut='_1';
 else
     NomTypeOut='_1_1';
 end
-RootFileOut=RootFile{1};
-for iview=2:NbView
-    if ~strcmp(RootFile{iview},RootFile{1})
-        RootFileOut='mproj';
-        break
+
+
+%% define a range of values to store results as integers for projection of PIV data
+scale_factor_inv_uv=[];
+if ~CheckImage && isfield(Param,'ActionInput')
+    if isfield(Param.ActionInput,'VelocityRange') && ~isempty(Param.ActionInput.VelocityRange)
+        scale_factor_inv_uv=floor(32767/Param.ActionInput.VelocityRange);
+    end
+    scale_factor_inv_dudv=[];
+    if isfield(Param.ActionInput,'VelGradientRange') && ~isempty(Param.ActionInput.VelGradientRange)
+        scale_factor_inv_dudv=floor(32767/Param.ActionInput.VelGradientRange);
     end
 end
 
+%% define the directory for result file (with path=RootPath{1})
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+if ~isfield(Param,'InputFields')
+    Param.InputFields.FieldName='';
+end
 
-%% MAIN LOOP ON FIELDS
-%%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-% for i_slice=1:NbSlice
-%     index_slice=i_slice:NbSlice:NbField;% select file indices of the slice
-%     NbFiles=0;
-%     nbmissing=0;
-
-%%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+%% Initialisation
 tstart=tic; %used to record the computing time
 CheckOverwrite=1;%default
 if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
-NbField 
-for index=1:NbField
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
+CheckRelabel=isfield(Param.IndexRange,'Relabel' )&& Param.IndexRange.Relabel;%=true for index relabeling (PCO)
+
+
+%% List of field indices
+Index_i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
+if isfield(Param.IndexRange,'last_j')
+    Index_j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+else
+    Index_j_series=1;
+end
+
+%% Projection object
+check_proj_tps= ismember(FileType{iview},{'civdata','civdata_compress'}) && isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)...
+                && strcmp(Param.ProjObject.ProjMode,'interp_tps');
+
+%% MAIN LOOP ON FIELDS INDICES
+for index_i=Index_i_series
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
-    
-        %% generating the name of the merged field
-        i1=i1_series{1}(index);
-        if ~isempty(i2_series{end})
-            i2=i2_series{end}(index);
-        else
-            i2=i1;
-        end
-        j1=1;
-        j2=1;
-        if ~isempty(j1_series{1})
-            j1=j1_series{1}(index);
-            if ~isempty(j2_series{end})
-                j2=j2_series{end}(index);
-            else
-                j2=j1;
-            end
-        end
-       OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFileOut,'.nc',NomTypeOut,i1,i2,j1,j2);
+    for index_j=Index_j_series
+        OutputFile=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),FileExtOut,NomTypeOut,index_i,[],index_j);
+        %OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFileOut,FileExtOut,NomTypeOut,index_i,[],index_j);
         if ~CheckOverwrite && exist(OutputFile,'file')
             disp(['existing output file ' OutputFile ' already exists, skip to next field'])
             continue% skip iteration if the mode overwrite is desactivated and the result file already exists
         end
-    
-    %% z position
-    ZIndex=mod(i1_series{1}(index)-1,NbSlice_calib{1})+1;%Zindex for phys transform
-    ZPosNew=ProjObjectCoord(ZIndex,3);
-    if index==1
-        ZPos=ZPosNew;
-    else
-        if ZPosNew~=ZPos
-            disp('inconsistent z positions in the series')
-            return
-        end
-    end
-    % radius of the topography section at z position
-    ind_mask=[];
-    if ZPos<20
-        TopoRadius=40*sin(acos((20+ZPos)/40));
-        ind_mask=(XI'.*XI'+YI'.*YI')<TopoRadius*TopoRadius;% indidces of data to mask
-    end
-    
-    %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-    Data=cell(1,NbView);%initiate the set Data
-    timeread=zeros(1,NbView);
-    for iview=1:NbView
-        %% reading input file(s)
-        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},ParamIn{iview},frame_index{iview}(index));
-        if ~isempty(errormsg)
-            disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
-            return
-        end
-        ListVar=Data{iview}.ListVarName;
-        for ilist=1:numel(ListVar)
-            Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
-        end
-        % get the time defined in the current file if not already defined from the xml file
-        if ~isempty(time) && isfield(Data{iview},'Time')
-            timeread(iview)=Data{iview}.Time;
-        end
-        if ~isempty(NbSlice_calib)
-            Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-        end
         
-        %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
-        if ~isempty(transform_fct)
-            if nargin(transform_fct)>=2
-                Data{iview}=transform_fct(Data{iview},XmlData{iview});
+        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        Data=cell(1,NbView);%initiate the set Data
+        timeread=NaN(1,NbView);
+        for iview=1:NbView
+            %% reading input file(s)
+            % generating the name of the input field
+            [i1,i2,j1,j2] = get_file_index(index_i,index_j,PairString{iview});
+            if CheckRelabel
+                [InputFile,FrameIndex]=index2filename(XmlData{iview}.FileSeries,i1,j1,NbField_j);
+                FullInputFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},InputFile);
             else
-                Data{iview}=transform_fct(Data{iview});
+                NomType=Param.InputTable{iview,4};
+                FullRootFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3});
+                FullInputFile=fullfile_indices(FullRootFile,Param.InputTable{iview,5},NomType,i1,i2,j1,j2);
+               if isfield(FileInfo{iview},'NumberOfFrames') && FileInfo{iview}.NumberOfFrames>1
+                           if strcmp(NomType,'-1_1')
+                              FrameIndex=index_j;
+                           else
+                              FrameIndex=index_i;
+                           end
+               else
+                   FrameIndex=1;
+               end
+
+            end
+            [Data{iview},~,errormsg] = read_field(FullInputFile,FileType{iview},ParamIn,FrameIndex);
+            if isempty(errormsg)
+                disp([FullInputFile ' read OK'])
+            else
+                disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
+                return
+            end
+            
+            ListVar=Data{iview}.ListVarName;
+            for ilist=1:numel(ListVar)
+                Data{iview}.(ListVar{ilist})=double(Data{iview}.(ListVar{ilist}));% transform all fields in double before all operations
+            end
+            % get the time defined in the current file if not already defined from the xml file
+            if isfield(Data{iview},'Time')
+                timeread(iview)=Data{iview}.Time;
+            end
+            if ~isempty(NbSlice)
+                Data{iview}.ZIndex=mod(index_i-1,NbSlice)+1;%Zindex for phys transform
+            end
+            
+            %% transform the input field #iview in polar coordinates
+              Data{iview}=transform_fct(Data{iview},XmlData{iview});
+ 
+            %% calculate tps coefficients if needed          
+             if check_proj_tps
+                 Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
+
+                
+                [Data{iview},errormsg]=proj_field_polar(Data{iview},Param.ProjObject);
+                if ~isempty(errormsg)
+                    disp_uvmat('ERROR',['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
+                    return
+                end
+             elseif Param.CheckObject
+                [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);% projection with linear interpolation (mode interp_lin) or no projection (mode 'projection')
+                if ~isempty(errormsg)
+                    disp_uvmat('ERROR',['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
+                    return
+                end
+            end
+            
+            %% mask
+            if Param.CheckMask % introduce multilevel mask like for civ
+                NbSlice=Param.MaskTable{iview,2};
+                [RootPath_mask,SubDir_mask,RootFile_mask,~,~,~,~,Ext_mask]=fileparts_uvmat(Param.MaskTable{iview,1});
+                i1_mask=mod(i1-1,NbSlice)+1;
+                maskname=fullfile_uvmat(RootPath_mask,SubDir_mask,RootFile_mask,Ext_mask,'_1',i1_mask);
+                if ~exist(maskname,'file')
+                    maskname=Param.MaskTable{iview,1};
+                end
+                [MaskData,~,errormsg] = read_field(maskname,'image');
+                if ~isempty(errormsg)
+                    disp(['error reading ' maskname ' :' errormsg])
+                    return
+                end
+               
+                MaskData.ZIndex=mod(index_i-1,NbSlice_calib)+1;%Zindex for phys transform
+                if ~isempty(transform_fct) && nargin(transform_fct)>=2
+                    MaskData=transform_fct(MaskData,XmlData{iview});
+                end
+                if  ~isempty(MaskData)
+                    [Data{iview},errormsg]=mask_proj(Data{iview},MaskData);
+                end
             end
         end
+        %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
         
-        %% calculate tps coefficients
-        Data{iview}=tps_coeff_field(Data{iview},1);
-        'tps_coeff done'
-        %% projection on the polar grid
-        [DataOut,VarAttribute,errormsg]=calc_field_tps(Data{iview}.Coord_tps,Data{iview}.NbCentre,Data{iview}.SubRange,...
-            cat(3,Data{iview}.U_tps,Data{iview}.V_tps),FieldNames,cat(3,XI,YI));
+        %% merge the NbView fields
+      
+        [MergeData,errormsg]=merge_field(Data);%concatene all the input field series by fct merge_data
+        
         if ~isempty(errormsg)
-            disp(errormsg)
+            disp_uvmat('ERROR',errormsg,checkrun);
+            return
         end
         
-        % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
-        Coord=permute(Data{iview}.Coord_tps,[1 3 2]);
-        Coord=reshape(Coord,size(Coord,1)*size(Coord,2),2);
-        if exist('scatteredInterpolant','file')%recent Matlab versions
-            F=scatteredInterpolant(Coord,Coord(:,1),'nearest');
-            G=scatteredInterpolant(Coord,Coord(:,2),'nearest');
-        else
-            F=TriScatteredInterp(Coord,Coord(:,1),'nearest');
-            G=TriScatteredInterp(Coord,Coord(:,2),'nearest');
+        %% time of the merged field: take the average of the different views
+        MergeData.Time=mean(timeread,'omitnan');
+        if min(timeread)~=max(timeread)
+            disp(['time discrepency among fields by ' num2str(max(timeread)-min(timeread))])
         end
-        'Interp done'
-        Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
-        Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
-        Dist=Distx.*Distx+Disty.*Disty;
-        ListVarName=(fieldnames(DataOut))';
-        VarDimName=cell(size(ListVarName));
-        ProjData{iview}=HeadData;
-        ProjData{iview}.ListVarName= [ProjData{iview}.ListVarName ListVarName];
-        ProjData{iview}.VarDimName={'radius','azimuth'};
-%         ProjData{iview}.VarAttribute{1}.Role='coord_y';
-%         ProjData{iview}.VarAttribute{2}.Role='coord_x';
-        ProjData{iview}.VarAttribute=[ProjData{iview}.VarAttribute VarAttribute];
-        for ivar=1:numel(ListVarName)
-            ProjData{iview}.VarDimName{ivar+2}={'radius','azimuth'};
-            VarName=ListVarName{ivar};
-            if ~isempty(thresh2)
-                DataOut.(VarName)(Dist>thresh2)=NaN;% put to NaN interpolated positions further than RangeInterp from initial data
+        
+        %% recording the merged field
+        if strcmp(FileExtOut,'.png')    %output as image
+            %write a new  xml calibration file if needed
+            if strcmp(Param.FieldTransform.TransformName,'phys') && index_i==1 && index_j==1     
+                siz=size(MergeData.A);
+                npy=siz(1);
+                npx=siz(2);
+                if isfield(MergeData,'Coord_x') && isfield(MergeData,'Coord_y')
+                    Rangx=MergeData.Coord_x;
+                    Rangy=MergeData.Coord_y;
+                elseif isfield(MergeData,'AX')&& isfield(MergeData,'AY')
+                    Rangx=[MergeData.AX(1) MergeData.AX(end)];
+                    Rangy=[MergeData.AY(1) MergeData.AY(end)];
+                else
+                    Rangx=[0.5 npx-0.5];
+                    Rangy=[npy-0.5 0.5];%default
+                end
+                pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
+                pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
+                T_x=-pxcmx*Rangx(1)+0.5;
+                T_y=-pxcmy*Rangy(2)+0.5;
+                GeometryCal.CalibrationType='rescale';
+                GeometryCal.CoordUnit=MergeData.CoordUnit;
+                GeometryCal.focal=1;
+                GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
+                GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
+                ImaDoc.GeometryCalib=GeometryCal;
+                t=struct2xml(ImaDoc);
+                t=set(t,1,'name','ImaDoc');
+                save(t,[fileparts(OutputFile) '.xml'])
             end
-            ProjData{iview}.(VarName)=(DataOut.(VarName))';
+            if BitDepth==8
+                imwrite(uint8(MergeData.A),OutputFile,'BitDepth',8)
+            else
+                imwrite(uint16(MergeData.A),OutputFile,'BitDepth',16)
+            end
+        else   %output as netcdf files
+            MergeData.ListGlobalAttribute={'Conventions','Program','InputFile_1','InputFile_end','NbCoord','NbDim'};
+            MergeData.Conventions='uvmat';
+            MergeData.Program=mfilename;
+            if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+                MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision];
+            end
+            MergeData.NbCoord=2;
+            MergeData.NbDim=2;
+            % time interval of PIV
+            Dt=[];
+            if isfield(Data{1},'Dt')&& isnumeric(Data{1}.Dt)
+                Dt=Data{1}.Dt;
+            end
+            for iview =2:numel(Data)
+                if ~(isfield(Data{iview},'Dt')&& isequal(Data{iview}.Dt,Dt))
+                    Dt=[];%dt not the same for all fields
+                end
+            end
+            if ~isempty(timeread)
+                MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
+                MergeData.Time=timeread;
+            end
+            % position of projection plane
+            if isfield(Data{1},'ProjObjectCoord')&& isfield(Data{1},'ProjObjectAngle')
+                ProjObjectCoord=Data{1}.ProjObjectCoord;
+                ProjObjectAngle=Data{1}.ProjObjectAngle;
+                for iview =2:numel(Data)
+                    if ~(isfield(Data{iview},'ProjObjectCoord')&& isequal(Data{iview}.ProjObjectCoord,ProjObjectCoord))...
+                            ||~(isfield(Data{iview},'ProjObjectAngle')&& isequal(Data{iview}.ProjObjectAngle,ProjObjectAngle))
+                        ProjObjectCoord=[];%dt not the same for all fields
+                    end
+                end
+                if ~isempty(ProjObjectCoord)
+                    MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'ProjObjectCoord'} {'ProjObjectAngle'}];
+                    MergeData.ProjObjectCoord=ProjObjectCoord;
+                    MergeData.ProjObjectAngle=ProjObjectAngle;
+                end
+            end
+            % coord unit
+            if isfield(Data{1},'CoordUnit')
+                CoordUnit=Data{1}.CoordUnit;
+                for iview =2:numel(Data)
+                    if ~(isfield(Data{iview},'CoordUnit')&& isequal(Data{iview}.CoordUnit,CoordUnit))
+                        CoordUnit=[];%CoordUnit not the same for all fields
+                    end
+                end
+                if ~isempty(CoordUnit)
+                    MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'CoordUnit'}];
+                    MergeData.CoordUnit=CoordUnit;
+                end
+            end
+            % time unit
+            if isfield(Data{1},'TimeUnit')
+                TimeUnit=Data{1}.TimeUnit;
+                for iview =2:numel(Data)
+                    if ~(isfield(Data{iview},'TimeUnit')&& isequal(Data{iview}.TimeUnit,TimeUnit))
+                        TimeUnit=[];%TimeUnit not the same for all fields
+                    end
+                end
+                if ~isempty(TimeUnit)
+                    MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'TimeUnit'}];
+                    MergeData.TimeUnit=TimeUnit;
+                end
+            end
+            if ~isempty(scale_factor_inv_uv)&&  ~isnan(scale_factor_inv_uv)
+                index_U=find(strcmp(MergeData.ListVarName,'U'));
+                if ~isempty(index_U)
+                    MergeData.VarAttribute{index_U}.scale_factor=1/scale_factor_inv_uv;
+                    ind_NaN=isnan(MergeData.U);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+                    MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+                    MergeData.U(ind_NaN)=intmax('int16');
+                end
+                index_V=find(strcmp(MergeData.ListVarName,'V'));
+                if ~isempty(index_V)
+                    MergeData.VarAttribute{index_V}.scale_factor=1/scale_factor_inv_uv;
+                    ind_NaN=isnan(MergeData.V);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+                    MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+                    MergeData.V(ind_NaN)=intmax('int16');
+                end
+            end
+            if ~isempty(scale_factor_inv_dudv)&& ~isnan(scale_factor_inv_dudv)
+                index_var=find(strcmp(MergeData.ListVarName,'curl'));
+                if ~isempty(index_var)
+                    MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                    ind_NaN=isnan(MergeData.curl);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+                    MergeData.curl=int16(scale_factor_inv_uv*MergeData.curl);
+                    MergeData.curl(ind_NaN)=intmax('int16');
+                end
+                index_var=find(strcmp(MergeData.ListVarName,'div'));
+                if ~isempty(index_var)
+                    MergeData.VarAttribute{index_var}.scale_factor=1/scale_factor_inv_dudv;
+                    ind_NaN=isnan(MergeData.div);% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+                    MergeData.div=int16(scale_factor_inv_dudv*MergeData.div);
+                    MergeData.div(ind_NaN)=intmax('int16');
+                end
+            end
+            error=struct2nc(OutputFile,MergeData);%save result file
+            if isempty(error)
+                disp(['output file ' OutputFile ' written'])
+            else
+                disp(error)
+            end
         end
-        
     end
-    %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
-    
-    %% merge the NbView fields
-    ProjData
-    [MergeData,errormsg]=merge_field(ProjData);
-    if ~isempty(errormsg)
-        disp_uvmat('ERROR',errormsg,checkrun);
-        return
-    end
-    
-    
-    %% time of the merged field: take the average of the different views
-    if ~isempty(time)
-        timeread=time(index);
-    elseif ~isempty(find(timeread))% time defined from ImaDoc
-        timeread=mean(timeread(timeread~=0));% take average over times form the files (when defined)
-    else
-        timeread=index;% take time=file index
-    end
-    
-    %% rotating the velocity vectors to the local axis of the polatr coordinates
-    Unew=MergeData.U.*sin(Azimuth')-MergeData.V.*cos(Azimuth');
-    Vnew=MergeData.U.*cos(Azimuth')+MergeData.V.*sin(Azimuth');
-    if ~isempty(ind_mask)
-        Unew(ind_mask)=NaN;
-        Vnew(ind_mask)=NaN;
-        MergeData.curl(ind_mask)=NaN;
-        MergeData.div(ind_mask)=NaN;
-    end
-    [npy,npx]=size(Unew);
-    
-    %% create the output file for the first iteration of the loop
-    if index==1
-        TimeData.ListGlobalAttribute={'Conventions','Project','CoordUnit','TimeUnit','ZPos','Time'};
-        TimeData.Conventions='uvmat';
-        TimeData.Project='2016_Circumpolar';
-        TimeData.CoordUnit='cm';
-        TimeData.TimeUnit='s';
-        TimeData.ZPos=ZPos;
-        TimeData.ListVarName={'radius','azimuth','U','V','curl','div'};
-        TimeData.VarDimName={'radius','azimuth',{'radius','azimuth'},{'radius','azimuth'}...
-            {'radius','azimuth'},{'radius','azimuth'}};
-        TimeData.VarAttribute{1}.Role='';
-        TimeData.VarAttribute{2}.Role='';
-        TimeData.VarAttribute{3}.Role='vector_x';
-        TimeData.VarAttribute{4}.Role='vector_y';
-        TimeData.VarAttribute{5}.Role='scalar';
-        TimeData.VarAttribute{6}.Role='scalar';
-        
-        TimeData.radius=radius_shifted;
-        TimeData.azimuth=azimuth_arclength;
-    end
-        
-        %% append data to the netcdf file for next iterations
-        TimeData.Time=timeread;
-       TimeData.U=Unew;
-       TimeData.V=Vnew;
-       TimeData.curl=MergeData.curl;
-       TimeData.div=MergeData.div;
-
-            error=struct2nc(OutputFile,TimeData);%save result file
-        if isempty(error)
-            disp(['output file ' OutputFile ' written'])
-        else
-            disp(error)
-        end
-            ellapsed_time=toc(tstart);
-    disp(['ellapsed time since start ' num2str(ellapsed_time/60,2) ' minutes'])
 end
-
+ellapsed_time=toc(tstart);
+disp(['total ellapsed time ' num2str(ellapsed_time/60,2) ' minutes'])
+NbField=numel(Index_i_series)*numel(Index_j_series);
 disp([ num2str(ellapsed_time/(60*NbField),3) ' minutes per iteration'])
-
-% %'merge_field': concatene fields
-% %------------------------------------------------------------------------
-% function [MergeData,errormsg]=merge_field(Data)
-% %% default output
-% if isempty(Data)||~iscell(Data)
-%     MergeData=[];
-%     return
-% end
-% errormsg='';
-% MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
-% NbView=length(Data);
-% if NbView==1% if there is only one field, just reproduce it in MergeData
-%     return
-% end
-% 
-% %% group the variables (fields of 'Data') in cells of variables with the same dimensions
-% [CellInfo,NbDim,errormsg]=find_field_cells(Data{1});
-% if ~isempty(errormsg)
-%     return
-% end
-% 
-% %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% for icell=1:length(CellInfo)
-%     if NbDim(icell)~=1 % skip field cells which are of dim 1
-%         switch CellInfo{icell}.CoordType
-%             case 'scattered'  %case of input fields with unstructured coordinates: just concatene data
-%                 for ivar=CellInfo{icell}.VarIndex %  indices of the selected variables in the list FieldData.ListVarName
-%                     VarName=Data{1}.ListVarName{ivar};
-%                     for iview=2:NbView
-%                         MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
-%                     end
-%                 end
-%             case 'grid'        %case of fields defined on a structured  grid
-%                 FFName='';
-%                 if isfield(CellInfo{icell},'VarIndex_errorflag') && ~isempty(CellInfo{icell}.VarIndex_errorflag)
-%                     FFName=Data{1}.ListVarName{CellInfo{icell}.VarIndex_errorflag};% name of errorflag variable
-%                     MergeData.ListVarName(CellInfo{icell}.VarIndex_errorflag)=[];%remove error flag variable in MergeData (will use NaN instead)
-%                     MergeData.VarDimName(CellInfo{icell}.VarIndex_errorflag)=[];
-%                     MergeData.VarAttribute(CellInfo{icell}.VarIndex_errorflag)=[];
-%                 end
-%                 % select good data on each view
-%                 for ivar=CellInfo{icell}.VarIndex  %  indices of the selected variables in the list FieldData.ListVarName
-%                     VarName=Data{1}.ListVarName{ivar};
-%                     for iview=1:NbView
-%                         if isempty(FFName)
-%                             check_bad=isnan(Data{iview}.(VarName));%=0 for NaN data values, 1 else
-%                         else
-%                             check_bad=isnan(Data{iview}.(VarName)) | Data{iview}.(FFName)~=0;%=0 for NaN or error flagged data values, 1 else
-%                         end
-%                         Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
-%                         if iview==1
-%                             %MergeData.(VarName)=Data{1}.(VarName);% initiate MergeData with the first field
-%                             MergeData.(VarName)(check_bad)=0; %set to zero NaN or data marked by error flag
-%                             NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
-%                         elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
-%                             errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
-%                             return
-%                         else
-%                             MergeData.(VarName)=MergeData.(VarName) +double(Data{iview}.(VarName));%add data
-%                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
-%                         end
-%                     end
-%                     MergeData.(VarName)(NbAver~=0)=MergeData.(VarName)(NbAver~=0)./NbAver(NbAver~=0);% take average of defined data at each point
-%                     MergeData.(VarName)(NbAver==0)=NaN;% set to NaN the points with no good data
-%                 end
-%         end
-%    
-%     end
-% end
-
 
 %'merge_field': concatene fields
 %------------------------------------------------------------------------
@@ -543,7 +566,7 @@ errormsg='';
 MergeData=Data{1};% merged field= first field by default, reproduces the global attributes of the first field
 NbView=length(Data);
 if NbView==1% if there is only one field, just reproduce it in MergeData
-    return 
+    return
 end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
@@ -598,4 +621,49 @@ for icell=1:length(CellInfo)
                 end
         end
     end
-end    
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [ProjData,errormsg]=proj_field_polar(FieldData,ObjectData)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ProjData=[];%default
+errormsg='';%default
+
+coord_x_proj=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
+coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
+[XI,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
+FieldVar=cat(3,FieldData.U_r_tps,FieldData.U_theta_tps);
+
+[DataOut,VarAttribute,errormsg]=calc_field_tps(FieldData.Coord_tps,FieldData.NbCentre,FieldData.SubRange,FieldVar,'vec(U,V)',cat(3,XI,YI));
+
+% set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
+ thresh2=ObjectData.RangeInterp*ObjectData.RangeInterp;%square of interpolation range (do not interpolate beyond this range)
+Coord=permute(FieldData.Coord_tps,[1 3 2]);
+Coord=reshape(Coord,size(Coord,1)*size(Coord,2),2);
+
+F=scatteredInterpolant(Coord,Coord(:,1),'nearest');
+G=scatteredInterpolant(Coord,Coord(:,2),'nearest');
+
+Distx=F(XI,YI)-XI;% diff of x coordinates with the nearest measurement point
+Disty=G(XI,YI)-YI;% diff of y coordinates with the nearest measurement point
+Dist=Distx.*Distx+Disty.*Disty;
+ListVarName=fieldnames(DataOut);
+NbVar=numel(ListVarName);
+ProjData.ListVarName={'coord_y','coord_x','U_r','U_theta'};
+ProjData.VarDimName=[{'coord_y','coord_x'} cell(1,NbVar)];
+ProjData.coord_y=coord_y_proj;
+ProjData.coord_x=coord_x_proj;
+for ilist=1:NbVar% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
+    ProjData.VarDimName{ilist+2}={'coord_y','coord_x'};
+    if ~isempty(thresh2)
+        DataOut.(ListVarName{ilist})(Dist>thresh2)=NaN;% put to NaN interpolated positions further than RangeInterp from initial data
+    end
+end
+ProjData.U_r=DataOut.U;
+ProjData.U_theta=DataOut.V;
+
+
+  
+

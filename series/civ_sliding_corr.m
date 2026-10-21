@@ -1,4 +1,4 @@
-%'civ_series': PIV function activated by the general GUI series
+%'civ_sliding_corr': PIV function activated by the general GUI series
 % --- call the sub-functions:
 %  'parciv.m' PIV function itself, adpated to parallel processing (loop
 %  parfor instead of for)
@@ -44,14 +44,20 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [GUIParam,errormsg]= civ_series(Param)
+function [GUIParam,errormsg]= civ_sliding_corr(Param)
 errormsg='';
 GUIParam=[];
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     path_series=fileparts(which('series'));
     addpath(fullfile(path_series,'series'))
-    GUIParam=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    AppData=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    if isvalid(AppData)
+        GUIParam.ActionInput=read_app(AppData);% read the input parameters from the GUI civ_input
+        delete(AppData)
+    else
+        return
+    end
     % TODO: change from guide to App: modify the input procedure, adapt read_GUI function
     %App=civ_input_App
     %Data=civ_input_App(Param);% introduce the civ parameters using the GUI civ_input
@@ -533,8 +539,8 @@ for ifield=1:NbField
         % else
         %     [Civ_X,Civ_Y,Civ_U,Civ_V,Civ_C,Civ_FF,~,errormsg] = parciv (par_civ1);%use parfor loop
         % end
-        Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
-        Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
+%         Civ_X_shifted=Civ_X-0.5+Civ_U/2;% get the exact positions
+%         Civ_Y_shifted=Civ_Y-0.5+Civ_V/2;
         if ~isempty(errormsg)
             disp_uvmat('ERROR',errormsg,checkrun)
             return

@@ -1736,7 +1736,7 @@ end
 %[XmlData,errormsg]=imadoc2struct(XmlFile);
 errormsg='';
 FileInfo=get_file_info(FileName);
-
+checkupdate=0;
 switch FileInfo.FileType
     
     case 'multimage'
@@ -1761,15 +1761,15 @@ switch FileInfo.FileType
                 if exist(FileTime,'file')
                     ParamTime=xml2struct(FileTime);
                     Camera.BurstTiming.Time=ParamTime.SEQ_TIMES.(ListSubdir{iexp}).INIT_TIME;
+                end
                     %%%%%%%%%%%%%%%%%%%%%
 
-                    [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);
+                    [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);% introduce the Time info  data in the xml file
                     if ~strcmp(errormsg,'')
                         msgbox_uvmat('ERROR',errormsg);
                     else
                         update_imadoc(ListPath{iexp},ListSubdir{iexp},'FileSeries',FileSeries,0);% introduce the FileSeries data in the xml file
-                    end
-                end  
+                    end 
             end
              msgbox_uvmat('CONFIMATION',['FileSeries replicated for ' num2str(NbExp) ' experiments, open with uvmat to check']);
         end

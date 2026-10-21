@@ -1,4 +1,4 @@
-%'view_field': function associated with the GUI 'view_field.fig' for images and data field visualization 
+%'view_field': function associated with the GUI 'view_field.fig' for images and data field visualization
 %------------------------------------------------------------------------
 % function huvmat=view_field(input)
 %
@@ -218,9 +218,9 @@ if ~isempty(huvmat)
 end
 hciv=findobj(allchild(0),'Tag','civ_input');%find the current civ GUI
 if ~isempty(hciv)
-    hhciv=guidata(hciv);
-    set(hhciv.TestCiv1,'Value',0)% desactivate  TestCiv1 if on
-    set(hhciv.TestCiv1,'BackgroundColor',[0 1 0])% 
+    htest=findobj(hciv,'Tag','TestCiv1'); 
+     htest.Value=false;
+    htest.BackgroundColor=[0 1 0];% 
 end
 corrfig=findobj(allchild(0),'tag','corrfig');% look for a civ correlation window used with TesCiv1
 if ~isempty(corrfig)
