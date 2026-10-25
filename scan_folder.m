@@ -12,6 +12,8 @@
 %
 %INPUT:
 %DirName: complete name of the folder to scan, including path
+%sort_option:= 'name'/'date' (default='name'): sort files in alphabetic
+%         order or by dates of last transform,from most recent to old
 
 %=======================================================================
 % Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
@@ -31,9 +33,16 @@
 %     GNU General Public License (see LICENSE.txt) for more details.
 %=======================================================================
 
-function [ListCells,errormsg] = scan_folder(DirName)
+function [ListCells,NbDir,NbXml,errormsg] = scan_folder(DirName,sort_option,verbosity)
 ListCells={};
 errormsg='';
+NbDir=0;NbXml=0;
+if ~exist('sort_option','var')
+    sort_option='name';
+end
+if ~exist('verbosity','var')
+    verbosity='long';
+end
 if ~ischar(DirName)
     errormsg='the function dir_uvmat needs a character string input';
     return
@@ -64,19 +73,47 @@ else
     % Standart case
     ListFiles=dir(DirName);
 end
-%bytes_values=[ListFiles.bytes]/1000000;
-%[ListFiles.bytes]=deal(bytes_values);
+ListItems=fieldnames(ListFiles);% fields of the structure ListFiles
+folder_line=find(strcmp('folder',ListItems));
+dir_line=find(strcmp('isdir',ListItems));
+date_line=find(strcmp('datenum',ListItems));
+bytes_line=find(strcmp('bytes',ListItems));
 ListCells=struct2cell(ListFiles);% transform dir struct to a cell arrray
 cell_remove=regexp(ListCells(1,:),'^(-|\.)');% detect strings beginning by '-' ,'.' (dir beginning by . )
-check_keep=cellfun('isempty', cell_remove);%remove detected cells
-ListCells=ListCells(:,check_keep);
-ListCells(2,:)=[];
-ListCells=ListCells';
-ListCells=sortrows(ListCells,4,'descend'); %put folders first
-ListCells(:,3)= cellfun(@(x) x/1000000, ListCells(:,3),'UniformOutput',false);% express file size in Mbytes
-check_dir=cell2mat(ListCells(:,4));% =1 for directories, =0 for files
-Column1=cell(size(ListCells,1),1);
-Column1(check_dir)={'+/'};
-Column1(~check_dir)={''};
-ListCells=[Column1 ListCells];
+check_keep=cellfun('isempty', cell_remove);
+ListCells=ListCells(:,check_keep);%remove detected cells
+ListCells=ListCells';% switch to column display
+ListCells=sortrows(ListCells,dir_line,'descend'); %put folders first
+check_dir=cell2mat(ListCells(:,dir_line));% =1 for directories, =0 for files
+check_xml=~cellfun('isempty',regexp(ListCells(:,1),'.xml$'));
+check_files=~check_dir & ~check_xml;
+NbDir=numel(find(check_dir));
+NbXml=numel(find(check_xml));
+
+ListCells(:,bytes_line)= cellfun(@(x) x/1000000, ListCells(:,bytes_line),'UniformOutput',false);% express file size in Mbytes
+TotalSize=sum(cell2mat(ListCells(~check_dir,bytes_line)));% total size of files
+if strcmp(sort_option,'date')
+    ListCells(check_dir,:)=sortrows(ListCells(check_dir,:),date_line,'descend'); % sort by date the files (keepin gthe folders first)
+    ListCells(check_xml,:)=sortrows(ListCells(check_xml,:),date_line,'descend'); % sort by date the files (keepin gthe folders first)
+    ListCells(check_files,:)=sortrows(ListCells(check_files,:),date_line,'descend'); % sort by date the files (keepin gthe folders first)
+end
+
+%ListCells(check_dir,1)=regexprep(ListCells(check_dir,1),'^.+','+/$0');% put '+/' in front of dir name display
+ListCells(check_dir,1)=strcat('+/',ListCells(check_dir,1));
+% ListCells(check_xml,1)=strcat('<html><span style="color:red">',ListCells(check_xml,1));
+% ListCells(check_xml,1)=strcat(ListCells(check_xml,1),'</span></html>');
+ListCells (~check_dir,:)=[ListCells(check_xml,:);ListCells(check_files,:)];% put xml first in the list
+ListCells(:,[folder_line dir_line date_line])=[];% eliminate non usefull columns
+if strcmp(verbosity,'long')% long output with the whole file list
+    ListCells (~check_dir,:)=[ListCells(check_xml,:);ListCells(check_files,:)];% put xml first in the list
+else% short output, without the non xml files
+    NbFiles=size(ListCells,1)-NbDir-NbXml;
+%     ListCells(~check_files,:)=[];
+    if NbFiles==0
+         ListCells (~check_dir,:)=ListCells(check_xml,:);
+    else
+         ListCells (~check_dir,:)=[ListCells(check_xml,:);{[num2str(NbFiles) ' files,' num2str(TotalSize) ' Mo'],'',''}];
+    end
+end
+
 

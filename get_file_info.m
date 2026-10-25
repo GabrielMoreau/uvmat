@@ -163,7 +163,12 @@ switch FileExt
         FileInfo.Width=double(resu.width);
         FileInfo.Height=double(resu.height);
     otherwise
-        if ~isempty(FileExt)% exclude empty extension
+        fid=fopen(FileName,'r');
+        data=fread(fid,4096); %first 4B
+        fclose(fid);
+        if ~(any(data==0)|| any(data<9 & data ~=0))
+            FileInfo.FileType='txt';      %TO TEST 
+        elseif ~isempty(FileExt)% exclude empty extension
             FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
             if ~isempty(FileExt)
                 if ~isempty(imformats(FileExt))%case of images

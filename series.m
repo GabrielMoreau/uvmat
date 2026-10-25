@@ -166,7 +166,7 @@ ActionExtList={'.m';'.sh';'fluidimage'}; % default choice of extensions (Matlab 
 ActionPathList=cell(NbBuiltinAction,1); % initiate the cell matrix of Action fct paths
 ActionPathList(:)={path_series_fct}; % set the default path to series fcts to all list members
 RunModeList={'local';'background'}; % default choice of extensions (Matlab fct .m or compiled version .sh)
-if isfield(SeriesData.ClusterParam, 'ExistenceTest')
+if isfield(SeriesData,'ClusterParam') && isfield(SeriesData.ClusterParam, 'ExistenceTest')
     ClusterExistenceTest=SeriesData.ClusterParam.ExistenceTest;
     [s,~]=system(ClusterExistenceTest); % look for cluster system presence, with no display
     if isequal(s,0)% cluster detected
@@ -1384,22 +1384,24 @@ TimeTable=get(handles.TimeTable,'Data');
 for iview=1:size(TimeTable,1)
     time_first=[];
     time_last=[];
-    if ischar(SeriesData.TimeName{iview}) && ismember(SeriesData.TimeName{iview},{'Civ1_Time','Civ2_Time'})
-        MinFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_first,i2_first,j1_first,j2_first);
-        time_first=get_time(MinFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
-        MaxFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_last,i2_last,j1_last,j2_last);
-        time_last=get_time(MaxFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
-    elseif size(SeriesData.Time{iview},2)>=i2_last+1 && (isnan(first_j)||size(SeriesData.Time{iview},1)>=j2_last+1)
-        if isnan(first_j)
-            time_first=(SeriesData.Time{iview}(2,i1_first+1)+SeriesData.Time{iview}(2,i2_first+1))/2;% take  the average between index i1 and i2
-            time_last=(SeriesData.Time{iview}(2,i1_last+1)+SeriesData.Time{iview}(2,i2_last+1))/2;
-        else
-            time_first=(SeriesData.Time{iview}(j1_first+1,i1_first+1)+SeriesData.Time{iview}(j2_first+1,i2_first+1))/2;
-            time_last=(SeriesData.Time{iview}(j1_last+1,i1_last+1)+SeriesData.Time{iview}(j2_last+1,i2_last+1))/2;
+    if numel(SeriesData.Time)>=iview
+        if ischar(SeriesData.TimeName{iview}) && ismember(SeriesData.TimeName{iview},{'Civ1_Time','Civ2_Time','Time'})
+            MinFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_first,i2_first,j1_first,j2_first);
+            time_first=get_time(MinFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
+            MaxFullFileName=fullfile_indices(fullfile(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3}),InputTable{iview,5},InputTable{iview,4},i1_last,i2_last,j1_last,j2_last);
+            time_last=get_time(MaxFullFileName,SeriesData.FileInfo{iview}.FieldType,SeriesData.TimeName{iview});
+        elseif size(SeriesData.Time{iview},2)>=i2_last+1 && (isnan(first_j)||size(SeriesData.Time{iview},1)>=j2_last+1)
+            if isnan(first_j)
+                time_first=(SeriesData.Time{iview}(2,i1_first+1)+SeriesData.Time{iview}(2,i2_first+1))/2;% take  the average between index i1 and i2
+                time_last=(SeriesData.Time{iview}(2,i1_last+1)+SeriesData.Time{iview}(2,i2_last+1))/2;
+            else
+                time_first=(SeriesData.Time{iview}(j1_first+1,i1_first+1)+SeriesData.Time{iview}(j2_first+1,i2_first+1))/2;
+                time_last=(SeriesData.Time{iview}(j1_last+1,i1_last+1)+SeriesData.Time{iview}(j2_last+1,i2_last+1))/2;
+            end
         end
     end
-    TimeTable{iview,3}=time_first; 
-    TimeTable{iview,4}=time_last; 
+    TimeTable{iview,3}=time_first;
+    TimeTable{iview,4}=time_last;
 end
 set(handles.TimeTable,'Data',TimeTable)
 

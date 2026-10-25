@@ -635,8 +635,9 @@ coord_x_proj=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
 coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
 [XI,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
 FieldVar=cat(3,FieldData.U_r_tps,FieldData.U_theta_tps);
+FieldCell={'vec(U,V)','DUDX','DUDY','DVDX','DVDY'};
+[DataOut,VarAttribute,errormsg]=calc_field_tps(FieldData.Coord_tps,FieldData.NbCentre,FieldData.SubRange,FieldVar,FieldCell,cat(3,XI,YI));
 
-[DataOut,VarAttribute,errormsg]=calc_field_tps(FieldData.Coord_tps,FieldData.NbCentre,FieldData.SubRange,FieldVar,'vec(U,V)',cat(3,XI,YI));
 
 % set to NaN interpolation points which are too far from any initial data (more than 2 CoordMesh)
  thresh2=ObjectData.RangeInterp*ObjectData.RangeInterp;%square of interpolation range (do not interpolate beyond this range)

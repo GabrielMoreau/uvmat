@@ -1,22 +1,9 @@
-version 26.5
-- browse_data_app: created to replace browse_data and the file browser 
-- cal_field_tps: bug repaired FieldName={FieldName}
-- civ: cleaning of comments, no change in the code
-- fill_app: bugs repaired. Tag of elements used instead of names
-- mouse_motion: interactive civ display moved to fct mouse_motion_civtest
-- mouse_motion_civtest: added to improve the interactive mode TestCiv of civ_input
-- proj_field: list global attribute cleaned 
-- scan_folder: added to replace dir_uvmat eventually
-- series.fig: 'Device' edit box callback suppressed
-- true2on: function introduced to simplify codes: transform true/false to 'on'/'off'
-- uvmat: minor cleaning
-- view_field: bug repaired, minor cleaning
-- series/civ_input_app.app renamed to series/civ_input.app and improved
-- series/civ2vel_3C: elimination of Error data reintroduced (bug repaired)
-- series/civ_series: bugs repaired
-- series/set_civ_grid: updated to create civ grids
-- series_sliding_corr: work in progress
-- series/merge_proj_polar: updated, still not ready for vort div
-- series/stereo_input and stereo_civ:  introduce background image subtraction, global attributes complemented in result files
+version 26.6
+check_files: updated with new functions
+series: small bug corrected for time display
+series/civ_series and series/Civ_input.app: a few bugs corrected + cleaning
+series/stereo_civ: small bug repaired in the case of undefined time
+series/test_filter_tps: bugs corrected for writting time and Dt
+
 
 

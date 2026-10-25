@@ -154,7 +154,7 @@ for iview=1:2
             frame_index{iview}=ones(numel(j_indices),numel(i_indices));
         end
         % get time from video record if not defined by the xml file
-        if isempty(Time{iview}) && ismember(FileType_A,{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
+        if isempty(Time{iview}) && ismember(FileType{iview},{'video','cine_phantom','telopsIR'})% case of video inputFrameIndex_A
             Time{iview}=zeros(2,FileInfo.NumberOfFrames+1);
             Time{iview}(2,:)=(0:1/FileInfo.FrameRate:(FileInfo.NumberOfFrames)/FileInfo.FrameRate);
         end
@@ -301,13 +301,15 @@ for index_i=1:numel(i_indices)
         [Npy,Npx]=size(A{1});
 
         %% record time
-        Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
-        Time2=Time{2}(j_indices(index_j)+1,i_indices(index_i)+1);
-        Dt=Time2-Data.Time;
-        if Time2 ~= Data.Time
-            disp(['WARNING: the times of the two images differ by ' num2str(Dt)])
+        Data.Time=NaN;
+        if ~isempty(Time{1}) && ~isempty(Time{2})
+            Data.Time=Time{1}(j_indices(index_j)+1,i_indices(index_i)+1);
+            Time2=Time{2}(j_indices(index_j)+1,i_indices(index_i)+1);
+            Dt=Time2-Data.Time;
+            if Time2 ~= Data.Time
+                disp(['WARNING: the times of the two images differ by ' num2str(Dt)])
+            end
         end
-
         
 
         %% case of image luminosity rescaling

@@ -103,11 +103,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if isfield(Param.IndexRange,'incr_j')&&~isempty(Param.IndexRange.incr_j)
         incr_j=Param.IndexRange.incr_j;
     end
-%     if isempty(first_j)||isempty(last_j)
-%         nbfield_j=1;
-%     else
-%         nbfield_j=numel(first_j:incr_j:last_j);%nb of fields for the j index (bursts or volume slices)
-%     end
     first_i=1;last_i=1;incr_i=1;%default
     if isfield(Param.IndexRange,'MinIndex_i'); first_i=Param.IndexRange.MinIndex_i; end   
     if isfield(Param.IndexRange,'MaxIndex_i'); last_i=Param.IndexRange.MaxIndex_i; end

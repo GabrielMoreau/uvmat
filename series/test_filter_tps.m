@@ -212,10 +212,8 @@ DataOut.CoordUnit='pixel';
 ListVarName={'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_C','Civ2_FF','Civ2_U_smooth','Civ2_V_smooth'};
 if CivStage==3
     ListVarName=regexprep(ListVarName,'Civ2','Civ1');
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Civ1_Dt','Civ1_Time'}];
-else
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Civ2_Dt','Civ2_Time'}];
 end
+DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Dt','Time'}];
 DataOut.ListVarName=ListVarName;
 DataOut.VarDimName={'nb_vec','nb_vec','nb_vec','nb_vec','nb_vec','nb_vec','nb_vec','nb_vec'};
 DataOut.VarAttribute{1}.Role='coord_x';
@@ -255,15 +253,25 @@ for iter=1:NbSmooth
             rectangle('Position',[SubRange(:,1,irec)' SubRange(:,2,irec)'-SubRange(:,1,irec)'])
         end
         title('subdomains for thin shell splines (tps)')
+        if isfield(Data,'Dt') 
+             DataOut.Dt=Data.Dt;
+        end
+        if isfield(Data,'Time') 
+             DataOut.Time=Data.Time;
+        end
         if CivStage==3
             if isfield(Data,'Civ1_Dt')
-            DataOut.Civ1_Dt=Data.Civ1_Dt;
-            DataOut.Civ1_Time=Data.Civ1_Time;
+            DataOut.Dt=Data.Civ1_Dt;
+            end
+            if isfield(Data,'Civ1_Time')
+            DataOut.Time=Data.Civ1_Time;
             end
         else
-            if isfield(Data,'Civ2_Dt')
-            DataOut.Civ2_Dt=Data.Civ2_Dt;
-            DataOut.Civ2_Time=Data.Civ2_Time;
+             if isfield(Data,'Civ2_Dt')
+            DataOut.Dt=Data.Civ1_Dt;
+            end
+            if isfield(Data,'Civ2_Time')
+            DataOut.Time=Data.Civ2_Time;
             end
         end
     end
