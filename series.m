@@ -3620,7 +3620,15 @@ if get(handles.status,'Value')
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt]; % subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
     if exist(OutputDir,'dir')
-        uigetfile_uvmat('status_display',OutputDir)
+%         hbrowse_data=findobj(allchild(0),'Name','browse_data_fig');
+%         if isvalid(hbrowse_data)
+%             AppData=hbrowse_data.RunningAppInstance;
+%             AppData.ListOptions.Value='pick data';
+%         else
+            AppData=browse_data_app(OutputDir,'pick data');% open data browser
+            hbrowse_data=AppData.browse_data_fig;
+%         end
+        % uigetfile_uvmat('status_display',OutputDir)
     else
         msgbox_uvmat('ERROR','output folder not created yet: calculation did not start')
         set(handles.status,'BackgroundColor',[0 1 0])

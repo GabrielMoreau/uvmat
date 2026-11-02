@@ -1276,28 +1276,42 @@ set(handles.ListCoordFiles,'String',listfile);
 
 
 %------------------------------------------------------------------------
-function fileinput=browse_xml(hObject, eventdata, handles)
+function InputFile=browse_xml(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-fileinput=[];%default
+%InputFile=[];%default
 oldfile=''; %default
 UserData=get(handles.geometry_calib,'UserData');
 if isfield(UserData,'XmlInputFile')
     oldfile=UserData.XmlInputFile;
 end
-[FileName, PathName, filterindex] = uigetfile( ...
-    {'*.xml;*.mat', ' (*.xml,*.mat)';
-    '*.xml',  '.xml files '; ...
-    '*.xml~*',  'backup .xml files '; ...
-    '*.mat',  '.mat matlab files '}, ...
-    'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name
-if contains(fileinput,' ')
+hbrowse_data=findobj(allchild(0),'Name','browse_data');
+if isvalid(hbrowse_data)
+    AppData=hbrowse_data.RunningAppInstance;
+    AppData.ListOptions.Value='pick xml object';
+else
+    AppData=browse_data_app(fileparts(oldfile),'pick xml object');% open data browser
+    hbrowse_data=AppData.browse_data_fig;
+end
+waitfor(hbrowse_data,'Tag','DisplayFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+InputFile=AppData.OpenFile.UserData;
+
+% 
+% 
+% 
+% [FileName, PathName, filterindex] = uigetfile( ...
+%     {'*.xml;*.mat', ' (*.xml,*.mat)';
+%     '*.xml',  '.xml files '; ...
+%     '*.xml~*',  'backup .xml files '; ...
+%     '*.mat',  '.mat matlab files '}, ...
+%     'Pick a file',oldfile);
+% fileinput=[PathName FileName];%complete file name
+if contains(InputFile,' ')
     msgbox_uvmat('ERROR','forbidden input file name or path: no blank character allowed')
     return
 end
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
-UserData.XmlInputFile=fileinput;
+sizf=size(InputFile);
+if (~ischar(InputFile)||~isequal(sizf(1),1)),return;end
+UserData.XmlInputFile=InputFile;
 set(handles.geometry_calib,'UserData',UserData)%record current file foer further use of browser
 
 % -----------------------------------------------------------------------

@@ -523,28 +523,39 @@ set(handles.HistoUpDown,'Position',[Interval top_pos_ref 15 15])
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-if isempty(regexp(RootPath,'^http://'))%usual files
-    oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-else %Opendap
-    oldfile=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
-end
-if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
-    oldfile=get(handles.RootPath,'UserData');
-end
-fileinput=uigetfile_uvmat('pick an input file',oldfile);
-hh=dir(fileinput);
-if numel(hh)>1
-    msgbox_uvmat('ERROR','invalid input, probably a broken link');
-else
-
-    %% display the selected field and related information
-    if ~isempty(fileinput)
-        set(handles.SubField,'Value',0)
-        desable_subfield(handles)
-        display_file_name(handles,fileinput)
+if ~ischar(eventdata)% uvmat not called by browse_data
+ 
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+    if isempty(regexp(RootPath,'^http://'))%usual files
+        oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+    else %Opendap
+        oldfile=[RootPath '/' SubDir '/' RootFile FileIndices FileExt];
     end
+    if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
+        oldfile=get(handles.RootPath,'UserData');
+    end
+    % set(handles.MenuBrowse,'ForegroundColor',[1 0 0])
+    % drawnow
+    set(handles.SubField,'Value',0)
+    desable_subfield(handles)
+    hbrowse_data=findobj(allchild(0),'Name','browse_data');
+
+    if isvalid(hbrowse_data)
+        AppData=hbrowse_data.RunningAppInstance;
+        AppData.OpenFile.BusyAction='cancel';
+        AppData.ListOptions.Value='pick data';
+        %   figure(hbrowse_data)
+    else
+        AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
+        hbrowse_data=AppData.browse_data_fig;
+    end
+    waitfor(hbrowse_data,'Tag','DisplayFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+    InputFile=AppData.OpenFile.UserData;
+else
+       InputFile=eventdata;% uvmat has been activated by data_browser_app and transferred the file name in the variable 'eventdata'
 end
+display_file_name(handles,InputFile,1)
+%set(handles.MenuBrowse,'ForegroundColor',[0 0 0])
 
 % --------------------------------------------------------------------
 function MenuBrowseOpendap_Callback(hObject, eventdata, handles)
@@ -1760,7 +1771,7 @@ switch FileInfo.FileType
                 FileTime=fullfile(DirTimeInfo,'Time_SEQ.xml');
                 if exist(FileTime,'file')
                     ParamTime=xml2struct(FileTime);
-                    Camera.BurstTiming.Time=ParamTime.SEQ_TIMES.(ListSubdir{iexp}).INIT_TIME;
+                    Camera.BurstTiming.Time=ParamTime.SEQ_TIMES.(ListSubdir{iexp}).INIT_TIME;     
                 end
                     %%%%%%%%%%%%%%%%%%%%%
 
@@ -2223,7 +2234,7 @@ if strcmp(FileInfo.FileIndexing,'off')
             t=xmltree(fileinput);
             % the xml file marks a project or project link, open datatree_browser
             if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
-                datatree_browser(fileinput)
+                datatree_browser(fileinput)% OBSOLETE
             else % other xml file, open the xml editor
                 editxml(fileinput);
             end
@@ -2465,18 +2476,6 @@ if CheckRelabel
     set(handles.num_j1,'String','1')
 else % scan the input folder to get the list of existing files and NomType
      [RootFile,ref_i_list,ref_j_list,i1_list,i2_list,j1_list,j2_list,NomType,FileInfo]=scan_file_series(fullfile(RootPath,SubDir),FileName);
-
-  
-   % nbfield_j=max(max(max(j2_series)));% number of fields along j index
-    % if isempty(nbfield_j)
-    %     nbfield_j=max(max(max(j1_series)));
-    % end
-    % if ~isempty(j1_series)&& ~strcmp(NomType,'*')% the j index is used to label the frame in multimage series
-    %     set(handles.num_j1,'String','1')
-    %          state_j='on';
-    % elseif strcmp(FileInfo.FieldType,'image') && ~isequal(FileInfo.NumberOfFrames,1)
-    %     set(handles.num_i1,'String','1')
-    % end
 end
 if input_line==1
     set(handles.NomType,'String',NomType)
@@ -6202,23 +6201,17 @@ if IndexObj<=old_index
     set(hlist_object_1,'Value',old_index-1)
 end
 
-
 % --------------------------------------------------------------------
 % --- Executes on button press in CheckTable.
 % --------------------------------------------------------------------
 function CheckTable_Callback(hObject, eventdata, handles)
-if get(handles.CheckTable,'Value')
-    set(handles.TableDisplay,'Visible','on')
-else
-    set(handles.TableDisplay,'Visible','off')
-end
+set(handles.TableDisplay,'Visible',true2on(get(handles.CheckTable,'Value')))
 
 % --------------------------------------------------------------------
 % --- Executes on selection change in LogLinHisto.
 % --------------------------------------------------------------------
 function LogLinHisto_Callback(hObject, eventdata, handles)
 HistoMenu_Callback(hObject, eventdata, handles)
-
 
 % --------------------------------------------------------------------
 function MenuCreateMirror_Callback(hObject, eventdata, handles)
@@ -6227,11 +6220,6 @@ function MenuCreateMirror_Callback(hObject, eventdata, handles)
    hbrowse= browse_data(fullfile(RootPath,SubDir)) 
    hh=guidata(hbrowse);
    set(hh.CreateMirror,'Visible','on')
-%  hbrowse=findobj(allchild(0),'Tag','browse_data');
-%     if ~isempty(hbrowse)% look for the GUI browse_data
-%         BrowseData=guidata(hbrowse);
-%     end
-
 
 % --- Executes on button press in HistoUpDown.
 function HistoUpDown_Callback(hObject, eventdata, handles)
@@ -6242,6 +6230,3 @@ set(hc,'Position',[0.1 0.1 0.8 0.8])% adjust the position of the axis on the fig
 AxeData.ZoomAxes=hc;
 set(handles.HistoAxes,'UserData',AxeData)
 
-% title_menu=get(handles.FieldName,'String');
-% title_string=title_menu{get(handles.FieldName,'Value')};% get the name of the plotted field
-% title(title_string);

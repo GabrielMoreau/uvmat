@@ -1,9 +1,12 @@
-version 26.6
-check_files: updated with new functions
-series: small bug corrected for time display
-series/civ_series and series/Civ_input.app: a few bugs corrected + cleaning
-series/stereo_civ: small bug repaired in the case of undefined time
-series/test_filter_tps: bugs corrected for writting time and Dt
-
-
-
+version 26.7
+browse_data_app.mlapp: improved
+civ: modified to accept multiframe civ
+parciv: modified to accept multiframe civ
+geometry_calib: modified to deal with browse_data.mlapp
+read_app: bug corrected
+scan_folder: updated in link with browse_data_app
+series:  browse_data_app introduced for status
+uigetfile_uvmat: small correction, will be later abandoned for browse_data_app
+uvmat: browse_data_app introduced for data browser
+series/civ2vel_3C: bug corrected , bad reading of VelType (filter or not)
+series/civ_input.mlapp: bug corrected for pair display

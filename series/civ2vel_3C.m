@@ -207,51 +207,6 @@ Area_px=polyarea(Xsquare_b,Ysquare_b);
 pxcm_b=sqrt(Area_px/Area_phys);
 Range_px_b=pxcm_b*ObjectData.RangeInterp;
 
-%% define the directory for result file (with path=RootPath{1})
-OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-RootFileOut='field';
-if isfield(Param.IndexRange,'MaxIndex_j') && ~isempty(Param.IndexRange.MaxIndex_j) && (Param.IndexRange.MaxIndex_j(1)-Param.IndexRange.MinIndex_j(1)>0)
-    NomTypeOut='_1_1';
-else
-    NomTypeOut='_1';
-end
-
-%% Prepare the output field structure
-MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit','Range_px_a','Range_px_b'};
-MergeData.Conventions='uvmat';
-MergeData.Program='civ2vel_3C';
-if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
-    MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision];
-end
-if isfield (XmlData{1}.GeometryCalib,'CoordUnit') && isfield (XmlData{2}.GeometryCalib,'CoordUnit') && strcmp(XmlData{1}.GeometryCalib.CoordUnit, XmlData{2}.GeometryCalib.CoordUnit)
-    MergeData.CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
-else
-    disp_uvmat('ERROR','inconsistent coord units in the two input velocity series',checkrun)
-    return
-end
-MergeData.Range_px_a=Range_px_a;
-MergeData.Range_px_b=Range_px_b;
-MergeData.ListVarName={'coord_x','coord_y','U','V','W','Error'};
-MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
-    {'coord_y','coord_x'},{'coord_y','coord_x'}};
-MergeData.VarAttribute{1}.Role='coord_x';
-MergeData.VarAttribute{2}.Role='coord_y';
-MergeData.VarAttribute{3}.Role='vector_x';
-MergeData.VarAttribute{4}.Role='vector_y';
-MergeData.VarAttribute{5}.Role='vector_z';
-MergeData.VarAttribute{6}.Role='ancillary';
-MergeData.VarAttribute{6}.units='pixel'; %error estimate expressed in pixel
-MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 1000 to get an integer
-% if NbView==3
-%     nbvar=numel(MergeData.ListVarName);
-%     MergeData.ListVarName=[MergeData.ListVarName {'Z'}];
-%     MergeData.VarDimName{nbvar+1}={'coord_y','coord_x'};
-% end
-MergeData.coord_x=xI;
-MergeData.coord_y=yI;
-
-
 %% read a third input field obtained by series/stereo_civ for position shift 
 if NbView==3
         % TODO: INTRODUCE THE POSSIBILITY OF VARIABLE SHIFT INSIDE THE FIELD INDEX LOOP
@@ -259,10 +214,10 @@ if NbView==3
            [i1,i2,j1,j2] = get_file_index(1,1,PairString{3});
             FullRootFile=fullfile(Param.InputTable{3,1},Param.InputTable{3,2},Param.InputTable{3,3});
             NomType=Param.InputTable{3,4};
-            FullInputFile=fullfile_indices(FullRootFile,Param.InputTable{3,5},NomType,i1,i2,j1,j2);
-            [Data_shift,~,errormsg] = nc2struct(FullInputFile);
+            ShiftCalibFile=fullfile_indices(FullRootFile,Param.InputTable{3,5},NomType,i1,i2,j1,j2);
+            [Data_shift,~,errormsg] = nc2struct(ShiftCalibFile);
             if isempty(errormsg)
-                disp([FullInputFile ' read for position shift'])
+                disp([ShiftCalibFile ' read for position shift'])
             else
                 disp(errormsg)
             end
@@ -287,7 +242,7 @@ if isfield(Param,'CheckOverwrite')
     CheckOverwrite=Param.CheckOverwrite;
 end
 VelType='*';%latest field filter2 opened by default
-if isfield(Param,'InputFields') && strcmp(Param.InputFields,'VelType')
+if isfield(Param,'InputFields') && isfield(Param.InputFields,'VelType')
     VelType=Param.InputFields.VelType;%imposed civ or filter
 end
 
@@ -304,6 +259,53 @@ else
     Index_j_series=1;
 end
 
+%% define the directory for result file (with path=RootPath{1})
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+RootFileOut='field';
+if isfield(Param.IndexRange,'MaxIndex_j') && ~isempty(Param.IndexRange.MaxIndex_j) && (Param.IndexRange.MaxIndex_j(1)-Param.IndexRange.MinIndex_j(1)>0)
+    NomTypeOut='_1_1';
+else
+    NomTypeOut='_1';
+end
+
+%% Prepare the output field structure
+MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit','Range_px_a','Range_px_b','VelType','InputFileA','InputFileB','ShiftCalibFile'};
+MergeData.Conventions='uvmat';
+MergeData.Program=mfilename;
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision];
+end
+if isfield (XmlData{1}.GeometryCalib,'CoordUnit') && isfield (XmlData{2}.GeometryCalib,'CoordUnit') && strcmp(XmlData{1}.GeometryCalib.CoordUnit, XmlData{2}.GeometryCalib.CoordUnit)
+    MergeData.CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
+else
+    disp_uvmat('ERROR','inconsistent coord units in the two input velocity series',checkrun)
+    return
+end
+MergeData.Range_px_a=Range_px_a;
+MergeData.Range_px_b=Range_px_b;
+MergeData.VelType=VelType;
+MergeData.InputFileA='';% to update during the program
+MergeData.InputFileB='';
+if NbView==3
+    MergeData.ShiftCalibFile=ShiftCalibFile;
+else
+    MergeData.ShiftCalibFile='';
+end
+
+MergeData.ListVarName={'coord_x','coord_y','U','V','W','Error'};
+MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
+    {'coord_y','coord_x'},{'coord_y','coord_x'}};
+MergeData.VarAttribute{1}.Role='coord_x';
+MergeData.VarAttribute{2}.Role='coord_y';
+MergeData.VarAttribute{3}.Role='vector_x';
+MergeData.VarAttribute{4}.Role='vector_y';
+MergeData.VarAttribute{5}.Role='vector_z';
+MergeData.VarAttribute{6}.Role='ancillary';
+MergeData.VarAttribute{6}.units='pixel'; %error estimate expressed in pixel
+MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 1000 to get an integer
+MergeData.coord_x=xI;
+MergeData.coord_y=yI;
 
 
 %%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
@@ -330,9 +332,9 @@ for index_i=Index_i_series
 
             NomType=Param.InputTable{iview,4};
             FullRootFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3});
-            FullInputFile=fullfile_indices(FullRootFile,Param.InputTable{iview,5},NomType,i1,i2,j1,j2);
+            FullInputFile{iview}=fullfile_indices(FullRootFile,Param.InputTable{iview,5},NomType,i1,i2,j1,j2);
 
-            [Data{iview},~,errormsg]=read_civdata(FullInputFile,{'vec(U,V)'},VelType);
+            [Data{iview},~,errormsg]=read_civdata(FullInputFile{iview},{'vec(U,V)'},VelType);
             if isempty(errormsg)
                 disp([FullInputFile ' read'])
             else
@@ -353,7 +355,8 @@ for index_i=Index_i_series
                 return
             end
         end
-
+        MergeData.InputFileA=FullInputFile{1};
+         MergeData.InputFileB=FullInputFile{2};
         ZI=Zref*ones(size(XI,1),size(XI,2));
 
         %% get the image coordinates of the input physical grid on each view

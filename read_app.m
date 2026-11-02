@@ -49,15 +49,14 @@ for ilist=1:numel(ListProperties)
                     if ~isempty(regexp(UITag,'^num_', 'once'))% numerical input
                         UIValue=str2double(UIValue);
                         UITag=regexprep(UITag,'^num_','');%remove the prefix 'num_'
-                        % detect tag name ending by an index: then interpret the input as array(index)
-                        r=regexp(UITag,'_(?<index>\d+)$','names');% detect tag name ending by an index
-                        if ~isempty(r)
-                            UITag=regexprep(UITag,['_' r.index '$'],'');
-                            num_index=str2double(r.index);
-                        end
                     end
-                     % case {'uilistbox','uidropdown'}
-                     %     AppData.(ListProperties{ilist})
+                    % detect tag name ending by an index: then interpret the input as array(index)
+                    r=regexp(UITag,'_(?<index>\d+)$','names');% detect tag name ending by an index
+                    if ~isempty(r)
+                        UITag=regexprep(UITag,['_' r.index '$'],'');
+                        num_index=str2double(r.index);
+                    end
+
                 otherwise
                     UIType;
             end

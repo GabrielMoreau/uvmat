@@ -138,14 +138,16 @@ end
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
 %%%%%%%%%%%%%%%%%%%%%
-if isfield(Param.IndexRange,'TimeSource') && find(regexp(Param.IndexRange.TimeSource,'^var:'))==1
-    Param.InputFields.TimeVarName=regexprep(Param.IndexRange.TimeSource,'^var:','');
-end
+% if ~isempty(regexp(Param.IndexRange.TimeSource,'^var:'))% if time is set by a variable
+% if isfield(Param.IndexRange,'TimeSource') 
+%     Param.InputFields.TimeVarName=regexprep(Param.IndexRange.TimeSource,'^var:','');
+% end
+% end
 %%%%%%%%%%%%%%%%%%%%
 % if isfield(Param,'InputFields')
 %     InputFields{1}=Param.InputFields;
 % end
-Param.InputFields.FieldName={'Uprime','Vprime'};
+%Param.InputFields.FieldName={'Uprime','Vprime'};
 nbfiles=0;
 nbmissing=0;
 
@@ -169,8 +171,8 @@ for index=1:NbField
     [Field,~,errormsg] = read_field(filecell{1,index},FileType,Param.InputFields,frame_index(index));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Field.U=Field.Uprime;
-    Field.V=Field.Vprime;
+%     Field.U=Field.Uprime;
+%     Field.V=Field.Vprime;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if index==1 %first field
         if ~isfield(Field,'U')||~isfield(Field,'V')
@@ -211,8 +213,8 @@ for index=1:NbField
         break
     end
     [Field,~,errormsg] = read_field(filecell{1,index},FileType,Param.InputFields,frame_index(index));
-    Field.U=Field.Uprime;
-    Field.V=Field.Vprime;
+%     Field.U=Field.Uprime;
+%     Field.V=Field.Vprime;
     %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     if index==1 %first field
         [npy,npx]=size(Field.U);

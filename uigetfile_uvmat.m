@@ -220,7 +220,7 @@ set(hlist,'BackgroundColor',[0.7 0.7 0.7])
 function OK_Callback(option,filter_ext,hObject,event)
 set(hObject,'backgroundColor',[1 1 0])% indicate button activation
 fig_struct=get(hObject,'parent');
-if isstruct(fig_struct);%recent Matlab
+if isstruct(fig_struct)%recent Matlab
     hfig=fig_struct.Number;
 else
     hfig=fig_struct;
