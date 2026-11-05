@@ -29,7 +29,7 @@
 %  .DVDX:
 %  .DVDY
 
-function [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ_multi (par_civ)
+function [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ (par_civ)
 
 %% check input images
 % par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
@@ -151,8 +151,8 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         check1_y=subrange1_y>=1 & subrange1_y<=npy_ima;
         check2_x=subrange2_x>=1 & subrange2_x<=npx_ima;% check which points in the subimage 2 are contained in the initial image 2
         check2_y=subrange2_y>=1 & subrange2_y<=npy_ima;
-        image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x),:);%extract a subimage (correlation box) from image A
-        image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x),:);%extract a larger subimage (search box) from image B
+        image1_crop(check1_y,check1_x,:)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x),:);%extract a subimage (correlation box) from image A
+        image2_crop(check2_y,check2_x,:)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x),:);%extract a larger subimage (search box) from image B
         if checkmask
             mask1_crop=ones(numel(subrange1_y),numel(subrange1_x),NbRack);% default value=1 for mask
             mask2_crop=ones(numel(subrange2_y),numel(subrange2_x),NbRack);% default value=1 for mask
@@ -163,7 +163,7 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
             image2_crop=image2_crop.*~mask2_crop;
         end
-        check_active_px=image1_crop>0;
+        check_active_px=image1_crop(:,:,1)>0;
         prop_active=sum(check_active_px,'all')/(numel(subrange1_y)*numel(subrange1_x));%size of the masked part relative to the correlation sub-image
         if prop_active<1/2 % eliminate point if more than half of the correlation box is masked
             FF(ivec)=1; %
@@ -175,10 +175,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             [Xbias,Ybias] = mean_bias(check_active_px); % get the mean position of the unmasked part
             xtable(ivec)=xtable(ivec)+Xbias;
             ytable(ivec)=ytable(ivec)+Ybias;
-% 
-%             mask1_crop=repmat(mask1_crop,1,1,NbRack);%repeat the mask for the NbRack images %MODIF
-%             mask2_crop=repmat(mask2_crop,1,1,NbRack);
-
             image1_crop=(image1_crop-image1_mean);
             image2_crop=(image2_crop-image2_mean);
         end
@@ -202,7 +198,12 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             sum_square=sum(sum(image1_crop.*image1_crop,'all'));%%% MODIF
             %reference: Oliver Pust, PIV: Direct Cross-Correlation
             %%%%%% correlation calculation
-            result_conv= conv2(image2_crop,flip(flip(image1_crop,2),1),'valid');
+            result_conv= conv2(image2_crop(:,:,1),flip(flip(image1_crop(:,:,1),2),1),'valid');
+            if NbRack>1
+                for irack=2:NbRack
+                    result_conv=result_conv+ conv2(image2_crop(:,:,irack),flip(flip(image1_crop(:,:,irack),2),1),'valid');
+                end
+            end
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             corrmax= max(max(result_conv));
 

@@ -29,7 +29,7 @@
 %  .DVDX:
 %  .DVDY
 
-function [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ_multi (par_civ)
+function [xtable,ytable,utable,vtable,ctable,FF,result_conv,errormsg] = civ (par_civ)
 
 %% check input images
 % par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
@@ -175,10 +175,6 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
             [Xbias,Ybias] = mean_bias(check_active_px); % get the mean position of the unmasked part
             xtable(ivec)=xtable(ivec)+Xbias;
             ytable(ivec)=ytable(ivec)+Ybias;
-% 
-%             mask1_crop=repmat(mask1_crop,1,1,NbRack);%repeat the mask for the NbRack images %MODIF
-%             mask2_crop=repmat(mask2_crop,1,1,NbRack);
-
             image1_crop=(image1_crop-image1_mean);
             image2_crop=(image2_crop-image2_mean);
         end

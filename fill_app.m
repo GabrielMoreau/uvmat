@@ -89,25 +89,26 @@ for ifield=1:numel(fields)% fields = names of the elements of the input structur
                 end
                 set(hh{1},'Data',input_data)% fill the app element with table input_data
                 check_done=1;
+            elseif strcmp(get(hh{1},'Type'),'uinumericeditfield')% numeric edit box
+                 set(hh{1},'Visible','on')% make it visible
+                set(hh{1},'Value',input_data)
             end
             % for numeric input element, detect GUI element(s) with the same tag name preceded by 'num_'
         elseif isnumeric(input_data)% numeric input
             if numel(input_data)>1 % deals with array displayed in multiple boxes labeled by an index
                 hh=cell(numel(input_data),1);
                 for ibox=1:numel(input_data)
-                    hh_index=find(strcmp(['num_' fields{ifield} '_' num2str(ibox)],ListTag));% seerch app element with tag beginning by 'num_'
+                    hh_index=find(strcmp(['num_' fields{ifield} '_' num2str(ibox)],ListTag));% search app element with tag beginning by 'num_'
                     if ~isempty(hh_index)
                         hh{ibox}=hchildren(hh_index);
-%                     elseif isprop(app,['num_' fields{ifield} '_' num2str(ibox)])
-%                         hh{ibox}=app.(['num_' fields{ifield} '_' num2str(ibox)]);
+                    elseif isprop(app,[fields{ifield} '_' num2str(ibox)])
+                        hh{ibox}=app.([fields{ifield} '_' num2str(ibox)]);
                     end
                 end
             else % single box (usual case)
                 hh_index=find(strcmp(['num_' fields{ifield}],ListTag));
                 if ~isempty(hh_index)
                     hh={hchildren(hh_index)};
-%                 elseif isprop(app,['num_' fields{ifield}])
-%                     hh{1}=app.(['num_' fields{ifield}]);
                 end
             end
         end
@@ -136,6 +137,8 @@ for ifield=1:numel(fields)% fields = names of the elements of the input structur
                                 input_string=input_data;
                             end
                             set(hh{ibox},'Value',input_string)
+%                         case 'uinumericeditfield'
+%                             set(hh{ibox},'Value',input_data)
                         case {'uilistbox','uidropdown'}
                             if isnumeric(input_data)
                                 input_data=num2str(input_data,4);

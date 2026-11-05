@@ -965,7 +965,6 @@ for ifield=1:NbField
     end
 
     %% write result in a netcdf file
-    Data.Conventions='uvmat/civdata/compress';
     Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
     Data.VarDimName={'nb_vec','nb_vec','nb_vec','nb_vec','nb_vec','nb_vec'};
     Data.VarAttribute{1}.Role='coord_x';

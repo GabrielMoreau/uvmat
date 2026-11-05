@@ -1,0 +1,563 @@
+%'test_civ2vel_3C': test of the differential calculation of civ2vel_3C V by introducing a
+%numerical displacement of 0.5 cm in the direction normal to the reference plane
+%------------------------------------------------------------------------
+% function GUIParam=civ2vel_3C(Param)
+%
+%OUTPUT
+% GUIParam: sets options in the GUI series.fig needed for the function
+%
+%INPUT:
+% In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
+% In batch mode, Param is the name of the corresponding xml file containing the same information
+% when Param.Action.RUN=0 (as activated when the current Action is selected
+% in series), the function ouput paramOut set the activation of the needed
+% GUI elementcale
+%
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to
+% see the current structure Param)
+%    .InputTable: cell of input file names, (several lines for multiple input)
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%    .OutputSubDir: name of the subdirectory for data outputs
+%    .OutputDirExt: directory extension for data outputs
+%    .Action: .ActionName: name of the current activated function
+%             .ActionPath:   path of the current activated function
+%             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
+%             .RUN =0 for GUI input, =1 for function activation
+%             .RunMode='local','background', 'cluster': type of function  use
+%
+%    .IndexRange: set the file or frame indices on which the action must be performed
+%    .InputFields: sub structure describing the input fields withfields
+%              .FieldName: name(s) of the field
+%              .VelType: velocity type
+%              .FieldName_1: name of the second field in case of two input series
+%              .VelType_1: velocity type of the second field in case of two input series
+%              .Coord_y: name of y coordinate variable
+%              .Coord_x: name of x coordinate variable'
+
+%=======================================================================
+% Copyright 2008-2026, LEGI UMR 5519 / CNRS UGA G-INP, Grenoble, France
+%   http://www.legi.grenoble-inp.fr
+%   Joel.Sommeria - Joel.Sommeria (A) univ-grenoble-alpes.fr
+%
+%     This file is part of the toolbox UVMAT.
+%
+%     UVMAT is free software; you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published
+%     by the Free Software Foundation; either version 2 of the license,
+%     or (at your option) any later version.
+%
+%     UVMAT is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License (see LICENSE.txt) for more details.
+%=======================================================================
+
+function GUIParam=civ2vel_3C(Param)
+
+%% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    GUIParam.ActionParam='on';% indicate that specific parameter input is expected
+    GUIParam.NbSlice='off'; %nbre of slices ('off' by default) !!VERIFIER
+    GUIParam.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)!!VERIFIER
+    GUIParam.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    GUIParam.ProjObject='on';%can use projection object(option 'off'/'on',
+    GUIParam.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)!!VERIFIER
+    GUIParam.OutputDirExt='.vel3C_test';%set the output dir extension
+    GUIParam.OutputSubDirMode='two'; % the two first input lines are used to define the output subfolder
+    GUIParam.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    %check the input files
+    GUIParam.CheckOverwriteVisible='on'; % manage the overwrite of existing files (default=1)
+    first_j=[];
+    if size(Param.InputTable,1)<2
+        msgbox_uvmat('ERROR','two or three input file series are needed')
+        return
+    end
+    if  ~(isfield(Param,'CheckObject')&& Param.CheckObject)
+        msgbox_uvmat('ERROR','You  need a projection object of type plane')
+        return
+    end
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    if exist(FirstFileName,'file')
+        FileInfo=get_file_info(FirstFileName);
+        if ~strcmp(FileInfo.FieldType,'civdata')
+            msgbox_uvmat('ERROR','civ data are needed as input')
+            return
+        end
+    else
+        msgbox_uvmat('ERROR',['the first input file ' FirstFileName ' does not exist'])
+        return
+    end
+    VelocityRange=[];%default
+    if isfield(Param,'ActionInput') && isfield(Param.ActionInput,'VelocityRange')
+        VelocityRange= Param.ActionInput.VelocityRange;
+    end
+
+    prompt = {'velocity range (max modulus) for 16 bit integer records (32 bit reals if empty)'};
+    dlg_title = 'set scale_factor for result writing as 16 bit integer (instead of 32 bit reals by default)';
+    num_lines= 1;
+    def     = { num2str(VelocityRange)};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    if isempty(answer)
+        return
+    end
+    GUIParam.ActionInput.VelocityRange=str2double(answer{1});
+    return
+end
+
+%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+GUIParam=[]; %default output
+%% read input parameters from an xml file if input is a file name (batch mode)
+if ischar(Param)
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=false;
+else
+     checkrun=true;
+     RUNHandle=gcbo; %handle of the button RUN in GUI series
+end
+
+%% root input file(s) name, type and index series
+% RootPath=Param.InputTable(:,1);
+% RootFile=Param.InputTable(:,3);
+% SubDir=Param.InputTable(:,2);
+% NomType=Param.InputTable(:,4);
+% FileExt=Param.InputTable(:,5);
+hdisp=disp_uvmat('WAITING...','checking the file series',checkrun);
+NbView=size(Param.InputTable,1);
+FileInfo=cell(1,NbView);FileType=cell(1,NbView);PairString=cell(1,NbView);XmlData=cell(1,NbView);
+for iview=1:NbView
+    XmlFileName=find_imadoc(Param.InputTable{iview,1},Param.InputTable{iview,2});
+    if ~isempty(XmlFileName)
+        [XmlData{iview},errormsg]=imadoc2struct(XmlFileName);%read the time from XmlFileName
+        if ~isempty(errormsg)
+            disp(errormsg)
+            return
+        end
+    end
+    FullRootFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3});
+    if isfield(Param.IndexRange,'PairString')
+        PairString{iview}=Param.IndexRange.PairString;
+    end
+    first_j=1;
+    if isfield(Param.IndexRange,'first_j')
+        first_j=Param.IndexRange.first_j;
+    end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString{iview});
+    FirstFileName=fullfile_indices(FullRootFile,Param.InputTable{iview,5},Param.InputTable{iview,4},i1,i2,j1,j2);%get first file name
+    FileInfo{iview}=get_file_info(FirstFileName);
+    FileType{iview}=FileInfo{iview}.FileType;
+end
+if ~isempty(hdisp),delete(hdisp),end
+
+%% calibration data and timing: read the ImaDoc files
+if ~isfield(XmlData{1},'GeometryCalib')
+    disp_uvmat('ERROR','no geometric calibration available for image A',checkrun)
+    return
+end
+if ~isfield(XmlData{2},'GeometryCalib')
+    disp_uvmat('ERROR','no geometric calibration available for image B',checkrun)
+    return
+end
+
+Plane_A=XmlData{1}.Slice.SliceCoord;
+Plane_B=XmlData{2}.Slice.SliceCoord;
+if ~isequal(Plane_A,Plane_B)
+    disp_uvmat('ERROR','the two views are not in the same reference plane',checkrun)
+    return
+end
+Zref=Plane_A(3); % reference z position (no tilt assumed)
+
+%% grid of physical positions (given by projection plane)
+if ~Param.CheckObject
+    disp_uvmat('ERROR','a projection plane with interpolation is needed',checkrun)
+    return
+end
+ObjectData=Param.ProjObject;
+xI=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
+yI=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
+[XI,YI]=meshgrid(xI,yI);
+[Npy,Npx]=size(XI);
+XI=reshape(XI,[],1);
+YI=reshape(YI,[],1);
+U=zeros(size(XI,1),size(XI,2));
+V=zeros(size(XI,1),size(XI,2));
+W=zeros(size(XI,1),size(XI,2));
+
+%% estimate the range of interpolation-extrapolation in pixels
+Xmid=0.5*(ObjectData.RangeX(1)+ObjectData.RangeX(2));% middle of the phys grid
+Ymid=0.5*(ObjectData.RangeY(1)+ObjectData.RangeY(2));
+Xplus=Xmid+ObjectData.RangeInterp;
+Xmin=Xmid-ObjectData.RangeInterp;
+Yplus=Ymid+ObjectData.RangeInterp;
+Ymin=Ymid-ObjectData.RangeInterp;
+Xsquare=[Xmin Xplus Xplus Xmin];
+Ysquare=[Ymin Ymin Yplus Yplus];
+Area_phys= 4*ObjectData.RangeInterp*ObjectData.RangeInterp;
+[Xsquare_a,Ysquare_a]=px_XYZ(XmlData{1}.GeometryCalib,[],Xsquare,Ysquare,Zref);% image coordinates on view a
+Area_px=polyarea(Xsquare_a,Ysquare_a);
+pxcm_a=sqrt(Area_px/Area_phys);
+Range_px_a=pxcm_a*ObjectData.RangeInterp;
+[Xsquare_b,Ysquare_b]=px_XYZ(XmlData{2}.GeometryCalib,[],Xsquare,Ysquare,Zref);% image coordinates on view a
+Area_px=polyarea(Xsquare_b,Ysquare_b);
+pxcm_b=sqrt(Area_px/Area_phys);
+Range_px_b=pxcm_b*ObjectData.RangeInterp;
+
+%% read a third input field obtained by series/stereo_civ for position shift 
+if NbView==3
+        % TODO: INTRODUCE THE POSSIBILITY OF VARIABLE SHIFT INSIDE THE FIELD INDEX LOOP
+           % [i1,i2,j1,j2] = get_file_index(index_i,index_j,PairString{3})
+           [i1,i2,j1,j2] = get_file_index(1,1,PairString{3});
+            FullRootFile=fullfile(Param.InputTable{3,1},Param.InputTable{3,2},Param.InputTable{3,3});
+            NomType=Param.InputTable{3,4};
+            ShiftCalibFile=fullfile_indices(FullRootFile,Param.InputTable{3,5},NomType,i1,i2,j1,j2);
+            [Data_shift,~,errormsg] = nc2struct(ShiftCalibFile);
+            if isempty(errormsg)
+                disp([ShiftCalibFile ' read for position shift'])
+            else
+                disp(errormsg)
+            end
+           
+            ind_good=find(~isnan(Data_shift.Xshift));
+            Coord=[Data_shift.Xphys(ind_good) Data_shift.Yphys(ind_good)];
+            Xshift_interpolant= scatteredInterpolant(Coord,Data_shift.Xshift(ind_good),'linear','linear');
+            Yshift_interpolant= scatteredInterpolant(Coord,Data_shift.Yshift(ind_good),'linear','linear');
+            if isfield(Data_shift,'Zshift')
+                Zshift_interpolant= scatteredInterpolant(Coord,Data_shift.Zshift(ind_good),'linear','linear');
+                Zshift=Zshift_interpolant(XI,YI);
+            end
+            Xshift=Xshift_interpolant(XI,YI);% shift interpolated on the phys grid
+            Yshift=Yshift_interpolant(XI,YI);
+end
+
+
+%% Parameters for input and output
+warning off
+CheckOverwrite=true;%default
+if isfield(Param,'CheckOverwrite')
+    CheckOverwrite=Param.CheckOverwrite;
+end
+VelType='*';%latest field filter2 opened by default
+if isfield(Param,'InputFields') && isfield(Param.InputFields,'VelType')
+    VelType=Param.InputFields.VelType;%imposed civ or filter
+end
+
+%% define a range of values to store results as integers for projection of PIV data
+scale_factor_inv_uv=[];
+if isfield(Param.ActionInput,'VelocityRange') && ~isempty(Param.ActionInput.VelocityRange)
+    scale_factor_inv_uv=floor(32767/Param.ActionInput.VelocityRange);
+end
+
+Index_i_series=Param.IndexRange.first_i:Param.IndexRange.incr_i:Param.IndexRange.last_i;
+if isfield(Param.IndexRange,'last_j')
+    Index_j_series=Param.IndexRange.first_j:Param.IndexRange.incr_j:Param.IndexRange.last_j;
+else
+    Index_j_series=1;
+end
+
+%% define the directory for result file (with path=RootPath{1})
+OutputPath=fullfile(Param.OutputPath,num2str(Param.Experiment),num2str(Param.Device));
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+RootFileOut='field';
+if isfield(Param.IndexRange,'MaxIndex_j') && ~isempty(Param.IndexRange.MaxIndex_j) && (Param.IndexRange.MaxIndex_j(1)-Param.IndexRange.MinIndex_j(1)>0)
+    NomTypeOut='_1_1';
+else
+    NomTypeOut='_1';
+end
+
+%% Prepare the output field structure
+MergeData.ListGlobalAttribute={'Conventions','Program','Time','Dt','CoordUnit','Range_px_a','Range_px_b','VelType','InputFileA','InputFileB','ShiftCalibFile'};
+MergeData.Conventions='uvmat';
+MergeData.Program=mfilename;
+if isfield(Param,'UvmatRevision') && ischar(Param.UvmatRevision)
+    MergeData.Program=[MergeData.Program ', uvmat ' Param.UvmatRevision];
+end
+if isfield (XmlData{1}.GeometryCalib,'CoordUnit') && isfield (XmlData{2}.GeometryCalib,'CoordUnit') && strcmp(XmlData{1}.GeometryCalib.CoordUnit, XmlData{2}.GeometryCalib.CoordUnit)
+    MergeData.CoordUnit=XmlData{1}.GeometryCalib.CoordUnit;
+else
+    disp_uvmat('ERROR','inconsistent coord units in the two input velocity series',checkrun)
+    return
+end
+MergeData.Range_px_a=Range_px_a;
+MergeData.Range_px_b=Range_px_b;
+MergeData.VelType=VelType;
+MergeData.InputFileA='';% to update during the program
+MergeData.InputFileB='';
+if NbView==3
+    MergeData.ShiftCalibFile=ShiftCalibFile;
+else
+    MergeData.ShiftCalibFile='';
+end
+
+MergeData.ListVarName={'coord_x','coord_y','U','V','W','Error'};
+MergeData.VarDimName={'coord_x','coord_y',{'coord_y','coord_x'},{'coord_y','coord_x'}...
+    {'coord_y','coord_x'},{'coord_y','coord_x'}};
+MergeData.VarAttribute{1}.Role='coord_x';
+MergeData.VarAttribute{2}.Role='coord_y';
+MergeData.VarAttribute{3}.Role='vector_x';
+MergeData.VarAttribute{4}.Role='vector_y';
+MergeData.VarAttribute{5}.Role='vector_z';
+MergeData.VarAttribute{6}.Role='ancillary';
+MergeData.VarAttribute{6}.units='pixel'; %error estimate expressed in pixel
+MergeData.VarAttribute{6}.scale_factor=1/1000;% value multiplied by 1000 to get an integer
+MergeData.coord_x=xI;
+MergeData.coord_y=yI;
+
+
+%%%%%%--------------------MAIN LOOP ON FIELD SERIES -------------%%%%%%
+for index_i=Index_i_series
+    if checkrun && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        return
+    end
+    for index_j=Index_j_series
+        %% generating the name of the merged field
+        OutputFile=fullfile_indices(fullfile(OutputPath,OutputDir,RootFileOut),'.nc',NomTypeOut,index_i,[],index_j);
+        if ~CheckOverwrite && exist(OutputFile,'file')
+            disp(['existing output file ' OutputFile ' already exists, skip to next field'])
+            continue% skip iteration if the mode overwrite is desactivated and the result file already exists
+        end
+
+        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        Data=cell(1,NbView);%initiate the set Data
+
+        for iview=1:2
+            %% reading input file(s)
+            % generating the name of the input field
+            [i1,i2,j1,j2] = get_file_index(index_i,index_j,PairString{iview});
+
+            NomType=Param.InputTable{iview,4};
+            FullRootFile=fullfile(Param.InputTable{iview,1},Param.InputTable{iview,2},Param.InputTable{iview,3});
+            FullInputFile{iview}=fullfile_indices(FullRootFile,Param.InputTable{iview,5},NomType,i1,i2,j1,j2);
+
+            [Data{iview},~,errormsg]=read_civdata(FullInputFile{iview},{'vec(U,V)'},VelType);
+            if isempty(errormsg)
+                disp([FullInputFile ' read'])
+            else
+                disp_uvmat('ERROR',['ERROR in civ2vel_3C/read_field/' errormsg],checkrun)
+                return
+            end
+
+        %%%%%%%  SYNTHETIC VELOCITY
+   [XPhys,YPhys]=phys_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,Data{iview}.X,Data{iview}.Y,1);%phys coordinates at Z=0
+             [Xshift,Yshift]=px_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,XPhys,YPhys,0.5);%image coordinates for a z shift of 0.5 cm
+             Data{iview}.U=Xshift-Data{iview}.X;
+             Data{iview}.V=Yshift-Data{iview}.Y;
+             Data{iview}.FF=zeros(size(Data{iview}.X));
+             Dt=1;
+       %%%%%%%%%   
+
+            % get the time defined in the current file if not already defined from the xml file
+            if isfield(Data{iview},'Time')&& (Data{iview}.Time-Data{1}.Time)<0.0001
+                Time=Data{iview}.Time;
+            else
+                disp_uvmat('ERROR','Time undefined or not synchronous',checkrun)
+                return
+            end
+            
+        end
+        MergeData.InputFileA=FullInputFile{1};
+         MergeData.InputFileB=FullInputFile{2};
+        ZI=Zref*ones(size(XI,1),size(XI,2));
+
+        %% get the image coordinates of the input physical grid on each view
+
+        if NbView==3 % introduce corrections obtained from series/stereo_civ
+            XIa=XI-0.5*Xshift;% uncorrected phys coordinates in view a corresponding to XI
+            XIb=XI+0.5*Xshift;% uncorrected phys coordinates in view b corresponding to XI
+            YIa=YI-0.5*Yshift; % uncorrected phys coordinates in view a corresponding to YI
+            YIb=YI+0.5*Yshift;% uncorrected phys coordinates in view b corresponding to YI
+            if isfield (Data_shift,'Zshift')
+                ZI=ZI+Zshift;% Z position at points XI, YI
+            end
+
+            [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XIa,YIa,ZI);% set of image coordinates on view a
+            [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XIb,YIb,ZI);% set of image coordinates on view b
+        else % get the image coordinates directly using calibration of each view
+            [Xa,Ya]=px_XYZ(XmlData{1}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view a
+            [Xb,Yb]=px_XYZ(XmlData{2}.GeometryCalib,[],XI,YI,ZI);% set of image coordinates on view b
+        end
+        MergeData.Z=ZI;
+
+        %% remove vectors flaged as false from each input field
+        if isfield(Data{1},'FF') % FF is present, remove false vector from the first field
+            ind_good=find(Data{1}.FF==0);
+        else
+            ind_good=1:numel(Data{1}.X);
+        end
+        Xciv_a=Data{1}.X(ind_good);% raw civ data for camera a
+        Yciv_a=Data{1}.Y(ind_good);
+
+        Uciv_a=Data{1}.U(ind_good);
+        Vciv_a=Data{1}.V(ind_good);
+
+        if isfield(Data{2},'FF') %  FF is present, remove false vector from the second field
+            ind_good=find(Data{2}.FF==0);
+        else
+            ind_good=1:numel(Data{2}.X);
+        end
+        Xciv_b=Data{2}.X(ind_good);
+        Yciv_b=Data{2}.Y(ind_good);
+        Uciv_b=Data{2}.U(ind_good);
+        Vciv_b=Data{2}.V(ind_good);
+
+        %% interpolate PIV data (in pixel displacement) to the common grid translated in image coordinates
+        F=scatteredInterpolant([Xciv_a Yciv_a],Uciv_a,'linear','linear');% linear interpolation with linear extrapolation
+        Ua=F(Xa,Ya);% U interpolated on the grid image of the physical grid
+        G=scatteredInterpolant([Xciv_a Yciv_a],Vciv_a,'linear','linear');% linear interpolation with linear extrapolation
+        %F.Values=Vciv_a;% switch the interpolent to Vciv_a
+        Va=G(Xa,Ya);% V interpolated on the grid image of the physical grid
+        %F.Values=Xciv_a;
+        HX=scatteredInterpolant([Xciv_a Yciv_a],Xciv_a,'nearest','nearest');%  nearest value
+        %F.Method='nearest';
+        %F.ExtrapolationMethod='nearest';
+        Distx=HX(Xa,Ya)-Xa;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        %F.Values=Yciv_a;
+        HY=scatteredInterpolant([Xciv_a Yciv_a],Yciv_a,'nearest','nearest');%  nearest value
+        Disty=HY(Xa,Ya)-Ya;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        ind_bad=find((Distx.*Distx+Disty.*Disty)>Range_px_a*Range_px_a);
+        Ua(ind_bad)=NaN;Va(ind_bad)=NaN;Xa(ind_bad)=NaN;Ya(ind_bad)=NaN;
+        [Ua,Va,Xa,Ya]=Ud2U(XmlData{1}.GeometryCalib,Xa,Ya,Ua,Va); % convert Xd data to X
+        [A]=get_coeff(XmlData{1}.GeometryCalib,Xa,Ya,XI,YI,ZI); %get coef A of the pinhole model
+        %
+        F=scatteredInterpolant([Xciv_b Yciv_b],Uciv_b,'linear','linear');% linear interpolation with linear extrapolation
+        Ub=F(Xb,Yb);% U interpolated on the grid image of the physical grid
+        G=scatteredInterpolant([Xciv_b Yciv_b],Vciv_b,'linear','linear');% linear interpolation with linear extrapolation
+     %   F.Values=Vciv_b;% switch the interpolent to Vciv_b
+        Vb=G(Xb,Yb);% V interpolated on the grid image of the physical grid
+         HX=scatteredInterpolant([Xciv_b Yciv_b],Xciv_b,'nearest','nearest');%  nearest value
+%         F.Values=Xciv_b;
+%         F.Method='nearest';
+%         F.ExtrapolationMethod='nearest';
+        Distx=HX(Xb,Yb)-Xb;%separation  of the X position of the nearest grid point to (Xb,Yb)
+     %   H.Values=Yciv_b;
+         HY=scatteredInterpolant([Xciv_b Yciv_b],Yciv_b,'nearest','nearest');% nearest value
+        Disty=HY(Xb,Yb)-Yb;%separation  of the X position of the nearest grid point to (Xa,Ya)
+        ind_bad=find((Distx.*Distx+Disty.*Disty)>Range_px_b*Range_px_b);
+        Ub(ind_bad)=NaN;Vb(ind_bad)=NaN;Xb(ind_bad)=NaN;Yb(ind_bad)=NaN;
+        [Ub,Vb,Xb,Yb]=Ud2U(XmlData{2}.GeometryCalib,Xb,Yb,Ub,Vb); % convert Xd data to the undistorted coordinates of the pinhole model
+        [B]=get_coeff(XmlData{2}.GeometryCalib,Xb,Yb,XI,YI,ZI); %get coef B~
+
+        % System to solve
+        S=ones(size(XI,1),size(XI,2),3);
+        D=ones(size(XI,1),size(XI,2),3,3);
+
+        S(:,:,1)=A(:,:,1,1).*Ua+A(:,:,2,1).*Va+B(:,:,1,1).*Ub+B(:,:,2,1).*Vb;
+        S(:,:,2)=A(:,:,1,2).*Ua+A(:,:,2,2).*Va+B(:,:,1,2).*Ub+B(:,:,2,2).*Vb;
+        S(:,:,3)=A(:,:,1,3).*Ua+A(:,:,2,3).*Va+B(:,:,1,3).*Ub+B(:,:,2,3).*Vb;
+        D(:,:,1,1)=A(:,:,1,1).*A(:,:,1,1)+A(:,:,2,1).*A(:,:,2,1)+B(:,:,1,1).*B(:,:,1,1)+B(:,:,2,1).*B(:,:,2,1);
+        D(:,:,1,2)=A(:,:,1,1).*A(:,:,1,2)+A(:,:,2,1).*A(:,:,2,2)+B(:,:,1,1).*B(:,:,1,2)+B(:,:,2,1).*B(:,:,2,2);
+        D(:,:,1,3)=A(:,:,1,1).*A(:,:,1,3)+A(:,:,2,1).*A(:,:,2,3)+B(:,:,1,1).*B(:,:,1,3)+B(:,:,2,1).*B(:,:,2,3);
+        D(:,:,2,1)=A(:,:,1,2).*A(:,:,1,1)+A(:,:,2,2).*A(:,:,2,1)+B(:,:,1,2).*B(:,:,1,1)+B(:,:,2,2).*B(:,:,2,1);
+        D(:,:,2,2)=A(:,:,1,2).*A(:,:,1,2)+A(:,:,2,2).*A(:,:,2,2)+B(:,:,1,2).*B(:,:,1,2)+B(:,:,2,2).*B(:,:,2,2);
+        D(:,:,2,3)=A(:,:,1,2).*A(:,:,1,3)+A(:,:,2,2).*A(:,:,2,3)+B(:,:,1,2).*B(:,:,1,3)+B(:,:,2,2).*B(:,:,2,3);
+        D(:,:,3,1)=A(:,:,1,3).*A(:,:,1,1)+A(:,:,2,3).*A(:,:,2,1)+B(:,:,1,3).*B(:,:,1,1)+B(:,:,2,3).*B(:,:,2,1);
+        D(:,:,3,2)=A(:,:,1,3).*A(:,:,1,2)+A(:,:,2,3).*A(:,:,2,2)+B(:,:,1,3).*B(:,:,1,2)+B(:,:,2,3).*B(:,:,2,2);
+        D(:,:,3,3)=A(:,:,1,3).*A(:,:,1,3)+A(:,:,2,3).*A(:,:,2,3)+B(:,:,1,3).*B(:,:,1,3)+B(:,:,2,3).*B(:,:,2,3);
+        for indj=1:size(XI,1)
+            for indi=1:size(XI,2)
+                dxyz=(squeeze(D(indj,indi,:,:))*1000)\(squeeze(S(indj,indi,:))*1000); % solving...
+                U(indj,indi)=dxyz(1);
+                V(indj,indi)=dxyz(2);
+                W(indj,indi)=dxyz(3);
+            end
+        end
+        Error=zeros(size(XI,1),size(XI,2),4);
+        Error(:,:,1)=A(:,:,1,1).*U+A(:,:,1,2).*V+A(:,:,1,3).*W-Ua;
+        Error(:,:,2)=A(:,:,2,1).*U+A(:,:,2,2).*V+A(:,:,2,3).*W-Va;
+        Error(:,:,3)=B(:,:,1,1).*U+B(:,:,1,2).*V+B(:,:,1,3).*W-Ub;
+        Error(:,:,4)=B(:,:,2,1).*U+B(:,:,2,2).*V+B(:,:,2,3).*W-Vb;
+
+
+        %% rescaling with time
+        MergeData.Time=Time;
+        MergeData.Dt=Dt;
+        MergeData.U=U/Dt;
+        MergeData.V=V/Dt;
+        MergeData.W=W/Dt;
+
+
+        %% suppress vectors which are not with reasonable error range estimated as 1 pixel
+        mfx=(XmlData{1}.GeometryCalib.fx_fy(1)+XmlData{2}.GeometryCalib.fx_fy(1))/2;
+        mfy=(XmlData{1}.GeometryCalib.fx_fy(2)+XmlData{2}.GeometryCalib.fx_fy(2))/2;
+        Error=0.25*(mfx+mfy)*sqrt(sum(Error.^2,3));
+        MergeData.U(Error>1)=NaN;%suppress vectors which are not with reasonable error range estimated as 1 pixel
+        MergeData.V(Error>1)=NaN;
+        MergeData.W(Error>1)=NaN;
+
+        %% rescale the data for storage as integers
+        if ~isnan(scale_factor_inv_uv) && ~isempty(scale_factor_inv_uv)
+            ind_FF=(isnan(MergeData.U));% set NaN to the maximal 16 bit integer (NaN not handled for integers)
+            MergeData.U=int16(scale_factor_inv_uv*MergeData.U);
+            MergeData.U(ind_FF)=intmax('int16');
+            MergeData.V=int16(scale_factor_inv_uv*MergeData.V);
+            MergeData.V(ind_FF)=intmax('int16');
+            MergeData.W=int16(scale_factor_inv_uv*MergeData.W);
+            MergeData.W(ind_FF)=intmax('int16');
+            MergeData.VarAttribute{3}.scale_factor=1/scale_factor_inv_uv;
+            MergeData.VarAttribute{4}.scale_factor=1/scale_factor_inv_uv;
+            MergeData.VarAttribute{5}.scale_factor=1/scale_factor_inv_uv;
+        end
+        MergeData.Error=uint16(1000*Error);% transform to integers
+
+        %% reshape the data as matrices and save them in netcdf file
+        MergeData.Error=reshape(MergeData.Error,Npy,Npx);
+        MergeData.U=reshape(MergeData.U,Npy,Npx);
+        MergeData.V=reshape(MergeData.V,Npy,Npx);
+        MergeData.W=reshape(MergeData.W,Npy,Npx);
+        MergeData.Z=reshape(MergeData.Z,Npy,Npx);
+        errormsg=struct2nc(OutputFile,MergeData);%save result file
+        if isempty(errormsg)
+            disp(['output file ' OutputFile ' written'])
+        else
+            disp(errormsg)
+        end
+    end
+end
+
+%-------------------------------------------------------------------------
+% compute A coefficients of the pinhole model 
+% see https://legi.gricad-pages.univ-grenoble-alpes.fr/soft/uvmat-doc/tutorial/3d-view-2015.pdf)
+function [A]=get_coeff(Calib,X,Y,x,y,z) 
+
+R=(Calib.R)';%rotation matrix
+T_z=Calib.Tx_Ty_Tz(3);
+T=R(7)*x+R(8)*y+R(9)*z+T_z;
+
+A(:,:,1,1)=(R(1)-R(7)*X)./T;
+A(:,:,1,2)=(R(2)-R(8)*X)./T;
+A(:,:,1,3)=(R(3)-R(9)*X)./T;
+A(:,:,2,1)=(R(4)-R(7)*Y)./T;
+A(:,:,2,2)=(R(5)-R(8)*Y)./T;
+A(:,:,2,3)=(R(6)-R(9)*Y)./T;
+
+%-------------------------------------------------------------------------
+% convert the image coordinates Xd,Yb to the X,Y coordinates of the pinhole
+% camera model, and the displacements accordingly 
+function [U,V,X,Y]=Ud2U(Calib,Xd,Yd,Ud,Vd) % convert Xd to X  and Ud to U
+
+X1d=Xd-Ud/2;
+X2d=Xd+Ud/2;
+Y1d=Yd-Vd/2;
+Y2d=Yd+Vd/2;
+
+X1=(X1d-Calib.Cx_Cy(1))./Calib.fx_fy(1).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X1d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y1d-Calib.Cx_Cy(2)).^2 ).^(-1);
+X2=(X2d-Calib.Cx_Cy(1))./Calib.fx_fy(1).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X2d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y2d-Calib.Cx_Cy(2)).^2 ).^(-1);
+Y1=(Y1d-Calib.Cx_Cy(2))./Calib.fx_fy(2).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X1d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y1d-Calib.Cx_Cy(2)).^2 ).^(-1);
+Y2=(Y2d-Calib.Cx_Cy(2))./Calib.fx_fy(2).*(1 + Calib.kc.*Calib.fx_fy(1).^(-2).*(X2d-Calib.Cx_Cy(1)).^2 + Calib.kc.*Calib.fx_fy(2).^(-2).*(Y2d-Calib.Cx_Cy(2)).^2 ).^(-1);
+
+U=X2-X1;
+V=Y2-Y1;
+X=X1+U/2;
+Y=Y1+V/2;
+
+
+
+
+
+
+
+

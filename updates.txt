@@ -1,12 +1,9 @@
-version 26.7
-browse_data_app.mlapp: improved
-civ: modified to accept multiframe civ
-parciv: modified to accept multiframe civ
-geometry_calib: modified to deal with browse_data.mlapp
-read_app: bug corrected
-scan_folder: updated in link with browse_data_app
-series:  browse_data_app introduced for status
-uigetfile_uvmat: small correction, will be later abandoned for browse_data_app
-uvmat: browse_data_app introduced for data browser
-series/civ2vel_3C: bug corrected , bad reading of VelType (filter or not)
-series/civ_input.mlapp: bug corrected for pair display
+version 26.8
+civ, parciv : adapted for multiframe correlation
+fill_app: updated to accept edit boxes with numerical input
+series : small cleaning
+series/civ_series: small cleaning
+series/civ_input.mlapp : NbRack introduced to allow for multiframe PIV
+series/test_civ2vel_3C.: new function to test the consistency of Civ2vel_3C
+series/civ_series_multiframe: civ series with multi-frame correlation
+
