@@ -154,12 +154,12 @@ if par_civ.CorrSmooth~=0 % par_civ.CorrSmooth=0 implies no civ computation (just
         image1_crop(check1_y,check1_x,:)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x),:);%extract a subimage (correlation box) from image A
         image2_crop(check2_y,check2_x,:)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x),:);%extract a larger subimage (search box) from image B
         if checkmask
-            mask1_crop=ones(numel(subrange1_y),numel(subrange1_x),NbRack);% default value=1 for mask
-            mask2_crop=ones(numel(subrange2_y),numel(subrange2_x),NbRack);% default value=1 for mask
+            mask1_crop=ones(numel(subrange1_y),numel(subrange1_x));% default value=1 for mask
+            mask2_crop=ones(numel(subrange2_y),numel(subrange2_x));% default value=1 for mask
             mask1_crop(check1_y,check1_x)=check_undefined_A(subrange1_y(check1_y),subrange1_x(check1_x));%extract a mask subimage (correlation box) from image A
             mask2_crop(check2_y,check2_x)=check_undefined_B(subrange2_y(check2_y),subrange2_x(check2_x));%extract a mask subimage (search box) from image B
-            mask1_crop(check1_y,check1_x)=repmat(mask1_crop(check1_y,check1_x),1,1,NbRack);
-            mask2_crop(check2_y,check2_x)=repmat(mask2_crop(check2_y,check2_x),1,1,NbRack);
+            mask1_crop=repmat(mask1_crop,1,1,NbRack);
+            mask2_crop=repmat(mask2_crop,1,1,NbRack);
             image1_crop=image1_crop.*~mask1_crop;% put to zero the masked pixels (mask1_crop='true'=1)
             image2_crop=image2_crop.*~mask2_crop;
         end

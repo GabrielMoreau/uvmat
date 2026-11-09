@@ -1,4 +1,4 @@
-%'civ_series_multiframe': PIV function activated by the general GUI series, can accumulate correlations on several frames
+%'civ_series_multiframe': PIV function activated by the general GUI series, can accumulate correlations on NbRack successive image pairs in mode Di
 % --- call the sub-functions:
 %  'parciv.m' PIV function itself, adpated to parallel processing (loop
 %  parfor instead of for)
@@ -450,7 +450,7 @@ for ifield=1:NbField
                 FrameIndex_A(ind_rack)=1;%FrameIndex_A_Civ1(ifield);
             end
             if CheckRelabel
-                [RootFile,FrameIndex_B]=index2filename(XmlData.FileSeries,ind_frame_B_Civ1(ind_rack),j2_series_Civ1(ifield),MaxIndex_j);
+                [RootFile,FrameIndex_B(ind_rack)]=index2filename(XmlData.FileSeries,ind_frame_B_Civ1(ind_rack),j2_series_Civ1(ifield),MaxIndex_j);
                 ImageName_B{ind_rack}=fullfile(RootPath_Ima,SubDir_Ima,RootFile);
             else
                 ImageName_B{ind_rack}=fullfile_indices(RootName_Ima,FileExt_Ima,NomType_Ima,ind_frame_B_Civ1(ind_rack),[],j2_series_Civ1(ifield));

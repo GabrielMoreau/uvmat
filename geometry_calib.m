@@ -1288,6 +1288,7 @@ hbrowse_data=findobj(allchild(0),'Name','browse_data');
 if isvalid(hbrowse_data)
     AppData=hbrowse_data.RunningAppInstance;
     AppData.ListOptions.Value='pick xml object';
+    uistack(hbrowse_data,'up')
 else
     AppData=browse_data_app(fileparts(oldfile),'pick xml object');% open data browser
     hbrowse_data=AppData.browse_data_fig;

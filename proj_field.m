@@ -2402,19 +2402,6 @@ if isfield(FieldData,'Txt')
     return;
 end
 
-% %% transfer global attributes
-% if ~isfield(FieldData,'ListGlobalAttribute')
-%     ProjData.ListGlobalAttribute={};
-% else
-%     ProjData.ListGlobalAttribute=FieldData.ListGlobalAttribute;
-% end
-% for iattr=1:length(ProjData.ListGlobalAttribute)
-%     AttrName=ProjData.ListGlobalAttribute{iattr};
-%     if isfield(FieldData,AttrName)
-%         ProjData.(AttrName)=FieldData.(AttrName);
-%     end
-% end
-
 %% transfer coordinate unit
 if isfield(ProjData,'CoordUnit')
     ProjData=rmfield(ProjData,'CoordUnit');% do not transfer by default (to avoid x/y=1 for profiles)

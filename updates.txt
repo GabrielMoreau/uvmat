@@ -1,9 +1,18 @@
-version 26.8
-civ, parciv : adapted for multiframe correlation
-fill_app: updated to accept edit boxes with numerical input
-series : small cleaning
-series/civ_series: small cleaning
-series/civ_input.mlapp : NbRack introduced to allow for multiframe PIV
-series/test_civ2vel_3C.: new function to test the consistency of Civ2vel_3C
-series/civ_series_multiframe: civ series with multi-frame correlation
+version 26.9
+browse_data_app.mlapp: improved, set to use as browser for 'series'
+civ,  parciv: bug corrected for mask in mode multiframe
+geometry_calib: use browe_data_app.mlapp to import  xml files
+proj_field: minor cleaning of commented lines
+series: use browse_data_app.mlapp as browser
+set_slices.mlapp: minor cleaning
+update_imadoc: minor cleaning
+uvmat: link with browse_data_app.mlapp improved
+series/civ_input.mlapp: corrected to accept civ_series_multiframe and civ_series_fullburst
+series/civ_series_multiframe: calculate civ by accumulating NbRack successive pairs in mode 'Di'
+series/civ_series_fullburst: combine several correlations within a burst, like civ_series_multiframe but in mode 'burst'
+series/merge_proj: minor cleaning of commented lines
+series/merge_proj_polar: now operational
+series/test_civ2vel_3C: test civ2vel_3C by introducing artificial velocity vectors normal to the reference plane
+
+
 

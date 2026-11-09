@@ -342,10 +342,10 @@ for index_i=Index_i_series
             end
 
         %%%%%%%  SYNTHETIC VELOCITY
-   [XPhys,YPhys]=phys_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,Data{iview}.X,Data{iview}.Y,1);%phys coordinates at Z=0
-             [Xshift,Yshift]=px_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,XPhys,YPhys,0.5);%image coordinates for a z shift of 0.5 cm
-             Data{iview}.U=Xshift-Data{iview}.X;
-             Data{iview}.V=Yshift-Data{iview}.Y;
+   [XPhys,YPhys,Zphys]=phys_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,Data{iview}.X,Data{iview}.Y,1);%phys coordinates at Z=0
+             [Xshift_ima,Yshift_ima]=px_XYZ(XmlData{iview}.GeometryCalib,XmlData{iview}.Slice,XPhys,YPhys,Zphys+0.5);%image coordinates for a z shift of 0.5 cm
+             Data{iview}.U=Xshift_ima-Data{iview}.X;
+             Data{iview}.V=Yshift_ima-Data{iview}.Y;
              Data{iview}.FF=zeros(size(Data{iview}.X));
              Dt=1;
        %%%%%%%%%   

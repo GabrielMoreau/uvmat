@@ -544,13 +544,14 @@ if ~ischar(eventdata)% uvmat not called by browse_data
         AppData=hbrowse_data.RunningAppInstance;
         AppData.OpenFile.BusyAction='cancel';
         AppData.ListOptions.Value='pick data';
-        %   figure(hbrowse_data)
+           uistack(hbrowse_data,'up')
     else
         AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
         hbrowse_data=AppData.browse_data_fig;
     end
     waitfor(hbrowse_data,'Tag','DisplayFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
     InputFile=AppData.OpenFile.UserData;
+    AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
 else
        InputFile=eventdata;% uvmat has been activated by data_browser_app and transferred the file name in the variable 'eventdata'
 end
@@ -2452,6 +2453,9 @@ else
 end
 XmlData.FileInfo=FileInfo;
 errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckRelabel,input_line);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+end
 
 %--------------------------------------------------------
 function errormsg=update_series(handles,RootPath,SubDir,FileName,XmlData,CheckRelabel,input_line)
@@ -2481,6 +2485,10 @@ if input_line==1
     set(handles.NomType,'String',NomType)
 else
     set(handles.NomType_1,'String',NomType)
+end
+if isempty(ref_i_list)
+    errormsg='empty input file series';
+    return
 end
  nbfield_i=ref_i_list(end);
  nbfield_j=ref_j_list(end);

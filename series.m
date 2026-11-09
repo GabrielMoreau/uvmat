@@ -434,7 +434,29 @@ if isempty(oldfile)
 end
 
 %% launch the browser
-fileinput=uigetfile_uvmat('pick an input data file in the series',oldfile);
+%fileinput=uigetfile_uvmat('pick an input data file in the series',oldfile);
+
+
+hbrowse_data=findobj(allchild(0),'Name','browse_data');
+
+    if isvalid(hbrowse_data)
+        AppData=hbrowse_data.RunningAppInstance;
+      %  AppData.OpenFile.BusyAction='cancel';
+        AppData.ListOptions.Value='pick data';
+           uistack(hbrowse_data,'up')
+    else
+        AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
+        hbrowse_data=AppData.browse_data_fig;
+    end
+    AppData.Series.Visible='on';
+    waitfor(hbrowse_data,'Tag','ProcessFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+    fileinput=AppData.OpenFile.UserData;
+    AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
+    AppData.Series.Visible='off';
+
+
+
+
 hh=dir(fileinput);
 if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
@@ -3229,7 +3251,7 @@ if get(handles.CheckObject,'Value')
         set(handles.ViewObject,'Value',1)
         ViewObject_Callback(hObject, eventdata, handles)
     else
-        if ishandle(hset_object)% a projection object is already displayed in a GUI set_object
+        if isvalid(hset_object)% a projection object is already displayed in a GUI set_object
             uistack(hset_object,'top')% show the GUI set_object if opened
         else
             %get the object file
@@ -3620,16 +3642,18 @@ if get(handles.status,'Value')
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt]; % subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
     if exist(OutputDir,'dir')
-         hbrowse_data=findobj(allchild(0),'Name','browse_data_fig');
-         if isvalid (hbrowse_data)
-             delete(hbrowse_data)
-         end
-%         if isvalid(hbrowse_data)
-%             AppData=hbrowse_data.RunningAppInstance;
-%             AppData.ListOptions.Value='pick data';
-%         else
+         hbrowse_data=findobj(allchild(0),'Name','browse_data');
+%          if isvalid (hbrowse_data)
+%              delete(hbrowse_data)
+%          end
+        if isvalid(hbrowse_data)
+            AppData=hbrowse_data.RunningAppInstance;
+            AppData.ListOptions.Value='pick data';
+            AppData.refresh_inputfile(OutputDir)
+            figure(hbrowse_data)
+        else
             AppData=browse_data_app(OutputDir,'pick data');% open data browser
-%         end
+         end
         % uigetfile_uvmat('status_display',OutputDir)
     else
         msgbox_uvmat('ERROR','output folder not created yet: calculation did not start')
