@@ -16,7 +16,7 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                         series opening (input param) ->  update_rootinfo
 %                                                                                                ActionName_Callback
 % browser ->                   |
-% MenuFile (recorded filename) |-> display_file_name(fileinput,iview  -> |update_rootinfo
+% MenuFile (recorded filename) |-> display_file_name(InputFile,iview  -> |update_rootinfo
 %                                                                        |ActionName_Callback
 %            REFRESH-file(InpuTable edit)->  check_input_file_series  -> |                                 
 
@@ -434,37 +434,26 @@ if isempty(oldfile)
 end
 
 %% launch the browser
-%fileinput=uigetfile_uvmat('pick an input data file in the series',oldfile);
-
-
+%InputFile=uigetfile_uvmat('pick an input data file in the series',oldfile);
 hbrowse_data=findobj(allchild(0),'Name','browse_data');
-
-    if isvalid(hbrowse_data)
-        AppData=hbrowse_data.RunningAppInstance;
-      %  AppData.OpenFile.BusyAction='cancel';
-        AppData.ListOptions.Value='pick data';
-           uistack(hbrowse_data,'up')
-    else
-        AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
-        hbrowse_data=AppData.browse_data_fig;
-    end
-    AppData.Series.Visible='on';
-    waitfor(hbrowse_data,'Tag','ProcessFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
-    fileinput=AppData.OpenFile.UserData;
-    AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
-    AppData.Series.Visible='off';
-
-
-
-
-hh=dir(fileinput);
-if numel(hh)>1
-    msgbox_uvmat('ERROR','invalid input, probably a broken link');
-else 
-    if ~isempty(fileinput)
-        display_file_name(handles,fileinput,'one')
-    end
+if isvalid(hbrowse_data)
+    AppData=hbrowse_data.RunningAppInstance;
+    %  AppData.OpenFile.BusyAction='cancel';
+    AppData.ListOptions.Value='pick data';
+    uistack(hbrowse_data,'up')
+else
+    AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
+    hbrowse_data=AppData.browse_data_fig;
 end
+AppData.Series.Visible='on';
+waitfor(hbrowse_data,'Tag','ProcessFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+InputFile=AppData.OpenFile.UserData;
+AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
+AppData.Series.Visible='off';
+if ~isempty(InputFile)
+    display_file_name(handles,InputFile,'one')
+end
+
 
 % -----------------------------------------------------------------------
 function MenuBrowseAppend_Callback(hObject, eventdata, handles)
@@ -490,15 +479,25 @@ if exist(profil_perso,'file')
 end
 
 %% launch the browser
-fileinput=uigetfile_uvmat('pick a data file to append in the input table',oldfile);
-hh=dir(fileinput);
-if numel(hh)>1
-    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+%InputFile=uigetfile_uvmat('pick a data file to append in the input table',oldfile);
+hbrowse_data=findobj(allchild(0),'Name','browse_data');
+if isvalid(hbrowse_data)
+    AppData=hbrowse_data.RunningAppInstance;
+    AppData.ListOptions.Value='pick data';
+    uistack(hbrowse_data,'up')
 else
-    if ~isempty(fileinput)
-        display_file_name(handles,fileinput,'append')
-    end
+    AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
+    hbrowse_data=AppData.browse_data_fig;
 end
+AppData.Series.Visible='on';
+waitfor(hbrowse_data,'Tag','ProcessFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+InputFile=AppData.OpenFile.UserData;
+AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
+AppData.Series.Visible='off';
+if ~isempty(InputFile)
+    display_file_name(handles,InputFile,'append')
+end
+
 
 %------------------------------------------------------------------------
 % --- fct activated by selecting a previous file under the menu Open
@@ -669,12 +668,12 @@ for iview=1:nbview
     end
     %if ~Param.Relabel && all(isnan(Param.ref_i_list)) % if no file is found on line #iview, open a browser
     if isempty(Param.FileInfo.FileName) % if no file is found on line #iview, open a browser
-        fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],Param.FilePath);
-        if isempty(fileinput)
+        InputFile=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],Param.FilePath);
+        if isempty(InputFile)
             errormsg='no input file entered';
             return
         else
-            display_file_name(handles,fileinput,iview)% update the table of input file series #iview, then will call update_rootinfo
+            display_file_name(handles,InputFile,iview)% update the table of input file series #iview, then will call update_rootinfo
         end
     else
         % define the path for the output files
@@ -3260,15 +3259,15 @@ if get(handles.CheckObject,'Value')
             if isempty(defaultname)
                 defaultname={''};
             end
-            fileinput=uigetfile_uvmat('pick a xml object file (or use uvmat to create it)',defaultname,'.xml');
-            if isempty(fileinput)% exit if no object file is selected
+            InputFile=uigetfile_uvmat('pick a xml object file (or use uvmat to create it)',defaultname,'.xml');
+            if isempty(InputFile)% exit if no object file is selected
                 set(handles.CheckObject,'Value',0)
                 return
             end
             %read the file
-            data=xml2struct(fileinput);
+            data=xml2struct(InputFile);
             if ~isfield(data,'Type')
-                msgbox_uvmat('ERROR',[fileinput ' is not an object xml file'])
+                msgbox_uvmat('ERROR',[InputFile ' is not an object xml file'])
                 set(handles.CheckObject,'Value',0)
                 return
             end
@@ -3520,7 +3519,23 @@ if isempty(oldfile)
         end
     end
 end
-filexml=uigetfile_uvmat('pick a xml file in a folder 0_XML ',oldfile,'.xml'); % get the xml file containing processing parameters
+%filexml=uigetfile_uvmat('pick a xml file in a folder 0_XML ',oldfile,'.xml'); % get the xml file containing processing parameters
+
+hbrowse_data=findobj(allchild(0),'Name','browse_data');
+if isvalid(hbrowse_data)
+    AppData=hbrowse_data.RunningAppInstance;
+    AppData.ListOptions.Value='pick xml config file (in /0_XML)';
+    uistack(hbrowse_data,'up')
+else
+    AppData=browse_data_app(fileparts(oldfile),'pick xml config file (in /0_XML)');% open data browser
+    hbrowse_data=AppData.browse_data_fig;
+end
+AppData.Series.Visible='on';
+waitfor(hbrowse_data,'Tag','ProcessFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+filexml=AppData.OpenFile.UserData;
+AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
+AppData.Series.Visible='off';
+% 
 if isempty(filexml), return, end % quit function if an xml file has not been opened
 
 %% fill the GUI series with the content of the xml file

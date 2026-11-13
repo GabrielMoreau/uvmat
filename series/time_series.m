@@ -272,15 +272,15 @@ end
 
 %% Initiate output fields
 %initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
+[DataOut,~,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
 if ~isempty(errormsg)
     disp_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg],checkrun)
     return
 end
-time_1=[];
-if isfield(DataOut,'Time')
-    time_1=DataOut.Time(1);
-end
+% time_1=[];
+% if isfield(DataOut,'Time')
+%     time_1=DataOut.Time(1);
+% end
 if CheckNc{iview}
     if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
         DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
@@ -333,14 +333,14 @@ for index=1:NbField
         if ~isempty(errormsg)
             errormsg=['time_series / read_field / ' errormsg];
             disp(errormsg)
-            break% exit the loop on iview
+            return% stop 
         end
         if ~isempty(NbSlice_calib)
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
     end
     if ~isempty(errormsg)
-        continue %in case of input error skip the current input field, go to next index
+        return %stop if the input field is missing
     end
     Field=Data{1}; % default input field structure
     % coordinate transform (or other user defined transform)
@@ -510,15 +510,15 @@ for index=1:NbField
     
     % record the time:
     if isempty(errormsg)
-    if isempty(time)% time not set by xml filer(s)
-        if isfield(Data{1},'Time')
-            DataOut.Time(index,1)=Field.Time;
-        else
-            DataOut.Time(index,1)=index;%default
+        if isempty(time)% time not set by xml filer(s)
+            if isfield(Data{1},'Time')
+                DataOut.Time(index,1)=Data{1}.Time;
+            else
+                DataOut.Time(index,1)=index;%default
+            end
+        else % time from ImaDoc prevails  TODO: correct
+            DataOut.Time(index,1)=time(index);%
         end
-    else % time from ImaDoc prevails  TODO: correct
-        DataOut.Time(index,1)=time(index);%
-    end
     end
     index
     % record the number of missing input fields
@@ -538,7 +538,7 @@ end
 DataOut.Conventions='uvmat';
 for ivar=1:numel(DataOut.ListVarName)
     VarName=DataOut.ListVarName{ivar};
-    eval(['DataOut.' VarName '=squeeze(DataOut.' VarName ');']) %remove singletons
+    DataOut.(VarName)=squeeze(DataOut.(VarName)); %remove singletons
 end
 
 % add time dimension
@@ -577,6 +577,7 @@ end
 
 %% name of result file
 OutputFile=fullfile_uvmat(OutputPath,OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
+OutputFile=regexprep(OutputFile,[FileExtOut '$'],['$' FileExtOut]);%add a character $ to avoid automatic index extraction by uvmat
 errormsg=struct2nc(OutputFile,DataOut); %save result file
 if isempty(errormsg)
     display([OutputFile ' written'])
@@ -585,10 +586,10 @@ else
 end
 
 %% plot the time series for  (the last one in case of multislices)
-if checkrun && isequal(Param.IndexRange.NbSlice,1)%&& isfield(Param,'ProjObject') && strcmp(Param.ProjObject.Type,'points')
-    %% open the result file with uvmat (in RUN mode)
-    uvmat(OutputFile)% open the last result file with uvmat
-end
+% if checkrun && isequal(Param.IndexRange.NbSlice,1)%&& isfield(Param,'ProjObject') && strcmp(Param.ProjObject.Type,'points')
+%     %% open the result file with uvmat (in RUN mode)
+%     uvmat(OutputFile)% open the last result file with uvmat
+% end
 
 
 

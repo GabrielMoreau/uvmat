@@ -292,7 +292,7 @@ switch FileInfo.FileType
         FileInfo.FieldType='civdata';
 end
 FileInfo.FileIndexing='off';
-if strcmp(FileInfo.FieldType,'image') || ismember (FileInfo.FileType,{'mat','netcdf','civdata','civdata_compress'})
+if ismember (FileInfo.FieldType,{'image','mat','netcdf','civdata'})
     FileInfo.FileIndexing='on'; % allow to detect file index for scanning series
 end
 

@@ -695,7 +695,9 @@ if isempty(coord_val)
     set(handles.Coord_x,'Value',1)
     set(handles.Coord_y,'Value',1)
 elseif numel(coord_val)>=1
+    if coord_val(1)>0
     set(handles.Coord_x,'Value',coord_val(1))
+    end
     if numel(coord_val)>=2
         set(handles.Coord_y,'Value',coord_val(2))
     else

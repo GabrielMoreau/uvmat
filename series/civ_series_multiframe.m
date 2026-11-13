@@ -503,6 +503,8 @@ for ifield=1:NbField
         %% Read the image racks
         disp(ImageName_A)
         disp(ImageName_B)
+        disp(FrameIndex_A)
+         disp(FrameIndex_B)
         tstart_input=tic;% start of the timer for image reading
         par_civ1.ImageA=read_image_rack(ImageName_A,FrameIndex_A,FileInfo.Height,FileInfo.Width,FileType_Ima,BackgroundImage,Param);
         par_civ1.ImageB=read_image_rack(ImageName_B,FrameIndex_B,FileInfo.Height,FileInfo.Width,FileType_Ima,BackgroundImage,Param);

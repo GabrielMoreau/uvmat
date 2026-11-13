@@ -1757,6 +1757,25 @@ switch FileInfo.FileType
             FileSeries.Convention='PCO';
             FileSeries.NbFramePerFile=FileInfo.NumberOfFrames;
             hbrowse=browse_data(fullfile(RootPath,SubDir));
+
+            hbrowse_data=findobj(allchild(0),'Name','browse_data');
+
+%  TODO
+% if isvalid(hbrowse_data)
+%         AppData=hbrowse_data.RunningAppInstance;
+%         AppData.ListOptions.Value='pick data';
+%            uistack(hbrowse_data,'up')
+%     else
+%         AppData=browse_data_app(fileparts(oldfile),'pick data');% open data browser
+%         hbrowse_data=AppData.browse_data_fig;
+%     end
+%     waitfor(hbrowse_data,'Tag','DisplayFile')% wait for file opening action on browser, which will change the Tag to 'DisplayUvmat' and introduce the input fiel as UserData
+%     InputFile=AppData.OpenFile.UserData;
+%     AppData.browse_data_fig.Tag='browse_data_app';% desctivate the input process after reading
+
+
+
+
             [BurstTiming,errormsg] = set_param_input(ListParam,{'PCO',FileInfo.NumberOfFrames,'','','',''},[]);%fill an input panel with Matlab fct 'inputdlg'
 
 
@@ -1764,16 +1783,35 @@ switch FileInfo.FileType
             Camera.BurstTiming=BurstTiming;
             FileSeries.FileName={'im.tif';'im@0001.tif'};
             FileSeries.NbFramePerFile=BurstTiming.NbFramePerFile;
+
+            
+
+
+
             [ListPath, ListSubdir]=read_browsedata (hbrowse);
             NbExp=numel(ListSubdir);
             for iexp=1:NbExp
                 %%%%%%%%%%%%%% read the initial time (project STAIRWAY)
-                DirTimeInfo=fileparts(fileparts(ListPath{iexp}));
-                FileTime=fullfile(DirTimeInfo,'Time_SEQ.xml');
-                if exist(FileTime,'file')
-                    ParamTime=xml2struct(FileTime);
-                    Camera.BurstTiming.Time=ParamTime.SEQ_TIMES.(ListSubdir{iexp}).INIT_TIME;     
+                RecFile=fullfile(ListPath{iexp},ListSubdir{iexp},'im.tif.rec');
+                RecFile
+                 lines=readlines(RecFile);
+                  str_date=lines{3}
+                t_duration=duration(str_date(31:end));
+                if iexp==1
+                   t_0= seconds(t_duration);
+                   Time=0
+                   Camera.BurstTiming.Time='0';
+                else
+                    Time=seconds(t_duration)-t_0
+                     Camera.BurstTiming.Time=num2str(Time);
                 end
+             
+%                 DirTimeInfo=fileparts(fileparts(ListPath{iexp}));
+%                 FileTime=fullfile(DirTimeInfo,'Time_SEQ.xml');
+%                 if exist(FileTime,'file')
+%                     ParamTime=xml2struct(FileTime);
+%                     Camera.BurstTiming.Time='0';     
+%                 end
                     %%%%%%%%%%%%%%%%%%%%%
 
                     [checkupdate,XmlFile,errormsg]=update_imadoc(ListPath{iexp},ListSubdir{iexp},'Camera',Camera);% introduce the Time info  data in the xml file
